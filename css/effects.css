@@ -1,0 +1,280 @@
+/* ═══════════════════════════════════════════════
+   SPRITEDEX — Advanced Visual Effects
+   Rarity colors, flames, particles, variant icons
+   ═══════════════════════════════════════════════ */
+
+/* ── Rarity color variables ── */
+:root {
+  --rarity-rare: #4da6ff;
+  --rarity-epic: #b44dff;
+  --rarity-legendary: #ff8c00;
+  --rarity-mythic: #ff2a2a;
+
+  --status-owned: #00ff87;
+  --status-missing: #ff3a6e;
+  --status-priority: #ffcc00;
+  --status-unsure: #8d7cff;
+  --status-unavailable: #555a70;
+}
+
+/* ── Rarity pill colors ── */
+.rarity-pill[data-rarity="Rare"],
+.rarity-pill.rarity--rare {
+  color: var(--rarity-rare);
+  border-color: rgba(77, 166, 255, 0.4);
+  text-shadow: 0 0 8px rgba(77, 166, 255, 0.5);
+}
+
+.rarity-pill[data-rarity="Épique"],
+.rarity-pill.rarity--epic {
+  color: var(--rarity-epic);
+  border-color: rgba(180, 77, 255, 0.4);
+  text-shadow: 0 0 8px rgba(180, 77, 255, 0.5);
+}
+
+.rarity-pill[data-rarity="Légendaire"],
+.rarity-pill.rarity--legendary {
+  color: var(--rarity-legendary);
+  border-color: rgba(255, 140, 0, 0.4);
+  text-shadow: 0 0 8px rgba(255, 140, 0, 0.5);
+}
+
+.rarity-pill[data-rarity="Mythique"],
+.rarity-pill.rarity--mythic {
+  color: var(--rarity-mythic);
+  border-color: rgba(255, 42, 42, 0.4);
+  text-shadow: 0 0 8px rgba(255, 42, 42, 0.5);
+  background: rgba(255, 42, 42, 0.08);
+}
+
+/* ── Rarity glow on sprite cards ── */
+.sprite-card[data-rarity="Rare"] {
+  --card-color: rgba(77, 166, 255, 0.35);
+}
+.sprite-card[data-rarity="Épique"] {
+  --card-color: rgba(180, 77, 255, 0.35);
+}
+.sprite-card[data-rarity="Légendaire"] {
+  --card-color: rgba(255, 140, 0, 0.35);
+}
+.sprite-card[data-rarity="Mythique"] {
+  --card-color: rgba(255, 42, 42, 0.4);
+}
+
+/* ── Rarity glow on checklist items ── */
+.cl-sprite[data-rarity="Rare"] { --card-color: rgba(77, 166, 255, 0.3); }
+.cl-sprite[data-rarity="Rare"]:hover { border-color: rgba(77, 166, 255, 0.35); }
+
+.cl-sprite[data-rarity="Épique"] { --card-color: rgba(180, 77, 255, 0.3); }
+.cl-sprite[data-rarity="Épique"]:hover { border-color: rgba(180, 77, 255, 0.35); }
+
+.cl-sprite[data-rarity="Légendaire"] { --card-color: rgba(255, 140, 0, 0.3); }
+.cl-sprite[data-rarity="Légendaire"]:hover { border-color: rgba(255, 140, 0, 0.35); }
+
+.cl-sprite[data-rarity="Mythique"] { --card-color: rgba(255, 42, 42, 0.3); }
+.cl-sprite[data-rarity="Mythique"]:hover { border-color: rgba(255, 42, 42, 0.4); box-shadow: 0 0 20px rgba(255, 42, 42, 0.12); }
+
+/* ── Legendary / Mythic shimmer effect on cards ── */
+.cl-sprite[data-rarity="Légendaire"] .cl-sprite__header::after,
+.cl-sprite[data-rarity="Mythique"] .cl-sprite__header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.cl-sprite__header { position: relative; overflow: hidden; }
+
+/* ── Logo flame effect ── */
+@keyframes flameFlicker {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(0, 225, 255, 0.35)) drop-shadow(0 -4px 8px rgba(255, 100, 0, 0)); }
+  25% { filter: drop-shadow(0 0 22px rgba(0, 225, 255, 0.5)) drop-shadow(0 -6px 12px rgba(255, 80, 0, 0.3)); }
+  50% { filter: drop-shadow(0 0 28px rgba(0, 225, 255, 0.6)) drop-shadow(0 -8px 16px rgba(255, 60, 0, 0.4)); }
+  75% { filter: drop-shadow(0 0 24px rgba(0, 225, 255, 0.45)) drop-shadow(0 -5px 10px rgba(255, 90, 0, 0.2)); }
+}
+
+.topbar-logo {
+  animation: flameFlicker 3s ease-in-out infinite;
+}
+
+/* ── Particle background ── */
+@keyframes particleFloat {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(0, 225, 255, 0.4), transparent),
+    radial-gradient(1px 1px at 30% 60%, rgba(141, 124, 255, 0.3), transparent),
+    radial-gradient(1.5px 1.5px at 50% 40%, rgba(201, 69, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 70% 80%, rgba(0, 225, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 90% 30%, rgba(255, 140, 0, 0.25), transparent),
+    radial-gradient(1.5px 1.5px at 15% 75%, rgba(0, 255, 135, 0.3), transparent),
+    radial-gradient(1px 1px at 60% 15%, rgba(255, 58, 110, 0.25), transparent),
+    radial-gradient(1px 1px at 85% 65%, rgba(141, 124, 255, 0.3), transparent);
+  animation: particleDrift 20s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes particleDrift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-30px); }
+}
+
+.app-shell { position: relative; }
+
+/* ── Swipe direction glow effects ── */
+.sprite-card.dragging.drag-right {
+  box-shadow: 0 0 40px rgba(0, 255, 135, 0.25), var(--shadow);
+  border-color: rgba(0, 255, 135, 0.4);
+}
+
+.sprite-card.dragging.drag-left {
+  box-shadow: 0 0 40px rgba(255, 58, 110, 0.25), var(--shadow);
+  border-color: rgba(255, 58, 110, 0.4);
+}
+
+.sprite-card.dragging.drag-up {
+  box-shadow: 0 0 40px rgba(255, 204, 0, 0.25), var(--shadow);
+  border-color: rgba(255, 204, 0, 0.4);
+}
+
+.sprite-card.dragging.drag-down {
+  box-shadow: 0 0 40px rgba(141, 124, 255, 0.25), var(--shadow);
+  border-color: rgba(141, 124, 255, 0.4);
+}
+
+/* ── Variant badge icons ── */
+.variant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.variant-badge--gold {
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+}
+
+.variant-badge--gummy {
+  background: rgba(255, 100, 200, 0.12);
+  border: 1px solid rgba(255, 100, 200, 0.3);
+  color: #ff64c8;
+  text-shadow: 0 0 6px rgba(255, 100, 200, 0.4);
+}
+
+.variant-badge--galaxy {
+  background: rgba(100, 0, 255, 0.12);
+  border: 1px solid rgba(140, 80, 255, 0.3);
+  color: #a06cff;
+  text-shadow: 0 0 6px rgba(140, 80, 255, 0.4);
+}
+
+.variant-badge--holofoil {
+  background: linear-gradient(135deg, rgba(0, 225, 255, 0.1), rgba(201, 69, 255, 0.1));
+  border: 1px solid rgba(0, 225, 255, 0.3);
+  color: #00e1ff;
+  text-shadow: 0 0 6px rgba(0, 225, 255, 0.4);
+}
+
+.variant-badge--rift {
+  background: rgba(0, 200, 255, 0.1);
+  border: 1px solid rgba(0, 200, 255, 0.3);
+  color: #00c8ff;
+  text-shadow: 0 0 6px rgba(0, 200, 255, 0.4);
+}
+
+/* ── Status indicators with glow ── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot--owned {
+  background: var(--status-owned);
+  box-shadow: 0 0 6px var(--status-owned);
+}
+
+.status-dot--missing {
+  background: var(--status-missing);
+  box-shadow: 0 0 6px var(--status-missing);
+}
+
+.status-dot--priority {
+  background: var(--status-priority);
+  box-shadow: 0 0 6px var(--status-priority);
+}
+
+.status-dot--unsure {
+  background: var(--status-unsure);
+  box-shadow: 0 0 6px var(--status-unsure);
+}
+
+.status-dot--unavailable {
+  background: var(--status-unavailable);
+}
+
+/* ── Mythic card special border animation ── */
+@keyframes mythicBorder {
+  0% { border-color: rgba(255, 42, 42, 0.5); }
+  33% { border-color: rgba(255, 215, 0, 0.5); }
+  66% { border-color: rgba(255, 100, 0, 0.5); }
+  100% { border-color: rgba(255, 42, 42, 0.5); }
+}
+
+.sprite-card[data-rarity="Mythique"] {
+  animation: glowBreathe 4s ease-in-out infinite, cardEntrance 350ms cubic-bezier(0.22, 1, 0.36, 1) both, mythicBorder 4s linear infinite;
+}
+
+.sprite-card[data-rarity="Mythique"] .card-glow {
+  background: radial-gradient(circle at center, rgba(255, 42, 42, 0.4), rgba(255, 215, 0, 0.15), transparent 65%);
+}
+
+/* ── Legendary card orange glow ── */
+.sprite-card[data-rarity="Légendaire"] .card-glow {
+  background: radial-gradient(circle at center, rgba(255, 140, 0, 0.4), transparent 65%);
+}
+
+/* ── Epic card purple glow ── */
+.sprite-card[data-rarity="Épique"] .card-glow {
+  background: radial-gradient(circle at center, rgba(180, 77, 255, 0.4), transparent 65%);
+}
+
+/* ── Swipe out burst particles ── */
+@keyframes burstOut {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.sprite-card.out::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--card-color, rgba(141, 124, 255, 0.3)), transparent 60%);
+  animation: burstOut 400ms ease-out forwards;
+  pointer-events: none;
+}

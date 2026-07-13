@@ -1,0 +1,202 @@
+/* ── Shared read-only profile view ── */
+.shared-view {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow-y: auto;
+  background: radial-gradient(circle at 50% -10%, #1a2740 0%, #0b0f1a 60%);
+  padding: 32px 16px 64px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.shared-view__card {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 28px;
+  backdrop-filter: blur(8px);
+}
+
+.shared-view__card--error {
+  text-align: center;
+  max-width: 460px;
+}
+
+.shared-view__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.shared-view__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(0, 255, 135, 0.5);
+  flex-shrink: 0;
+}
+
+.shared-view__avatar--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.shared-view__name {
+  font-size: 1.6rem;
+  font-weight: 900;
+  margin: 0;
+  color: #fff;
+}
+
+.shared-view__sub {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.shared-view__overall {
+  margin-bottom: 28px;
+}
+
+.shared-view__overall-top {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.shared-view__overall-pct {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #00ff87;
+}
+
+.shared-view__overall-count {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.shared-view__overall-bar,
+.shared-stat__bar {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.shared-view__overall-fill,
+.shared-stat__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff87, #60efbc);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+.shared-view__section {
+  margin-bottom: 28px;
+}
+
+.shared-view__section-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0 0 14px;
+}
+
+.shared-stat {
+  display: grid;
+  grid-template-columns: 90px 1fr 56px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.shared-stat__label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+}
+
+.shared-stat__val {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: right;
+}
+
+.shared-view__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+}
+
+.shared-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.shared-card__img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.shared-card__img--empty {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+.shared-card__name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.shared-card__variant {
+  font-size: 0.66rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.shared-view__empty {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px;
+}
+
+.shared-view__cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  margin-top: 8px;
+  background: #00ff87;
+  color: #0b0f1a;
+  font-weight: 800;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: filter 0.2s ease;
+}
+
+.shared-view__cta:hover {
+  filter: brightness(1.1);
+}

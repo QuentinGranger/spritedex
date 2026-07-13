@@ -1,0 +1,26 @@
+{
+  "name": "spritedex_app",
+  "version": "1.0.0",
+  "description": "Application web statique pour suivre les Sprites Fortnite et leurs variantes.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "test:security": "node test/security.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.22.0",
+    "puppeteer-core": "^25.3.0",
+    "resend": "^6.17.1",
+    "ws": "^8.21.0",
+    "zod": "^3.25.76"
+  }
+}

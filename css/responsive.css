@@ -1,0 +1,102 @@
+/* ── Responsive ── */
+@media (max-width: 760px) {
+  .app-shell {
+    padding: 16px 12px 92px;
+  }
+
+  .hero-card {
+    padding: 16px;
+  }
+
+  .ring {
+    width: 78px;
+    height: 78px;
+  }
+
+  .deck-zone {
+    min-height: 460px;
+  }
+
+  .sprite-card {
+    min-height: 440px;
+    border-radius: 24px;
+  }
+
+  .swipe-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filters select {
+    max-width: none;
+  }
+
+  .stats-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .stats-insights {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topbar-logo {
+    height: 40px;
+  }
+
+  .squad-stat {
+    grid-template-columns: 80px 1fr 70px;
+  }
+
+  .squad-stat__unique {
+    display: none;
+  }
+
+  .squad-table__cell {
+    padding: 3px 2px;
+  }
+
+  .sq-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 0.72rem;
+    border-radius: 5px;
+  }
+
+  .squad-table__variant {
+    font-size: 0.72rem;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .squad-table-wrap {
+    max-height: 55vh;
+  }
+
+  .squad-active__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .squad-lobby__row {
+    flex-direction: column;
+  }
+
+  .squad-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .squad-controls {
+    gap: 8px;
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "SpriteDex — Checklist Fortnite",
+  "short_name": "SpriteDex",
+  "description": "Checklist type Tinder pour suivre les Sprites Fortnite et leurs variantes.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0c0f1d",
+  "theme_color": "#15172b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
