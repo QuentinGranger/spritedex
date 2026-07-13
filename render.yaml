@@ -1,0 +1,57 @@
+# Render Blueprint — Infrastructure as Code for SpriteDex.
+# Deploy: push to GitHub, then in Render → New → Blueprint → select this repo.
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This provisions:
+#   - a managed PostgreSQL database (schema + reference data auto-created on boot)
+#   - a Node web service running the Express + WebSocket server
+#
+# Secrets marked `sync: false` are NOT stored in the repo — you set them in the
+# Render dashboard (or when prompted during the Blueprint launch).
+
+databases:
+  - name: spritedex-db
+    databaseName: spritedex
+    plan: free
+
+services:
+  - type: web
+    name: spritedex
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/sprites
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: Render auto-injects RENDER_EXTERNAL_URL (the full https URL of this
+      # service). server.js uses it as the default OAUTH_REDIRECT_BASE so OAuth +
+      # CORS work on first deploy with no manual URL configuration.
+      #
+      # Connection string wired automatically from the database above.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spritedex-db
+          property: connectionString
+      # ── Secrets: set these in the Render dashboard ──
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      # Optional: comma-separated allowed origins. Defaults to the service URL.
+      - key: CORS_ORIGIN
+        sync: false
+      # Optional: override the public base URL (e.g. a custom domain).
+      - key: OAUTH_REDIRECT_BASE
+        sync: false

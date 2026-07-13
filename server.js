@@ -10,6 +10,14 @@ const http = require("http");
 const puppeteer = require("puppeteer-core");
 const { Resend } = require("resend");
 const security = require("./security");
+const { seedReferenceData } = require("./sprite-data");
+
+// On Render, RENDER_EXTERNAL_URL is auto-injected as the full public https URL.
+// Use it as the default public base so OAuth redirects and CORS work on the
+// very first deploy without manually setting OAUTH_REDIRECT_BASE.
+if (!process.env.OAUTH_REDIRECT_BASE && process.env.RENDER_EXTERNAL_URL) {
+  process.env.OAUTH_REDIRECT_BASE = process.env.RENDER_EXTERNAL_URL;
+}
 
 security.validateEnv();
 
@@ -101,10 +109,20 @@ async function broadcastSquadUpdate(userId) {
   }
 }
 
+// Enable TLS for any non-local database (Render, Railway, Neon, Supabase, …).
+// Managed providers use certs not in Node's trust store, so we relax
+// rejectUnauthorized. Disable explicitly with PGSSL=disable if needed.
+function shouldUseSSL(url) {
+  if (!url) return false;
+  if (/localhost|127\.0\.0\.1/.test(url)) return false;
+  if (process.env.PGSSL === "disable") return false;
+  return true;
+}
+
 const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL.includes("sslmode=require") ? { rejectUnauthorized: false } : false
+      ssl: shouldUseSSL(process.env.DATABASE_URL) ? { rejectUnauthorized: false } : false
     })
   : new Pool({
       database: "spritedex",
@@ -1640,9 +1658,53 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Erreur serveur" });
 });
 
-// ── DB init : ensure squads tables exist ──
+// ── DB init : ensure ALL tables exist (idempotent schema bootstrap) ──
+// Runs on every boot. Creates the full schema if missing so the app can be
+// deployed against a brand-new empty PostgreSQL database with zero manual SQL.
 async function ensureSquadTables() {
   try {
+    // Core reference + user tables (previously created manually in dev).
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS sprites (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        rarity VARCHAR(30) NOT NULL,
+        color VARCHAR(60) NOT NULL,
+        effect TEXT NOT NULL,
+        variants TEXT[] NOT NULL,
+        available VARCHAR(20) NOT NULL DEFAULT 'available',
+        added_date DATE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS variant_meta (
+        name VARCHAR(30) PRIMARY KEY,
+        label VARCHAR(50) NOT NULL,
+        bonus TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS sprite_images (
+        sprite_id VARCHAR(50) NOT NULL REFERENCES sprites(id) ON DELETE CASCADE,
+        variant VARCHAR(30) NOT NULL,
+        image_path VARCHAR(255) NOT NULL,
+        PRIMARY KEY (sprite_id, variant)
+      );
+      CREATE TABLE IF NOT EXISTS sprite_entries (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        sprite_id VARCHAR(100) NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'new',
+        note TEXT DEFAULT '',
+        priority TEXT DEFAULT 'none',
+        obtained_at TIMESTAMPTZ,
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (user_id, sprite_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_sprite_entries_user ON sprite_entries (user_id);
+    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sessions (
         id SERIAL PRIMARY KEY,
@@ -1728,9 +1790,25 @@ async function ensureSquadTables() {
   }
 }
 
-ensureSquadTables().then(() => {
-  startNewsCron();
-  server.listen(PORT, () => {
-    console.log(`SpriteDex API + WebSocket running on http://localhost:${PORT}`);
+// Auto-seed static reference data on a fresh database so a brand-new deploy
+// has sprites immediately, without a manual `npm run seed` step. Idempotent:
+// only runs when the sprites table is empty.
+async function ensureReferenceDataSeeded() {
+  try {
+    const { rows } = await pool.query("SELECT COUNT(*)::int AS n FROM sprites");
+    if (rows[0].n > 0) return;
+    const counts = await seedReferenceData(pool);
+    console.log(`Seeded reference data: ${counts.sprites} sprites, ${counts.variants} variants, ${counts.images} images`);
+  } catch (err) {
+    console.error("Failed to seed reference data:", err);
+  }
+}
+
+ensureSquadTables()
+  .then(ensureReferenceDataSeeded)
+  .then(() => {
+    startNewsCron();
+    server.listen(PORT, () => {
+      console.log(`SpriteDex API + WebSocket running on http://localhost:${PORT}`);
+    });
   });
-});
