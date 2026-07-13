@@ -13,6 +13,9 @@ databases:
   - name: spritedex-db
     databaseName: spritedex
     plan: free
+    # MUST match the web service region below, otherwise the internal DB
+    # hostname (dpg-xxxx-a) cannot be resolved by the service (ENOTFOUND).
+    region: frankfurt
 
 services:
   - type: web
