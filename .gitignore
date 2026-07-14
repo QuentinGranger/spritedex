@@ -6,3 +6,8 @@ node_modules/
 *.log
 npm-debug.log*
 .DS_Store
+
+# Capacitor: generated web bundle + native projects
+www/
+ios/
+android/

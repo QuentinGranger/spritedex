@@ -238,9 +238,17 @@ function setupLogin() {
     await finishLogin(pendingUser);
   });
 
-  // OAuth — redirect to server-side flow
+  // OAuth — redirect to server-side flow.
+  // On the web: full-page navigation, server redirects back to "/?authToken=…".
+  // On native (Capacitor): open the flow in the system browser with ?return=app;
+  // the server finishes by redirecting to the "spritedex://auth" deep link, which
+  // the app captures (see js/mobile.js) to complete login.
   function startOAuth(provider) {
-    window.location.href = `${API_BASE}/auth/oauth/${provider}`;
+    if (isNativePlatform() && window.Capacitor?.Plugins?.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: `${API_BASE}/auth/oauth/${provider}?return=app` });
+    } else {
+      window.location.href = `${API_BASE}/auth/oauth/${provider}`;
+    }
   }
   document.getElementById("authGoogle").addEventListener("click", () => startOAuth("google"));
   document.getElementById("authDiscord").addEventListener("click", () => startOAuth("discord"));

@@ -212,7 +212,10 @@ function setupEvents() {
 
   setupSwipeGestures();
 
-  if ("serviceWorker" in navigator) {
+  // Register the service worker for the web PWA only. In the native (Capacitor)
+  // shell it would try to intercept capacitor:// requests and conflicts with the
+  // native asset loader, so we skip it there.
+  if ("serviceWorker" in navigator && !isNativePlatform()) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 }

@@ -112,7 +112,12 @@ function blockSensitiveFiles(req, res, next) {
 // ─────────────────────────────────────────────────────────────────
 function resolveCorsOrigins() {
   const raw = process.env.CORS_ORIGIN || process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
-  return raw.split(",").map(s => s.trim()).filter(Boolean);
+  const configured = raw.split(",").map(s => s.trim()).filter(Boolean);
+  // Native app (Capacitor) webview origins. The mobile app is a first-party
+  // client authenticated by Bearer token, so these fixed origins are always
+  // allowed for the JSON API (they never carry ambient cookies).
+  const nativeOrigins = ["capacitor://localhost", "ionic://localhost", "http://localhost", "https://localhost"];
+  return [...new Set([...configured, ...nativeOrigins])];
 }
 
 // ─────────────────────────────────────────────────────────────────

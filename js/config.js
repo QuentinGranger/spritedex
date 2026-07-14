@@ -2,7 +2,38 @@ const STORAGE_KEY = "spritedex_state_v1";
 const THEME_KEY = "spritedex_theme_v1";
 const USER_KEY = "spritedex_user";
 const TOKEN_KEY = "spritedex_token";
-const API_BASE = (window.location.port === "3000" ? "" : "http://localhost:3000") + "/api";
+
+// ── Backend origin resolution ──────────────────────────────────────────────
+// Web (served by our own Express server): same-origin ("").
+// Local dev opened on another port (e.g. Live Server): target :3000.
+// Native app (Capacitor iOS/Android): the webview runs from capacitor://localhost
+// or http://localhost, so it must target the remote production backend.
+// Override with window.SPRITEDEX_API_ORIGIN if needed (staging, custom domain).
+const PROD_API_ORIGIN = "https://spritedex.onrender.com";
+
+function isNativePlatform() {
+  return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
+}
+
+function resolveApiOrigin() {
+  if (window.SPRITEDEX_API_ORIGIN) return window.SPRITEDEX_API_ORIGIN;
+  if (isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
+    return PROD_API_ORIGIN;
+  }
+  const host = location.hostname;
+  if ((host === "localhost" || host === "127.0.0.1") && location.port && location.port !== "3000") {
+    return "http://localhost:3000";
+  }
+  return ""; // same-origin (web prod, or dev served by Express on :3000)
+}
+
+const API_ORIGIN = resolveApiOrigin();
+const API_BASE = `${API_ORIGIN}/api`;
+const WS_URL = (() => {
+  if (API_ORIGIN) return API_ORIGIN.replace(/^http/, "ws");
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${location.host}`;
+})();
 
 function authHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

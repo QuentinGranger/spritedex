@@ -1,0 +1,9 @@
+{
+  "appId": "com.spritedex.app",
+  "appName": "SpriteDex",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "capacitor"
+  }
+}

@@ -114,8 +114,7 @@ function connectSquadWs() {
   if (squadWs && squadWs.readyState <= 1) return;
   if (!state.userId) return;
 
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  squadWs = new WebSocket(`${protocol}//${location.host}`);
+  squadWs = new WebSocket(WS_URL);
 
   squadWs.onopen = () => {
     // Authenticate the WS with the session token; the server derives the userId

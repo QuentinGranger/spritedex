@@ -52,31 +52,20 @@ async function handleShareLink() {
   return true;
 }
 
-async function handleOAuthReturn() {
-  const params = new URLSearchParams(location.search);
+// Completes an OAuth login from a set of URL params. Shared by the web return
+// flow (query string) and the native deep-link flow (js/mobile.js). Returns
+// true when a session was established.
+async function applyAuthParams(params) {
   const authToken = params.get("authToken");
   const authUserStr = params.get("authUser");
   const authError = params.get("authError");
-  const emailVerified = params.get("emailVerified");
-
-  if (emailVerified) {
-    history.replaceState(null, "", location.pathname);
-    if (emailVerified === "true") {
-      localStorage.setItem("spritedex_email_verified", "true");
-      setTimeout(() => toast("Email vérifié avec succès !"), 500);
-    } else {
-      setTimeout(() => toast("Lien de vérification invalide ou expiré."), 500);
-    }
-  }
 
   if (authError) {
-    history.replaceState(null, "", location.pathname);
     toast("Erreur de connexion OAuth. Réessaie.");
     return false;
   }
 
   if (authToken && authUserStr) {
-    history.replaceState(null, "", location.pathname);
     try {
       const user = JSON.parse(authUserStr);
       localStorage.setItem(TOKEN_KEY, authToken);
@@ -101,6 +90,29 @@ async function handleOAuthReturn() {
     } catch (e) {
       console.error("OAuth return parse error:", e);
     }
+  }
+  return false;
+}
+
+// Web OAuth return: reads the query string, handles email verification, then
+// delegates the session setup to applyAuthParams().
+async function handleOAuthReturn() {
+  const params = new URLSearchParams(location.search);
+  const emailVerified = params.get("emailVerified");
+
+  if (emailVerified) {
+    history.replaceState(null, "", location.pathname);
+    if (emailVerified === "true") {
+      localStorage.setItem("spritedex_email_verified", "true");
+      setTimeout(() => toast("Email vérifié avec succès !"), 500);
+    } else {
+      setTimeout(() => toast("Lien de vérification invalide ou expiré."), 500);
+    }
+  }
+
+  if (params.get("authError") || (params.get("authToken") && params.get("authUser"))) {
+    history.replaceState(null, "", location.pathname);
+    return applyAuthParams(params);
   }
   return false;
 }

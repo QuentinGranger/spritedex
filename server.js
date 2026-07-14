@@ -702,14 +702,20 @@ app.get("/api/auth/oauth/:provider", (req, res) => {
   }
 
   const stateToken = crypto.randomBytes(16).toString("hex");
-  // Store state in a short-lived cookie for CSRF protection
-  res.cookie(`oauth_state_${provider}`, stateToken, {
+  const cookieOpts = {
     httpOnly: true,
     maxAge: 600000,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/api/auth/callback"
-  });
+  };
+  // Store state in a short-lived cookie for CSRF protection
+  res.cookie(`oauth_state_${provider}`, stateToken, cookieOpts);
+  // Remember where to send the user back: the web app (default) or the native
+  // app via a custom-scheme deep link (?return=app, used by the Capacitor shell
+  // which opens this flow in the system browser).
+  const returnMode = req.query.return === "app" ? "app" : "web";
+  res.cookie(`oauth_return_${provider}`, returnMode, cookieOpts);
 
   const params = new URLSearchParams({
     client_id: config.clientId,
@@ -728,6 +734,12 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
   const config = OAUTH_CONFIG[provider];
   if (!config) return res.status(400).send("Provider inconnu");
 
+  // Where to return the user: web app ("/") or native app (custom scheme).
+  const returnMode = req.cookies?.[`oauth_return_${provider}`] || "web";
+  res.clearCookie(`oauth_return_${provider}`, { path: "/api/auth/callback" });
+  const sendResult = (query) =>
+    res.redirect(returnMode === "app" ? `spritedex://auth?${query}` : `/?${query}`);
+
   const code = req.query.code || req.body?.code;
   if (!code) return res.status(400).send("Code manquant");
 
@@ -740,7 +752,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
   res.clearCookie(`oauth_state_${provider}`, { path: "/api/auth/callback" });
   if (!returnedState || !expectedState || returnedState !== expectedState) {
     console.warn(`[OAuth] state mismatch for provider ${provider}`);
-    return res.redirect("/?authError=invalid_state");
+    return sendResult("authError=invalid_state");
   }
 
   try {
@@ -761,7 +773,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
       console.error("OAuth token error:", tokenData);
-      return res.redirect("/?authError=token_failed");
+      return sendResult("authError=token_failed");
     }
 
     // Get user info
@@ -784,7 +796,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
       avatarUrl = user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : "";
     }
 
-    if (!email) return res.redirect("/?authError=no_email");
+    if (!email) return sendResult("authError=no_email");
 
     // Find or create user
     let userRow = await pool.query("SELECT id, username, avatar_url FROM users WHERE email = $1", [email.toLowerCase()]);
@@ -806,11 +818,12 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
     const dbUser = userRow.rows[0];
     const sessionToken = await createSession(dbUser.id);
 
-    // Redirect back to app with token in URL fragment (not in query to avoid server logs)
-    res.redirect(`/?authToken=${sessionToken}&authUser=${encodeURIComponent(JSON.stringify({ id: dbUser.id, username: dbUser.username, avatar_url: dbUser.avatar_url || avatarUrl }))}`);
+    // Return to the app (web query string or native deep link) with the token.
+    const query = `authToken=${sessionToken}&authUser=${encodeURIComponent(JSON.stringify({ id: dbUser.id, username: dbUser.username, avatar_url: dbUser.avatar_url || avatarUrl }))}`;
+    sendResult(query);
   } catch (err) {
     console.error("OAuth callback error:", err);
-    res.redirect("/?authError=server_error");
+    sendResult("authError=server_error");
   }
 });
 
