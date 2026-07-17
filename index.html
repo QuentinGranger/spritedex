@@ -33,8 +33,54 @@
     <link rel="stylesheet" href="css/shared.css" />
     <link rel="stylesheet" href="css/utility.css" />
     <link rel="stylesheet" href="css/responsive.css" />
+    <style>
+      #videoSplash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: #0a0e1a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease;
+      }
+      #videoSplash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #videoSplash video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
   </head>
   <body>
+    <div id="videoSplash" aria-hidden="true">
+      <video id="videoSplashVid" src="splashScreen.mp4" muted playsinline autoplay preload="auto"></video>
+    </div>
+    <script>
+      (function () {
+        var overlay = document.getElementById("videoSplash");
+        var vid = document.getElementById("videoSplashVid");
+        if (!overlay || !vid) return;
+        var done = false;
+        function hide() {
+          if (done) return;
+          done = true;
+          overlay.classList.add("is-hidden");
+          setTimeout(function () {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          }, 600);
+        }
+        vid.addEventListener("ended", hide);
+        vid.addEventListener("error", hide);
+        // Safety net: never block the app for more than 8s
+        setTimeout(hide, 8000);
+        var p = vid.play();
+        if (p && p.catch) p.catch(hide);
+      })();
+    </script>
     <div class="login-screen" id="loginScreen">
       <div class="login-card">
         <img src="LogoApp.png" alt="SpriteDex" class="login-logo" />

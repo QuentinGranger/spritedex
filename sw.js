@@ -1,4 +1,4 @@
-const CACHE_NAME = "spritedex-v6";
+const CACHE_NAME = "spritedex-v7";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -32,6 +32,7 @@ const STATIC_ASSETS = [
   "/js/mobile.js",
   "/manifest.json",
   "/LogoApp.png",
+  "/splashScreen.mp4",
   "/Favicon/favicon.ico",
   "/Favicon/favicon-32x32.png",
   "/Favicon/favicon-16x16.png",
