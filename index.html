@@ -44,6 +44,8 @@
         align-items: center;
         justify-content: center;
         transition: opacity 0.5s ease;
+        cursor: pointer;
+        user-select: none;
       }
       #videoSplash.is-hidden {
         opacity: 0;
@@ -54,11 +56,27 @@
         height: 100%;
         object-fit: cover;
       }
+      #videoSplash__skip {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 18px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 999px;
+        color: rgba(255,255,255,0.7);
+        font-family: 'Rajdhani', sans-serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.03em;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
     <div id="videoSplash" aria-hidden="true">
-      <video id="videoSplashVid" src="splashScreen.mp4" muted playsinline autoplay preload="auto"></video>
+      <video id="videoSplashVid" src="splashScreen.mp4" muted playsinline autoplay preload="metadata"></video>
+      <div id="videoSplash__skip">Appuie pour passer</div>
     </div>
     <script>
       (function () {
@@ -69,15 +87,18 @@
         function hide() {
           if (done) return;
           done = true;
+          if (vid && vid.pause) try { vid.pause(); } catch (e) {}
           overlay.classList.add("is-hidden");
           setTimeout(function () {
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-          }, 600);
+          }, 500);
         }
         vid.addEventListener("ended", hide);
         vid.addEventListener("error", hide);
-        // Safety net: never block the app for more than 8s
-        setTimeout(hide, 8000);
+        overlay.addEventListener("click", hide);
+        overlay.addEventListener("touchstart", hide, { passive: true });
+        // Safety net: never block the app for more than 5s
+        setTimeout(hide, 5000);
         var p = vid.play();
         if (p && p.catch) p.catch(hide);
       })();
