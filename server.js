@@ -1729,6 +1729,9 @@ async function ensureSquadTables() {
       CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
     `);
     await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_salt TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy VARCHAR(20) DEFAULT 'squad_only';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
@@ -1740,6 +1743,7 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_iterations INTEGER;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS share_token VARCHAR(64) UNIQUE;
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
     `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS squads (
