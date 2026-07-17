@@ -83,10 +83,21 @@
         var overlay = document.getElementById("videoSplash");
         var vid = document.getElementById("videoSplashVid");
         if (!overlay || !vid) return;
+
+        // Show splash at most once per day per device.
+        var SPLASH_KEY = "spritedex_splash_seen";
+        var lastSeen = localStorage.getItem(SPLASH_KEY);
+        var oneDay = 24 * 60 * 60 * 1000;
+        if (lastSeen && Date.now() - parseInt(lastSeen, 10) < oneDay) {
+          overlay.parentNode.removeChild(overlay);
+          return;
+        }
+
         var done = false;
         function hide() {
           if (done) return;
           done = true;
+          try { localStorage.setItem(SPLASH_KEY, String(Date.now())); } catch (e) {}
           if (vid && vid.pause) try { vid.pause(); } catch (e) {}
           overlay.classList.add("is-hidden");
           setTimeout(function () {
