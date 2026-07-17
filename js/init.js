@@ -61,7 +61,13 @@ async function applyAuthParams(params) {
   const authError = params.get("authError");
 
   if (authError) {
-    toast("Erreur de connexion OAuth. Réessaie.");
+    const messages = {
+      invalid_state: "Session expirée (cookie bloqué). Réessaie.",
+      token_failed: "Clé/secret OAuth invalide côté serveur.",
+      no_email: "Aucune adresse email fournie par le provider.",
+      server_error: "Erreur serveur OAuth. Réessaie."
+    };
+    toast(messages[authError] || `Erreur OAuth : ${authError}`);
     return false;
   }
 
