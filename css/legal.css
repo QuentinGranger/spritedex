@@ -331,6 +331,17 @@
   margin-top: 20px;
 }
 
+.cookie-dialog__notice {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  background: rgba(0, 225, 255, 0.06);
+  border: 1px solid rgba(0, 225, 255, 0.12);
+  border-radius: 12px;
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
 /* ── Login Legal Links ── */
 .login-legal-links {
   display: flex;

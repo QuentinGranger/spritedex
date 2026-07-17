@@ -62,69 +62,53 @@ function showCookieBanner() {
   banner.innerHTML = `
     <div class="cookie-banner__text">
       <strong>Confidentialité et traceurs</strong>
-      <p>SpriteDex utilise des traceurs strictement nécessaires au fonctionnement. Les traceurs de mesure d'audience sont désactivés par défaut.</p>
+      <p>SpriteDex utilise uniquement des traceurs strictement nécessaires au fonctionnement (session, authentification, préférences). Aucun traceur de mesure d'audience n'est chargé.</p>
     </div>
     <div class="cookie-banner__actions">
-      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieCustomize">Personnaliser</button>
-      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieReject">Tout refuser</button>
-      <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookieAccept">Tout accepter</button>
+      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieDetails">Voir les détails</button>
+      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieReject">Continuer sans accepter</button>
+      <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookieAccept">J'ai compris</button>
     </div>
   `;
   document.body.appendChild(banner);
 
   banner.querySelector("#cookieAccept").addEventListener("click", () => {
-    saveConsent({ necessary: true, analytics: true, version: LEGAL_VERSION });
+    saveConsent({ necessary: true, analytics: false, version: LEGAL_VERSION });
     banner.remove();
   });
   banner.querySelector("#cookieReject").addEventListener("click", () => {
     saveConsent({ necessary: true, analytics: false, version: LEGAL_VERSION });
     banner.remove();
   });
-  banner.querySelector("#cookieCustomize").addEventListener("click", () => {
+  banner.querySelector("#cookieDetails").addEventListener("click", () => {
     openCookiePreferences();
   });
 }
 
 function openCookiePreferences() {
-  const current = getConsent() || { necessary: true, analytics: false };
   const dialog = document.createElement("dialog");
   dialog.className = "cookie-dialog";
   dialog.innerHTML = `
     <div class="cookie-dialog__card">
-      <h3>Gérer mes choix</h3>
+      <h3>Traceurs utilisés</h3>
       <div class="cookie-option">
         <div>
           <strong>Strictement nécessaires</strong>
-          <p>Session, authentification, sauvegarde locale. Toujours actifs.</p>
+          <p>Session, authentification, sauvegarde locale, choix de confidentialité. Toujours actifs.</p>
         </div>
         <label class="toggle"><input type="checkbox" checked disabled /><span class="toggle__slider"></span></label>
       </div>
-      <div class="cookie-option">
-        <div>
-          <strong>Mesure d'audience anonymisée</strong>
-          <p>Comprendre comment l'application est utilisée, sans identifier les personnes.</p>
-        </div>
-        <label class="toggle"><input type="checkbox" id="cookiePrefAnalytics" ${current.analytics ? "checked" : ""} /><span class="toggle__slider"></span></label>
-      </div>
+      <p class="cookie-dialog__notice">Aucun traceur de mesure d'audience, de publicité ou de profilage n'est chargé dans cette version de SpriteDex.</p>
       <div class="cookie-dialog__actions">
-        <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookiePrefSave">Enregistrer</button>
-        <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookiePrefAcceptAll">Tout accepter</button>
+        <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookiePrefOk">J'ai compris</button>
       </div>
     </div>
   `;
   document.body.appendChild(dialog);
   dialog.showModal();
 
-  dialog.querySelector("#cookiePrefSave").addEventListener("click", () => {
-    const analytics = dialog.querySelector("#cookiePrefAnalytics").checked;
-    saveConsent({ necessary: true, analytics, version: LEGAL_VERSION });
-    const banner = document.getElementById("cookieBanner");
-    if (banner) banner.remove();
-    dialog.close();
-    dialog.remove();
-  });
-  dialog.querySelector("#cookiePrefAcceptAll").addEventListener("click", () => {
-    saveConsent({ necessary: true, analytics: true, version: LEGAL_VERSION });
+  dialog.querySelector("#cookiePrefOk").addEventListener("click", () => {
+    saveConsent({ necessary: true, analytics: false, version: LEGAL_VERSION });
     const banner = document.getElementById("cookieBanner");
     if (banner) banner.remove();
     dialog.close();
