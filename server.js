@@ -344,7 +344,7 @@ function verifyPassword(password, hash, salt, iterations = LEGACY_PBKDF2_ITERATI
 
 // ── Auth : Email register ──
 app.post("/api/auth/register", security.registerLimiter, security.validateBody(security.schemas.registerSchema), async (req, res) => {
-  const { email, password, username: reqUsername } = req.validatedBody;
+  const { email, password, username: reqUsername, cguAccepted, cguVersion } = req.validatedBody;
   try {
     const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
     if (existing.rows.length > 0) {
@@ -354,9 +354,19 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
     const username = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_\-. ]/g, "").slice(0, 24) || "joueur";
     const emailToken = crypto.randomBytes(32).toString("hex");
     const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, password_salt, password_iterations, email_verify_token)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, created_at`,
-      [username, email.toLowerCase(), hash, salt, iterations, emailToken]
+      `INSERT INTO users (username, email, password_hash, password_salt, password_iterations, email_verify_token, cgu_accepted, cgu_version, cgu_accepted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, username, created_at`,
+      [
+        username,
+        email.toLowerCase(),
+        hash,
+        salt,
+        iterations,
+        emailToken,
+        cguAccepted === true,
+        cguVersion || null,
+        cguAccepted === true ? new Date().toISOString() : null
+      ]
     );
     const user = result.rows[0];
     const token = await createSession(user.id);
@@ -1743,6 +1753,10 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_iterations INTEGER;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS share_token VARCHAR(64) UNIQUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS cgu_accepted BOOLEAN DEFAULT FALSE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS cgu_version VARCHAR(32);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS cgu_accepted_at TIMESTAMPTZ;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS cookie_consent JSONB;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
     `);
     await pool.query(`

@@ -127,6 +127,8 @@ async function init() {
   const theme = localStorage.getItem(THEME_KEY);
   if (theme === "light") document.body.classList.add("light");
 
+  initCguListeners();
+  showCookieBanner();
   setupOfflineIndicator();
 
   await loadSpritesFromAPI();

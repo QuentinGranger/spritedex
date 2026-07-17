@@ -137,3 +137,13 @@ function toggleTheme() {
   localStorage.setItem(THEME_KEY, document.body.classList.contains("light") ? "light" : "dark");
   updateThemeButton();
 }
+
+// ── Legal Modals ──
+function openLegal(key) {
+  const content = LEGAL_CONTENT[key];
+  if (!content) return;
+  const dialog = document.getElementById("legalDialog");
+  const container = document.getElementById("legalContent");
+  container.innerHTML = content;
+  dialog.showModal();
+}

@@ -95,14 +95,17 @@ function setupLogin() {
       loginHint.textContent = "Mot de passe trop court (min 6)";
       return;
     }
+    if (!requireCguAccepted()) return;
+
     loginHint.textContent = "";
     registerEmailBtn.disabled = true;
     registerEmailBtn.textContent = "Création...";
     try {
+      const cguVersion = localStorage.getItem(CGU_VERSION_KEY) || LEGAL_VERSION;
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ email, password, username })
+        body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Inscription impossible");

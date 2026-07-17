@@ -184,7 +184,9 @@ const squadCodeSchema = z.string().trim().min(4).max(30).regex(/^[A-Z0-9\-]+$/i,
 const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  username: usernameSchema.optional()
+  username: usernameSchema.optional(),
+  cguAccepted: z.boolean().optional(),
+  cguVersion: z.string().max(32).optional()
 });
 
 const loginSchema = z.object({

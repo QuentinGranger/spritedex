@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="css/effects.css" />
     <link rel="stylesheet" href="css/account.css" />
     <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/legal.css" />
     <link rel="stylesheet" href="css/utility.css" />
     <link rel="stylesheet" href="css/responsive.css" />
     <style>
@@ -168,7 +169,12 @@
             <input type="text" id="registerUsername" class="login-input" placeholder="Pseudo" maxlength="50" autocomplete="username" />
             <input type="email" id="registerEmail" class="login-input" placeholder="Email" autocomplete="email" />
             <input type="password" id="registerPassword" class="login-input" placeholder="Mot de passe (min 6 car.)" autocomplete="new-password" />
-            <button class="login-btn" id="registerEmailBtn">Créer mon compte</button>
+            <label class="cgu-check" id="registerCguLabel">
+              <input type="checkbox" id="registerCgu" />
+              <span class="cgu-check__box"></span>
+              <span class="cgu-check__text">J'accepte les <button class="onboarding-link" type="button" onclick="openLegal('cgu')">Conditions générales d'utilisation</button> et la <button class="onboarding-link" type="button" onclick="openLegal('politique-confidentialite')">Politique de confidentialité</button>.</span>
+            </label>
+            <button class="login-btn" id="registerEmailBtn" disabled>Créer mon compte</button>
           </div>
         </div>
 
@@ -255,6 +261,12 @@
         </div>
 
         <p class="login-hint" id="loginHint"></p>
+
+        <div class="login-legal-links">
+          <button class="onboarding-link" onclick="openLegal('privacyPolicy')">Politique de confidentialité</button>
+          <span>•</span>
+          <button class="onboarding-link" onclick="openLegal('mentionsLegales')">Mentions légales</button>
+        </div>
 
         <p class="legal-disclaimer">SpriteDex est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
       </div>
@@ -430,6 +442,53 @@
             <h3 class="account-section__title">Sécurité</h3>
             <button class="account-action-btn" id="accountLogout">Déconnexion</button>
             <button class="account-action-btn account-action-btn--danger" id="accountDeleteOpen">Supprimer mon compte</button>
+          </div>
+
+          <!-- Informations et confidentialité -->
+          <div class="account-section">
+            <h3 class="account-section__title">Informations et confidentialité</h3>
+            <div class="legal-menu">
+              <button class="legal-menu__item" onclick="openLegal('mentions-legales')">
+                <span>Mentions légales</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('politique-confidentialite')">
+                <span>Politique de confidentialité</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('cgu')">
+                <span>Conditions générales d'utilisation</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('cookies')">
+                <span>Confidentialité et traceurs</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('donnees-personnelles')">
+                <span>Gérer mes données</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('suppression-compte')">
+                <span>Supprimer mon compte</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('contact')">
+                <span>Contacter le support</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('signalement')">
+                <span>Signaler un contenu</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('regles-communautaires')">
+                <span>Règles communautaires</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('licences')">
+                <span>Licences et crédits</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -819,11 +878,20 @@
       </form>
     </dialog>
 
+    <dialog id="legalDialog" class="legal-dialog">
+      <div class="dialog-card">
+        <button class="close-button" onclick="document.getElementById('legalDialog').close()">×</button>
+        <div class="legal-dialog__content" id="legalContent"></div>
+      </div>
+    </dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="js/config.js"></script>
     <script src="js/state.js"></script>
     <script src="js/helpers.js"></script>
+    <script src="js/legal-content.js"></script>
+    <script src="js/legal.js"></script>
     <script src="js/api.js"></script>
     <script src="js/sync.js"></script>
     <script src="js/render-card.js"></script>

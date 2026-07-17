@@ -23,7 +23,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="spritedex" android:host="auth" />
+                <data android:scheme="@string/intent_scheme" android:host="@string/intent_host" />
             </intent-filter>
         </activity>
 
