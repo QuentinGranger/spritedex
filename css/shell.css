@@ -325,11 +325,11 @@
 @media (max-width: 480px) {
   .notif-dropdown {
     position: fixed;
-    top: 70px;
+    top: calc(70px + env(safe-area-inset-top));
     right: 16px;
     left: 16px;
     width: auto;
-    max-height: calc(100vh - 90px);
+    max-height: calc(100vh - 90px - env(safe-area-inset-top));
   }
 }
 

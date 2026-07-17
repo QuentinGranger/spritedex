@@ -9,8 +9,25 @@
   if (!isNativePlatform()) return;
 
   const plugins = (window.Capacitor && window.Capacitor.Plugins) || {};
-  const { App, Browser, PushNotifications } = plugins;
+  const { App, Browser, PushNotifications, StatusBar } = plugins;
   if (!App || typeof App.addListener !== "function") return;
+
+  // Keep the status bar visible with a dark solid background; do not let the
+  // web view render underneath it, so app headers are never hidden by the
+  // clock/notch area.
+  if (StatusBar && typeof StatusBar.setStyle === "function") {
+    try {
+      StatusBar.setStyle({ style: StatusBar.Style && StatusBar.Style.Dark ? StatusBar.Style.Dark : "DARK" });
+      if (typeof StatusBar.setOverlaysWebView === "function") {
+        StatusBar.setOverlaysWebView({ overlay: false });
+      }
+      if (typeof StatusBar.setBackgroundColor === "function") {
+        StatusBar.setBackgroundColor({ color: "#0a0e1a" });
+      }
+    } catch (e) {
+      console.warn("StatusBar config failed:", e);
+    }
+  }
 
   App.addListener("appUrlOpen", async (data) => {
     if (!data || !data.url) return;
