@@ -7,7 +7,8 @@ node_modules/
 npm-debug.log*
 .DS_Store
 
-# Capacitor: generated web bundle + native projects
+# Capacitor: generated web bundle (rebuilt by scripts/build-www.js)
 www/
-ios/
-android/
+
+# Native projects are committed so Xcode/Android Studio can open them directly.
+# Each platform has its own .gitignore for build artifacts / public web copies.
