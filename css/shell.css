@@ -2,7 +2,11 @@
 .app-shell {
   width: min(1120px, 100%);
   margin: 0 auto;
-  padding: 24px 18px 48px;
+  padding:
+    calc(24px + env(safe-area-inset-top))
+    calc(18px + env(safe-area-inset-right))
+    calc(48px + env(safe-area-inset-bottom))
+    calc(18px + env(safe-area-inset-left));
 }
 
 /* ── Shared flex layouts ── */

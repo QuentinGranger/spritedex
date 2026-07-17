@@ -1,7 +1,11 @@
 /* ── Responsive ── */
 @media (max-width: 760px) {
   .app-shell {
-    padding: 16px 12px 92px;
+    padding:
+      calc(16px + env(safe-area-inset-top))
+      calc(12px + env(safe-area-inset-right))
+      calc(92px + env(safe-area-inset-bottom))
+      calc(12px + env(safe-area-inset-left));
   }
 
   .hero-card {
