@@ -84,6 +84,13 @@
         var vid = document.getElementById("videoSplashVid");
         if (!overlay || !vid) return;
 
+        // Splash screen is only wanted in the native Capacitor app, not on the website.
+        var isNative = typeof window !== "undefined" && window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform();
+        if (!isNative) {
+          overlay.parentNode.removeChild(overlay);
+          return;
+        }
+
         // Show splash at most once per day per device.
         var SPLASH_KEY = "spritedex_splash_seen";
         var lastSeen = localStorage.getItem(SPLASH_KEY);
