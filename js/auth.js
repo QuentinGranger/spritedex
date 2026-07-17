@@ -106,7 +106,7 @@ function setupLogin() {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion })
+        body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion, ageConfirmed: true })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Inscription impossible");

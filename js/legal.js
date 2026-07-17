@@ -148,28 +148,35 @@ function acceptCgu(version) {
   localStorage.setItem(CGU_VERSION_KEY, version || LEGAL_VERSION);
 }
 
-function updateCguCheckboxState() {
+function updateRegisterButtonState() {
   const cguCheck = document.getElementById("registerCgu");
+  const ageCheck = document.getElementById("registerAge");
   const registerBtn = document.getElementById("registerEmailBtn");
-  if (cguCheck && registerBtn) {
-    registerBtn.disabled = !cguCheck.checked;
-    registerBtn.classList.toggle("login-btn--disabled", !cguCheck.checked);
+  if (registerBtn) {
+    const enabled = (cguCheck?.checked === true) && (ageCheck?.checked === true);
+    registerBtn.disabled = !enabled;
+    registerBtn.classList.toggle("login-btn--disabled", !enabled);
   }
 }
 
 function initCguListeners() {
   const cguCheck = document.getElementById("registerCgu");
-  if (cguCheck) {
-    cguCheck.addEventListener("change", updateCguCheckboxState);
-    updateCguCheckboxState();
-  }
+  const ageCheck = document.getElementById("registerAge");
+  if (cguCheck) cguCheck.addEventListener("change", updateRegisterButtonState);
+  if (ageCheck) ageCheck.addEventListener("change", updateRegisterButtonState);
+  updateRegisterButtonState();
 }
 
-// Called by auth.js to block registration if CGU not accepted.
+// Called by auth.js to block registration if CGU or age not accepted.
 function requireCguAccepted() {
   const cguCheck = document.getElementById("registerCgu");
   if (!cguCheck || !cguCheck.checked) {
     toast("Tu dois accepter les Conditions générales d'utilisation pour t'inscrire.");
+    return false;
+  }
+  const ageCheck = document.getElementById("registerAge");
+  if (!ageCheck || !ageCheck.checked) {
+    toast("Tu dois avoir au moins 15 ans pour créer un compte.");
     return false;
   }
   acceptCgu();

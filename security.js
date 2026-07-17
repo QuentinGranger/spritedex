@@ -195,7 +195,8 @@ const registerSchema = z.object({
   password: passwordSchema,
   username: usernameSchema.optional(),
   cguAccepted: z.boolean().optional(),
-  cguVersion: z.string().max(32).optional()
+  cguVersion: z.string().max(32).optional(),
+  ageConfirmed: z.boolean().refine((v) => v === true, { message: "Tu dois avoir au moins 15 ans pour créer un compte." })
 });
 
 const loginSchema = z.object({
