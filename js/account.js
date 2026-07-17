@@ -296,23 +296,23 @@ function setupAccountPanel() {
     deleteBtn.disabled = deleteInput.value.trim().toUpperCase() !== "SUPPRIMER";
   });
 
-  // Export before deletion
-  document.getElementById("deleteExportBtn").addEventListener("click", () => {
-    const data = {
-      username: state.username,
-      collection: state.collection,
-      notifications: JSON.parse(localStorage.getItem("spritedex_notifications") || "{}"),
-      privacy: localStorage.getItem("spritedex_privacy") || "squad_only",
-      exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `spritedex_export_${state.username || "user"}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast("Export téléchargé !");
+  // Export before deletion: full server-side export
+  document.getElementById("deleteExportBtn").addEventListener("click", async () => {
+    try {
+      const res = await fetch(`${API_BASE}/export`, { headers: authHeadersOnly() });
+      if (!res.ok) throw new Error("Export impossible");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `spritedex_export_${data.profile?.username || state.username || "user"}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Export téléchargé !");
+    } catch (e) {
+      toast("Impossible d'exporter tes données. Réessaie.");
+    }
   });
 
   // Confirm deletion

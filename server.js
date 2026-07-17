@@ -647,6 +647,111 @@ app.get("/api/profile/:userId", async (req, res) => {
   }
 });
 
+// ── Data export (owner only) ──
+app.get("/api/export", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const userResult = await pool.query(
+      `SELECT id, username, email, avatar_url, privacy, created_at, last_active_at,
+              email_verified, cgu_accepted, cgu_version, cgu_accepted_at,
+              cookie_consent, age_confirmed, push_enabled,
+              push_pref_new_sprites, push_pref_new_variants, push_pref_squad_activity,
+              push_pref_session_summary, push_pref_goals, push_pref_sync
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [reqUser]
+    );
+    if (!userResult.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
+    const user = userResult.rows[0];
+
+    const collectionResult = await pool.query(
+      "SELECT sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
+      [reqUser]
+    );
+    const collection = {};
+    for (const row of collectionResult.rows) {
+      collection[row.sprite_id] = {
+        status: row.status,
+        note: row.note || "",
+        priority: row.priority || "none",
+        obtainedAt: row.obtained_at || null,
+        updatedAt: row.updated_at
+      };
+    }
+
+    const squadsResult = await pool.query(
+      `SELECT s.id, s.code, s.name, s.join_open, s.created_at, sm.joined_at
+       FROM squads s
+       JOIN squad_members sm ON sm.squad_id = s.id
+       WHERE sm.user_id = $1`,
+      [reqUser]
+    );
+
+    const activityResult = await pool.query(
+      `SELECT squad_id, sprite_id, action, created_at
+       FROM squad_activity
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [reqUser]
+    );
+
+    const historyResult = await pool.query(
+      `SELECT sprite_id, old_status, new_status, created_at
+       FROM collection_history
+       WHERE user_id = $1
+       ORDER BY created_at DESC`,
+      [reqUser]
+    );
+
+    const pushTokensResult = await pool.query(
+      "SELECT platform, enabled, created_at, updated_at FROM push_tokens WHERE user_id = $1",
+      [reqUser]
+    );
+
+    res.json({
+      exportedAt: new Date().toISOString(),
+      profile: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatar_url,
+        privacy: user.privacy,
+        createdAt: user.created_at,
+        lastActiveAt: user.last_active_at,
+        emailVerified: user.email_verified
+      },
+      settings: {
+        privacy: user.privacy,
+        pushEnabled: user.push_enabled,
+        pushPreferences: {
+          newSprites: user.push_pref_new_sprites,
+          newVariants: user.push_pref_new_variants,
+          squadActivity: user.push_pref_squad_activity,
+          sessionSummary: user.push_pref_session_summary,
+          goals: user.push_pref_goals,
+          sync: user.push_pref_sync
+        }
+      },
+      consent: {
+        cguAccepted: user.cgu_accepted,
+        cguVersion: user.cgu_version,
+        cguAcceptedAt: user.cgu_accepted_at,
+        ageConfirmed: user.age_confirmed,
+        cookieConsent: user.cookie_consent
+      },
+      shareLink: user.share_token || null,
+      collection,
+      squads: squadsResult.rows,
+      squadActivity: activityResult.rows,
+      collectionHistory: historyResult.rows,
+      pushTokens: pushTokensResult.rows.map(r => ({ platform: r.platform, enabled: r.enabled, createdAt: r.created_at, updatedAt: r.updated_at }))
+    });
+  } catch (err) {
+    console.error("[EXPORT] error", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Share link : owner-only management ──
 // A share link uses an opaque, cryptographically random 256-bit token instead
 // of the sequential numeric user id. Anyone holding the token can view a
