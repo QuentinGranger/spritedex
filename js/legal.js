@@ -36,19 +36,44 @@ function openLegal(docIdOrAlias) {
 // ── Cookie / tracker consent ───────────────────────────────────────────────
 const CONSENT_KEY = "spritedex_consent_v1";
 const CONSENT_DATE_KEY = "spritedex_consent_date";
+const CONSENT_VALIDITY_MS = 6 * 30 * 24 * 60 * 60 * 1000; // 6 months approximate
 
 function getConsent() {
   try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || "null"); }
   catch { return null; }
 }
 
+function isConsentExpired(consent) {
+  if (!consent) return true;
+  const consentedAt = consent.consentedAt || localStorage.getItem(CONSENT_DATE_KEY);
+  if (!consentedAt) return true;
+  return Date.now() - new Date(consentedAt).getTime() > CONSENT_VALIDITY_MS;
+}
+
 function saveConsent(choices) {
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(choices));
-  localStorage.setItem(CONSENT_DATE_KEY, new Date().toISOString());
+  const payload = { ...choices, consentedAt: new Date().toISOString() };
+  localStorage.setItem(CONSENT_KEY, JSON.stringify(payload));
+  localStorage.setItem(CONSENT_DATE_KEY, payload.consentedAt);
+  // If the user is logged in, also persist the consent server-side.
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    fetch(`${API_BASE}/consent`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ cookieConsent: payload })
+    }).catch(() => {});
+  }
 }
 
 function hasConsented() {
-  return localStorage.getItem(CONSENT_KEY) !== null;
+  const consent = getConsent();
+  if (!consent) return false;
+  if (isConsentExpired(consent)) {
+    localStorage.removeItem(CONSENT_KEY);
+    localStorage.removeItem(CONSENT_DATE_KEY);
+    return false;
+  }
+  return true;
 }
 
 function showCookieBanner() {

@@ -345,7 +345,7 @@ function verifyPassword(password, hash, salt, iterations = LEGACY_PBKDF2_ITERATI
 
 // ── Auth : Email register ──
 app.post("/api/auth/register", security.registerLimiter, security.validateBody(security.schemas.registerSchema), async (req, res) => {
-  const { email, password, username: reqUsername, cguAccepted, cguVersion, ageConfirmed } = req.validatedBody;
+  const { email, password, username: reqUsername, cguAccepted, cguVersion, ageConfirmed, cookieConsent } = req.validatedBody;
   try {
     const existing = await pool.query("SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
     if (existing.rows.length > 0) {
@@ -354,9 +354,12 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
     const { salt, hash, iterations } = hashPassword(password);
     const username = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_\-. ]/g, "").slice(0, 24) || "joueur";
     const emailToken = crypto.randomBytes(32).toString("hex");
+    const consentPayload = cookieConsent && typeof cookieConsent === "object"
+      ? { ...cookieConsent, consentedAt: cookieConsent.consentedAt || new Date().toISOString() }
+      : { necessary: true, analytics: false, consentedAt: new Date().toISOString() };
     const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, password_salt, password_iterations, email_verify_token, cgu_accepted, cgu_version, cgu_accepted_at, age_confirmed)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, username, created_at`,
+      `INSERT INTO users (username, email, password_hash, password_salt, password_iterations, email_verify_token, cgu_accepted, cgu_version, cgu_accepted_at, age_confirmed, cookie_consent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, username, created_at`,
       [
         username,
         email.toLowerCase(),
@@ -367,7 +370,8 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
         cguAccepted === true,
         cguVersion || null,
         cguAccepted === true ? new Date().toISOString() : null,
-        ageConfirmed === true
+        ageConfirmed === true,
+        JSON.stringify(consentPayload)
       ]
     );
     const user = result.rows[0];
@@ -643,6 +647,23 @@ app.get("/api/profile/:userId", async (req, res) => {
     res.json(profile);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Consent update (owner only) ──
+app.patch("/api/consent", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  const body = req.body || {};
+  const payload = body.cookieConsent && typeof body.cookieConsent === "object"
+    ? { ...body.cookieConsent, consentedAt: body.cookieConsent.consentedAt || new Date().toISOString() }
+    : { necessary: true, analytics: false, consentedAt: new Date().toISOString() };
+  try {
+    await pool.query("UPDATE users SET cookie_consent = $1 WHERE id = $2 AND deleted_at IS NULL", [JSON.stringify(payload), reqUser]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[CONSENT] update error", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });

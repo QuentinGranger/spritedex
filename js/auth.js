@@ -103,10 +103,11 @@ function setupLogin() {
     registerEmailBtn.textContent = "Création...";
     try {
       const cguVersion = localStorage.getItem(CGU_VERSION_KEY) || LEGAL_VERSION;
+      const cookieConsent = getConsent() || { necessary: true, analytics: false, version: LEGAL_VERSION };
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion, ageConfirmed: true })
+        body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion, ageConfirmed: true, cookieConsent })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Inscription impossible");
