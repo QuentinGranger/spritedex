@@ -9,7 +9,7 @@
   if (!isNativePlatform()) return;
 
   const plugins = (window.Capacitor && window.Capacitor.Plugins) || {};
-  const { App, Browser } = plugins;
+  const { App, Browser, PushNotifications } = plugins;
   if (!App || typeof App.addListener !== "function") return;
 
   App.addListener("appUrlOpen", async (data) => {
@@ -35,4 +35,15 @@
       console.error("Native OAuth deep-link handling failed:", e);
     }
   });
+
+  // Register native push notifications if the plugin is available.
+  if (PushNotifications && typeof PushNotifications.register === "function" && window.PushClient) {
+    PushNotifications.requestPermissions().then((result) => {
+      if (result.receive === "granted") PushNotifications.register();
+    });
+    PushNotifications.addListener("registration", (token) => {
+      const platform = window.Capacitor.getPlatform() === "ios" ? "apns" : "fcm";
+      window.PushClient.registerServerToken(token.value, platform);
+    });
+  }
 })();

@@ -1,4 +1,4 @@
-const CACHE_NAME = "spritedex-v10";
+const CACHE_NAME = "spritedex-v11";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -30,6 +30,7 @@ const STATIC_ASSETS = [
   "/js/swipe.js",
   "/js/events.js",
   "/js/auth.js",
+  "/js/push-client.js",
   "/js/init.js",
   "/js/mobile.js",
   "/manifest.json",
@@ -83,6 +84,40 @@ self.addEventListener("fetch", (event) => {
       }).catch(() => cached);
 
       return cached || fetchPromise;
+    })
+  );
+});
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { notification: { title: "SpriteDex", body: "" } };
+  }
+  const notif = payload.notification || {};
+  const title = notif.title || "SpriteDex";
+  const options = {
+    body: notif.body || "",
+    icon: notif.icon || "/Favicon/android-chrome-192x192.png",
+    badge: notif.badge || "/Favicon/android-chrome-192x192.png",
+    tag: notif.tag || "spritedex",
+    data: notif.data || { url: "/" },
+    requireInteraction: false
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === url && "focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
     })
   );
 });

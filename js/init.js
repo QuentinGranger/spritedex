@@ -162,6 +162,7 @@ async function init() {
         handleJoinLink();
         setupNotifBell();
         checkNewsNotifications();
+        if (window.PushClient) window.PushClient.register();
         return;
       } else {
         localStorage.removeItem(TOKEN_KEY);
@@ -181,6 +182,7 @@ async function init() {
       handleJoinLink();
       setupNotifBell();
       checkNewsNotifications();
+      if (window.PushClient) window.PushClient.register();
       return;
     }
   }

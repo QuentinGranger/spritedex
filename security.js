@@ -23,6 +23,15 @@ function validateEnv() {
   if (!process.env.RESEND_API_KEY) {
     warnings.push("RESEND_API_KEY manquant : les emails de vérification/réinitialisation ne seront pas envoyés.");
   }
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    warnings.push("VAPID keys non définis : des clés VAPID seront générées automatiquement au premier démarrage.");
+  }
+  if (!process.env.FCM_SERVER_KEY) {
+    warnings.push("FCM_SERVER_KEY manquant : les notifications push Android natif ne seront pas envoyées.");
+  }
+  if (!process.env.APNS_KEY || !process.env.APNS_KEY_ID || !process.env.APNS_TEAM_ID || !process.env.APNS_TOPIC) {
+    warnings.push("APNS credentials manquantes : les notifications push iOS natif ne seront pas envoyées.");
+  }
   if (process.env.NODE_ENV === "production") {
     if (!process.env.DATABASE_URL) {
       warnings.push("DATABASE_URL manquant en production : la connexion Postgres locale par défaut sera utilisée (déconseillé).");

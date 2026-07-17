@@ -44,6 +44,7 @@ function setupLogin() {
     restoreSquad();
     setupNotifBell();
     checkNewsNotifications();
+    if (window.PushClient) window.PushClient.register();
     toast(`Bienvenue ${user.username} !`);
   }
 

@@ -368,6 +368,17 @@ function setupAccountPanel() {
       if (el) prefs[id] = el.checked;
     });
     localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs));
+    if (window.PushClient) {
+      window.PushClient.syncPreferences({
+        enabled: true,
+        newSprites: prefs.notifNewSprites,
+        newVariants: prefs.notifNewVariants,
+        squadActivity: prefs.notifSquadActivity,
+        sessionSummary: prefs.notifSessionSummary,
+        goals: prefs.notifGoals,
+        sync: prefs.notifSync
+      });
+    }
   }
 
   NOTIF_IDS.forEach(id => {
