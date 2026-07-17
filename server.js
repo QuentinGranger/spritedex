@@ -12,6 +12,7 @@ const { Resend } = require("resend");
 const security = require("./security");
 const { seedReferenceData } = require("./sprite-data");
 const pushService = require("./push-service");
+const secLog = require("./security-logger");
 
 // On Render, RENDER_EXTERNAL_URL is auto-injected as the full public https URL.
 // Use it as the default public base so OAuth redirects and CORS work on the
@@ -377,6 +378,7 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
     const user = result.rows[0];
     const token = await createSession(user.id);
     sendVerificationEmail(email.toLowerCase(), emailToken);
+    secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "register", status: "ok" });
     res.json({ id: user.id, username: user.username, token, emailVerified: false, created_at: user.created_at });
   } catch (err) {
     if (err.code === "23505") {
@@ -404,6 +406,7 @@ app.get("/api/auth/verify-email", async (req, res) => {
     if (!result.rows.length) {
       return res.redirect("/?emailVerified=error");
     }
+    secLog.logSecurityEvent(pool, { req, userId: result.rows[0].id, event: "email_verified", status: "ok" });
     res.redirect("/?emailVerified=true");
   } catch (err) {
     console.error(err);
@@ -444,6 +447,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
       [resetToken, resetExpires, user.rows[0].id]
     );
     sendPasswordResetEmail(user.rows[0].email, resetToken);
+    secLog.logSecurityEvent(pool, { req, userId: user.rows[0].id, email: user.rows[0].email, event: "password_reset_request", status: "ok" });
     if (process.env.NODE_ENV !== "production" && !process.env.RESEND_API_KEY) {
       console.log(`[DEV ONLY — no RESEND_API_KEY set] Password reset token: ${resetToken}`);
     }
@@ -472,6 +476,7 @@ app.post("/api/auth/reset-password", security.passwordResetLimiter, async (req, 
     );
     // Invalidate all existing sessions for security
     await pool.query("DELETE FROM sessions WHERE user_id = $1", [result.rows[0].id]);
+    secLog.logSecurityEvent(pool, { req, userId: result.rows[0].id, event: "password_reset_complete", status: "ok" });
     res.json({ ok: true, message: "Mot de passe réinitialisé" });
   } catch (err) {
     console.error(err);
@@ -492,6 +497,7 @@ app.post("/api/push/register", async (req, res) => {
   if (!token) return res.status(400).json({ error: "Token requis" });
   try {
     await pushService.registerToken(pool, reqUser, token, platform);
+    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "push_token_registered", status: "ok", details: { platform } });
     res.json({ ok: true });
   } catch (err) {
     console.error("[PUSH] register error", err);
@@ -506,6 +512,7 @@ app.delete("/api/push/register", async (req, res) => {
   if (!token) return res.status(400).json({ error: "Token requis" });
   try {
     await pushService.unregisterToken(pool, reqUser, token);
+    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "push_token_unregistered", status: "ok" });
     res.json({ ok: true });
   } catch (err) {
     console.error("[PUSH] unregister error", err);
@@ -600,8 +607,10 @@ app.post("/api/auth/login", security.loginLimiter, async (req, res) => {
     const user = result.rows[0];
     const storedIterations = user.password_iterations || LEGACY_PBKDF2_ITERATIONS;
     if (!user.password_hash || !verifyPassword(password, user.password_hash, user.password_salt, storedIterations)) {
+      secLog.logSecurityEvent(pool, { req, email, event: "login", status: "failed", details: { reason: "wrong_password" } });
       return genericError();
     }
+    secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "login", status: "ok", details: { method: "email" } });
     // Transparent upgrade: if this account was hashed with a weaker (legacy)
     // work factor, re-hash the just-verified password with the current factor.
     if (storedIterations < PBKDF2_ITERATIONS) {
@@ -661,6 +670,7 @@ app.patch("/api/consent", async (req, res) => {
     : { necessary: true, analytics: false, consentedAt: new Date().toISOString() };
   try {
     await pool.query("UPDATE users SET cookie_consent = $1 WHERE id = $2 AND deleted_at IS NULL", [JSON.stringify(payload), reqUser]);
+    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "consent_updated", status: "ok", details: { payload } });
     res.json({ ok: true });
   } catch (err) {
     console.error("[CONSENT] update error", err);
@@ -801,6 +811,7 @@ app.post("/api/profile/:userId/share-link", async (req, res) => {
       token = crypto.randomBytes(32).toString("hex");
       await pool.query("UPDATE users SET share_token = $1 WHERE id = $2", [token, req.params.userId]);
     }
+    secLog.logSecurityEvent(pool, { req, userId: req.params.userId, event: "share_link_created", status: "ok" });
     res.json({ token });
   } catch (err) {
     if (err.code === "23505") {
@@ -815,6 +826,7 @@ app.delete("/api/profile/:userId/share-link", async (req, res) => {
   if (!(await requireSameUser(req, res, req.params.userId))) return;
   try {
     await pool.query("UPDATE users SET share_token = NULL WHERE id = $1", [req.params.userId]);
+    secLog.logSecurityEvent(pool, { req, userId: req.params.userId, event: "share_link_revoked", status: "ok" });
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -885,6 +897,7 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
     if (sets.length === 0) return res.status(400).json({ error: "Rien à mettre à jour" });
     vals.push(userId);
     await pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $${idx}`, vals);
+    secLog.logSecurityEvent(pool, { req, userId, event: "profile_updated", status: "ok", details: { changed: sets.map(s => s.split(" = ")[0]) } });
     const updated = await pool.query(
       "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1 AND deleted_at IS NULL",
       [userId]
@@ -905,6 +918,7 @@ app.delete("/api/profile/:userId", async (req, res) => {
   try {
     await pool.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
     await pool.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
+    secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
     res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
   } catch (err) {
     console.error(err);
@@ -1058,6 +1072,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
 
     const dbUser = userRow.rows[0];
     const sessionToken = await createSession(dbUser.id);
+    secLog.logSecurityEvent(pool, { req, userId: dbUser.id, email, event: "login", status: "ok", details: { method: "oauth", provider } });
 
     // Return to the app (web query string or native deep link) with the token.
     const query = `authToken=${sessionToken}&authUser=${encodeURIComponent(JSON.stringify({ id: dbUser.id, username: dbUser.username, avatar_url: dbUser.avatar_url || avatarUrl }))}`;
@@ -2063,6 +2078,7 @@ async function ensureSquadTables() {
       CREATE INDEX IF NOT EXISTS idx_collection_history_user ON collection_history (user_id, created_at DESC);
     `);
     await pushService.ensurePushTables(pool);
+    await secLog.ensureSecurityLogTable(pool);
     console.log("Squad tables ready");
   } catch (err) {
     console.error("Failed to create squad tables:", err);
@@ -2107,7 +2123,11 @@ ensureSquadTables()
   .then(() => {
     startNewsCron();
     purgeDeletedAccounts();
-    setInterval(purgeDeletedAccounts, 24 * 60 * 60 * 1000); // once per day
+    secLog.purgeOldSecurityLogs(pool);
+    setInterval(() => {
+      purgeDeletedAccounts();
+      secLog.purgeOldSecurityLogs(pool);
+    }, 24 * 60 * 60 * 1000); // once per day
     server.listen(PORT, () => {
       console.log(`SpriteDex API + WebSocket running on http://localhost:${PORT}`);
     });

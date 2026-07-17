@@ -17,6 +17,7 @@
 const crypto = require("crypto");
 const webpush = require("web-push");
 const https = require("https");
+const http2 = require("http2");
 const fs = require("fs");
 const path = require("path");
 
@@ -216,13 +217,98 @@ function sendFcmLegacy(token, payload) {
   });
 }
 
-function sendApns(token, payload) {
+// APNS helpers: build a JWT with the .p8 key and send via HTTP/2.
+function base64Url(input) {
+  if (typeof input === "string") input = Buffer.from(input, "utf8");
+  return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function derSignatureToP256Raw(der) {
+  // DER sequence: 0x30 <seqLen> 0x02 <rLen> <rBytes> 0x02 <sLen> <sBytes>
+  let i = 0;
+  if (der[i++] !== 0x30) throw new Error("Invalid DER signature");
+  const seqLen = der[i++];
+  if (der.length < 2 + seqLen) throw new Error("DER signature too short");
+  const readInt = () => {
+    if (der[i++] !== 0x02) throw new Error("Invalid DER integer");
+    const len = der[i++];
+    let buf = der.slice(i, i + len);
+    i += len;
+    // Drop leading zero if present (positive integer sign bit)
+    if (buf.length === 33 && buf[0] === 0) buf = buf.slice(1);
+    // Pad to 32 bytes
+    const out = Buffer.alloc(32);
+    buf.copy(out, 32 - buf.length);
+    return out;
+  };
+  const r = readInt();
+  const s = readInt();
+  return Buffer.concat([r, s]);
+}
+
+function signApnsJwt() {
+  let keyPem = process.env.APNS_KEY.trim()
+    .replace(/\\\\n/g, "\n")
+    .replace(/\\n/g, "\n");
+  const header = JSON.stringify({ alg: "ES256", kid: process.env.APNS_KEY_ID });
+  const now = Math.floor(Date.now() / 1000);
+  const payload = JSON.stringify({ iss: process.env.APNS_TEAM_ID, iat: now });
+  const signingInput = `${base64Url(header)}.${base64Url(payload)}`;
+  const sign = crypto.createSign("sha256");
+  sign.update(signingInput);
+  sign.end();
+  const derSig = sign.sign(keyPem);
+  const rawSig = derSignatureToP256Raw(derSig);
+  return `${signingInput}.${base64Url(rawSig)}`;
+}
+
+let apnsClient = null;
+function getApnsClient() {
+  if (!apnsClient) {
+    apnsClient = http2.connect("https://api.push.apple.com");
+    apnsClient.on("error", () => { apnsClient = null; });
+    apnsClient.on("goaway", () => { apnsClient = null; });
+  }
+  return apnsClient;
+}
+
+function sendApns(deviceToken, payload) {
   return new Promise((resolve) => {
     if (!process.env.APNS_KEY || !process.env.APNS_KEY_ID || !process.env.APNS_TEAM_ID || !process.env.APNS_TOPIC) {
       return resolve({ ok: false, error: "APNS credentials not configured" });
     }
-    // APNS HTTP/2 via native apn library is recommended; this is a placeholder.
-    resolve({ ok: false, error: "APNS sender requires the apn package or JWT signing" });
+    const jwt = signApnsJwt();
+    const apnsPayload = JSON.stringify({
+      aps: {
+        alert: { title: payload.notification.title, body: payload.notification.body },
+        badge: 1,
+        sound: "default"
+      },
+      url: payload.notification.data?.url || "/"
+    });
+    const client = getApnsClient();
+    const req = client.request({
+      ":method": "POST",
+      ":path": `/3/device/${deviceToken}`,
+      "authorization": `bearer ${jwt}`,
+      "apns-topic": process.env.APNS_TOPIC,
+      "content-type": "application/json",
+      "content-length": Buffer.byteLength(apnsPayload)
+    });
+    req.setEncoding("utf8");
+    let responseData = "";
+    req.on("response", (headers) => {
+      const status = headers[":status"];
+      req.on("data", (chunk) => { responseData += chunk; });
+      req.on("end", () => {
+        if (status === 200) return resolve({ ok: true });
+        if (status === 410) return resolve({ ok: false, expired: true, error: responseData || "Unregistered" });
+        resolve({ ok: false, error: responseData || `APNS status ${status}` });
+      });
+    });
+    req.on("error", (err) => resolve({ ok: false, error: err.message }));
+    req.write(apnsPayload);
+    req.end();
   });
 }
 
