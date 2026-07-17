@@ -118,8 +118,11 @@ async function unregisterAllTokens(pool, userId) {
 
 async function getEnabledTokensForUser(pool, userId) {
   const result = await pool.query(
-    `SELECT token, platform FROM push_tokens
-     WHERE user_id = $1 AND enabled = TRUE`,
+    `SELECT pt.token, pt.platform FROM push_tokens pt
+     JOIN users u ON u.id = pt.user_id
+     WHERE pt.user_id = $1
+       AND pt.enabled = TRUE
+       AND u.deleted_at IS NULL`,
     [userId]
   );
   return result.rows;
@@ -135,6 +138,7 @@ async function getSquadMemberTokens(pool, squadId, excludeUserId) {
        AND pt.enabled = TRUE
        AND u.push_enabled = TRUE
        AND u.push_pref_squad_activity = TRUE
+       AND u.deleted_at IS NULL
        AND u.id <> $2`,
     [squadId, excludeUserId]
   );

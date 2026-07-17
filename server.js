@@ -347,7 +347,7 @@ function verifyPassword(password, hash, salt, iterations = LEGACY_PBKDF2_ITERATI
 app.post("/api/auth/register", security.registerLimiter, security.validateBody(security.schemas.registerSchema), async (req, res) => {
   const { email, password, username: reqUsername, cguAccepted, cguVersion, ageConfirmed } = req.validatedBody;
   try {
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ error: "Cet email est déjà utilisé" });
     }
@@ -412,7 +412,7 @@ app.post("/api/auth/resend-verification", security.emailVerifLimiter, async (req
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const user = await pool.query("SELECT id, email, email_verified FROM users WHERE id = $1", [reqUser]);
+    const user = await pool.query("SELECT id, email, email_verified FROM users WHERE id = $1 AND deleted_at IS NULL", [reqUser]);
     if (!user.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     if (user.rows[0].email_verified) return res.json({ ok: true, message: "Email déjà vérifié" });
     const emailToken = crypto.randomBytes(32).toString("hex");
@@ -430,7 +430,7 @@ app.post("/api/auth/forgot-password", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email requis" });
   try {
-    const user = await pool.query("SELECT id, email FROM users WHERE email = $1", [email.toLowerCase()]);
+    const user = await pool.query("SELECT id, email FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
     // Always return the same success response to prevent email enumeration
     if (!user.rows.length) return res.json({ ok: true, message: "Si un compte existe, un email a été envoyé" });
     const resetToken = crypto.randomBytes(32).toString("hex");
@@ -457,7 +457,7 @@ app.post("/api/auth/reset-password", security.passwordResetLimiter, async (req, 
   if (newPassword.length < 6) return res.status(400).json({ error: "Mot de passe trop court (min 6 caractères)" });
   try {
     const result = await pool.query(
-      "SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()",
+      "SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW() AND deleted_at IS NULL",
       [token]
     );
     if (!result.rows.length) return res.status(400).json({ error: "Token invalide ou expiré" });
@@ -522,7 +522,7 @@ app.get("/api/push/preferences", async (req, res) => {
               push_pref_session_summary,
               push_pref_goals,
               push_pref_sync
-       FROM users WHERE id = $1`,
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [reqUser]
     );
     if (!result.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
@@ -586,7 +586,7 @@ app.post("/api/auth/login", security.loginLimiter, async (req, res) => {
   }
   try {
     const result = await pool.query(
-      "SELECT id, username, email_verified, password_hash, password_salt, password_iterations, avatar_url, privacy, created_at FROM users WHERE email = $1",
+      "SELECT id, username, email_verified, password_hash, password_salt, password_iterations, avatar_url, privacy, created_at FROM users WHERE email = $1 AND deleted_at IS NULL",
       [email.toLowerCase()]
     );
     // Same generic error whether the email is unknown or the password is wrong,
@@ -631,7 +631,7 @@ app.post("/api/auth/login", security.loginLimiter, async (req, res) => {
 app.get("/api/profile/:userId", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1",
+      "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1 AND deleted_at IS NULL",
       [req.params.userId]
     );
     if (!result.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
@@ -655,7 +655,7 @@ app.get("/api/profile/:userId", async (req, res) => {
 app.get("/api/profile/:userId/share-link", async (req, res) => {
   if (!(await requireSameUser(req, res, req.params.userId))) return;
   try {
-    const result = await pool.query("SELECT share_token FROM users WHERE id = $1", [req.params.userId]);
+    const result = await pool.query("SELECT share_token FROM users WHERE id = $1 AND deleted_at IS NULL", [req.params.userId]);
     if (!result.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     res.json({ token: result.rows[0].share_token || null });
   } catch (err) {
@@ -667,7 +667,7 @@ app.get("/api/profile/:userId/share-link", async (req, res) => {
 app.post("/api/profile/:userId/share-link", async (req, res) => {
   if (!(await requireSameUser(req, res, req.params.userId))) return;
   try {
-    const existing = await pool.query("SELECT share_token FROM users WHERE id = $1", [req.params.userId]);
+    const existing = await pool.query("SELECT share_token FROM users WHERE id = $1 AND deleted_at IS NULL", [req.params.userId]);
     if (!existing.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     // Reuse the current token unless the caller explicitly asks to rotate it.
     let token = existing.rows[0].share_token;
@@ -708,7 +708,7 @@ app.get("/api/shared/:token", async (req, res) => {
   }
   try {
     const userResult = await pool.query(
-      "SELECT id, username, avatar_url, created_at FROM users WHERE share_token = $1",
+      "SELECT id, username, avatar_url, created_at FROM users WHERE share_token = $1 AND deleted_at IS NULL",
       [token]
     );
     if (!userResult.rows.length) {
@@ -760,7 +760,7 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
     vals.push(userId);
     await pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $${idx}`, vals);
     const updated = await pool.query(
-      "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1",
+      "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1 AND deleted_at IS NULL",
       [userId]
     );
     res.json(updated.rows[0]);
@@ -770,16 +770,16 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
   }
 });
 
-// ── Profile : DELETE (delete account) ──
+// ── Profile : DELETE (soft-delete account) ──
+// The account is marked as deleted and becomes inaccessible immediately.
+// Personal data is permanently purged by the cleanup cron after 30 days.
 app.delete("/api/profile/:userId", async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   try {
     await pool.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
-    await pool.query("DELETE FROM sprite_entries WHERE user_id = $1", [userId]);
-    await pool.query("DELETE FROM squad_members WHERE user_id = $1", [userId]);
-    await pool.query("DELETE FROM users WHERE id = $1", [userId]);
-    res.json({ ok: true });
+    await pool.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
+    res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -914,7 +914,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
     if (!email) return sendResult("authError=no_email");
 
     // Find or create user
-    let userRow = await pool.query("SELECT id, username, avatar_url FROM users WHERE email = $1", [email.toLowerCase()]);
+    let userRow = await pool.query("SELECT id, username, avatar_url FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
     if (userRow.rows.length === 0) {
       userRow = await pool.query(
         `INSERT INTO users (username, email, email_verified, avatar_url, oauth_provider, age_confirmed)
@@ -963,7 +963,7 @@ app.get("/api/auth/me", async (req, res) => {
     const result = await pool.query(
       `SELECT u.id, u.username, u.avatar_url, u.privacy, u.email_verified, u.created_at, u.last_active_at
        FROM sessions s JOIN users u ON u.id = s.user_id
-       WHERE s.token = $1 AND s.expires_at > NOW()`,
+       WHERE s.token = $1 AND s.expires_at > NOW() AND u.deleted_at IS NULL`,
       [token]
     );
     if (!result.rows.length) {
@@ -981,7 +981,7 @@ app.get("/api/collection/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     // Privacy check: only owner, squad mates (if squad_only), or anyone (if public)
-    const userResult = await pool.query("SELECT id, privacy FROM users WHERE id = $1", [userId]);
+    const userResult = await pool.query("SELECT id, privacy FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
     if (!userResult.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     const access = await checkPrivacyAccess(req, userId, userResult.rows[0].privacy);
     if (access === "blocked") {
@@ -1015,7 +1015,7 @@ async function logSquadActivity(userId, spriteId, action) {
       `SELECT sm.squad_id FROM squad_members sm WHERE sm.user_id = $1`,
       [userId]
     );
-    const userResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
+    const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
     const username = userResult.rows[0]?.username || "Un joueur";
     const actionLabel = action === "owned" ? "a obtenu" : "a repéré";
     const [spriteBase] = String(spriteId).split("_");
@@ -1876,6 +1876,7 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS cgu_version VARCHAR(32);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS cgu_accepted_at TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS age_confirmed BOOLEAN DEFAULT FALSE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS cookie_consent JSONB;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
     `);
@@ -1956,10 +1957,31 @@ async function ensureReferenceDataSeeded() {
   }
 }
 
+// ── Account deletion cleanup ──
+// Permanently removes accounts marked for deletion more than 30 days ago.
+// CASCADE constraints handle sprite_entries, sessions, squad_members, etc.
+async function purgeDeletedAccounts() {
+  try {
+    const result = await pool.query(
+      `DELETE FROM users
+       WHERE deleted_at IS NOT NULL
+         AND deleted_at < NOW() - INTERVAL '30 days'
+       RETURNING id`
+    );
+    if (result.rows.length > 0) {
+      console.log(`[PURGE] ${result.rows.length} deleted account(s) permanently removed.`);
+    }
+  } catch (err) {
+    console.error("[PURGE] Failed to purge deleted accounts:", err);
+  }
+}
+
 ensureSquadTables()
   .then(ensureReferenceDataSeeded)
   .then(() => {
     startNewsCron();
+    purgeDeletedAccounts();
+    setInterval(purgeDeletedAccounts, 24 * 60 * 60 * 1000); // once per day
     server.listen(PORT, () => {
       console.log(`SpriteDex API + WebSocket running on http://localhost:${PORT}`);
     });
