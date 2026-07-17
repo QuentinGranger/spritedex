@@ -133,7 +133,7 @@ const pool = process.env.DATABASE_URL
 
 // ── Resend : email service ──
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.FROM_EMAIL || "SpriteDex <onboarding@resend.dev>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "SpriteDex <quentinsavigny@protonmail.com>";
 const APP_URL = process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
 
 async function sendVerificationEmail(toEmail, token) {

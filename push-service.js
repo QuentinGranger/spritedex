@@ -21,13 +21,14 @@ const fs = require("fs");
 const path = require("path");
 
 const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
+const DEFAULT_VAPID_SUBJECT = "mailto:quentinsavigny@protonmail.com";
 
 function loadOrCreateVapidKeys() {
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     return {
       publicKey: process.env.VAPID_PUBLIC_KEY,
       privateKey: process.env.VAPID_PRIVATE_KEY,
-      subject: process.env.VAPID_SUBJECT || "mailto:support@spritedex.app"
+      subject: process.env.VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT
     };
   }
   try {
@@ -42,7 +43,7 @@ function loadOrCreateVapidKeys() {
   const keys = {
     publicKey: generated.publicKey,
     privateKey: generated.privateKey,
-    subject: process.env.VAPID_SUBJECT || "mailto:support@spritedex.app"
+    subject: process.env.VAPID_SUBJECT || DEFAULT_VAPID_SUBJECT
   };
   try {
     fs.writeFileSync(VAPID_FILE, JSON.stringify(keys, null, 2));

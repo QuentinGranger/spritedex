@@ -8,7 +8,7 @@ const LEGAL_CONTENT = {
   privacyPolicy: LEGAL_DOCUMENTS["politique-confidentialite"].content
 };
 
-const LEGAL_SUPPORT_EMAIL = "quentin@tuatha-app.com";
+const LEGAL_SUPPORT_EMAIL = "quentinsavigny@protonmail.com";
 
 function openLegal(docIdOrAlias) {
   const aliasMap = {
