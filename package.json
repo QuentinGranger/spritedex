@@ -7,6 +7,8 @@
     "start": "node server.js",
     "seed": "node seed.js",
     "test:security": "node test/security.test.js",
+    "test:compare": "node test/compare.test.js",
+    "test": "npm run test:security && npm run test:compare",
     "build:www": "node scripts/build-www.js",
     "cap:sync": "npm run build:www && npx cap sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
