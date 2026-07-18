@@ -12,3 +12,5 @@ www/
 
 # Native projects are committed so Xcode/Android Studio can open them directly.
 # Each platform has its own .gitignore for build artifacts / public web copies.
+.tmp-sprites-api.json
+debug.html
