@@ -537,27 +537,93 @@ function renderCompareTable(result, aName, bName) {
   });
 }
 
-function renderCompareRecommendations(result, aName, bName) {
-  if (!els.compareRecommendations) return;
+function groupCompareRecordsBy(records, key) {
+  return records.reduce((acc, r) => {
+    const v = r[key];
+    if (v === undefined || v === null || v === "") return acc;
+    acc[v] = acc[v] || [];
+    acc[v].push(r);
+    return acc;
+  }, {});
+}
+
+function generateCompareRecommendations(result, aName, bName) {
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
+  const recs = [];
 
-  const recA = result.groups.onlyUserB.filter(r => compareIsPriority(r.userA)).slice(0, 10);
-  const recB = result.groups.onlyUserA.filter(r => compareIsPriority(r.userB)).slice(0, 10);
-  const fallbackA = recA.length ? [] : result.groups.onlyUserB.slice(0, 5);
-  const fallbackB = recB.length ? [] : result.groups.onlyUserA.slice(0, 5);
+  // 1. Priority exchanges
+  const aWantsFromB = result.groups.onlyUserB.filter(r => compareIsPriority(r.userA));
+  const bWantsFromA = result.groups.onlyUserA.filter(r => compareIsPriority(r.userB));
+  if (aWantsFromB.length) {
+    recs.push({ type: "priority", title: `${safeB} possède ${aWantsFromB.length} variante${aWantsFromB.length > 1 ? 's' : ''} prioritaire${aWantsFromB.length > 1 ? 's' : ''} pour ${safeA}`, items: aWantsFromB });
+  }
+  if (bWantsFromA.length) {
+    recs.push({ type: "priority", title: `${safeA} possède ${bWantsFromA.length} variante${bWantsFromA.length > 1 ? 's' : ''} prioritaire${bWantsFromA.length > 1 ? 's' : ''} pour ${safeB}`, items: bWantsFromA });
+  }
+
+  // 2. Unavailable variants owned by one and missing to the other
+  const aHasUnavailableBMissing = result.groups.onlyUserA.filter(r => r.availabilityStatus === "unavailable");
+  const bHasUnavailableAMissing = result.groups.onlyUserB.filter(r => r.availabilityStatus === "unavailable");
+  if (aHasUnavailableBMissing.length) {
+    recs.push({ type: "unavailable", title: `${safeA} possède ${aHasUnavailableBMissing.length} variante${aHasUnavailableBMissing.length > 1 ? 's' : ''} indisponible${aHasUnavailableBMissing.length > 1 ? 's' : ''} qui manque${aHasUnavailableBMissing.length > 1 ? 'nt' : ''} à ${safeB}`, items: aHasUnavailableBMissing });
+  }
+  if (bHasUnavailableAMissing.length) {
+    recs.push({ type: "unavailable", title: `${safeB} possède ${bHasUnavailableAMissing.length} variante${bHasUnavailableAMissing.length > 1 ? 's' : ''} indisponible${bHasUnavailableAMissing.length > 1 ? 's' : ''} qui manque${bHasUnavailableAMissing.length > 1 ? 'nt' : ''} à ${safeA}`, items: bHasUnavailableAMissing });
+  }
+
+  // 3. Both missing by rarity
+  const rarities = [...new Set(result.groups.bothMissing.map(r => r.rarity).filter(Boolean))];
+  for (const rarity of rarities) {
+    const items = result.groups.bothMissing.filter(r => r.rarity === rarity);
+    if (items.length) {
+      recs.push({ type: "bothMissingRarity", title: `Il vous manque à tous les deux ${items.length} variante${items.length > 1 ? 's' : ''} ${rarity}`, items });
+    }
+  }
+
+  // 4. Sprites whose variants are fully covered together
+  const bySprite = groupCompareRecordsBy(result.records, "spriteId");
+  for (const records of Object.values(bySprite)) {
+    const total = records.length;
+    if (total < 2) continue;
+    const covered = records.filter(r => r.userA.status === "owned" || r.userB.status === "owned").length;
+    if (covered === total) {
+      const missingA = records.filter(r => r.userA.status !== "owned").length;
+      const missingB = records.filter(r => r.userB.status !== "owned").length;
+      const spriteName = records[0].spriteName;
+      let detail = "";
+      if (missingA && missingB) detail = ` (${safeA} en manque ${missingA}, ${safeB} en manque ${missingB})`;
+      else if (missingA) detail = ` (${safeA} en manque ${missingA})`;
+      else if (missingB) detail = ` (${safeB} en manque ${missingB})`;
+      recs.push({ type: "completeTogether", title: `Vous possédez ensemble toutes les variantes du ${escapeHtml(spriteName)}${detail}`, items: records.filter(r => r.userA.status !== "owned" || r.userB.status !== "owned") });
+    }
+  }
+
+  // 5. Events with only one variant missing
+  const byEvent = groupCompareRecordsBy(result.records.filter(r => r.eventId), "eventId");
+  for (const [eventId, records] of Object.entries(byEvent)) {
+    const total = records.length;
+    if (total < 2) continue;
+    const covered = records.filter(r => r.userA.status === "owned" || r.userB.status === "owned").length;
+    if (total - covered === 1) {
+      recs.push({ type: "eventClose", title: `Il ne vous manque qu’une variante pour compléter l’événement ${escapeHtml(compareEventLabel(eventId))}`, items: records.filter(r => r.userA.status !== "owned" && r.userB.status !== "owned") });
+    }
+  }
+
+  return recs;
+}
+
+function renderCompareRecommendations(result, aName, bName) {
+  if (!els.compareRecommendations) return;
+  const recommendations = generateCompareRecommendations(result, aName, bName);
 
   let html = `<div class="compare-section compare-section--recommendations"><h3 class="compare-section__title">Recommandations</h3><div class="compare-section__body">`;
-  if (!recA.length && !recB.length && !fallbackA.length && !fallbackB.length) {
+  if (!recommendations.length) {
     html += `<p class="compare-empty">Aucune recommandation notable.</p>`;
   } else {
-    if (recA.length || fallbackA.length) {
-      const list = (recA.length ? recA : fallbackA).map(r => compareItemHTML(r, `${compareStatusIcon(r.userA.status)} ${comparePriorityTag(r.userA)}`)).join("");
-      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${safeA} devrait obtenir de ${safeB}</h4><div class="compare-list">${list}</div></div>`;
-    }
-    if (recB.length || fallbackB.length) {
-      const list = (recB.length ? recB : fallbackB).map(r => compareItemHTML(r, `${compareStatusIcon(r.userB.status)} ${comparePriorityTag(r.userB)}`)).join("");
-      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${safeB} devrait obtenir de ${safeA}</h4><div class="compare-list">${list}</div></div>`;
+    for (const rec of recommendations) {
+      const list = rec.items.map(r => compareItemHTML(r, `${compareStatusIcon(r.userA.status)} ${compareStatusIcon(r.userB.status)}`)).join("");
+      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${rec.title}</h4><div class="compare-list">${list}</div></div>`;
     }
   }
   html += `</div></div>`;
