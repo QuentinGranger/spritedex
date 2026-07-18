@@ -2085,13 +2085,11 @@ async function ensureSquadTables() {
   }
 }
 
-// Auto-seed static reference data on a fresh database so a brand-new deploy
-// has sprites immediately, without a manual `npm run seed` step. Idempotent:
-// only runs when the sprites table is empty.
+// Auto-seed static reference data on every boot. seedReferenceData is idempotent
+// (upserts), so new sprites/images added to sprite-data.js are synced into
+// existing databases as well as fresh ones.
 async function ensureReferenceDataSeeded() {
   try {
-    const { rows } = await pool.query("SELECT COUNT(*)::int AS n FROM sprites");
-    if (rows[0].n > 0) return;
     const counts = await seedReferenceData(pool);
     console.log(`Seeded reference data: ${counts.sprites} sprites, ${counts.variants} variants, ${counts.images} images`);
   } catch (err) {
