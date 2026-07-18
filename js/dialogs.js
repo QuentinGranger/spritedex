@@ -44,7 +44,10 @@ function openSpriteDetail(spriteId) {
       <div class="sd-avatar">${baseImg ? `<img src="${baseImg}" class="sd-avatar__img" />` : `<span>?</span>`}</div>
       <div class="sd-header__info">
         <h2 class="sd-title">${sprite.name}</h2>
-        <span class="sd-rarity">${sprite.rarity}</span>
+        <div class="sd-meta">
+          <span class="sd-rarity">${sprite.rarity}</span>
+          ${sprite.confidence ? `<span class="sd-confidence sd-confidence--${sprite.confidence}">${sprite.confidence}</span>` : ""}
+        </div>
         <button type="button" class="sd-fav ${isFavorite ? "active" : ""}" data-fav="${sprite.id}" title="Favori">
           <svg viewBox="0 0 24 24" fill="${isFavorite ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
@@ -54,6 +57,58 @@ function openSpriteDetail(spriteId) {
     <div class="sd-effect">
       <strong>Effet :</strong> ${sprite.effect}
     </div>
+
+    ${sprite.season ? `
+    <div class="sd-season">
+      <strong>Saison :</strong>
+      <span class="sd-season__name">${sprite.season.name || `Chapitre ${sprite.season.chapter} — Saison ${sprite.season.season}`}</span>
+      ${sprite.season.startDate ? `<span class="sd-season__dates">${new Date(sprite.season.startDate).toLocaleDateString("fr-FR")}${sprite.season.endDate ? ` → ${new Date(sprite.season.endDate).toLocaleDateString("fr-FR")}` : ""}</span>` : ""}
+    </div>
+    ` : ""}
+
+    ${sprite.event ? `
+    <div class="sd-event">
+      <strong>Événement :</strong>
+      <span class="sd-event__name">${sprite.event.name || sprite.event.id}</span>
+      ${sprite.event.type ? `<span class="sd-event__type">${sprite.event.type}</span>` : ""}
+      ${sprite.event.startDate ? `<span class="sd-event__dates">${new Date(sprite.event.startDate).toLocaleDateString("fr-FR")}${sprite.event.endDate ? ` → ${new Date(sprite.event.endDate).toLocaleDateString("fr-FR")}` : ""}</span>` : ""}
+    </div>
+    ` : ""}
+
+    ${(() => {
+      const r = sprite.recurrence;
+      if (!r || r.status === "unknown") return "";
+      let text = "Récurrence inconnue.";
+      if (r.status === "confirmed_recurring" && r.officiallyConfirmed) text = "Retour confirmé par Epic Games.";
+      else if (r.status === "confirmed_recurring") text = "Retour probable.";
+      else if (r.status === "possible_return") text = "Retour possible, mais non confirmé par Epic Games.";
+      else if (r.status === "not_confirmed") text = "Aucun retour prévu ou confirmé.";
+      return `
+      <div class="sd-recurrence">
+        <strong>Récurrence :</strong>
+        <span class="sd-recurrence__text">${text}</span>
+      </div>
+      `;
+    })()}
+
+    ${(() => {
+      const status = sprite.dataStatus;
+      if (status === "complete") return "";
+      const label = {
+        incomplete: "Fiche incomplète",
+        needs_review: "À réviser",
+        unverified: "Non vérifié",
+        disputed: "Contesté",
+        archived: "Archivé"
+      }[status] || `Statut : ${status}`;
+      const missing = (sprite.missingFields || []).join(", ") || "informations incomplètes";
+      return `
+      <div class="sd-data-status sd-data-status--${status}">
+        <strong>${label}</strong>
+        <span class="sd-data-status__missing">Champs manquants : ${missing}</span>
+      </div>
+      `;
+    })()}
 
     <div class="sd-progress">
       <div class="sd-progress__text">${owned} / ${total} variantes possédées</div>

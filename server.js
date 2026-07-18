@@ -286,17 +286,296 @@ async function checkPrivacyAccess(req, targetUserId, privacy) {
   return "blocked";
 }
 
+// ── Sprite ID normalization : legacy short slugs -> stable catalog ids ──
+// spriteId format is "<base>::<variant>" (e.g. water::Base or sprite_water::Base).
+// Clients may still send old short ids from localStorage; normalize them to the
+// stable id so collections stay consistent across renames.
+async function normalizeSpriteEntryId(spriteId) {
+  if (!spriteId || typeof spriteId !== "string") return spriteId;
+  const sepIndex = spriteId.indexOf("::");
+  const base = sepIndex === -1 ? spriteId : spriteId.slice(0, sepIndex);
+  const variant = sepIndex === -1 ? "Base" : spriteId.slice(sepIndex + 2);
+  if (base.startsWith("sprite_")) return spriteId;
+  const result = await pool.query(
+    `SELECT id FROM sprites WHERE slug = $1 OR id = $1 LIMIT 1`,
+    [base]
+  );
+  if (result.rows.length === 0) return spriteId;
+  return `${result.rows[0].id}::${variant}`;
+}
+
+async function normalizeCollection(collection) {
+  const normalized = {};
+  const slugs = new Set();
+  for (const spriteId of Object.keys(collection)) {
+    if (spriteId.startsWith("fav_")) { normalized[spriteId] = collection[spriteId]; continue; }
+    const sepIndex = spriteId.indexOf("::");
+    const base = sepIndex === -1 ? spriteId : spriteId.slice(0, sepIndex);
+    if (!base.startsWith("sprite_")) slugs.add(base);
+  }
+  const slugMap = {};
+  if (slugs.size > 0) {
+    const placeholders = Array.from(slugs).map((_, i) => `$${i + 1}`).join(",");
+    const result = await pool.query(
+      `SELECT id, slug FROM sprites WHERE slug IN (${placeholders})`,
+      Array.from(slugs)
+    );
+    for (const row of result.rows) slugMap[row.slug] = row.id;
+  }
+  for (const [spriteId, entry] of Object.entries(collection)) {
+    if (spriteId.startsWith("fav_")) continue;
+    const sepIndex = spriteId.indexOf("::");
+    const base = sepIndex === -1 ? spriteId : spriteId.slice(0, sepIndex);
+    const variant = sepIndex === -1 ? "Base" : spriteId.slice(sepIndex + 2);
+    const stableBase = base.startsWith("sprite_") ? base : (slugMap[base] || base);
+    normalized[`${stableBase}::${variant}`] = entry;
+  }
+  return normalized;
+}
+
+const ACQUISITION_TYPES = new Set(["quest", "event", "exploration", "interaction", "reward", "challenge", "purchase", "automatic", "unknown"]);
+
+function normalizeAcquisitionType(type) {
+  if (!type) return "unknown";
+  const lower = String(type).toLowerCase();
+  if (ACQUISITION_TYPES.has(lower)) return lower;
+  if (lower === "in_game" || lower === "ingame" || lower === "world" || lower === "spawn") return "exploration";
+  if (lower === "shop" || lower === "store" || lower === "buy" || lower === "bought") return "purchase";
+  if (lower === "mission" || lower === "questline") return "quest";
+  if (lower === "battlepass" || lower === "pass" || lower === "bp") return "reward";
+  if (lower === "minigame" || lower === "boss" || lower === "vault") return "challenge";
+  if (lower === "npc" || lower === "character" || lower === "merchant") return "interaction";
+  return "unknown";
+}
+
+function buildAcquisitionMethod(acquisition) {
+  const a = acquisition || {};
+  return {
+    type: normalizeAcquisitionType(a.type),
+    description: a.descriptionFr || a.descriptionEn || a.description || null,
+    location: a.location || null,
+    requirements: Array.isArray(a.requirements) ? a.requirements : [],
+    confidence: a.confidence || "unknown",
+  };
+}
+
+const HONEST_AVAILABILITY_STATUSES = new Set(["available", "upcoming", "ended", "not_observed", "unknown"]);
+
+function normalizeAvailabilityStatus(status, startDate, endDate) {
+  const s = (status || "").toLowerCase();
+  if (HONEST_AVAILABILITY_STATUSES.has(s)) return s;
+
+  const now = new Date().toISOString();
+  const start = startDate ? new Date(startDate).toISOString() : null;
+  const end = endDate ? new Date(endDate).toISOString() : null;
+
+  if (s === "available" || s === "active" || s === "live") {
+    if (end && end < now) return "ended";
+    return "available";
+  }
+  if (s === "unreleased" || s === "coming_soon" || s === "soon") {
+    if (start && start > now) return "upcoming";
+    return "unknown";
+  }
+  if (s === "unavailable" || s === "inactive" || s === "discontinued" || s === "expired" || s === "removed" || s === "over") {
+    if (end && end < now) return "ended";
+    return "not_observed";
+  }
+  if (s === "not_observed" || s === "missing" || s === "not_seen") return "not_observed";
+
+  if (end && end < now) return "ended";
+  if (start && start > now) return "upcoming";
+  return "unknown";
+}
+
+function buildAvailability(availability) {
+  const a = availability || {};
+  return {
+    status: normalizeAvailabilityStatus(a.status, a.startDate, a.endDate),
+    startDate: a.startDate || null,
+    endDate: a.endDate || null,
+    recurrence: a.recurrence || "unknown",
+    confidence: a.confidence || "unknown",
+  };
+}
+
+const RECURRENCE_STATUSES = new Set(["confirmed_recurring", "possible_return", "not_confirmed", "unknown"]);
+
+function normalizeRecurrenceStatus(status) {
+  const s = (status || "").toLowerCase().replace(/\s+/g, "_");
+  if (RECURRENCE_STATUSES.has(s)) return s;
+  if (s.includes("recurring") || s.includes("confirmed_return") || s === "yes") return "confirmed_recurring";
+  if (s.includes("possible") || s.includes("maybe") || s.includes("return")) return "possible_return";
+  if (s.includes("never") || s.includes("not_confirmed") || s.includes("no_return") || s.includes("exclusive")) return "not_confirmed";
+  return "unknown";
+}
+
+function buildRecurrence(recurrence) {
+  if (recurrence && typeof recurrence === "object" && !Array.isArray(recurrence)) {
+    return {
+      status: normalizeRecurrenceStatus(recurrence.status),
+      officiallyConfirmed: !!recurrence.officiallyConfirmed,
+      evidence: recurrence.evidence || null,
+    };
+  }
+  const status = normalizeRecurrenceStatus(recurrence);
+  return {
+    status,
+    officiallyConfirmed: status === "confirmed_recurring",
+    evidence: null,
+  };
+}
+
+function buildDates(dates, firstObservedAt, lastVerifiedAt, officiallyAnnouncedAt) {
+  const d = dates || {};
+  return {
+    firstObservedAt: d.firstObservedAt || firstObservedAt || null,
+    officiallyAnnouncedAt: d.officiallyAnnouncedAt || officiallyAnnouncedAt || null,
+    lastVerifiedAt: d.lastVerifiedAt || lastVerifiedAt || null,
+  };
+}
+
+const VALID_DATA_STATUSES = new Set(["complete", "incomplete", "needs_review", "unverified", "disputed", "archived"]);
+
+function normalizeDataStatus(status, missingFields = []) {
+  let s = (status || "").toLowerCase();
+  if (!VALID_DATA_STATUSES.has(s)) {
+    if (s === "confirmed") s = "complete";
+    else if (s === "observed") s = "unverified";
+    else if (s === "legacy") s = "archived";
+    else if (missingFields.length > 0) s = "incomplete";
+    else s = "complete";
+  }
+  if (s === "complete" && missingFields.length > 0) s = "incomplete";
+  return s;
+}
+
+function computeMissingFields(sprite) {
+  const missing = [];
+  const a = sprite.acquisitionMethod || sprite.acquisition || {};
+  const av = sprite.availability || {};
+  const r = sprite.recurrence || {};
+  const d = sprite.dates || {};
+
+  if (!sprite.officialName) missing.push("officialName");
+  if (!sprite.seasonId) missing.push("seasonId");
+  if (!sprite.image) missing.push("image");
+  if (a.type === "unknown") missing.push("acquisitionMethod.type");
+  if (!a.description) missing.push("acquisitionMethod.description");
+  if (av.status === "unknown") missing.push("availability.status");
+  if (!av.startDate && av.status !== "unknown" && av.status !== "upcoming") missing.push("availability.startDate");
+  if (av.status === "ended" && !av.endDate) missing.push("availability.endDate");
+  if (r.status === "unknown") missing.push("recurrence.status");
+  if (!d.firstObservedAt) missing.push("dates.firstObservedAt");
+  if (!d.lastVerifiedAt) missing.push("dates.lastVerifiedAt");
+  if (!d.officiallyAnnouncedAt) missing.push("dates.officiallyAnnouncedAt");
+  if (!Array.isArray(sprite.sources) || sprite.sources.length === 0) missing.push("sources");
+  if (!Array.isArray(sprite.availabilityPeriods) || sprite.availabilityPeriods.length === 0) missing.push("availabilityPeriods");
+
+  return missing;
+}
+
+function inferSourceType(sourceId) {
+  const s = (sourceId || "").toLowerCase();
+  if (s.includes("official") || s.includes("epic") || s.includes("fortnite.com") || s.includes("fortnite-api")) return "official";
+  if (s.includes("in_game") || s.includes("observed")) return "in_game";
+  if (s.includes("creator") || s.includes("youtuber") || s.includes("streamer")) return "creator";
+  if (s.includes("community") || s.includes("discord") || s.includes("reddit")) return "community";
+  if (s.includes("gg") || s.includes("database") || s.includes("wiki")) return "database";
+  return "unknown";
+}
+
+function inferSourceReliability(type) {
+  if (type === "official") return "primary";
+  if (type === "in_game") return "primary";
+  if (type === "creator") return "secondary";
+  if (type === "community") return "secondary";
+  if (type === "database") return "tertiary";
+  return "unknown";
+}
+
+async function ensureSource(sourceId, options = {}) {
+  if (!sourceId) return;
+  const type = options.type || inferSourceType(sourceId);
+  const reliability = options.reliability || inferSourceReliability(type);
+  const title = options.title || sourceId;
+  const publisher = options.publisher || null;
+  const url = options.url || null;
+  const publishedAt = options.publishedAt || null;
+  const observedAt = options.observedAt || null;
+  const lastVerifiedAt = options.lastVerifiedAt || null;
+
+  await pool.query(
+    `INSERT INTO sprite_sources (id, type, publisher, title, url, published_at, observed_at, last_verified_at, reliability, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::timestamptz, $8::timestamptz, $9, NOW())
+     ON CONFLICT (id) DO UPDATE SET
+       type = COALESCE($2, sprite_sources.type),
+       publisher = COALESCE($3, sprite_sources.publisher),
+       title = COALESCE($4, sprite_sources.title),
+       url = COALESCE($5, sprite_sources.url),
+       published_at = COALESCE($6::timestamptz, sprite_sources.published_at),
+       observed_at = COALESCE($7::timestamptz, sprite_sources.observed_at),
+       last_verified_at = COALESCE($8::timestamptz, sprite_sources.last_verified_at),
+       reliability = COALESCE($9, sprite_sources.reliability),
+       updated_at = NOW()`,
+    [sourceId, type, publisher, title, url, publishedAt, observedAt, lastVerifiedAt, reliability]
+  );
+}
+
 // ── Sprites : données de référence ──
 app.get("/api/sprites", async (req, res) => {
   try {
     const spritesResult = await pool.query(
-      "SELECT id, name, rarity, color, effect, variants, available, added_date FROM sprites ORDER BY added_date, name"
+      `SELECT id, name, rarity, color, effect, variants, available, added_date,
+              slug, official_name, season_id, event_id, image,
+              first_observed_at, last_verified_at, officially_announced_at,
+              acquisition, availability, recurrence, dates, missing_fields, sources, data_status
+       FROM sprites ORDER BY added_date, name`
     );
     const imagesResult = await pool.query(
       "SELECT sprite_id, variant, image_path FROM sprite_images"
     );
     const variantsResult = await pool.query(
       "SELECT name, label, bonus FROM variant_meta ORDER BY name"
+    );
+    const seasonsResult = await pool.query(
+      "SELECT id, chapter, season, name, name_en, start_date, end_date, data_status, sources FROM seasons ORDER BY chapter, season"
+    );
+    const eventsResult = await pool.query(
+      "SELECT id, name, type, season_id, start_date, end_date, data_status, sources FROM events ORDER BY start_date, name"
+    );
+    const availabilityPeriodsResult = await pool.query(
+      `SELECT id, sprite_id, start_date, end_date, status, event_id, confidence, data_status, sources
+       FROM availability_periods ORDER BY sprite_id, start_date DESC`
+    );
+    const sourcesResult = await pool.query(
+      "SELECT id, type, publisher, title, url, published_at, observed_at, last_verified_at, reliability, catalog_version FROM sprite_sources"
+    );
+    const sourcesMap = {};
+    for (const row of sourcesResult.rows) {
+      sourcesMap[row.id] = {
+        id: row.id,
+        type: row.type,
+        publisher: row.publisher,
+        title: row.title,
+        url: row.url,
+        publishedAt: row.published_at,
+        observedAt: row.observed_at,
+        lastVerifiedAt: row.last_verified_at,
+        reliability: row.reliability,
+        catalogVersion: row.catalog_version,
+      };
+    }
+    function buildSources(sourceIds) {
+      const ids = Array.isArray(sourceIds) ? sourceIds : [];
+      return ids.map(id => sourcesMap[id]).filter(Boolean);
+    }
+
+    const variantDetailsResult = await pool.query(
+      `SELECT id, sprite_id, variant_type AS type, name, official_name, slug, rarity, release_status,
+              summon_cost, sprite_chest_drop_chance_pct, extra_effect_ref, effect, acquisition,
+              first_observed_at, image_path, suggested_image_path, availability, recurrence, dates, missing_fields, data_status, sources
+       FROM sprite_variants ORDER BY sprite_id, variant_type`
     );
 
     const images = {};
@@ -305,8 +584,162 @@ app.get("/api/sprites", async (req, res) => {
       images[row.sprite_id][row.variant] = row.image_path;
     }
 
+    const variantDetails = {};
+    for (const row of variantDetailsResult.rows) {
+      if (!variantDetails[row.sprite_id]) variantDetails[row.sprite_id] = {};
+      const effect = row.effect && Object.keys(row.effect).length ? row.effect : { type: "unknown" };
+      const acquisition = buildAcquisitionMethod(row.acquisition);
+      const availability = buildAvailability(row.availability);
+      const recurrence = buildRecurrence(row.recurrence);
+      const dates = buildDates(row.dates, row.first_observed_at, null, null);
+      const missingFields = computeMissingFields({
+        officialName: row.official_name || row.name,
+        seasonId: null,
+        image: row.image_path || row.suggested_image_path,
+        acquisition,
+        availability,
+        recurrence,
+        dates,
+        sources: buildSources(row.sources),
+        availabilityPeriods: [],
+      });
+      const dataStatus = normalizeDataStatus(row.data_status, missingFields);
+      const confidence = availability.confidence || acquisition.confidence || dataStatus || "unknown";
+      variantDetails[row.sprite_id][row.type] = {
+        id: row.id,
+        type: row.type,
+        name: row.name,
+        officialName: row.official_name || null,
+        slug: row.slug,
+        rarity: row.rarity || "unknown",
+        releaseStatus: row.release_status || "unknown",
+        summonCost: row.summon_cost,
+        spriteChestDropChancePct: row.sprite_chest_drop_chance_pct,
+        extraEffectRef: row.extra_effect_ref,
+        effect,
+        acquisition,
+        availability,
+        recurrence,
+        dates,
+        missingFields,
+        dataStatus,
+        confidence,
+        sourceIds: row.sources || [],
+        sources: buildSources(row.sources),
+        image: row.image_path || row.suggested_image_path || null,
+      };
+    }
+
+    const spriteVariantIds = {};
+    for (const spriteId of Object.keys(variantDetails)) {
+      spriteVariantIds[spriteId] = Object.values(variantDetails[spriteId]).map(v => v.id);
+    }
+
+    const seasonsMap = {};
+    for (const row of seasonsResult.rows) {
+      seasonsMap[row.id] = {
+        id: row.id,
+        chapter: row.chapter,
+        season: row.season,
+        name: row.name,
+        nameEn: row.name_en,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        dataStatus: row.data_status,
+        sourceIds: row.sources || [],
+        sources: buildSources(row.sources),
+      };
+    }
+
+    const eventsMap = {};
+    for (const row of eventsResult.rows) {
+      eventsMap[row.id] = {
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        seasonId: row.season_id,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        dataStatus: row.data_status,
+        sourceIds: row.sources || [],
+        sources: buildSources(row.sources),
+      };
+    }
+
+    const availabilityPeriodsMap = {};
+    for (const row of availabilityPeriodsResult.rows) {
+      if (!availabilityPeriodsMap[row.sprite_id]) availabilityPeriodsMap[row.sprite_id] = [];
+      availabilityPeriodsMap[row.sprite_id].push({
+        id: row.id,
+        spriteId: row.sprite_id,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        status: row.status,
+        eventId: row.event_id,
+        confidence: row.confidence,
+        dataStatus: row.data_status,
+        sourceIds: row.sources || [],
+        sources: buildSources(row.sources),
+      });
+    }
+
+    const sprites = spritesResult.rows.map(s => {
+      const baseImage = (variantDetails[s.id] && variantDetails[s.id].Base && (variantDetails[s.id].Base.image || variantDetails[s.id].Base.suggestedImagePath)) || null;
+      const acquisition = s.acquisition || {};
+      const availability = buildAvailability(s.availability);
+      const recurrence = buildRecurrence(s.recurrence);
+      const dates = buildDates(s.dates, s.first_observed_at, s.last_verified_at, s.officially_announced_at);
+      const missingFields = computeMissingFields({
+        officialName: s.official_name || null,
+        seasonId: s.season_id || null,
+        image: s.image || baseImage,
+        acquisition: buildAcquisitionMethod(acquisition),
+        availability,
+        recurrence,
+        dates,
+        sources: buildSources(s.sources),
+        availabilityPeriods: availabilityPeriodsMap[s.id] || [],
+      });
+      const dataStatus = normalizeDataStatus(s.data_status, missingFields);
+      const season = s.season_id ? seasonsMap[s.season_id] || null : null;
+      const event = s.event_id ? eventsMap[s.event_id] || null : null;
+      return {
+        id: s.id,
+        slug: s.slug || s.id.replace(/^sprite_/, "").replace(/_/g, "-"),
+        name: s.name,
+        officialName: s.official_name || null,
+        image: s.image || baseImage,
+        variantIds: spriteVariantIds[s.id] || [],
+        seasonId: s.season_id || null,
+        season,
+        eventId: s.event_id || null,
+        event,
+        acquisitionMethod: buildAcquisitionMethod(acquisition),
+        availability,
+        availabilityPeriods: availabilityPeriodsMap[s.id] || [],
+        recurrence,
+        dates,
+        missingFields,
+        sourceIds: s.sources || [],
+        sources: buildSources(s.sources),
+        dataStatus,
+        confidence: availability.confidence || acquisition.confidence || dataStatus || "unknown",
+        // Backward-compatible fields
+        rarity: s.rarity,
+        color: s.color,
+        effect: s.effect,
+        variants: s.variants,
+        images: images[s.id] || {},
+        variantDetails: variantDetails[s.id] || {},
+        available: availability.status,
+        addedDate: s.added_date,
+      };
+    });
+
     res.json({
-      sprites: spritesResult.rows.map(s => ({ ...s, images: images[s.id] || {} })),
+      sprites,
+      seasons: Object.values(seasonsMap),
+      events: Object.values(eventsMap),
       variantMeta: variantsResult.rows
     });
   } catch (err) {
@@ -1186,9 +1619,11 @@ async function logSquadActivity(userId, spriteId, action) {
 
 // ── Collection : UPSERT one entry ──
 app.put("/api/collection/:userId/:spriteId", security.validateBody(security.schemas.collectionEntrySchema), async (req, res) => {
-  const { userId, spriteId } = req.params;
+  const { userId } = req.params;
+  let { spriteId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   if (!spriteId || spriteId.length > 120) return res.status(400).json({ error: "spriteId invalide" });
+  spriteId = await normalizeSpriteEntryId(spriteId);
   const { status, note, priority, obtainedAt } = req.validatedBody;
   try {
     const prev = await pool.query(
@@ -1234,10 +1669,11 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   const { collection } = req.validatedBody;
+  const normalizedCollection = await normalizeCollection(collection);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    for (const [spriteId, entry] of Object.entries(collection)) {
+    for (const [spriteId, entry] of Object.entries(normalizedCollection)) {
       if (spriteId.startsWith("fav_")) continue;
       await client.query(
         `INSERT INTO sprite_entries (user_id, sprite_id, status, note, priority, obtained_at, updated_at)
@@ -1257,7 +1693,7 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
       );
     }
     await client.query("COMMIT");
-    res.json({ ok: true, count: Object.keys(collection).length });
+    res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     broadcastSquadUpdate(userId);
   } catch (err) {
     await client.query("ROLLBACK");
@@ -1277,10 +1713,11 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   const { collection } = req.validatedBody;
+  const normalizedCollection = await normalizeCollection(collection);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    for (const [spriteId, entry] of Object.entries(collection)) {
+    for (const [spriteId, entry] of Object.entries(normalizedCollection)) {
       if (spriteId.startsWith("fav_")) continue;
       await client.query(
         `INSERT INTO sprite_entries (user_id, sprite_id, status, note, priority, obtained_at, updated_at)
@@ -1300,7 +1737,7 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
       );
     }
     await client.query("COMMIT");
-    res.json({ ok: true, count: Object.keys(collection).length });
+    res.json({ ok: true, count: Object.keys(normalizedCollection).length });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -1695,6 +2132,30 @@ const SPRITE_KEYWORDS = [
   "collecte effrénée", "pouvoir d'esprit"
 ];
 
+const EVENT_PATTERNS = [
+  { regex: /mastery monday|lundi de la maîtrise/i, type: "weekly_event", name: "Mastery Monday" },
+  { regex: /holofoil hours/i, type: "weekly_event", name: "Holofoil Hours" },
+  { regex: /gold\s*(?:&\s*gummy|\s*hours|fish)|gummy\s*hours|mythic goldfish/i, type: "weekly_event", name: "Gold & Gummy Hours" },
+  { regex: /galaxy hours/i, type: "weekly_event", name: "Galaxy Hours" },
+  { regex: /catch up day|catch up/i, type: "catch_up_event", name: "Catch Up Day" },
+  { regex: /gone wild/i, type: "seasonal_event", name: "Gone Wild" },
+  { regex: /summer hits|summer adventure|fun in the sun/i, type: "seasonal_event", name: "Summer Event" },
+];
+
+function detectEventInfo(text) {
+  const normalized = (text || "").toLowerCase();
+  for (const pattern of EVENT_PATTERNS) {
+    if (pattern.regex.test(normalized)) {
+      return { type: pattern.type, name: pattern.name };
+    }
+  }
+  const newSpriteMatch = text.match(/new sprites?[:—]\s*(.+)/i);
+  if (newSpriteMatch) {
+    return { type: "content_update", name: `New Sprites: ${newSpriteMatch[1].trim().slice(0, 60)}` };
+  }
+  return null;
+}
+
 function matchesSpriteKeywords(text) {
   const lower = text.toLowerCase();
   return SPRITE_KEYWORDS.some(kw => lower.includes(kw));
@@ -1848,6 +2309,203 @@ async function fetchFortniteSTWNews() {
   return results;
 }
 
+async function extractEventsFromNews(newsItems) {
+  const spritesRes = await pool.query("SELECT id, name FROM sprites");
+  const sprites = spritesRes.rows;
+  const seasonRes = await pool.query("SELECT id FROM seasons ORDER BY start_date DESC NULLS LAST LIMIT 1");
+  const fallbackSeasonId = seasonRes.rows[0]?.id || null;
+
+  const insertedEventIds = new Set();
+  for (const item of newsItems) {
+    const text = `${item.title || ""} ${item.description || ""}`;
+    const eventInfo = detectEventInfo(text);
+    if (!eventInfo) continue;
+
+    const eventId = "event_" + crypto.createHash("md5").update(`${eventInfo.name}|${item.date || ""}|${item.source}`).digest("hex").slice(0, 16);
+    if (insertedEventIds.has(eventId)) continue;
+    insertedEventIds.add(eventId);
+
+    try {
+      await pool.query(
+        `INSERT INTO events (id, name, type, season_id, start_date, end_date, data_status, sources)
+         VALUES ($1, $2, $3, $4, $5::timestamptz, $6, $7, $8)
+         ON CONFLICT (id) DO UPDATE SET
+           name = $2, type = $3, season_id = $4, start_date = $5::timestamptz, end_date = $6, data_status = $7, sources = $8`,
+        [
+          eventId,
+          eventInfo.name,
+          eventInfo.type,
+          fallbackSeasonId,
+          item.date || null,
+          null,
+          "observed",
+          JSON.stringify([item.source]),
+        ]
+      );
+    } catch (err) {
+      console.error("[EVENTS] failed to insert event", eventId, err.message);
+      continue;
+    }
+
+    // Link explicitly mentioned sprites to this event (only if they have no event yet)
+    if (["content_update", "catch_up_event", "seasonal_event"].includes(eventInfo.type)) {
+      const normalizedText = text.toLowerCase();
+      for (const sprite of sprites) {
+        if (!sprite.name) continue;
+        const spriteNameLower = sprite.name.toLowerCase();
+        const shortName = spriteNameLower.replace(" sprite", "").trim();
+        if (normalizedText.includes(spriteNameLower) || (shortName.length > 2 && normalizedText.includes(shortName))) {
+          await pool.query(
+            `UPDATE sprites SET event_id = $1 WHERE id = $2 AND event_id IS NULL`,
+            [eventId, sprite.id]
+          ).catch(() => {});
+        }
+      }
+    }
+  }
+
+  if (insertedEventIds.size > 0) {
+    console.log(`[EVENTS] ${insertedEventIds.size} events extracted from news`);
+  }
+}
+
+async function extractAvailabilityFromNews(newsItems) {
+  const spritesRes = await pool.query("SELECT id, name, availability, dates, first_observed_at, officially_announced_at FROM sprites");
+  const sprites = spritesRes.rows;
+  let updated = 0;
+  const insertedPeriodIds = new Set();
+
+  for (const item of newsItems) {
+    const text = `${item.title || ""} ${item.description || ""}`;
+    const normalizedText = text.toLowerCase();
+
+    // Skip recurring weekly events (they don't change a sprite's base availability)
+    const eventInfo = detectEventInfo(text);
+    if (eventInfo && eventInfo.type === "weekly_event") continue;
+
+    let status = null;
+    if (/new sprites?|have arrived|now appearing|are appearing|sont apparus|sont arriv[eé]s|disponible maintenant|available now|hit the island|drop into|now in/i.test(normalizedText)) {
+      status = "available";
+    } else if (/coming soon|bientôt disponible|announced|annonce officielle|kicks off|coming to the island/i.test(normalizedText)) {
+      status = "upcoming";
+    } else if (/no longer|n'?est plus|removed|leaves the island|leaving the island|gone from|disappeared/i.test(normalizedText)) {
+      status = "not_observed";
+    }
+    if (!status) continue;
+
+    const newsDate = item.date ? new Date(item.date).toISOString() : new Date().toISOString();
+    const confidence = (item.source && (item.source.includes("official") || item.source.includes("fortnite-api"))) ? "official" : "observed";
+
+    for (const sprite of sprites) {
+      if (!sprite.name) continue;
+      const spriteNameLower = sprite.name.toLowerCase();
+      const shortName = spriteNameLower.replace(" sprite", "").trim();
+      if (!normalizedText.includes(spriteNameLower) && !(shortName.length > 2 && normalizedText.includes(shortName))) continue;
+
+      const current = sprite.availability || {};
+      const newAvailability = {
+        ...current,
+        status,
+        confidence,
+      };
+
+      if (status === "available") {
+        newAvailability.startDate = current.startDate || newsDate;
+        newAvailability.endDate = null;
+      } else if (status === "upcoming") {
+        newAvailability.startDate = null;
+        newAvailability.endDate = null;
+      } else if (status === "not_observed") {
+        // Keep existing start/end and only mark as no longer observed
+        if (current.endDate) newAvailability.endDate = current.endDate;
+      }
+
+      const newDates = buildDates(sprite.dates, sprite.first_observed_at, newsDate, sprite.officially_announced_at);
+      await pool.query(
+        `UPDATE sprites SET availability = $1, dates = $2, last_verified_at = $3 WHERE id = $4`,
+        [JSON.stringify(newAvailability), JSON.stringify(newDates), newsDate, sprite.id]
+      );
+
+      const periodStart = status === "upcoming" ? null : (newAvailability.startDate || newsDate);
+      const eventKey = "";
+      const periodId = "availability_" + crypto.createHash("md5").update(`${sprite.id}|${periodStart || "unknown"}|${eventKey}`).digest("hex").slice(0, 16);
+      if (!insertedPeriodIds.has(periodId)) {
+        insertedPeriodIds.add(periodId);
+        await pool.query(
+          `INSERT INTO availability_periods (id, sprite_id, start_date, end_date, status, event_id, confidence, data_status, sources)
+           VALUES ($1, $2, $3::timestamptz, $4::timestamptz, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO UPDATE SET
+             end_date = COALESCE($4::timestamptz, availability_periods.end_date),
+             status = COALESCE($5, availability_periods.status),
+             confidence = COALESCE($7, availability_periods.confidence),
+             data_status = COALESCE($8, availability_periods.data_status),
+             sources = COALESCE($9, availability_periods.sources)`,
+          [periodId, sprite.id, periodStart, newAvailability.endDate, status, null, confidence, "complete", JSON.stringify([item.source])]
+        );
+      }
+      updated++;
+    }
+  }
+
+  if (updated > 0) {
+    console.log(`[AVAILABILITY] ${updated} sprite availability updates extracted from news`);
+  }
+}
+
+async function extractRecurrenceFromNews(newsItems) {
+  const spritesRes = await pool.query("SELECT id, name, recurrence, dates, first_observed_at, officially_announced_at FROM sprites");
+  const sprites = spritesRes.rows;
+  let updated = 0;
+
+  for (const item of newsItems) {
+    const text = `${item.title || ""} ${item.description || ""}`;
+    const normalizedText = text.toLowerCase();
+    const newsDate = item.date ? new Date(item.date).toISOString() : new Date().toISOString();
+
+    const officiallyConfirmed = /officially|epic games confirms|confirmed by epic|announced by epic|officiellement/i.test(normalizedText);
+    let status = null;
+
+    if (/confirmed recurring|confirmed to return|officially returning|will return|epic games confirms.*return/i.test(normalizedText)) {
+      status = "confirmed_recurring";
+    } else if (/never returning|won'?t return|not returning|exclusive|limited time only|gone for good|last chance forever|n'?est plus disponible|n'?est plus de retour/i.test(normalizedText)) {
+      status = "not_confirmed";
+    } else if (/returns|de retour|returning|back|back in|may return|could return|possible return|retour possible/i.test(normalizedText)) {
+      status = officiallyConfirmed ? "confirmed_recurring" : "possible_return";
+    }
+
+    if (!status) continue;
+
+    const evidence = item.title || item.description || null;
+    for (const sprite of sprites) {
+      if (!sprite.name) continue;
+      const spriteNameLower = sprite.name.toLowerCase();
+      const shortName = spriteNameLower.replace(" sprite", "").trim();
+      if (!normalizedText.includes(spriteNameLower) && !(shortName.length > 2 && normalizedText.includes(shortName))) continue;
+
+      const current = buildRecurrence(sprite.recurrence);
+      // Do not downgrade a confirmed recurrence to a possible one unless official
+      if (current.status === "confirmed_recurring" && status !== "confirmed_recurring") continue;
+
+      const newRecurrence = {
+        status,
+        officiallyConfirmed: status === "confirmed_recurring" || officiallyConfirmed,
+        evidence,
+      };
+
+      const newDates = buildDates(sprite.dates, sprite.first_observed_at, newsDate, sprite.officially_announced_at);
+      await pool.query(
+        `UPDATE sprites SET recurrence = $1, dates = $2, last_verified_at = $3 WHERE id = $4`,
+        [JSON.stringify(newRecurrence), JSON.stringify(newDates), newsDate, sprite.id]
+      );
+      updated++;
+    }
+  }
+
+  if (updated > 0) {
+    console.log(`[RECURRENCE] ${updated} sprite recurrence updates extracted from news`);
+  }
+}
+
 async function refreshNews() {
   const [frNews, enNews, stwNews, ggNews] = await Promise.all([
     fetchFortniteAPINews(),
@@ -1878,6 +2536,21 @@ async function refreshNews() {
     broadcastNews();
     notifyNewsSubscribers(insertedItems);
   }
+
+  // Extract events, availability and recurrence from scraped news (existing + newly inserted)
+  const existingNews = await pool.query(
+    "SELECT source, title, description, image, link, news_date AS date FROM sprite_news ORDER BY news_date DESC LIMIT 500"
+  );
+  for (const item of existingNews.rows) {
+    await ensureSource(item.source, {
+      title: item.title,
+      url: item.link,
+      publishedAt: item.date,
+    });
+  }
+  await extractEventsFromNews(existingNews.rows);
+  await extractAvailabilityFromNews(existingNews.rows);
+  await extractRecurrenceFromNews(existingNews.rows);
 }
 
 async function notifyNewsSubscribers(items) {
@@ -1998,12 +2671,102 @@ async function ensureSquadTables() {
         label VARCHAR(50) NOT NULL,
         bonus TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS seasons (
+        id VARCHAR(50) PRIMARY KEY,
+        chapter INTEGER,
+        season INTEGER,
+        name VARCHAR(100),
+        name_en VARCHAR(100),
+        start_date DATE,
+        end_date DATE,
+        data_status VARCHAR(20) DEFAULT 'incomplete',
+        sources JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_seasons_chapter ON seasons(chapter, season);
+      CREATE TABLE IF NOT EXISTS events (
+        id VARCHAR(100) PRIMARY KEY,
+        name VARCHAR(100),
+        type VARCHAR(50),
+        season_id VARCHAR(50),
+        start_date DATE,
+        end_date DATE,
+        data_status VARCHAR(20) DEFAULT 'incomplete',
+        sources JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_events_season ON events(season_id);
+      ALTER TABLE sprites
+      ADD COLUMN IF NOT EXISTS catalog_id VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS slug VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS official_name VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS season_id VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS event_id VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS image VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS introduced_in_update VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS first_observed_at DATE,
+      ADD COLUMN IF NOT EXISTS last_verified_at DATE,
+      ADD COLUMN IF NOT EXISTS officially_announced_at DATE,
+      ADD COLUMN IF NOT EXISTS ability JSONB,
+      ADD COLUMN IF NOT EXISTS acquisition JSONB,
+      ADD COLUMN IF NOT EXISTS availability JSONB,
+      ADD COLUMN IF NOT EXISTS recurrence JSONB,
+      ADD COLUMN IF NOT EXISTS dates JSONB,
+      ADD COLUMN IF NOT EXISTS missing_fields JSONB,
+      ADD COLUMN IF NOT EXISTS base_summon_cost INTEGER,
+      ADD COLUMN IF NOT EXISTS data_status VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS notes JSONB,
+      ADD COLUMN IF NOT EXISTS sources JSONB,
+      ADD COLUMN IF NOT EXISTS catalog_version VARCHAR(32),
+      ADD COLUMN IF NOT EXISTS catalog_generated_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS is_released BOOLEAN DEFAULT TRUE;
       CREATE TABLE IF NOT EXISTS sprite_images (
         sprite_id VARCHAR(50) NOT NULL REFERENCES sprites(id) ON DELETE CASCADE,
         variant VARCHAR(30) NOT NULL,
         image_path VARCHAR(255) NOT NULL,
         PRIMARY KEY (sprite_id, variant)
       );
+      CREATE TABLE IF NOT EXISTS availability_periods (
+        id VARCHAR(100) PRIMARY KEY,
+        sprite_id VARCHAR(50) NOT NULL REFERENCES sprites(id) ON DELETE CASCADE,
+        start_date TIMESTAMPTZ,
+        end_date TIMESTAMPTZ,
+        status VARCHAR(20) DEFAULT 'unknown',
+        event_id VARCHAR(100),
+        confidence VARCHAR(20) DEFAULT 'unknown',
+        data_status VARCHAR(20) DEFAULT 'incomplete',
+        sources JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (sprite_id, start_date, event_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_availability_periods_sprite ON availability_periods(sprite_id);
+      CREATE INDEX IF NOT EXISTS idx_availability_periods_dates ON availability_periods(start_date, end_date);
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sprite_sources (
+        id VARCHAR(100) PRIMARY KEY,
+        type VARCHAR(30),
+        publisher VARCHAR(100),
+        title TEXT,
+        url TEXT,
+        published_at TIMESTAMPTZ,
+        observed_at TIMESTAMPTZ,
+        last_verified_at TIMESTAMPTZ,
+        reliability VARCHAR(20),
+        catalog_version VARCHAR(32),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      ALTER TABLE sprite_sources
+        ADD COLUMN IF NOT EXISTS observed_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+    `);
+    await pool.query(`
+      ALTER TABLE availability_periods ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'unknown';
       CREATE TABLE IF NOT EXISTS sprite_entries (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -2071,6 +2834,40 @@ async function ensureSquadTables() {
       CREATE INDEX IF NOT EXISTS idx_squad_members_user ON squad_members (user_id);
     `);
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS join_open BOOLEAN NOT NULL DEFAULT TRUE`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sprite_variants (
+        id VARCHAR(100) PRIMARY KEY,
+        sprite_id VARCHAR(50) NOT NULL REFERENCES sprites(id) ON DELETE CASCADE,
+        variant_type VARCHAR(30) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        official_name VARCHAR(100),
+        slug VARCHAR(100),
+        rarity VARCHAR(30),
+        release_status VARCHAR(20),
+        first_observed_at DATE,
+        summon_cost INTEGER,
+        sprite_chest_drop_chance_pct NUMERIC,
+        extra_effect_ref VARCHAR(50),
+        effect JSONB,
+        acquisition JSONB,
+        image_path VARCHAR(255),
+        suggested_image_path VARCHAR(255),
+        availability JSONB,
+        data_status VARCHAR(20),
+        sources JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (sprite_id, variant_type)
+      );
+      CREATE INDEX IF NOT EXISTS idx_sprite_variants_sprite ON sprite_variants(sprite_id);
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS official_name VARCHAR(100);
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS rarity VARCHAR(30);
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS effect JSONB;
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS acquisition JSONB;
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS recurrence JSONB;
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS dates JSONB;
+      ALTER TABLE sprite_variants ADD COLUMN IF NOT EXISTS missing_fields JSONB;
+    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS squad_activity (
         id SERIAL PRIMARY KEY,

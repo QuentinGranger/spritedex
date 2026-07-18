@@ -1,6 +1,9 @@
 let VARIANT_META = {};
 let SPRITES = [];
 let SPRITE_IMAGES = {};
+let SPRITE_VARIANTS = {};
+let SEASONS = {};
+let EVENTS = {};
 
 const state = {
   collection: {},

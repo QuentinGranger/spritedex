@@ -142,7 +142,7 @@ function renderChecklist() {
           <div class="cl-sprite__avatar">${baseImg ? `<img src="${baseImg}" alt="${sprite.name}" class="cl-sprite__img" />` : `<span class="avatar-placeholder">?</span>`}</div>
           <div class="cl-sprite__info">
             <h3 class="cl-sprite__name">${sprite.name}</h3>
-            <p class="cl-sprite__meta">${sprite.rarity} · ${owned}/${total} variantes</p>
+            <p class="cl-sprite__meta">${sprite.rarity} · ${owned}/${total} variantes ${sprite.confidence ? `<span class="cl-confidence cl-confidence--${sprite.confidence}">${sprite.confidence}</span>` : ""}</p>
           </div>
           <div class="cl-sprite__bar">
             <div class="cl-sprite__bar-fill" style="width:${pct}%"></div>

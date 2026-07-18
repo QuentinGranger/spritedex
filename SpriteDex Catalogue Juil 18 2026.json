@@ -1,0 +1,3868 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogueVersion": "2026.07.18-1",
+  "generatedAt": "2026-07-18T01:07:47.245100+00:00",
+  "asOf": "2026-07-18",
+  "language": "fr",
+  "disclaimer": {
+    "unofficial": true,
+    "textFr": "Catalogue non officiel de fan. Fortnite et les éléments associés appartiennent à Epic Games. Les informations officielles ou visibles directement dans Fortnite prévalent en cas de divergence.",
+    "dataPolicy": "Ne jamais remplacer une information inconnue par une estimation non signalée."
+  },
+  "summary": {
+    "releasedBaseSprites": 20,
+    "releasedVariantsIncludingBase": 82,
+    "expectedReleasedVariantsIncludingBase": 82,
+    "countsMatchPublicCatalogue": true,
+    "unreleasedBaseSpritesTrackedSeparately": 2
+  },
+  "season": {
+    "id": "chapter_7_season_3",
+    "chapter": 7,
+    "season": 3,
+    "nameEn": "Runners",
+    "nameFr": "Collecte effrénée",
+    "startDate": "2026-06-05",
+    "endDate": "2026-08-20",
+    "statusAsOfCatalogueDate": "active",
+    "sourceIds": [
+      "official_runners_2026"
+    ]
+  },
+  "weeklyEvents": {
+    "masteryMonday": {
+      "day": "monday",
+      "effects": [
+        "Legendary and Mythic Sprites appear more often",
+        "Sprites level twice as fast",
+        "2x Sprite Dust from extractions"
+      ]
+    },
+    "thursdayDrop": {
+      "day": "thursday",
+      "effect": "A new Sprite or special variant is added."
+    },
+    "powerHours": {
+      "day": "saturday",
+      "timesEt": [
+        "15:30",
+        "21:30"
+      ],
+      "effect": "Weekly modifiers and increased opportunities to obtain missing variants."
+    },
+    "sourceIds": [
+      "official_weekly_events_2026"
+    ]
+  },
+  "variantDefinitions": [
+    {
+      "id": "variant_type_base",
+      "nameEn": "Base",
+      "nameFr": "Base",
+      "extraEffect": null,
+      "globalStatus": "released"
+    },
+    {
+      "id": "variant_type_gold",
+      "nameEn": "Gold",
+      "nameFr": "Dorée",
+      "extraEffect": {
+        "type": "elimination_xp_multiplier",
+        "value": 3,
+        "unit": "multiplier",
+        "descriptionEn": "Gain 3x bonus XP from eliminations.",
+        "descriptionFr": "Accorde 3 fois plus d’EXP bonus grâce aux éliminations."
+      },
+      "globalStatus": "released"
+    },
+    {
+      "id": "variant_type_gummy",
+      "nameEn": "Gummy",
+      "nameFr": "Gélifiée",
+      "extraEffect": {
+        "type": "sprite_dust_extraction_bonus",
+        "value": 20,
+        "unit": "percent",
+        "descriptionEn": "Gain 20% more Sprite Dust upon extraction.",
+        "descriptionFr": "Accorde 20 % de poussière d’esprit supplémentaire lors de l’extraction."
+      },
+      "globalStatus": "released"
+    },
+    {
+      "id": "variant_type_galaxy",
+      "nameEn": "Galaxy",
+      "nameFr": "Galactique",
+      "extraEffect": {
+        "type": "ammo_pickup_bonus",
+        "value": 30,
+        "unit": "percent",
+        "descriptionEn": "Gain 30% more ammunition when picking it up in the world.",
+        "descriptionFr": "Accorde 30 % de munitions supplémentaires lors du ramassage."
+      },
+      "globalStatus": "released"
+    },
+    {
+      "id": "variant_type_holofoil",
+      "nameEn": "Holofoil",
+      "nameFr": "Iridescente",
+      "extraEffect": {
+        "type": "rare_sprite_variant_find_chance",
+        "value": 5,
+        "unit": "percent",
+        "descriptionEn": "Gives the squad a 5% chance to find rare Sprite variants while looting chests.",
+        "descriptionFr": "Donne à l’escouade 5 % de chance de trouver des variantes rares d’esprits en fouillant des coffres."
+      },
+      "globalStatus": "partially_released"
+    },
+    {
+      "id": "variant_type_gem",
+      "nameEn": "Gem",
+      "nameFr": "Gemme",
+      "extraEffect": null,
+      "globalStatus": "unreleased",
+      "dataStatus": "unverified"
+    },
+    {
+      "id": "variant_type_cube",
+      "nameEn": "Cube",
+      "nameFr": "Cube",
+      "extraEffect": null,
+      "globalStatus": "unreleased",
+      "dataStatus": "unverified"
+    },
+    {
+      "id": "variant_type_quack",
+      "nameEn": "Quack",
+      "nameFr": "Coin-coin",
+      "extraEffect": null,
+      "globalStatus": "unreleased",
+      "dataStatus": "unverified"
+    }
+  ],
+  "sprites": [
+    {
+      "id": "sprite_water",
+      "slug": "water",
+      "name": "Water Sprite",
+      "officialName": "Water Sprite",
+      "rarity": "rare",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "shield_regeneration_in_water",
+        "descriptionEn": "Replenishes shields while standing in water.",
+        "descriptionFr": "Régénère le bouclier lorsque le joueur se tient dans l’eau.",
+        "levelValues": [
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "unit": "shield_per_tick"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Spotted near rivers and beaches",
+        "descriptionFr": "Près des rivières et des plages",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 100,
+      "variantIds": [
+        "sprite_water",
+        "sprite_water_gold",
+        "sprite_water_gummy",
+        "sprite_water_galaxy",
+        "sprite_water_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_water",
+          "spriteId": "sprite_water",
+          "variantType": "base",
+          "name": "Water Sprite",
+          "slug": "water",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 100,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/water/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_water_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_water_gold",
+          "spriteId": "sprite_water",
+          "variantType": "gold",
+          "name": "Gold Water Sprite",
+          "slug": "water-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.75,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/water/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_water_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_water_gummy",
+          "spriteId": "sprite_water",
+          "variantType": "gummy",
+          "name": "Gummy Water Sprite",
+          "slug": "water-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.62,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/water/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_water_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_water_galaxy",
+          "spriteId": "sprite_water",
+          "variantType": "galaxy",
+          "name": "Galaxy Water Sprite",
+          "slug": "water-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.5,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/water/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_water_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_water_holofoil",
+          "spriteId": "sprite_water",
+          "variantType": "holofoil",
+          "name": "Holofoil Water Sprite",
+          "slug": "water-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.25,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/water/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_water_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_water_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_earth",
+      "slug": "earth",
+      "name": "Earth Sprite",
+      "officialName": "Earth Sprite",
+      "rarity": "rare",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "bonus_rare_loot_from_chests",
+        "descriptionEn": "Provides a chance to find additional rare items when opening chests.",
+        "descriptionFr": "Donne une chance d’obtenir un objet rare supplémentaire à l’ouverture d’un coffre.",
+        "levelValues": [
+          10,
+          12.5,
+          15,
+          17.5,
+          20
+        ],
+        "unit": "percent_chance"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found wandering around forests and wooded regions",
+        "descriptionFr": "Dans les forêts et les régions boisées",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 100,
+      "variantIds": [
+        "sprite_earth",
+        "sprite_earth_gold",
+        "sprite_earth_gummy",
+        "sprite_earth_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_earth",
+          "spriteId": "sprite_earth",
+          "variantType": "base",
+          "name": "Earth Sprite",
+          "slug": "earth",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 100,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/earth/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_earth_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_earth_gold",
+          "spriteId": "sprite_earth",
+          "variantType": "gold",
+          "name": "Gold Earth Sprite",
+          "slug": "earth-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.75,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/earth/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_earth_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_earth_gummy",
+          "spriteId": "sprite_earth",
+          "variantType": "gummy",
+          "name": "Gummy Earth Sprite",
+          "slug": "earth-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.62,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/earth/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_earth_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_earth_galaxy",
+          "spriteId": "sprite_earth",
+          "variantType": "galaxy",
+          "name": "Galaxy Earth Sprite",
+          "slug": "earth-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.5,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/earth/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_earth_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_earth_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_fire",
+      "slug": "fire",
+      "name": "Fire Sprite",
+      "officialName": "Fire Sprite",
+      "rarity": "rare",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "fiery_burst_after_damage",
+        "descriptionEn": "Creates a fiery burst after dealing enough damage to an enemy.",
+        "descriptionFr": "Déclenche une explosion de feu après avoir infligé suffisamment de dégâts.",
+        "levelValues": [
+          150,
+          125,
+          100,
+          75,
+          50
+        ],
+        "unit": "damage_required_to_trigger"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Located near urban areas",
+        "descriptionFr": "Près des zones urbaines",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 100,
+      "variantIds": [
+        "sprite_fire",
+        "sprite_fire_gold",
+        "sprite_fire_gummy",
+        "sprite_fire_galaxy",
+        "sprite_fire_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_fire",
+          "spriteId": "sprite_fire",
+          "variantType": "base",
+          "name": "Fire Sprite",
+          "slug": "fire",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 100,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fire/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fire_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_fire_gold",
+          "spriteId": "sprite_fire",
+          "variantType": "gold",
+          "name": "Gold Fire Sprite",
+          "slug": "fire-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.75,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fire/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fire_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_fire_gummy",
+          "spriteId": "sprite_fire",
+          "variantType": "gummy",
+          "name": "Gummy Fire Sprite",
+          "slug": "fire-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.62,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fire/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fire_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_fire_galaxy",
+          "spriteId": "sprite_fire",
+          "variantType": "galaxy",
+          "name": "Galaxy Fire Sprite",
+          "slug": "fire-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.5,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fire/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fire_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_fire_holofoil",
+          "spriteId": "sprite_fire",
+          "variantType": "holofoil",
+          "name": "Holofoil Fire Sprite",
+          "slug": "fire-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.25,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fire/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fire_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_fire_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_duck",
+      "slug": "duck",
+      "name": "Duck Sprite",
+      "officialName": "Duck Sprite",
+      "rarity": "epic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "shield_regeneration_while_emoting",
+        "descriptionEn": "Emoting or Jamming replenishes shields.",
+        "descriptionFr": "Les emotes et les jams régénèrent le bouclier.",
+        "levelValues": [
+          2,
+          3,
+          4,
+          6,
+          8
+        ],
+        "unit": "shield_per_tick"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found in the vault of a certain business mogul",
+        "descriptionFr": "Dans le coffre-fort d’un certain magnat des affaires",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 3000,
+      "variantIds": [
+        "sprite_duck",
+        "sprite_duck_gold",
+        "sprite_duck_gummy",
+        "sprite_duck_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_duck",
+          "spriteId": "sprite_duck",
+          "variantType": "base",
+          "name": "Duck Sprite",
+          "slug": "duck",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 3000,
+          "spriteChestDropChancePct": 9,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/duck/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_duck_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_duck_gold",
+          "spriteId": "sprite_duck",
+          "variantType": "gold",
+          "name": "Gold Duck Sprite",
+          "slug": "duck-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.4,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/duck/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_duck_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_duck_gummy",
+          "spriteId": "sprite_duck",
+          "variantType": "gummy",
+          "name": "Gummy Duck Sprite",
+          "slug": "duck-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.3,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/duck/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_duck_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_duck_galaxy",
+          "spriteId": "sprite_duck",
+          "variantType": "galaxy",
+          "name": "Galaxy Duck Sprite",
+          "slug": "duck-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.16,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/duck/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_duck_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_duck_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_ghost",
+      "slug": "ghost",
+      "name": "Ghost Sprite",
+      "officialName": "Ghost Sprite",
+      "rarity": "epic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "cloak_on_reload",
+        "descriptionEn": "Grants cloak for a duration upon reloading.",
+        "descriptionFr": "Accorde un camouflage temporaire lors du rechargement.",
+        "levelValues": [
+          3,
+          3.5,
+          4,
+          4.5,
+          5
+        ],
+        "unit": "seconds"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found in the world at nighttime",
+        "descriptionFr": "Dans le monde pendant la nuit",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 3000,
+      "variantIds": [
+        "sprite_ghost",
+        "sprite_ghost_gold",
+        "sprite_ghost_gummy",
+        "sprite_ghost_galaxy",
+        "sprite_ghost_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_ghost",
+          "spriteId": "sprite_ghost",
+          "variantType": "base",
+          "name": "Ghost Sprite",
+          "slug": "ghost",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 3000,
+          "spriteChestDropChancePct": 9,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/ghost/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_ghost_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_ghost_gold",
+          "spriteId": "sprite_ghost",
+          "variantType": "gold",
+          "name": "Gold Ghost Sprite",
+          "slug": "ghost-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.4,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/ghost/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_ghost_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_ghost_gummy",
+          "spriteId": "sprite_ghost",
+          "variantType": "gummy",
+          "name": "Gummy Ghost Sprite",
+          "slug": "ghost-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.3,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/ghost/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_ghost_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_ghost_galaxy",
+          "spriteId": "sprite_ghost",
+          "variantType": "galaxy",
+          "name": "Galaxy Ghost Sprite",
+          "slug": "ghost-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.16,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/ghost/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_ghost_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_ghost_holofoil",
+          "spriteId": "sprite_ghost",
+          "variantType": "holofoil",
+          "name": "Holofoil Ghost Sprite",
+          "slug": "ghost-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.06,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/ghost/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_ghost_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_ghost_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_dream",
+      "slug": "dream",
+      "name": "Dream Sprite",
+      "officialName": "Dream Sprite",
+      "rarity": "legendary",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "random_item_each_level",
+        "descriptionEn": "Grants a random item at each level and explodes with legendary loot at Max Level.",
+        "descriptionFr": "Accorde un objet aléatoire à chaque niveau et libère du butin légendaire au niveau maximal.",
+        "levelValues": null,
+        "unit": null,
+        "notes": "La valeur du butin augmente à chaque niveau, sans valeurs numériques publiques."
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Sometimes found sleeping in storage crates",
+        "descriptionFr": "Parfois endormi dans des caisses de stockage",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 5000,
+      "variantIds": [
+        "sprite_dream",
+        "sprite_dream_gold",
+        "sprite_dream_gummy",
+        "sprite_dream_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_dream",
+          "spriteId": "sprite_dream",
+          "variantType": "base",
+          "name": "Dream Sprite",
+          "slug": "dream",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 5000,
+          "spriteChestDropChancePct": 6.98,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/dream/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_dream_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_dream_gold",
+          "spriteId": "sprite_dream",
+          "variantType": "gold",
+          "name": "Gold Dream Sprite",
+          "slug": "dream-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.31,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/dream/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_dream_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_dream_gummy",
+          "spriteId": "sprite_dream",
+          "variantType": "gummy",
+          "name": "Gummy Dream Sprite",
+          "slug": "dream-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.23,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/dream/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_dream_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_dream_galaxy",
+          "spriteId": "sprite_dream",
+          "variantType": "galaxy",
+          "name": "Galaxy Dream Sprite",
+          "slug": "dream-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.12,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/dream/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_dream_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_dream_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_demon",
+      "slug": "demon",
+      "name": "Demon Sprite",
+      "officialName": "Demon Sprite",
+      "rarity": "epic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "siphon_on_elimination",
+        "descriptionEn": "Siphons health and shields when eliminating an opponent.",
+        "descriptionFr": "Rend de la vie et du bouclier après une élimination.",
+        "levelValues": [
+          10,
+          15,
+          20,
+          25,
+          30
+        ],
+        "unit": "healing_per_elimination"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found rarely in Sprite Chests",
+        "descriptionFr": "Rarement dans les coffres d’esprits",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 3000,
+      "variantIds": [
+        "sprite_demon",
+        "sprite_demon_gold",
+        "sprite_demon_gummy",
+        "sprite_demon_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_demon",
+          "spriteId": "sprite_demon",
+          "variantType": "base",
+          "name": "Demon Sprite",
+          "slug": "demon",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 3000,
+          "spriteChestDropChancePct": 9,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/demon/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_demon_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_demon_gold",
+          "spriteId": "sprite_demon",
+          "variantType": "gold",
+          "name": "Gold Demon Sprite",
+          "slug": "demon-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.4,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/demon/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_demon_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_demon_gummy",
+          "spriteId": "sprite_demon",
+          "variantType": "gummy",
+          "name": "Gummy Demon Sprite",
+          "slug": "demon-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.3,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/demon/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_demon_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_demon_galaxy",
+          "spriteId": "sprite_demon",
+          "variantType": "galaxy",
+          "name": "Galaxy Demon Sprite",
+          "slug": "demon-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.16,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/demon/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_demon_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_demon_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_punk",
+      "slug": "punk",
+      "name": "Punk Sprite",
+      "officialName": "Punk Sprite",
+      "rarity": "legendary",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "random_nothing_or_infinite_reward",
+        "descriptionEn": "Possibly nothing... or infinitely something.",
+        "descriptionFr": "Peut ne rien accorder… ou accorder quelque chose d’infini.",
+        "levelValues": null,
+        "unit": null,
+        "notes": "La formulation publique reste volontairement ambiguë; ne pas afficher une probabilité inventée."
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found rarely in Sprite Chests",
+        "descriptionFr": "Rarement dans les coffres d’esprits",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 5000,
+      "variantIds": [
+        "sprite_punk",
+        "sprite_punk_gold",
+        "sprite_punk_gummy",
+        "sprite_punk_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_punk",
+          "spriteId": "sprite_punk",
+          "variantType": "base",
+          "name": "Punk Sprite",
+          "slug": "punk",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 5000,
+          "spriteChestDropChancePct": 6.98,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/punk/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_punk_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_punk_gold",
+          "spriteId": "sprite_punk",
+          "variantType": "gold",
+          "name": "Gold Punk Sprite",
+          "slug": "punk-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.31,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/punk/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_punk_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_punk_gummy",
+          "spriteId": "sprite_punk",
+          "variantType": "gummy",
+          "name": "Gummy Punk Sprite",
+          "slug": "punk-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.23,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/punk/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_punk_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_punk_galaxy",
+          "spriteId": "sprite_punk",
+          "variantType": "galaxy",
+          "name": "Galaxy Punk Sprite",
+          "slug": "punk-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.12,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/punk/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_punk_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_punk_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_king",
+      "slug": "king",
+      "name": "King Sprite",
+      "officialName": "King Sprite",
+      "rarity": "epic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "pickaxe_bonus_damage",
+        "descriptionEn": "Makes the Pickaxe deal more damage.",
+        "descriptionFr": "Augmente les dégâts infligés avec la pioche.",
+        "levelValues": [
+          30,
+          40,
+          60,
+          80,
+          120
+        ],
+        "unit": "bonus_damage"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found rarely in Sprite Chests",
+        "descriptionFr": "Rarement dans les coffres d’esprits",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 3000,
+      "variantIds": [
+        "sprite_king",
+        "sprite_king_gold",
+        "sprite_king_gummy",
+        "sprite_king_galaxy",
+        "sprite_king_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_king",
+          "spriteId": "sprite_king",
+          "variantType": "base",
+          "name": "King Sprite",
+          "slug": "king",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 3000,
+          "spriteChestDropChancePct": 9,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/king/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_king_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_king_gold",
+          "spriteId": "sprite_king",
+          "variantType": "gold",
+          "name": "Gold King Sprite",
+          "slug": "king-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.4,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/king/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_king_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_king_gummy",
+          "spriteId": "sprite_king",
+          "variantType": "gummy",
+          "name": "Gummy King Sprite",
+          "slug": "king-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.3,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/king/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_king_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_king_galaxy",
+          "spriteId": "sprite_king",
+          "variantType": "galaxy",
+          "name": "Galaxy King Sprite",
+          "slug": "king-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.16,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/king/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_king_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_king_holofoil",
+          "spriteId": "sprite_king",
+          "variantType": "holofoil",
+          "name": "Holofoil King Sprite",
+          "slug": "king-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.06,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/king/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_king_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_king_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_burnt_peanut",
+      "slug": "burnt-peanut",
+      "name": "Burnt Peanut",
+      "officialName": "Burnt Peanut",
+      "rarity": "mythic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "bonus_loot_on_elimination",
+        "descriptionEn": "Eliminated players may drop more loot, sometimes Mythic.",
+        "descriptionFr": "Les joueurs éliminés peuvent laisser davantage de butin, parfois mythique.",
+        "levelValues": [
+          20,
+          30,
+          40,
+          50,
+          60
+        ],
+        "unit": "percent_bonus_loot_chance",
+        "maxLevelExtra": {
+          "mythicLootChancePct": 10
+        }
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found in Relic Chests",
+        "descriptionFr": "Dans les coffres de relique",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 7500,
+      "variantIds": [
+        "sprite_burnt_peanut"
+      ],
+      "variants": [
+        {
+          "id": "sprite_burnt_peanut",
+          "spriteId": "sprite_burnt_peanut",
+          "variantType": "base",
+          "name": "Burnt Peanut",
+          "slug": "burnt-peanut",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 7500,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/burnt_peanut/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_burnt_peanut_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_burnt_peanut_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_zero_point",
+      "slug": "zero-point",
+      "name": "Zero Point Sprite",
+      "officialName": "Zero Point Sprite",
+      "rarity": "mythic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.00",
+      "firstObservedAt": "2026-06-05",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "shield_bubble_on_self_heal",
+        "descriptionEn": "Spawns a Shield Bubble Jr. when using a healing item on yourself, excluding splashes and grenades.",
+        "descriptionFr": "Crée une mini-bulle de bouclier lors de l’utilisation d’un soin sur soi, hors splashes et grenades.",
+        "levelValues": [
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "unit": "seconds"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found rarely in Sprite Chests",
+        "descriptionFr": "Rarement dans les coffres d’esprits",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 7500,
+      "variantIds": [
+        "sprite_zero_point",
+        "sprite_zero_point_gold",
+        "sprite_zero_point_gummy",
+        "sprite_zero_point_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_zero_point",
+          "spriteId": "sprite_zero_point",
+          "variantType": "base",
+          "name": "Zero Point Sprite",
+          "slug": "zero-point",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 7500,
+          "spriteChestDropChancePct": 0.00093,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/zero_point/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_zero_point_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_zero_point_gold",
+          "spriteId": "sprite_zero_point",
+          "variantType": "gold",
+          "name": "Gold Zero Point Sprite",
+          "slug": "zero-point-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 15000,
+          "spriteChestDropChancePct": 4.1e-05,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/zero_point/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_zero_point_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_zero_point_gummy",
+          "spriteId": "sprite_zero_point",
+          "variantType": "gummy",
+          "name": "Gummy Zero Point Sprite",
+          "slug": "zero-point-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 15000,
+          "spriteChestDropChancePct": 3.1e-05,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/zero_point/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_zero_point_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_zero_point_galaxy",
+          "spriteId": "sprite_zero_point",
+          "variantType": "galaxy",
+          "name": "Galaxy Zero Point Sprite",
+          "slug": "zero-point-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-05",
+          "summonCostSpriteDust": 15000,
+          "spriteChestDropChancePct": 1.6e-05,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/zero_point/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-05",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_zero_point_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_zero_point_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_fishy",
+      "slug": "fishy",
+      "name": "Fishy Sprite",
+      "officialName": "Fishy Sprite",
+      "rarity": "rare",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.10",
+      "firstObservedAt": "2026-06-25",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "swim_and_damage_movement_speed",
+        "descriptionEn": "Greatly increases swim speed; taking damage briefly increases movement speed.",
+        "descriptionFr": "Augmente fortement la vitesse de nage et accorde brièvement un bonus de déplacement après avoir subi des dégâts.",
+        "levelValues": [
+          {
+            "swimSpeedPct": 25,
+            "movementSpeedPct": 10
+          },
+          {
+            "swimSpeedPct": 50,
+            "movementSpeedPct": 20
+          },
+          {
+            "swimSpeedPct": 100,
+            "movementSpeedPct": 30
+          },
+          {
+            "swimSpeedPct": 150,
+            "movementSpeedPct": 40
+          },
+          {
+            "swimSpeedPct": 200,
+            "movementSpeedPct": 50
+          }
+        ],
+        "unit": "percent"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Spotted near high and mountainous areas",
+        "descriptionFr": "Près des zones élevées et montagneuses",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 2000,
+      "variantIds": [
+        "sprite_fishy",
+        "sprite_fishy_gold",
+        "sprite_fishy_gummy",
+        "sprite_fishy_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_fishy",
+          "spriteId": "sprite_fishy",
+          "variantType": "base",
+          "name": "Fishy Sprite",
+          "slug": "fishy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 2000,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fishy/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fishy_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_fishy_gold",
+          "spriteId": "sprite_fishy",
+          "variantType": "gold",
+          "name": "Gold Fishy Sprite",
+          "slug": "fishy-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.75,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fishy/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fishy_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_fishy_gummy",
+          "spriteId": "sprite_fishy",
+          "variantType": "gummy",
+          "name": "Gummy Fishy Sprite",
+          "slug": "fishy-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.62,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fishy/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fishy_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_fishy_galaxy",
+          "spriteId": "sprite_fishy",
+          "variantType": "galaxy",
+          "name": "Galaxy Fishy Sprite",
+          "slug": "fishy-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.5,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fishy/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_fishy_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_fishy_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_striker",
+      "slug": "striker",
+      "name": "Striker Sprite",
+      "officialName": "Striker Sprite",
+      "rarity": "epic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.10",
+      "firstObservedAt": "2026-06-25",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "overdrive_after_traversal",
+        "descriptionEn": "Grants Overdrive when Mantling, Hurdling, or Wall Scrambling.",
+        "descriptionFr": "Accorde l’effet Surmultiplication après une escalade, un franchissement ou une course murale.",
+        "levelValues": [
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "unit": "seconds"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Spotted near high and mountainous areas",
+        "descriptionFr": "Près des zones élevées et montagneuses",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 3000,
+      "variantIds": [
+        "sprite_striker",
+        "sprite_striker_gold",
+        "sprite_striker_gummy",
+        "sprite_striker_galaxy",
+        "sprite_striker_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_striker",
+          "spriteId": "sprite_striker",
+          "variantType": "base",
+          "name": "Striker Sprite",
+          "slug": "striker",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 3000,
+          "spriteChestDropChancePct": 6.98,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/striker/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_striker_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_striker_gold",
+          "spriteId": "sprite_striker",
+          "variantType": "gold",
+          "name": "Gold Striker Sprite",
+          "slug": "striker-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.31,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/striker/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_striker_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_striker_gummy",
+          "spriteId": "sprite_striker",
+          "variantType": "gummy",
+          "name": "Gummy Striker Sprite",
+          "slug": "striker-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.23,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/striker/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_striker_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_striker_galaxy",
+          "spriteId": "sprite_striker",
+          "variantType": "galaxy",
+          "name": "Galaxy Striker Sprite",
+          "slug": "striker-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.12,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/striker/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_striker_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_striker_holofoil",
+          "spriteId": "sprite_striker",
+          "variantType": "holofoil",
+          "name": "Holofoil Striker Sprite",
+          "slug": "striker-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.05,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/striker/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_striker_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_striker_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_aura",
+      "slug": "aura",
+      "name": "Aura Sprite",
+      "officialName": "Aura Sprite",
+      "rarity": "epic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.10",
+      "firstObservedAt": "2026-06-25",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "shock_rock_charge_after_damage",
+        "descriptionEn": "Grants a Shock Rock charge after dealing enough damage.",
+        "descriptionFr": "Accorde une charge de roche de choc après avoir infligé suffisamment de dégâts.",
+        "levelValues": [
+          175,
+          150,
+          125,
+          100,
+          75
+        ],
+        "unit": "damage_required_to_trigger"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Spotted near high and mountainous areas",
+        "descriptionFr": "Près des zones élevées et montagneuses",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 3000,
+      "variantIds": [
+        "sprite_aura",
+        "sprite_aura_gold",
+        "sprite_aura_gummy",
+        "sprite_aura_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_aura",
+          "spriteId": "sprite_aura",
+          "variantType": "base",
+          "name": "Aura Sprite",
+          "slug": "aura",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 3000,
+          "spriteChestDropChancePct": 6.98,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/aura/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_aura_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_aura_gold",
+          "spriteId": "sprite_aura",
+          "variantType": "gold",
+          "name": "Gold Aura Sprite",
+          "slug": "aura-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.31,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/aura/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_aura_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_aura_gummy",
+          "spriteId": "sprite_aura",
+          "variantType": "gummy",
+          "name": "Gummy Aura Sprite",
+          "slug": "aura-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.23,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/aura/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_aura_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_aura_galaxy",
+          "spriteId": "sprite_aura",
+          "variantType": "galaxy",
+          "name": "Galaxy Aura Sprite",
+          "slug": "aura-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 6000,
+          "spriteChestDropChancePct": 0.12,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/aura/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_aura_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_aura_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_boss",
+      "slug": "boss",
+      "name": "Boss Sprite",
+      "officialName": "Boss Sprite",
+      "rarity": "legendary",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.10",
+      "firstObservedAt": "2026-06-25",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "maximum_health_and_shield",
+        "descriptionEn": "Increases maximum HP and Shield.",
+        "descriptionFr": "Augmente la vie maximale et le bouclier maximal.",
+        "levelValues": [
+          5,
+          10,
+          15,
+          20,
+          25
+        ],
+        "unit": "bonus_hp_and_shield"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Claimed from defeating a powerful adversary",
+        "descriptionFr": "Obtenu après avoir vaincu un adversaire puissant",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 5000,
+      "variantIds": [
+        "sprite_boss",
+        "sprite_boss_gold",
+        "sprite_boss_gummy",
+        "sprite_boss_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_boss",
+          "spriteId": "sprite_boss",
+          "variantType": "base",
+          "name": "Boss Sprite",
+          "slug": "boss",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 5000,
+          "spriteChestDropChancePct": 6.98,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/boss/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_boss_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_boss_gold",
+          "spriteId": "sprite_boss",
+          "variantType": "gold",
+          "name": "Gold Boss Sprite",
+          "slug": "boss-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.31,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/boss/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_boss_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_boss_gummy",
+          "spriteId": "sprite_boss",
+          "variantType": "gummy",
+          "name": "Gummy Boss Sprite",
+          "slug": "boss-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.23,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/boss/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_boss_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_boss_galaxy",
+          "spriteId": "sprite_boss",
+          "variantType": "galaxy",
+          "name": "Galaxy Boss Sprite",
+          "slug": "boss-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.12,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/boss/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_boss_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_boss_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_grim",
+      "slug": "grim",
+      "name": "Grim Sprite",
+      "officialName": "Grim Sprite",
+      "rarity": "mythic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.10",
+      "firstObservedAt": "2026-06-25",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "mark_attackers",
+        "descriptionEn": "Marks players who attack you for a duration.",
+        "descriptionFr": "Marque temporairement les joueurs qui vous attaquent.",
+        "levelValues": [
+          3,
+          3.5,
+          4,
+          4.5,
+          5
+        ],
+        "unit": "seconds"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found rarely in Sprite Chests",
+        "descriptionFr": "Rarement dans les coffres d’esprits",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 7500,
+      "variantIds": [
+        "sprite_grim",
+        "sprite_grim_gold",
+        "sprite_grim_gummy",
+        "sprite_grim_galaxy"
+      ],
+      "variants": [
+        {
+          "id": "sprite_grim",
+          "spriteId": "sprite_grim",
+          "variantType": "base",
+          "name": "Grim Sprite",
+          "slug": "grim",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 7500,
+          "spriteChestDropChancePct": 0.09,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/grim/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_grim_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_grim_gold",
+          "spriteId": "sprite_grim",
+          "variantType": "gold",
+          "name": "Gold Grim Sprite",
+          "slug": "grim-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 15000,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/grim/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_grim_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_grim_gummy",
+          "spriteId": "sprite_grim",
+          "variantType": "gummy",
+          "name": "Gummy Grim Sprite",
+          "slug": "grim-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 15000,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/grim/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_grim_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        },
+        {
+          "id": "sprite_grim_galaxy",
+          "spriteId": "sprite_grim",
+          "variantType": "galaxy",
+          "name": "Galaxy Grim Sprite",
+          "slug": "grim-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-06-25",
+          "summonCostSpriteDust": 15000,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/grim/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-06-25",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_grim_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "fortnite_wiki_v4110"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_grim_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_air",
+      "slug": "air",
+      "name": "Air Sprite",
+      "officialName": "Air Sprite",
+      "rarity": "rare",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.20",
+      "firstObservedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "sprint_jump_and_fall_damage",
+        "descriptionEn": "Increases sprinting speed and jump height and nullifies fall damage.",
+        "descriptionFr": "Augmente la vitesse de sprint et la hauteur de saut, et annule les dégâts de chute.",
+        "levelValues": null,
+        "unit": null,
+        "notes": "La hauteur de saut augmente à chaque niveau, mais les valeurs exactes ne sont pas publiées."
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Spotted near high and mountainous areas",
+        "descriptionFr": "Près des zones élevées et montagneuses",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 2000,
+      "variantIds": [
+        "sprite_air",
+        "sprite_air_gold",
+        "sprite_air_gummy",
+        "sprite_air_galaxy",
+        "sprite_air_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_air",
+          "spriteId": "sprite_air",
+          "variantType": "base",
+          "name": "Air Sprite",
+          "slug": "air",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 2000,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/air/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_air_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_air_gold",
+          "spriteId": "sprite_air",
+          "variantType": "gold",
+          "name": "Gold Air Sprite",
+          "slug": "air-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.75,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/air/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_air_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_air_gummy",
+          "spriteId": "sprite_air",
+          "variantType": "gummy",
+          "name": "Gummy Air Sprite",
+          "slug": "air-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.62,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/air/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_air_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_air_galaxy",
+          "spriteId": "sprite_air",
+          "variantType": "galaxy",
+          "name": "Galaxy Air Sprite",
+          "slug": "air-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.5,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/air/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_air_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_air_holofoil",
+          "spriteId": "sprite_air",
+          "variantType": "holofoil",
+          "name": "Holofoil Air Sprite",
+          "slug": "air-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 4000,
+          "spriteChestDropChancePct": 0.25,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/air/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_air_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_air_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_seven",
+      "slug": "seven",
+      "name": "Seven Sprite",
+      "officialName": "Seven Sprite",
+      "rarity": "legendary",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.20",
+      "firstObservedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "enemy_foot_trails_for_squad",
+        "descriptionEn": "Makes enemy player foot trails visible in the world for the Squad.",
+        "descriptionFr": "Rend visibles pour l’escouade les traces de pas laissées par les joueurs ennemis.",
+        "levelValues": [
+          10,
+          15,
+          20,
+          25,
+          30
+        ],
+        "unit": "seconds"
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Spotted near high and mountainous areas",
+        "descriptionFr": "Près des zones élevées et montagneuses",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 5000,
+      "variantIds": [
+        "sprite_seven",
+        "sprite_seven_gold",
+        "sprite_seven_gummy",
+        "sprite_seven_galaxy",
+        "sprite_seven_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_seven",
+          "spriteId": "sprite_seven",
+          "variantType": "base",
+          "name": "Seven Sprite",
+          "slug": "seven",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 5000,
+          "spriteChestDropChancePct": 6.98,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/seven/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_seven_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "gamesgg_seven_2026"
+          ]
+        },
+        {
+          "id": "sprite_seven_gold",
+          "spriteId": "sprite_seven",
+          "variantType": "gold",
+          "name": "Gold Seven Sprite",
+          "slug": "seven-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.31,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/seven/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_seven_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "gamesgg_seven_2026"
+          ]
+        },
+        {
+          "id": "sprite_seven_gummy",
+          "spriteId": "sprite_seven",
+          "variantType": "gummy",
+          "name": "Gummy Seven Sprite",
+          "slug": "seven-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.23,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/seven/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_seven_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "gamesgg_seven_2026"
+          ]
+        },
+        {
+          "id": "sprite_seven_galaxy",
+          "spriteId": "sprite_seven",
+          "variantType": "galaxy",
+          "name": "Galaxy Seven Sprite",
+          "slug": "seven-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.12,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/seven/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_seven_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "gamesgg_seven_2026"
+          ]
+        },
+        {
+          "id": "sprite_seven_holofoil",
+          "spriteId": "sprite_seven",
+          "variantType": "holofoil",
+          "name": "Holofoil Seven Sprite",
+          "slug": "seven-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": 0.05,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/seven/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_seven_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "gamesgg_seven_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_seven_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_seven_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_vini_jr",
+      "slug": "vini-jr",
+      "name": "Vini Jr. Sprite",
+      "officialName": "Vini Jr. Sprite",
+      "rarity": "mythic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.20",
+      "firstObservedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "destructive_slide_and_weapon_speed",
+        "descriptionEn": "Sprinting charges a destructive slide; slidekicking enemies increases fire rate and reload speed.",
+        "descriptionFr": "Le sprint charge une glissade destructrice ; toucher un ennemi avec une glissade augmente la cadence de tir et la vitesse de rechargement.",
+        "levelValues": [
+          {
+            "slideDamage": 40,
+            "fireRatePct": 10
+          },
+          {
+            "slideDamage": 45,
+            "fireRatePct": 20
+          },
+          {
+            "slideDamage": 50,
+            "fireRatePct": 30
+          },
+          {
+            "slideDamage": 55,
+            "fireRatePct": 40
+          },
+          {
+            "slideDamage": 60,
+            "fireRatePct": 50
+          }
+        ],
+        "unit": "mixed",
+        "notes": "La page indique également un bonus de vitesse de rechargement, sans valeurs séparées."
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Found in Relic Chests",
+        "descriptionFr": "Dans les coffres de relique",
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 0,
+      "variantIds": [
+        "sprite_vini_jr"
+      ],
+      "variants": [
+        {
+          "id": "sprite_vini_jr",
+          "spriteId": "sprite_vini_jr",
+          "variantType": "base",
+          "name": "Vini Jr. Sprite",
+          "slug": "vini-jr",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 0,
+          "spriteChestDropChancePct": 0,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/vini_jr/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [
+            "fortnitegg_vini_jr_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026",
+            "gamesgg_vini_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "fortnitegg_vini_jr_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_vini_2026"
+      ],
+      "dataStatus": "observed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    },
+    {
+      "id": "sprite_batman",
+      "slug": "batman",
+      "name": "Batman Sprite",
+      "officialName": "Batman Sprite",
+      "rarity": "mythic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.20",
+      "firstObservedAt": "2026-07-16",
+      "lastVerifiedAt": "2026-07-18",
+      "ability": {
+        "type": "bat_cape_and_rare_sprite_find",
+        "descriptionEn": "Allows launching into the air and deploying the Bat Cape; also helps find rare Sprites in chests more often.",
+        "descriptionFr": "Permet de se propulser dans les airs et de déployer la batcape ; augmente aussi la fréquence de découverte des esprits rares dans les coffres.",
+        "levelValues": null,
+        "unit": null,
+        "notes": "Les valeurs numériques exactes ne sont pas publiées."
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Unlocked through Hot Bat Summer quests and also found rarely in Sprite Chests during the event",
+        "descriptionFr": "Débloqué via les quêtes Hot Bat Summer et également rarement présent dans les coffres d’esprits pendant l’événement",
+        "confidence": "official"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "official"
+      },
+      "baseSummonCostSpriteDust": 0,
+      "variantIds": [
+        "sprite_batman",
+        "sprite_batman_gold",
+        "sprite_batman_gummy",
+        "sprite_batman_galaxy",
+        "sprite_batman_holofoil"
+      ],
+      "variants": [
+        {
+          "id": "sprite_batman",
+          "spriteId": "sprite_batman",
+          "variantType": "base",
+          "name": "Batman Sprite",
+          "slug": "batman",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 0,
+          "spriteChestDropChancePct": 2.23,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/batman/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "confirmed",
+          "sourceIds": [
+            "official_batman_2026",
+            "fortnitegg_batman_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_batman_gold",
+          "spriteId": "sprite_batman",
+          "variantType": "gold",
+          "name": "Gold Batman Sprite",
+          "slug": "batman-gold",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 0,
+          "spriteChestDropChancePct": 0.1,
+          "extraEffectRef": "variant_type_gold",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/batman/gold.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "confirmed",
+          "sourceIds": [
+            "official_batman_2026",
+            "fortnitegg_batman_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_batman_gummy",
+          "spriteId": "sprite_batman",
+          "variantType": "gummy",
+          "name": "Gummy Batman Sprite",
+          "slug": "batman-gummy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 0,
+          "spriteChestDropChancePct": 0.07,
+          "extraEffectRef": "variant_type_gummy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/batman/gummy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "confirmed",
+          "sourceIds": [
+            "official_batman_2026",
+            "fortnitegg_batman_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_batman_galaxy",
+          "spriteId": "sprite_batman",
+          "variantType": "galaxy",
+          "name": "Galaxy Batman Sprite",
+          "slug": "batman-galaxy",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 0,
+          "spriteChestDropChancePct": 0.04,
+          "extraEffectRef": "variant_type_galaxy",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/batman/galaxy.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "confirmed",
+          "sourceIds": [
+            "official_batman_2026",
+            "fortnitegg_batman_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        },
+        {
+          "id": "sprite_batman_holofoil",
+          "spriteId": "sprite_batman",
+          "variantType": "holofoil",
+          "name": "Holofoil Batman Sprite",
+          "slug": "batman-holofoil",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-16",
+          "summonCostSpriteDust": 0,
+          "spriteChestDropChancePct": 0.01,
+          "extraEffectRef": "variant_type_holofoil",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/batman/holofoil.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-16",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "confirmed",
+          "sourceIds": [
+            "official_batman_2026",
+            "fortnitegg_batman_2026_07_18",
+            "fortnitegg_catalogue_2026_07_18",
+            "official_runners_2026"
+          ]
+        }
+      ],
+      "sourceIds": [
+        "official_batman_2026",
+        "fortnitegg_batman_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ],
+      "dataStatus": "confirmed",
+      "notes": [
+        "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+        "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+      ]
+    }
+  ],
+  "unreleasedContent": {
+    "baseSprites": [
+      {
+        "id": "sprite_pollo",
+        "slug": "pollo",
+        "name": "Pollo Sprite",
+        "rarity": "mythic",
+        "releaseStatus": "unreleased",
+        "ability": null,
+        "availability": {
+          "status": "unreleased",
+          "startDate": null,
+          "endDate": null,
+          "confidence": "community_database"
+        },
+        "sourceIds": [
+          "fortnitegg_catalogue_2026_07_18"
+        ],
+        "dataStatus": "unverified",
+        "visibleInMainCatalogue": false
+      },
+      {
+        "id": "sprite_john_wick",
+        "slug": "john-wick",
+        "name": "John Wick Sprite",
+        "rarity": "mythic",
+        "releaseStatus": "unreleased",
+        "ability": null,
+        "availability": {
+          "status": "unreleased",
+          "startDate": null,
+          "endDate": null,
+          "confidence": "community_database"
+        },
+        "sourceIds": [
+          "fortnitegg_catalogue_2026_07_18"
+        ],
+        "dataStatus": "unverified",
+        "visibleInMainCatalogue": false
+      }
+    ],
+    "variantTypes": [
+      "gem",
+      "cube",
+      "quack"
+    ],
+    "countedInCompletionPercentage": false
+  },
+  "sources": [
+    {
+      "id": "official_runners_2026",
+      "type": "official",
+      "publisher": "Epic Games / Fortnite",
+      "title": "Extract and Collect Sprites on a New Map in Fortnite: Runners",
+      "url": "https://www.fortnite.com/news/extract-and-collect-sprites-on-a-new-map-in-fortnite-runners",
+      "publishedAt": "2026-06-05",
+      "reliability": "primary"
+    },
+    {
+      "id": "official_weekly_events_2026",
+      "type": "official",
+      "publisher": "Epic Games",
+      "title": "What are the weekly events for Sprites in Fortnite?",
+      "url": "https://www.epicgames.com/help/c-202300000001636/c-202300000001721/what-are-the-weekly-events-for-sprites-in-fortnite-a202300000086256",
+      "publishedAt": null,
+      "reliability": "primary"
+    },
+    {
+      "id": "official_batman_2026",
+      "type": "official",
+      "publisher": "Epic Games / Fortnite",
+      "title": "DC Sirens Bring the Heat to Fortnite",
+      "url": "https://www.fortnite.com/news/dc-sirens-bring-the-heat-to-fortnite",
+      "publishedAt": "2026-07-16",
+      "reliability": "primary"
+    },
+    {
+      "id": "fortnitegg_catalogue_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "All Fortnite Sprites",
+      "url": "https://fortnite.gg/sprites",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnite_wiki_v4110",
+      "type": "community_database",
+      "publisher": "Fortnite Wiki",
+      "title": "Update v41.10",
+      "url": "https://fortnite.fandom.com/wiki/Update_v41.10",
+      "publishedAt": "2026-06-25",
+      "reliability": "secondary"
+    },
+    {
+      "id": "gamesgg_vini_2026",
+      "type": "community_guide",
+      "publisher": "GAMES.GG",
+      "title": "How to Get the Vini Jr. Sprite",
+      "url": "https://games.gg/fortnite/guides/fortnite-how-to-get-the-vini-jr-sprite/",
+      "publishedAt": "2026-07-16",
+      "reliability": "secondary"
+    },
+    {
+      "id": "gamesgg_seven_2026",
+      "type": "community_guide",
+      "publisher": "GAMES.GG",
+      "title": "Seven Sprite Release Date, Ability, & All Variants",
+      "url": "https://games.gg/fortnite/guides/fortnite-seven-sprite-release-date/",
+      "publishedAt": "2026-07-15",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_water_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Water Sprite",
+      "url": "https://fortnite.gg/sprites/1-water-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_earth_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Earth Sprite",
+      "url": "https://fortnite.gg/sprites/5-earth-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_fire_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Fire Sprite",
+      "url": "https://fortnite.gg/sprites/9-fire-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_duck_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Duck Sprite",
+      "url": "https://fortnite.gg/sprites/13-duck-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_ghost_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Ghost Sprite",
+      "url": "https://fortnite.gg/sprites/17-ghost-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_dream_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Dream Sprite",
+      "url": "https://fortnite.gg/sprites/21-dream-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_demon_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Demon Sprite",
+      "url": "https://fortnite.gg/sprites/37-demon-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_punk_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Punk Sprite",
+      "url": "https://fortnite.gg/sprites/25-punk-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_king_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "King Sprite",
+      "url": "https://fortnite.gg/sprites/29-king-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_burnt_peanut_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Burnt Peanut",
+      "url": "https://fortnite.gg/sprites/41-burnt-peanut",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_zero_point_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Zero Point Sprite",
+      "url": "https://fortnite.gg/sprites/33-zero-point-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_fishy_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Fishy Sprite",
+      "url": "https://fortnite.gg/sprites/58-fishy-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_striker_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Striker Sprite",
+      "url": "https://fortnite.gg/sprites/62-striker-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_aura_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Aura Sprite",
+      "url": "https://fortnite.gg/sprites/67-aura-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_boss_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Boss Sprite",
+      "url": "https://fortnite.gg/sprites/49-boss-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_grim_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Grim Sprite",
+      "url": "https://fortnite.gg/sprites/78-grim-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_air_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Air Sprite",
+      "url": "https://fortnite.gg/sprites/74-air-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_seven_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Seven Sprite",
+      "url": "https://fortnite.gg/sprites/53-seven-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_vini_jr_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Vini Jr. Sprite",
+      "url": "https://fortnite.gg/sprites/149-vini-jr-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    },
+    {
+      "id": "fortnitegg_batman_2026_07_18",
+      "type": "community_database",
+      "publisher": "Fortnite.GG",
+      "title": "Batman Sprite",
+      "url": "https://fortnite.gg/sprites/139-batman-sprite",
+      "publishedAt": null,
+      "accessedAt": "2026-07-18",
+      "reliability": "secondary"
+    }
+  ]
+}

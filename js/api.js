@@ -6,18 +6,52 @@ async function loadSpritesFromAPI() {
 
     SPRITES = data.sprites.map(s => ({
       id: s.id,
+      slug: s.slug,
       name: s.name,
+      officialName: s.officialName,
+      image: s.image,
+      variantIds: s.variantIds,
+      seasonId: s.seasonId,
+      season: s.season,
+      eventId: s.eventId,
+      event: s.event,
+      acquisitionMethod: s.acquisitionMethod,
+      availability: s.availability,
+      availabilityPeriods: s.availabilityPeriods || [],
+      recurrence: s.recurrence,
+      dates: s.dates,
+      missingFields: s.missingFields || [],
+      sourceIds: s.sourceIds,
+      sources: s.sources || [],
+      dataStatus: s.dataStatus,
+      confidence: s.confidence,
       rarity: s.rarity,
       color: s.color,
       effect: s.effect,
       variants: s.variants,
+      variantDetails: s.variantDetails || {},
       available: s.available,
-      addedDate: s.added_date
+      addedDate: s.addedDate
     }));
 
     SPRITE_IMAGES = {};
     for (const s of data.sprites) {
       SPRITE_IMAGES[s.id] = s.images;
+    }
+
+    SPRITE_VARIANTS = {};
+    for (const s of data.sprites) {
+      SPRITE_VARIANTS[s.id] = s.variantDetails || {};
+    }
+
+    SEASONS = {};
+    for (const season of data.seasons || []) {
+      SEASONS[season.id] = season;
+    }
+
+    EVENTS = {};
+    for (const event of data.events || []) {
+      EVENTS[event.id] = event;
     }
 
     VARIANT_META = {};
