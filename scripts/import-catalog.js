@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { Pool } = require("pg");
+const { validateCatalog, formatReport } = require("./validate-catalog");
 
 const CATALOG_PATH = process.argv[2] || path.join(__dirname, "..", "SpriteDex Catalogue Juil 18 2026.json");
 
@@ -758,6 +759,17 @@ async function importCatalog() {
 
 (async () => {
   try {
+    // Étape 17 — Validation automatique avant publication.
+    // Les erreurs (identifiants en double, statuts non autorisés, etc.) bloquent
+    // l'import ; les avertissements (informations inconnues) sont tolérés.
+    const validation = validateCatalog(catalog);
+    console.log(formatReport(validation));
+    if (validation.errors.length > 0 && !process.argv.includes("--skip-validation")) {
+      console.error("\n[IMPORT] Import annulé : le catalogue contient des erreurs bloquantes.");
+      console.error("[IMPORT] Corrigez-les puis relancez (ou forcez avec --skip-validation à vos risques).");
+      process.exit(1);
+    }
+
     await ensureSchema();
     await importCatalog();
   } catch (e) {
