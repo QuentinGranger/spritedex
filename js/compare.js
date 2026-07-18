@@ -20,6 +20,15 @@ function compareIsPriority(entry) {
   return !!(entry.priority && entry.priority !== "none" && entry.priority !== "ignored");
 }
 
+function isVariantReleasedAndActive(item) {
+  const release = (item.releaseStatus || "").toLowerCase();
+  if (["unreleased", "upcoming", "coming_soon", "soon", "unknown"].includes(release)) return false;
+  const data = (item.dataStatus || "").toLowerCase();
+  if (["archived", "legacy", "disabled"].includes(data)) return false;
+  if (item.available === false || item.enabled === false || item.isReleased === false) return false;
+  return true;
+}
+
 // Build a stable catalog list keyed by variant.id (e.g. sprite_water_holofoil).
 function getCompareCatalogItems() {
   const items = [];
@@ -34,6 +43,9 @@ function getCompareCatalogItems() {
           legacyKeys.push(sprite.id);
         }
         const type = variant.type || variantType;
+        const releaseStatus = variant.releaseStatus || sprite.releaseStatus || "";
+        const dataStatus = variant.dataStatus || sprite.dataStatus || "";
+        const available = variant.available !== undefined ? variant.available : sprite.available;
         items.push({
           id: stableVariantId,
           spriteId: sprite.id,
@@ -45,6 +57,9 @@ function getCompareCatalogItems() {
           rarity: variant.rarity || sprite.rarity,
           color: sprite.color,
           effect: variant.effect || sprite.effect,
+          releaseStatus,
+          dataStatus,
+          available,
           legacyKeys
         });
       }
@@ -67,6 +82,9 @@ function getCompareCatalogItems() {
           rarity: sprite.rarity,
           color: sprite.color,
           effect: sprite.effect,
+          releaseStatus: sprite.releaseStatus || "",
+          dataStatus: sprite.dataStatus || "",
+          available: sprite.available,
           legacyKeys
         });
       }
@@ -106,6 +124,8 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
   const collectionA = userAInfo.collection;
   const collectionB = userBInfo.collection;
 
+  const activeCatalogue = catalogue.filter(isVariantReleasedAndActive);
+
   const groups = {
     bothOwned: [],
     onlyUserA: [],
@@ -114,7 +134,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
     unknown: []
   };
 
-  for (const item of catalogue) {
+  for (const item of activeCatalogue) {
     const a = compareEntry(collectionA, item);
     const b = compareEntry(collectionB, item);
     const sa = compareClassify(a);
@@ -148,7 +168,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
     }
   }
 
-  const total = catalogue.length;
+  const total = activeCatalogue.length;
   const bothOwnedCount = groups.bothOwned.length;
   const onlyUserACount = groups.onlyUserA.length;
   const onlyUserBCount = groups.onlyUserB.length;
