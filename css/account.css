@@ -47,7 +47,7 @@
   background: var(--bg, #0d0f1a);
   overflow-y: auto;
   padding:
-    env(safe-area-inset-top)
+    0
     calc(16px + env(safe-area-inset-right))
     calc(40px + env(safe-area-inset-bottom))
     calc(16px + env(safe-area-inset-left));
@@ -63,9 +63,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0;
+  padding: calc(16px + env(safe-area-inset-top)) 0 16px;
   position: sticky;
-  top: env(safe-area-inset-top);
+  top: 0;
   background: var(--bg, #0d0f1a);
   z-index: 1;
 }
