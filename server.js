@@ -2190,6 +2190,152 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
   }
 });
 
+function computeDurationExpiry(duration) {
+  const now = Date.now();
+  if (duration === "1h") return new Date(now + 60 * 60 * 1000).toISOString();
+  if (duration === "24h") return new Date(now + 24 * 60 * 60 * 1000).toISOString();
+  if (duration === "7d") return new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString();
+  return null;
+}
+
+async function loadCollectionForShare(userId, options) {
+  const result = await pool.query(
+    "SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries WHERE user_id = $1",
+    [userId]
+  );
+  const collection = {};
+  for (const row of result.rows) {
+    collection[row.variant_id] = {
+      status: row.status || "new",
+      note: options.show_notes ? (row.note || "") : "",
+      priority: options.show_priorities ? (row.priority || "none") : "none",
+      obtainedAt: row.obtained_at || null
+    };
+  }
+  return collection;
+}
+
+// ── Compare share tokens ──
+app.post("/api/compare/share", async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+
+    const duration = req.body?.duration || "24h";
+    const expiresAt = computeDurationExpiry(duration);
+    const token = crypto.randomBytes(32).toString("hex");
+    const collectionVisible = req.body?.collectionVisible !== false;
+    const showNotes = !!req.body?.showNotes;
+    const showPriorities = req.body?.showPriorities !== false;
+    const allowVisitorCompare = req.body?.allowVisitorCompare !== false;
+
+    const insert = await pool.query(
+      `INSERT INTO compare_share_tokens (token, owner_user_id, expires_at, collection_visible, show_notes, show_priorities, allow_visitor_compare)
+       VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7) RETURNING id, token, expires_at, created_at`,
+      [token, reqUser, expiresAt, collectionVisible, showNotes, showPriorities, allowVisitorCompare]
+    );
+
+    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_created", status: "ok" });
+    res.json({
+      token,
+      url: `${req.protocol}://${req.get("host")}/compare/share/${token}`,
+      expiresAt: insert.rows[0].expires_at,
+      createdAt: insert.rows[0].created_at,
+      options: { collectionVisible, showNotes, showPriorities, allowVisitorCompare }
+    });
+  } catch (err) {
+    console.error("[/api/compare/share]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get("/api/compare/share/:token", async (req, res) => {
+  try {
+    const token = req.params.token;
+    if (!/^[a-f0-9]{64}$/i.test(token)) return res.status(400).json({ error: "Token invalide" });
+
+    const tokenRes = await pool.query(
+      `SELECT t.*, u.username as owner_username
+       FROM compare_share_tokens t
+       JOIN users u ON u.id = t.owner_user_id
+       WHERE t.token = $1 AND t.revoked_at IS NULL
+         AND (t.expires_at IS NULL OR t.expires_at > NOW())
+         AND u.deleted_at IS NULL`,
+      [token]
+    );
+    if (!tokenRes.rows.length) return res.status(404).json({ error: "Lien invalide, expiré ou révoqué" });
+    const share = tokenRes.rows[0];
+    if (!share.collection_visible) return res.status(403).json({ error: "Collection masquée par le propriétaire" });
+
+    await pool.query("UPDATE compare_share_tokens SET last_used_at = NOW() WHERE id = $1", [share.id]);
+
+    const ownerCollection = await loadCollectionForShare(share.owner_user_id, share);
+    const visitor = await getRequestingUser(req);
+    let visitorCollection = {};
+    let visitorName = "Visiteur";
+    if (visitor && share.allow_visitor_compare) {
+      visitorCollection = await loadServerCompareCollection(visitor);
+      const visitorRes = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [visitor]);
+      if (visitorRes.rows.length) visitorName = visitorRes.rows[0].username;
+    }
+
+    const userA = { id: share.owner_user_id, displayName: share.owner_username, collection: ownerCollection };
+    const userB = { id: visitor || "visitor", displayName: visitorName, collection: visitorCollection };
+    const catalogue = await getServerCompareCatalogItems();
+    const result = compareCollectionsServer(userA, userB, catalogue);
+
+    res.json({
+      token,
+      options: {
+        collectionVisible: share.collection_visible,
+        showNotes: !!share.show_notes,
+        showPriorities: !!share.show_priorities,
+        allowVisitorCompare: !!share.allow_visitor_compare
+      },
+      result
+    });
+  } catch (err) {
+    console.error("[/api/compare/share/:token]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.delete("/api/compare/share/:token", async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+
+    const result = await pool.query(
+      "UPDATE compare_share_tokens SET revoked_at = NOW() WHERE token = $1 AND owner_user_id = $2 RETURNING id",
+      [req.params.token, reqUser]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "Lien non trouvé" });
+    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_revoked", status: "ok" });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[/api/compare/share/:token]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get("/api/compare/shares", async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const result = await pool.query(
+      `SELECT token, expires_at, revoked_at, collection_visible, show_notes, show_priorities, allow_visitor_compare, created_at, last_used_at
+       FROM compare_share_tokens
+       WHERE owner_user_id = $1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > NOW())
+       ORDER BY created_at DESC`,
+      [reqUser]
+    );
+    res.json({ shares: result.rows });
+  } catch (err) {
+    console.error("[/api/compare/shares]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Collection : UPSERT one entry ──
 app.put("/api/collection/:userId/:spriteId", security.validateBody(security.schemas.collectionEntrySchema), async (req, res) => {
   const { userId } = req.params;
@@ -3563,6 +3709,23 @@ async function ensureSquadTables() {
       CREATE INDEX IF NOT EXISTS idx_change_history_entity ON catalog_change_history (entity_id, changed_at DESC);
       CREATE INDEX IF NOT EXISTS idx_change_history_changed_at ON catalog_change_history (changed_at DESC);
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS compare_share_tokens (
+        id SERIAL PRIMARY KEY,
+        token VARCHAR(64) UNIQUE NOT NULL,
+        owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMPTZ,
+        revoked_at TIMESTAMPTZ,
+        collection_visible BOOLEAN NOT NULL DEFAULT TRUE,
+        show_notes BOOLEAN NOT NULL DEFAULT FALSE,
+        show_priorities BOOLEAN NOT NULL DEFAULT TRUE,
+        allow_visitor_compare BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_used_at TIMESTAMPTZ
+      );
+      CREATE INDEX IF NOT EXISTS idx_compare_share_token ON compare_share_tokens (token);
+      CREATE INDEX IF NOT EXISTS idx_compare_share_owner ON compare_share_tokens (owner_user_id);
+    `);
     await pushService.ensurePushTables(pool);
     await secLog.ensureSecurityLogTable(pool);
     console.log("Squad tables ready");
@@ -3601,6 +3764,11 @@ async function purgeDeletedAccounts() {
     console.error("[PURGE] Failed to purge deleted accounts:", err);
   }
 }
+
+// ── SPA routes for shareable compare links ──
+app.get("/compare/share/:token", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
 
 ensureSquadTables()
   .then(ensureReferenceDataSeeded)

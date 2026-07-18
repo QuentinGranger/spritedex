@@ -863,23 +863,84 @@ async function shareCompareLink() {
     toast("Connecte-toi d’abord pour obtenir un lien de partage");
     return;
   }
+  if (els.shareCompareDialog && typeof els.shareCompareDialog.showModal === "function") {
+    els.shareCompareDialog.showModal();
+  } else {
+    createCompareShare();
+  }
+}
+
+async function createCompareShare() {
+  if (!state.userId) {
+    toast("Connecte-toi d’abord pour obtenir un lien de partage");
+    return;
+  }
+  if (!els.shareCompareDuration) return;
+
+  const duration = els.shareCompareDuration.value || "24h";
+  const collectionVisible = els.shareCompareCollection ? els.shareCompareCollection.checked : true;
+  const showNotes = els.shareCompareNotes ? els.shareCompareNotes.checked : false;
+  const showPriorities = els.shareComparePriorities ? els.shareComparePriorities.checked : true;
+  const allowVisitorCompare = els.shareCompareVisitor ? els.shareCompareVisitor.checked : true;
+
   try {
-    const res = await fetch(`${API_BASE}/profile/${state.userId}/share-link`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/compare/share`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ duration, collectionVisible, showNotes, showPriorities, allowVisitorCompare })
+    });
+    if (!res.ok) throw new Error("create share failed");
     const data = await res.json();
-    if (!data.shareToken) {
-      toast("Impossible de générer le lien");
-      return;
+    const url = data.url;
+    if (els.shareCompareResult) {
+      els.shareCompareResult.innerHTML = `<p class="share-compare-url"><a href="${escapeHtml(url)}" target="_blank">${escapeHtml(url)}</a></p>`;
     }
-    const url = `${location.origin}${location.pathname}?compare=${data.shareToken}`;
     if (navigator.clipboard) {
       await navigator.clipboard.writeText(url);
-      toast("Lien de comparaison copié !");
+      toast("Lien copié !");
     } else {
       toast(url);
     }
   } catch (e) {
     toast("Erreur réseau");
     console.error("[compare share]", e);
+  }
+}
+
+async function loadCompareShare(token) {
+  try {
+    const res = await fetch(`${API_BASE}/compare/share/${encodeURIComponent(token)}`, { headers: authHeadersOnly() });
+    if (res.status === 403) {
+      toast("Ce profil est privé ou tu n’as pas l’autorisation de le comparer");
+      return;
+    }
+    if (res.status === 404) {
+      toast("Lien de partage invalide, expiré ou révoqué");
+      return;
+    }
+    if (!res.ok) throw new Error("compare share failed");
+    const data = await res.json();
+    state.compareToken = token;
+    state.compareShareOptions = data.options;
+
+    const owner = data.result?.users?.userA;
+    const ownerCollection = {};
+    for (const r of (data.result?.records || [])) {
+      ownerCollection[r.variantId] = { status: r.userA.status, priority: r.userA.priority, note: r.userA.note };
+    }
+
+    state.compareTarget = {
+      username: owner?.displayName || "Ami",
+      collection: ownerCollection
+    };
+
+    if (els.compareTokenInput) els.compareTokenInput.value = token;
+    renderCompare();
+    switchToCompareView();
+    toast(`Comparaison avec ${state.compareTarget.username} chargée`);
+  } catch (e) {
+    toast("Impossible de charger ce lien partagé");
+    console.error("[compare share load]", e);
   }
 }
 
@@ -897,6 +958,14 @@ async function handleCompareParams() {
   return true;
 }
 
+async function handleCompareShareParams() {
+  const pathMatch = location.pathname.match(/\/compare\/share\/([a-f0-9]{64})/i);
+  const token = pathMatch ? pathMatch[1].toLowerCase() : new URLSearchParams(location.search).get("compareShare");
+  if (!token) return false;
+  await loadCompareShare(token);
+  return true;
+}
+
 function setupCompareEvents() {
   if (els.compareForm) {
     els.compareForm.addEventListener("submit", (e) => {
@@ -908,5 +977,11 @@ function setupCompareEvents() {
   }
   if (els.compareShareBtn) {
     els.compareShareBtn.addEventListener("click", shareCompareLink);
+  }
+  if (els.shareCompareGenerate && els.shareCompareDialog) {
+    els.shareCompareGenerate.addEventListener("click", (e) => {
+      e.preventDefault();
+      createCompareShare();
+    });
   }
 }

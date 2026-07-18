@@ -113,5 +113,13 @@ const els = {
   compareActions: $("#compareActions"),
   comparePlayerAName: $("#comparePlayerAName"),
   comparePlayerBName: $("#comparePlayerBName"),
-  compareSpriteDetailContent: $("#compareSpriteDetailContent")
+  compareSpriteDetailContent: $("#compareSpriteDetailContent"),
+  shareCompareDialog: $("#shareCompareDialog"),
+  shareCompareDuration: $("#shareCompareDuration"),
+  shareCompareCollection: $("#shareCompareCollection"),
+  shareCompareNotes: $("#shareCompareNotes"),
+  shareComparePriorities: $("#shareComparePriorities"),
+  shareCompareVisitor: $("#shareCompareVisitor"),
+  shareCompareGenerate: $("#shareCompareGenerate"),
+  shareCompareResult: $("#shareCompareResult")
 };

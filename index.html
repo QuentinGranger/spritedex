@@ -957,6 +957,28 @@
       </form>
     </dialog>
 
+    <dialog id="shareCompareDialog" class="share-compare-dialog">
+      <form method="dialog" class="dialog-card share-compare-form">
+        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <h3>Partager ma comparaison</h3>
+        <label class="share-compare-field">
+          Durée
+          <select id="shareCompareDuration">
+            <option value="1h">1 heure</option>
+            <option value="24h" selected>24 heures</option>
+            <option value="7d">7 jours</option>
+            <option value="none">Sans expiration</option>
+          </select>
+        </label>
+        <label class="share-compare-check"><input type="checkbox" id="shareCompareCollection" checked> Collection visible</label>
+        <label class="share-compare-check"><input type="checkbox" id="shareCompareNotes"> Afficher les notes</label>
+        <label class="share-compare-check"><input type="checkbox" id="shareComparePriorities" checked> Afficher les priorités</label>
+        <label class="share-compare-check"><input type="checkbox" id="shareCompareVisitor" checked> Permettre la comparaison avec le visiteur</label>
+        <button type="submit" class="login-btn" id="shareCompareGenerate">Générer le lien</button>
+        <div id="shareCompareResult" class="share-compare-result"></div>
+      </form>
+    </dialog>
+
     <dialog id="legalDialog" class="legal-dialog">
       <div class="dialog-card">
         <button class="close-button" onclick="document.getElementById('legalDialog').close()">×</button>

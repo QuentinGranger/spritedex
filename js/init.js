@@ -143,6 +143,7 @@ async function init() {
         buildDeck();
         renderAll();
         await handleCompareParams();
+        await handleCompareShareParams();
         await restoreSquad();
         handleJoinLink();
         setupNotifBell();
@@ -164,6 +165,7 @@ async function init() {
       buildDeck();
       renderAll();
       await handleCompareParams();
+      await handleCompareShareParams();
       await restoreSquad();
       handleJoinLink();
       setupNotifBell();
