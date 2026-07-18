@@ -76,17 +76,43 @@ function openSpriteDetail(spriteId) {
     ` : ""}
 
     ${(() => {
-      const r = sprite.recurrence;
-      if (!r || r.status === "unknown") return "";
-      let text = "Récurrence inconnue.";
-      if (r.status === "confirmed_recurring" && r.officiallyConfirmed) text = "Retour confirmé par Epic Games.";
-      else if (r.status === "confirmed_recurring") text = "Retour probable.";
-      else if (r.status === "possible_return") text = "Retour possible, mais non confirmé par Epic Games.";
-      else if (r.status === "not_confirmed") text = "Aucun retour prévu ou confirmé.";
+      // Étape 20 — Disponibilité formulée honnêtement (statut + source).
+      const a = sprite.availability || {};
+      const conf = confidenceClass(a.confidence);
+      const phrase = availabilityPhrase(a);
+      const endDateFr = formatDateFr(a.endDate);
       return `
-      <div class="sd-recurrence">
+      <div class="sd-availability sd-conf--${conf}">
+        <strong>Disponibilité :</strong>
+        <span class="sd-availability__text">${phrase}</span>
+        <span class="sd-availability__end">Date de fin : ${endDateFr || "inconnue"}</span>
+      </div>
+      `;
+    })()}
+
+    ${(() => {
+      // Étape 20 — Méthode d'obtention (« à confirmer » si incertaine).
+      const acq = sprite.acquisitionMethod || {};
+      const conf = confidenceClass(acq.confidence);
+      const phrase = acquisitionPhrase(acq);
+      const loc = acq.location ? `<span class="sd-acquisition__loc">Lieu : ${escapeHtml(acq.location)}</span>` : "";
+      return `
+      <div class="sd-acquisition sd-conf--${conf}">
+        <strong>Obtention :</strong>
+        <span class="sd-acquisition__text">${escapeHtml(phrase)}</span>
+        ${loc}
+      </div>
+      `;
+    })()}
+
+    ${(() => {
+      // Étape 20 — Récurrence honnête (retour confirmé / possible / non confirmé).
+      const r = sprite.recurrence || {};
+      const conf = r.officiallyConfirmed ? "official" : "unknown";
+      return `
+      <div class="sd-recurrence sd-conf--${conf}">
         <strong>Récurrence :</strong>
-        <span class="sd-recurrence__text">${text}</span>
+        <span class="sd-recurrence__text">${recurrencePhrase(r)}</span>
       </div>
       `;
     })()}
@@ -106,6 +132,48 @@ function openSpriteDetail(spriteId) {
       <div class="sd-data-status sd-data-status--${status}">
         <strong>${label}</strong>
         <span class="sd-data-status__missing">Champs manquants : ${missing}</span>
+      </div>
+      `;
+    })()}
+
+    ${(() => {
+      // Étape 20 — Dates de vérification affichées honnêtement.
+      const dates = sprite.dates || {};
+      const last = formatDateFr(dates.lastVerifiedAt);
+      const official = formatDateFr(dates.officiallyAnnouncedAt);
+      const first = formatDateFr(dates.firstObservedAt);
+      return `
+      <div class="sd-dates">
+        <strong>Vérifications :</strong>
+        ${last ? `<span class="sd-dates__item sd-dates__last">Dernière vérification : ${last}</span>` : ""}
+        ${official ? `<span class="sd-dates__item">Annonce officielle : ${official}</span>` : ""}
+        ${first ? `<span class="sd-dates__item">Première observation : ${first}</span>` : ""}
+        ${!last && !official && !first ? `<span class="sd-dates__item sd-dates__unknown">Aucune date de vérification connue</span>` : ""}
+      </div>
+      `;
+    })()}
+
+    ${(() => {
+      // Étape 20 — Sources et fiabilité.
+      const sources = sprite.sources || [];
+      if (!sources.length) {
+        return `
+        <div class="sd-sources sd-conf--unknown">
+          <strong>Sources :</strong>
+          <span class="sd-sources__list">Aucune source référencée</span>
+        </div>
+        `;
+      }
+      const items = sources.map((src, i) => {
+        const reliability = sourceReliabilityLabel(src);
+        const confClass = confidenceClass(src.reliability || src.type);
+        const link = src.url ? ` <a href="${escapeHtml(src.url)}" target="_blank" rel="noopener" class="sd-sources__link">${escapeHtml(src.title || src.id)}</a>` : ` <span class="sd-sources__name">${escapeHtml(src.title || src.id)}</span>`;
+        return `<span class="sd-sources__item sd-conf--${confClass}">${link} — ${reliability}</span>`;
+      }).join("");
+      return `
+      <div class="sd-sources">
+        <strong>Sources :</strong>
+        <span class="sd-sources__list">${items}</span>
       </div>
       `;
     })()}

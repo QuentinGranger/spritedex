@@ -535,3 +535,74 @@
   justify-content: center;
   margin-top: 16px;
 }
+
+/* ── Honest uncertainty blocks ── */
+.sd-dates,
+.sd-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.84rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.sd-dates strong,
+.sd-sources strong { color: var(--text); }
+
+.sd-dates__item,
+.sd-sources__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.8rem;
+}
+
+.sd-sources__list { display: flex; flex-direction: column; gap: 4px; }
+
+.sd-sources__link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sd-sources__link:hover { color: var(--text); }
+
+.sd-dates__unknown,
+.sd-sources__unknown,
+.sd-conf--unknown {
+  color: #9ca3af;
+  border-color: rgba(156, 163, 175, 0.35);
+  background: rgba(156, 163, 175, 0.08);
+}
+
+.sd-conf--official {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.sd-conf--observed {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.sd-conf--community {
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.4);
+  background: rgba(96, 165, 250, 0.08);
+}
+
+.sd-conf--estimated {
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.4);
+  background: rgba(251, 146, 60, 0.08);
+}

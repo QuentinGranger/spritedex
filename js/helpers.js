@@ -115,6 +115,124 @@ function toast(message) {
   toast.timer = setTimeout(() => els.toast.classList.remove("show"), 1800);
 }
 
+// ── Étape 20 — Formulations honnêtes des incertitudes ──────────────────────
+// L'application affiche clairement ce qui est inconnu, observé, officiel ou à
+// confirmer, sans masquer les informations manquantes ni faire passer une
+// estimation pour une donnée officielle.
+
+// Formate une date ISO en français long : "18 juillet 2026". Renvoie null si
+// la date est inconnue/invalide (l'appelant affichera alors « inconnue »).
+function formatDateFr(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// Traduit un niveau de confiance en libellé honnête.
+function confidenceLabel(confidence) {
+  const c = (confidence || "").toLowerCase();
+  const map = {
+    official: "Information officielle",
+    confirmed: "Information officielle",
+    primary: "Information officielle",
+    observed: "Observation directe",
+    in_game: "Observation directe",
+    community_database: "Information communautaire",
+    community: "Information communautaire",
+    secondary: "Information communautaire",
+    tertiary: "Information communautaire",
+    estimated: "Estimation",
+    unknown: "À confirmer",
+  };
+  return map[c] || "À confirmer";
+}
+
+// Classe CSS associée au niveau de confiance (pour distinguer visuellement
+// l'officiel de l'estimation).
+function confidenceClass(confidence) {
+  const c = (confidence || "").toLowerCase();
+  if (["official", "confirmed", "primary"].includes(c)) return "official";
+  if (["observed", "in_game"].includes(c)) return "observed";
+  if (["community_database", "community", "secondary", "tertiary"].includes(c)) return "community";
+  if (c === "estimated") return "estimated";
+  return "unknown";
+}
+
+// Phrase honnête décrivant la disponibilité, en fonction du statut et de la
+// source de l'information.
+function availabilityPhrase(availability) {
+  const a = availability || {};
+  const status = (a.status || "unknown").toLowerCase();
+  const conf = confidenceClass(a.confidence);
+  switch (status) {
+    case "available":
+      if (conf === "official") return "Disponible (information officielle)";
+      if (conf === "observed") return "Disponible selon une observation récente";
+      if (conf === "community") return "Disponible selon des informations communautaires";
+      return "Disponible (à confirmer)";
+    case "upcoming":
+      return "À venir";
+    case "ended":
+      return "Plus disponible";
+    case "not_observed":
+      return "Non observé récemment";
+    case "unreleased":
+      return "Pas encore sortie";
+    default:
+      return "Disponibilité inconnue";
+  }
+}
+
+// Phrase honnête décrivant la méthode d'obtention.
+function acquisitionPhrase(acquisition) {
+  const a = acquisition || {};
+  const type = (a.type || "unknown").toLowerCase();
+  const conf = confidenceClass(a.confidence);
+  if (type === "unknown" || conf === "unknown") {
+    return a.description
+      ? `${a.description} (méthode à confirmer)`
+      : "Méthode d'obtention à confirmer";
+  }
+  const base = a.description || {
+    quest: "Obtenu via une quête",
+    event: "Obtenu lors d'un événement",
+    exploration: "Trouvé en explorant",
+    interaction: "Obtenu via une interaction",
+    reward: "Obtenu en récompense",
+    challenge: "Obtenu via un défi",
+    purchase: "Obtenu par achat",
+    automatic: "Obtenu automatiquement",
+  }[type] || "Méthode d'obtention connue";
+  if (conf === "observed") return `${base} (observation directe)`;
+  if (conf === "community") return `${base} (information communautaire)`;
+  if (conf === "official") return `${base} (information officielle)`;
+  return `${base} (à confirmer)`;
+}
+
+// Phrase honnête décrivant la récurrence (retour du sprite).
+function recurrencePhrase(recurrence) {
+  const r = recurrence || {};
+  const status = (r.status || "unknown").toLowerCase();
+  if (status === "confirmed_recurring" && r.officiallyConfirmed) return "Retour confirmé par Epic Games";
+  if (status === "confirmed_recurring") return "Retour probable (non officiel)";
+  if (status === "possible_return") return "Retour possible, non confirmé";
+  if (status === "not_confirmed") return "Retour non confirmé";
+  return "Récurrence inconnue";
+}
+
+// Libellé honnête de fiabilité d'une source.
+function sourceReliabilityLabel(source) {
+  const s = source || {};
+  const type = (s.type || "").toLowerCase();
+  const rel = (s.reliability || "").toLowerCase();
+  if (type === "official" || rel === "primary") return "Information officielle";
+  if (type === "in_game") return "Observation en jeu";
+  if (type === "creator") return "Information de créateur";
+  if (type === "community" || type === "database" || rel === "secondary" || rel === "tertiary") return "Information communautaire";
+  return "Source à confirmer";
+}
+
 function getStats(items = getAllItems()) {
   const total = items.length;
   const owned = items.filter((item) => getEntry(item.id).status === "owned").length;
