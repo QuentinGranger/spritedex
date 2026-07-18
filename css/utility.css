@@ -1,28 +1,32 @@
 /* ── Offline Indicator ── */
 .offline-indicator {
   position: fixed;
-  top: env(safe-area-inset-top);
-  left: 0;
-  right: 0;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-150%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 8px 16px;
-  background: rgba(255, 58, 110, 0.95);
-  color: #fff;
-  font-size: 0.78rem;
+  background: rgba(20, 22, 36, 0.95);
+  border: 1px solid rgba(255, 58, 110, 0.35);
+  color: #ff3a6e;
+  font-size: 0.74rem;
   font-family: var(--font-heading);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  border-radius: 999px;
   z-index: 99999;
-  transform: translateY(-100%);
   transition: transform 300ms ease;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  white-space: nowrap;
 }
 
-.offline-indicator.visible { transform: translateY(0); }
-.offline-indicator svg { width: 16px; height: 16px; }
+.offline-indicator.visible { transform: translateX(-50%) translateY(0); }
+.offline-indicator svg { width: 14px; height: 14px; }
 
 /* ── Toast ── */
 .toast {
