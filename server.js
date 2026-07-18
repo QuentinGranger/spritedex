@@ -532,7 +532,8 @@ app.get("/api/push/preferences", async (req, res) => {
               push_pref_squad_activity,
               push_pref_session_summary,
               push_pref_goals,
-              push_pref_sync
+              push_pref_sync,
+              push_pref_news
        FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [reqUser]
     );
@@ -545,7 +546,8 @@ app.get("/api/push/preferences", async (req, res) => {
       squadActivity: row.push_pref_squad_activity,
       sessionSummary: row.push_pref_session_summary,
       goals: row.push_pref_goals,
-      sync: row.push_pref_sync
+      sync: row.push_pref_sync,
+      news: row.push_pref_news
     });
   } catch (err) {
     console.error("[PUSH] preferences get error", err);
@@ -567,7 +569,8 @@ app.patch("/api/push/preferences", async (req, res) => {
     squadActivity: "push_pref_squad_activity",
     sessionSummary: "push_pref_session_summary",
     goals: "push_pref_goals",
-    sync: "push_pref_sync"
+    sync: "push_pref_sync",
+    news: "push_pref_news"
   };
   for (const [key, col] of Object.entries(map)) {
     if (typeof body[key] === "boolean") {
@@ -1853,23 +1856,49 @@ async function refreshNews() {
     fetchFortniteGGNews()
   ]);
   const all = [...frNews, ...enNews, ...stwNews, ...ggNews];
-  let inserted = 0;
+  const insertedItems = [];
   for (const item of all) {
     try {
-      await pool.query(
+      const result = await pool.query(
         `INSERT INTO sprite_news (hash, source, title, description, image, link, news_date)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (hash) DO NOTHING`,
+         ON CONFLICT (hash) DO NOTHING
+         RETURNING id, title`,
         [item.hash, item.source, item.title, item.description.slice(0, 500), item.image, item.link, item.date]
       );
-      inserted++;
+      if (result.rows.length > 0) {
+        insertedItems.push(item);
+      }
     } catch (err) {
       // duplicate or error, skip
     }
   }
-  if (inserted > 0) {
-    console.log(`News: ${inserted} new items inserted`);
+  if (insertedItems.length > 0) {
+    console.log(`News: ${insertedItems.length} new items inserted`);
     broadcastNews();
+    notifyNewsSubscribers(insertedItems);
+  }
+}
+
+async function notifyNewsSubscribers(items) {
+  if (!items.length) return;
+  const title = items.length === 1
+    ? "Nouvelle actu SpriteDex"
+    : `${items.length} nouvelles actus`;
+  const body = items.length === 1
+    ? items[0].title || "Un article vient d'être ajouté"
+    : items[0].title || `${items.length} articles sur les sprites`;
+  try {
+    const results = await pushService.notifyNewsSubscribers(pool, {
+      title,
+      body,
+      icon: items[0].image || "/icons/icon-192x192.png",
+      url: items[0].link || "/"
+    });
+    const ok = results.filter(r => r.ok).length;
+    console.log(`[PUSH] News notification sent to ${ok}/${results.length} devices`);
+  } catch (err) {
+    console.error("[PUSH] Failed to send news notification:", err);
   }
 }
 

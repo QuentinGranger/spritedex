@@ -54,7 +54,8 @@
           squadActivity: prefs.squadActivity !== false,
           sessionSummary: prefs.sessionSummary === true,
           goals: prefs.goals === true,
-          sync: prefs.sync === true
+          sync: prefs.sync === true,
+          news: prefs.news !== false
         })
       });
     } catch (err) {

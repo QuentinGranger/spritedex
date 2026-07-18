@@ -91,7 +91,8 @@ async function ensurePushTables(pool) {
     ADD COLUMN IF NOT EXISTS push_pref_squad_activity BOOLEAN NOT NULL DEFAULT TRUE,
     ADD COLUMN IF NOT EXISTS push_pref_session_summary BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS push_pref_goals BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS push_pref_sync BOOLEAN NOT NULL DEFAULT FALSE;
+    ADD COLUMN IF NOT EXISTS push_pref_sync BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS push_pref_news BOOLEAN NOT NULL DEFAULT TRUE;
   `);
 }
 
@@ -126,6 +127,19 @@ async function getEnabledTokensForUser(pool, userId) {
        AND pt.enabled = TRUE
        AND u.deleted_at IS NULL`,
     [userId]
+  );
+  return result.rows;
+}
+
+async function getNewsSubscriberTokens(pool) {
+  const result = await pool.query(
+    `SELECT DISTINCT pt.user_id, pt.token, pt.platform
+     FROM push_tokens pt
+     JOIN users u ON u.id = pt.user_id
+     WHERE pt.enabled = TRUE
+       AND u.push_enabled = TRUE
+       AND u.push_pref_news = TRUE
+       AND u.deleted_at IS NULL`
   );
   return result.rows;
 }
@@ -361,6 +375,21 @@ async function notifySquadMembers(pool, squadId, senderUserId, message) {
   return results;
 }
 
+async function notifyNewsSubscribers(pool, message) {
+  const tokens = await getNewsSubscriberTokens(pool);
+  const payload = buildNotificationPayload(message);
+  const results = [];
+  for (const row of tokens) {
+    const result = await dispatchNotification({ pool, token: row.token, platform: row.platform, payload });
+    if (result.expired) {
+      // Row contains token; user_id is also available.
+      await unregisterToken(pool, row.user_id, row.token);
+    }
+    results.push({ platform: row.platform, ok: result.ok, error: result.error });
+  }
+  return results;
+}
+
 module.exports = {
   getVapidPublicKey,
   ensurePushTables,
@@ -372,5 +401,6 @@ module.exports = {
   buildNotificationPayload,
   dispatchNotification,
   notifyUser,
-  notifySquadMembers
+  notifySquadMembers,
+  notifyNewsSubscribers
 };

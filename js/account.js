@@ -348,7 +348,8 @@ function setupAccountPanel() {
     "notifSquadActivity",
     "notifSessionSummary",
     "notifGoals",
-    "notifSync"
+    "notifSync",
+    "notifNews"
   ];
 
   function loadNotifPrefs() {
@@ -376,7 +377,8 @@ function setupAccountPanel() {
         squadActivity: prefs.notifSquadActivity,
         sessionSummary: prefs.notifSessionSummary,
         goals: prefs.notifGoals,
-        sync: prefs.notifSync
+        sync: prefs.notifSync,
+        news: prefs.notifNews
       });
     }
   }
