@@ -351,6 +351,24 @@ function compareServerClassify(entry) {
   return "unknown";
 }
 
+function compareServerIsExplicitEntry(entry) {
+  if (!entry || typeof entry !== "object") return false;
+  if (entry.status && !COMPARE_SERVER_RULES.unknown.includes(entry.status)) return true;
+  if (entry.note && String(entry.note).trim()) return true;
+  if (entry.priority && entry.priority !== "none" && entry.priority !== "ignored") return true;
+  return false;
+}
+
+function countServerExplicitCollectionEntries(collection) {
+  if (!collection || typeof collection !== "object") return 0;
+  let count = 0;
+  for (const [key, entry] of Object.entries(collection)) {
+    if (key.startsWith("fav_")) continue;
+    if (compareServerIsExplicitEntry(entry)) count++;
+  }
+  return count;
+}
+
 function compareServerDefaultEntry() { return { status: "new", priority: "none", note: "" }; }
 
 function isVariantReleasedAndActiveServer(item) {
@@ -458,14 +476,17 @@ function compareCollectionsServer(userA, userB, catalogue) {
   const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
 
   const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+  const aEnteredCount = countServerExplicitCollectionEntries(userA.collection);
+  const bEnteredCount = countServerExplicitCollectionEntries(userB.collection);
+  const insufficientData = aEnteredCount === 0 || bEnteredCount === 0;
   const comparisonId = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `comparison_${crypto.randomBytes(16).toString("hex")}`;
 
   return {
     comparisonId,
     generatedAt: new Date().toISOString(),
     users: {
-      userA: { id: userA.id, displayName: userA.displayName },
-      userB: { id: userB.id, displayName: userB.displayName }
+      userA: { id: userA.id, displayName: userA.displayName, enteredCount: aEnteredCount },
+      userB: { id: userB.id, displayName: userB.displayName, enteredCount: bEnteredCount }
     },
     summary: {
       catalogueVariantCount: total,
@@ -480,7 +501,10 @@ function compareCollectionsServer(userA, userB, catalogue) {
       bPossessionRate: toRate(bOwnedCount, total),
       collectiveOwnedCount,
       collectiveCompletionRate: toRate(collectiveOwnedCount, total),
-      complementarityRate: toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount)
+      complementarityRate: toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount),
+      aEnteredCount,
+      bEnteredCount,
+      insufficientData
     },
     groups,
     records
@@ -543,7 +567,8 @@ function applyServerCompareFilters(result, query) {
     bPossessionRate: toRate(bOwnedCount, total),
     collectiveOwnedCount,
     collectiveCompletionRate: toRate(collectiveOwnedCount, total),
-    complementarityRate: toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount)
+    complementarityRate: toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount),
+    insufficientData: result.summary?.insufficientData ?? false
   };
 
   return { ...result, records, groups, summary };

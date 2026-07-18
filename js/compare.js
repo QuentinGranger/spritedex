@@ -126,6 +126,21 @@ function compareEntry(collection, item) {
   return defaultEntry();
 }
 
+function countExplicitCollectionEntries(collection) {
+  if (!collection || typeof collection !== "object") return 0;
+  let count = 0;
+  for (const [key, entry] of Object.entries(collection)) {
+    if (key.startsWith("fav_")) continue;
+    if (!entry || typeof entry !== "object") continue;
+    if (!COMPARE_RULES.unknown.includes(entry.status)) {
+      count++;
+    } else if ((entry.note && String(entry.note).trim()) || (entry.priority && entry.priority !== "none" && entry.priority !== "ignored")) {
+      count++;
+    }
+  }
+  return count;
+}
+
 // ── Moteur de comparaison ───────────────────────────────────────────────────
 // userA et userB sont des objets { id, displayName, collection }.
 // catalogue est une liste de variants (par défaut tous les variants sortis du catalogue).
@@ -202,6 +217,10 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
   const collectiveCompletionRate = toRate(collectiveOwnedCount, total);
   const complementarityRate = toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount);
 
+  const aEnteredCount = countExplicitCollectionEntries(collectionA);
+  const bEnteredCount = countExplicitCollectionEntries(collectionB);
+  const insufficientData = aEnteredCount === 0 || bEnteredCount === 0;
+
   const comparisonId = (typeof crypto !== "undefined" && crypto.randomUUID)
     ? crypto.randomUUID()
     : `comparison_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -210,8 +229,8 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
     comparisonId,
     generatedAt: new Date().toISOString(),
     users: {
-      userA: { id: userAInfo.id, displayName: userAInfo.displayName },
-      userB: { id: userBInfo.id, displayName: userBInfo.displayName }
+      userA: { id: userAInfo.id, displayName: userAInfo.displayName, enteredCount: aEnteredCount },
+      userB: { id: userBInfo.id, displayName: userBInfo.displayName, enteredCount: bEnteredCount }
     },
     summary: {
       catalogueVariantCount: total,
@@ -226,7 +245,10 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
       bPossessionRate,
       collectiveOwnedCount,
       collectiveCompletionRate,
-      complementarityRate
+      complementarityRate,
+      aEnteredCount,
+      bEnteredCount,
+      insufficientData
     },
     groups,
     records
@@ -277,23 +299,28 @@ function renderCompareSummary(result, aName, bName) {
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
   const ownerLine = (name, count, other) => `<strong>${name}</strong> possède <strong>${count}</strong> variante${count > 1 ? 's' : ''} qui manque${count > 1 ? 'nt' : ''} à <strong>${other}</strong>.`;
+  const pct = (v) => s.insufficientData ? "—" : `${v}%`;
+  const warning = s.insufficientData
+    ? `<p class="compare-insufficient-warning">Collection insuffisamment renseignée pour calculer une comparaison fiable.</p>`
+    : "";
   els.compareSummary.innerHTML = `
+    ${warning}
     <div class="compare-main-indicators">
-      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${s.aPossessionRate}%</span><span class="compare-kpi__label">Complétion ${safeA}</span></div>
-      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${s.bPossessionRate}%</span><span class="compare-kpi__label">Complétion ${safeB}</span></div>
-      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${s.collectiveCompletionRate}%</span><span class="compare-kpi__label">Complétion collective</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.aPossessionRate)}</span><span class="compare-kpi__label">Complétion ${safeA}</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.bPossessionRate)}</span><span class="compare-kpi__label">Complétion ${safeB}</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">Complétion collective</span></div>
     </div>
     <div class="compare-main-summary">
       <p>${ownerLine(safeA, s.onlyUserACount, safeB)}</p>
       <p>${ownerLine(safeB, s.onlyUserBCount, safeA)}</p>
       <p>Vous possédez <strong>${s.bothOwnedCount}</strong> variante${s.bothOwnedCount > 1 ? 's' : ''} en commun.</p>
       <p><strong>${s.bothMissingCount}</strong> variante${s.bothMissingCount > 1 ? 's' : ''} vous manquent à tous les deux.</p>
-      <p>Ensemble, vous couvrez <strong>${s.collectiveCompletionRate}%</strong> du catalogue.</p>
+      <p>Ensemble, vous couvrez <strong>${pct(s.collectiveCompletionRate)}</strong> du catalogue.</p>
     </div>
-    <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${s.complementarityRate}%</strong>.</p>
+    <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${pct(s.complementarityRate)}</strong>.</p>
     <div class="compare-summary-grid">
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.collectiveCompletionRate}%</span><span class="compare-kpi__label">Complétion collective</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.complementarityRate}%</span><span class="compare-kpi__label">Complémentarité</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">Complétion collective</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityRate)}</span><span class="compare-kpi__label">Complémentarité</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.bothOwnedCount}</span><span class="compare-kpi__label">En commun</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserACount}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserBCount}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
@@ -302,12 +329,12 @@ function renderCompareSummary(result, aName, bName) {
     <div class="compare-players">
       <div class="compare-player">
         <span class="compare-player__name">${safeA}</span>
-        <span class="compare-player__pct">${s.aPossessionRate}% possédé</span>
+        <span class="compare-player__pct">${pct(s.aPossessionRate)} possédé</span>
         <span class="compare-player__count">${s.aOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
       <div class="compare-player">
         <span class="compare-player__name">${safeB}</span>
-        <span class="compare-player__pct">${s.bPossessionRate}% possédé</span>
+        <span class="compare-player__pct">${pct(s.bPossessionRate)} possédé</span>
         <span class="compare-player__count">${s.bOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
     </div>`;

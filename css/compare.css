@@ -788,3 +788,15 @@
   color: var(--accent);
   text-decoration: none;
 }
+
+/* ── Insufficient collection data warning ── */
+.compare-insufficient-warning {
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  color: #ffecb3;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  text-align: center;
+}
