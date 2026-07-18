@@ -301,6 +301,232 @@ async function checkPrivacyAccess(req, targetUserId, privacy) {
   return "blocked";
 }
 
+// ── Server-side comparison engine (mirrors js/compare.js logic) ──────────────
+const COMPARE_SERVER_RULES = {
+  owned: ["owned"],
+  missing: ["missing", "priority", "spotted", "unavailable"],
+  recommend: ["missing", "priority", "spotted"],
+  unknown: ["new", "unknown", "unsure"]
+};
+
+function compareServerIsOwned(status) { return COMPARE_SERVER_RULES.owned.includes(status); }
+function compareServerIsMissing(status) { return COMPARE_SERVER_RULES.missing.includes(status); }
+function compareServerIsUnknown(status) { return !status || COMPARE_SERVER_RULES.unknown.includes(status); }
+function compareServerIsRecommend(status) { return COMPARE_SERVER_RULES.recommend.includes(status); }
+
+function compareServerIsPriority(entry) {
+  if (!entry) return false;
+  const s = entry.status;
+  if (s === "unavailable" || compareServerIsOwned(s) || compareServerIsUnknown(s)) return false;
+  if (s === "priority") return true;
+  return !!(entry.priority && entry.priority !== "none" && entry.priority !== "ignored");
+}
+
+function compareServerClassify(entry) {
+  const s = entry?.status;
+  if (compareServerIsOwned(s)) return "owned";
+  if (compareServerIsMissing(s)) return "missing";
+  return "unknown";
+}
+
+function compareServerDefaultEntry() { return { status: "new", priority: "none", note: "" }; }
+
+function isVariantReleasedAndActiveServer(item) {
+  const release = (item.releaseStatus || "").toLowerCase();
+  if (["unreleased", "upcoming", "coming_soon", "soon", "unknown"].includes(release)) return false;
+  const data = (item.dataStatus || "").toLowerCase();
+  if (["archived", "legacy", "disabled"].includes(data)) return false;
+  if (item.available === false || item.enabled === false || item.isReleased === false) return false;
+  return true;
+}
+
+async function getServerCompareCatalogItems() {
+  const [spritesRes, variantsRes] = await Promise.all([
+    pool.query(`SELECT id, name, rarity, color, season_id, event_id, acquisition, availability, data_status, release_status, available, added_date FROM sprites`),
+    pool.query(`SELECT id, sprite_id, variant_type, name, rarity, release_status, data_status, acquisition, availability, first_observed_at, image_path, suggested_image_path FROM sprite_variants`)
+  ]);
+  const spriteMap = Object.fromEntries(spritesRes.rows.map(s => [s.id, s]));
+  const items = [];
+  for (const v of variantsRes.rows) {
+    const sprite = spriteMap[v.sprite_id];
+    if (!sprite) continue;
+    const variantAcquisition = buildAcquisitionMethod(v.acquisition && Object.keys(v.acquisition || {}).length ? v.acquisition : sprite.acquisition);
+    const variantAvailability = buildAvailability(v.availability && Object.keys(v.availability || {}).length ? v.availability : sprite.availability);
+    items.push({
+      id: v.id,
+      variantId: v.id,
+      spriteId: sprite.id,
+      variantType: v.variant_type,
+      variantName: v.name || v.variant_type,
+      spriteName: sprite.name || sprite.id,
+      img: v.image_path || v.suggested_image_path || null,
+      rarity: v.rarity || sprite.rarity,
+      color: sprite.color,
+      seasonId: sprite.season_id,
+      eventId: sprite.event_id,
+      releaseStatus: v.release_status || sprite.release_status || "",
+      dataStatus: v.data_status || sprite.data_status || "",
+      availabilityStatus: variantAvailability.status,
+      acquisitionMethod: variantAcquisition.type,
+      releaseDate: variantAvailability.startDate || v.first_observed_at || sprite.added_date,
+      available: v.available !== undefined ? v.available : sprite.available
+    });
+  }
+  return items;
+}
+
+async function loadServerCompareCollection(userId) {
+  const result = await pool.query(
+    "SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries WHERE user_id = $1",
+    [userId]
+  );
+  const collection = {};
+  for (const row of result.rows) {
+    collection[row.variant_id] = {
+      status: row.status || "new",
+      note: row.note || "",
+      priority: row.priority || "none",
+      obtainedAt: row.obtained_at || null
+    };
+  }
+  return collection;
+}
+
+function compareCollectionsServer(userA, userB, catalogue) {
+  const activeCatalogue = catalogue.filter(isVariantReleasedAndActiveServer);
+  const groups = { bothOwned: [], onlyUserA: [], onlyUserB: [], bothMissing: [], unknown: [] };
+  const records = [];
+
+  for (const item of activeCatalogue) {
+    const a = userA.collection[item.variantId] || compareServerDefaultEntry();
+    const b = userB.collection[item.variantId] || compareServerDefaultEntry();
+    const sa = compareServerClassify(a);
+    const sb = compareServerClassify(b);
+
+    const record = {
+      ...item,
+      userA: { status: a.status, priority: a.priority, note: a.note },
+      userB: { status: b.status, priority: b.priority, note: b.note }
+    };
+
+    if (sa === "unknown" || sb === "unknown") {
+      groups.unknown.push(record);
+    } else if (sa === "owned" && sb === "owned") {
+      groups.bothOwned.push(record);
+    } else if (sa === "owned" && sb !== "owned") {
+      groups.onlyUserA.push(record);
+    } else if (sb === "owned" && sa !== "owned") {
+      groups.onlyUserB.push(record);
+    } else if (sa === "missing" && sb === "missing") {
+      groups.bothMissing.push(record);
+    } else {
+      groups.unknown.push(record);
+    }
+    records.push(record);
+  }
+
+  const total = activeCatalogue.length;
+  const bothOwnedCount = groups.bothOwned.length;
+  const onlyUserACount = groups.onlyUserA.length;
+  const onlyUserBCount = groups.onlyUserB.length;
+  const bothMissingCount = groups.bothMissing.length;
+  const unknownCount = groups.unknown.length;
+  const aOwnedCount = bothOwnedCount + onlyUserACount;
+  const bOwnedCount = bothOwnedCount + onlyUserBCount;
+  const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
+
+  const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+  const comparisonId = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `comparison_${crypto.randomBytes(16).toString("hex")}`;
+
+  return {
+    comparisonId,
+    generatedAt: new Date().toISOString(),
+    users: {
+      userA: { id: userA.id, displayName: userA.displayName },
+      userB: { id: userB.id, displayName: userB.displayName }
+    },
+    summary: {
+      catalogueVariantCount: total,
+      bothOwnedCount,
+      onlyUserACount,
+      onlyUserBCount,
+      bothMissingCount,
+      unknownCount,
+      aOwnedCount,
+      bOwnedCount,
+      aPossessionRate: toRate(aOwnedCount, total),
+      bPossessionRate: toRate(bOwnedCount, total),
+      collectiveOwnedCount,
+      collectiveCompletionRate: toRate(collectiveOwnedCount, total),
+      complementarityRate: toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount)
+    },
+    groups,
+    records
+  };
+}
+
+function applyServerCompareFilters(result, query) {
+  let records = result.records;
+  const status = query.status;
+  if (status) {
+    if (result.groups[status]) {
+      records = result.groups[status];
+    } else if (status === "differences" || status === "missingMatch") {
+      records = [...result.groups.onlyUserA, ...result.groups.onlyUserB];
+    } else if (status === "priorities") {
+      records = records.filter(r => compareServerIsPriority(r.userA) || compareServerIsPriority(r.userB));
+    }
+  }
+
+  if (query.seasonId) records = records.filter(r => r.seasonId === query.seasonId);
+  if (query.eventId) records = records.filter(r => r.eventId === query.eventId);
+  if (query.rarity) records = records.filter(r => r.rarity && String(r.rarity).toLowerCase() === String(query.rarity).toLowerCase());
+  if (query.variantType) records = records.filter(r => r.variantType && String(r.variantType).toLowerCase() === String(query.variantType).toLowerCase());
+  if (query.availability) records = records.filter(r => r.availabilityStatus === query.availability);
+
+  const groups = { bothOwned: [], onlyUserA: [], onlyUserB: [], bothMissing: [], unknown: [] };
+  for (const rec of records) {
+    const sa = compareServerClassify(rec.userA);
+    const sb = compareServerClassify(rec.userB);
+    if (sa === "unknown" || sb === "unknown") groups.unknown.push(rec);
+    else if (sa === "owned" && sb === "owned") groups.bothOwned.push(rec);
+    else if (sa === "owned" && sb !== "owned") groups.onlyUserA.push(rec);
+    else if (sb === "owned" && sa !== "owned") groups.onlyUserB.push(rec);
+    else if (sa === "missing" && sb === "missing") groups.bothMissing.push(rec);
+    else groups.unknown.push(rec);
+  }
+
+  const total = records.length;
+  const bothOwnedCount = groups.bothOwned.length;
+  const onlyUserACount = groups.onlyUserA.length;
+  const onlyUserBCount = groups.onlyUserB.length;
+  const bothMissingCount = groups.bothMissing.length;
+  const unknownCount = groups.unknown.length;
+  const aOwnedCount = bothOwnedCount + onlyUserACount;
+  const bOwnedCount = bothOwnedCount + onlyUserBCount;
+  const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
+  const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+
+  const summary = {
+    ...result.summary,
+    catalogueVariantCount: total,
+    bothOwnedCount,
+    onlyUserACount,
+    onlyUserBCount,
+    bothMissingCount,
+    unknownCount,
+    aOwnedCount,
+    bOwnedCount,
+    aPossessionRate: toRate(aOwnedCount, total),
+    bPossessionRate: toRate(bOwnedCount, total),
+    collectiveOwnedCount,
+    collectiveCompletionRate: toRate(collectiveOwnedCount, total),
+    complementarityRate: toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount)
+  };
+
+  return { ...result, records, groups, summary };
+}
+
 // ── Stable catalog ID helpers ───────────────────────────────────────────────
 // Collections are keyed by the stable variant id (e.g. sprite_water_holofoil).
 // Each entry also carries its base sprite_id (e.g. sprite_water) so the system
@@ -1922,6 +2148,47 @@ async function logSquadActivity(userId, variantId, spriteId, action) {
     console.error("Failed to log squad activity:", err);
   }
 }
+
+// ── Comparisons : GET comparison between two users ──
+app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+
+    const { userAId, userBId } = req.params;
+    const usersResult = await pool.query(
+      "SELECT id, username, privacy FROM users WHERE id = ANY($1) AND deleted_at IS NULL",
+      [[userAId, userBId]]
+    );
+    const userMap = Object.fromEntries(usersResult.rows.map(u => [u.id, u]));
+    if (!userMap[userAId] || !userMap[userBId]) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+
+    const accessA = await checkPrivacyAccess(req, userAId, userMap[userAId].privacy || "private");
+    const accessB = await checkPrivacyAccess(req, userBId, userMap[userBId].privacy || "private");
+    if (accessA === "blocked" || accessB === "blocked") {
+      return res.status(403).json({ error: "Collection non accessible" });
+    }
+
+    const [catalogue, collectionA, collectionB] = await Promise.all([
+      getServerCompareCatalogItems(),
+      loadServerCompareCollection(userAId),
+      loadServerCompareCollection(userBId)
+    ]);
+
+    const userA = { id: userAId, displayName: userMap[userAId].username || userAId, collection: collectionA };
+    const userB = { id: userBId, displayName: userMap[userBId].username || userBId, collection: collectionB };
+
+    let result = compareCollectionsServer(userA, userB, catalogue);
+    result = applyServerCompareFilters(result, req.query);
+
+    res.json(result);
+  } catch (err) {
+    console.error("[/api/comparisons]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 
 // ── Collection : UPSERT one entry ──
 app.put("/api/collection/:userId/:spriteId", security.validateBody(security.schemas.collectionEntrySchema), async (req, res) => {
