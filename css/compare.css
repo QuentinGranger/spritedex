@@ -572,3 +572,115 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Per-sprite comparison dialog ── */
+.compare-sprite-dialog {
+  width: min(560px, 94vw);
+  max-height: 90vh;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.compare-sprite-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.compare-sprite-detail {
+  position: relative;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.compare-sprite-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card-color, var(--accent)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-color, var(--accent)) 28%, transparent);
+}
+
+.compare-sprite-header__img {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+.compare-sprite-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+
+.compare-sprite-completion {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.compare-sprite-completion strong {
+  color: var(--accent);
+}
+
+.compare-sprite-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.compare-sprite-table__header,
+.compare-sprite-table__row {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+}
+
+.compare-sprite-table__header {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.compare-sprite-table__row {
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.compare-sprite-table__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.compare-sprite-table__cell--name {
+  justify-content: flex-start;
+  font-weight: 500;
+}
+
+@media (max-width: 420px) {
+  .compare-sprite-table__header,
+  .compare-sprite-table__row {
+    grid-template-columns: 1fr 90px 90px;
+  }
+}

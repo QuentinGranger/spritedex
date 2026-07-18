@@ -112,5 +112,6 @@ const els = {
   compareRecommendations: $("#compareRecommendations"),
   compareActions: $("#compareActions"),
   comparePlayerAName: $("#comparePlayerAName"),
-  comparePlayerBName: $("#comparePlayerBName")
+  comparePlayerBName: $("#comparePlayerBName"),
+  compareSpriteDetailContent: $("#compareSpriteDetailContent")
 };

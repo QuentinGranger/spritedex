@@ -519,12 +519,12 @@ function renderCompareTable(result, aName, bName) {
   els.compareTable.querySelectorAll(".compare-table__row").forEach(row => {
     row.addEventListener("click", (e) => {
       if (e.target.closest("button")) return;
-      openSpriteDetail(row.dataset.spriteId);
+      openCompareSprite(row.dataset.spriteId);
     });
   });
 
   els.compareTable.querySelectorAll(".compare-action--detail").forEach(btn => {
-    btn.addEventListener("click", (e) => { e.stopPropagation(); openSpriteDetail(btn.dataset.spriteId); });
+    btn.addEventListener("click", (e) => { e.stopPropagation(); openCompareSprite(btn.dataset.spriteId); });
   });
 
   els.compareTable.querySelectorAll(".compare-action--priority").forEach(btn => {
@@ -535,6 +535,58 @@ function renderCompareTable(result, aName, bName) {
       renderCompare();
     });
   });
+}
+
+function openCompareSprite(spriteId) {
+  if (!els.compareSpriteDetailContent || !state.lastCompareResult) return;
+  const result = state.lastCompareResult;
+  const records = result.records
+    .filter(r => r.spriteId === spriteId)
+    .sort((a, b) => compareVariantTypeLabel(a.variantType).localeCompare(compareVariantTypeLabel(b.variantType)));
+  if (!records.length) return;
+
+  const sprite = SPRITES.find(s => s.id === spriteId);
+  const safeA = escapeHtml(result.users.userA.displayName);
+  const safeB = escapeHtml(result.users.userB.displayName);
+  const spriteName = escapeHtml(records[0].spriteName);
+
+  const total = records.length;
+  const covered = records.filter(r => r.userA.status === "owned" || r.userB.status === "owned").length;
+  const pct = total ? Math.round((covered / total) * 10000) / 100 : 0;
+
+  const header = `
+    <div class="compare-sprite-header" style="--card-color:${sprite && sprite.color ? sprite.color : 'var(--text)'}">
+      ${records[0].img ? `<img src="${records[0].img}" alt="${spriteName}" class="compare-sprite-header__img" onerror="this.style.display='none'">` : ""}
+      <div class="compare-sprite-header__info">
+        <h2>${spriteName}</h2>
+        <span class="compare-sprite-completion">Complétion collective du ${spriteName} : <strong>${pct}%</strong></span>
+      </div>
+    </div>`;
+
+  const rows = records.map(r => {
+    const aStatus = `${statusLabel(r.userA.status)} ${comparePriorityTag(r.userA)}`;
+    const bStatus = `${statusLabel(r.userB.status)} ${comparePriorityTag(r.userB)}`;
+    return `
+      <div class="compare-sprite-table__row">
+        <span class="compare-sprite-table__cell compare-sprite-table__cell--name">${escapeHtml(compareVariantTypeLabel(r.variantType))}</span>
+        <span class="compare-sprite-table__cell">${aStatus}</span>
+        <span class="compare-sprite-table__cell">${bStatus}</span>
+      </div>`;
+  }).join("");
+
+  const table = `
+    <div class="compare-sprite-table">
+      <div class="compare-sprite-table__header">
+        <span class="compare-sprite-table__cell">Variante</span>
+        <span class="compare-sprite-table__cell">${safeA}</span>
+        <span class="compare-sprite-table__cell">${safeB}</span>
+      </div>
+      <div class="compare-sprite-table__body">${rows}</div>
+    </div>`;
+
+  els.compareSpriteDetailContent.innerHTML = `${header}${table}`;
+  const dialog = document.getElementById("compareSpriteDialog");
+  if (dialog && typeof dialog.showModal === "function") dialog.showModal();
 }
 
 function groupCompareRecordsBy(records, key) {
