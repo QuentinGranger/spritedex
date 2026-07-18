@@ -108,6 +108,9 @@ const els = {
   compareResults: $("#compareResults"),
   compareSummary: $("#compareSummary"),
   compareLists: $("#compareLists"),
+  compareTable: $("#compareTable"),
+  compareRecommendations: $("#compareRecommendations"),
+  compareActions: $("#compareActions"),
   comparePlayerAName: $("#comparePlayerAName"),
   comparePlayerBName: $("#comparePlayerBName")
 };

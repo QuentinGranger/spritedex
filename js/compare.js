@@ -133,6 +133,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
     bothMissing: [],
     unknown: []
   };
+  const records = [];
 
   for (const item of activeCatalogue) {
     const a = compareEntry(collectionA, item);
@@ -166,6 +167,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
     } else {
       groups.unknown.push(record);
     }
+    records.push(record);
   }
 
   const total = activeCatalogue.length;
@@ -210,7 +212,8 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
       collectiveCompletionRate,
       complementarityRate
     },
-    groups
+    groups,
+    records
   };
 }
 
@@ -294,30 +297,130 @@ function renderCompareSummary(result, aName, bName) {
     </div>`;
 }
 
-function renderCompareLists(result, aName, bName) {
+function compareStatusIcon(status) {
+  return statusEmoji(status);
+}
+
+function renderCompareTable(result, aName, bName) {
+  if (!els.compareTable) return;
+  const filter = state.compareFilter || "all";
+  const records = filter === "all" ? result.records : (result.groups[filter] || result.records);
+
+  const header = `
+    <div class="compare-table__header">
+      <span class="compare-table__cell compare-table__cell--variant">Variante</span>
+      <span class="compare-table__cell">${escapeHtml(aName)}</span>
+      <span class="compare-table__cell">${escapeHtml(bName)}</span>
+      <span class="compare-table__cell compare-table__cell--actions"></span>
+    </div>`;
+
+  const rows = records.map(r => {
+    const canPrioritize = r.userA.status !== "owned";
+    const actions = `
+      <button type="button" class="compare-action compare-action--detail" data-sprite-id="${r.spriteId}">Fiche</button>
+      ${canPrioritize ? `<button type="button" class="compare-action compare-action--priority" data-variant-id="${r.variantId}">Priorité</button>` : ""}`;
+    return `
+      <div class="compare-table__row" data-sprite-id="${r.spriteId}" data-variant-id="${r.variantId}">
+        <span class="compare-table__cell compare-table__cell--variant">
+          <img src="${r.img || ""}" alt="" class="compare-table__thumb" loading="lazy" onerror="this.style.display='none'">
+          <span class="compare-table__name">${escapeHtml(r.spriteName)} — ${escapeHtml(r.variantName || "Base")}</span>
+        </span>
+        <span class="compare-table__cell compare-table__cell--status">${compareStatusIcon(r.userA.status)}<span class="compare-table__status-label">${statusLabel(r.userA.status)}</span></span>
+        <span class="compare-table__cell compare-table__cell--status">${compareStatusIcon(r.userB.status)}<span class="compare-table__status-label">${statusLabel(r.userB.status)}</span></span>
+        <span class="compare-table__cell compare-table__cell--actions">${actions}</span>
+      </div>`;
+  }).join("");
+
+  const body = records.length
+    ? `<div class="compare-table__body">${rows}</div>`
+    : `<div class="compare-table__empty"><p class="compare-empty">Aucune variante dans cette catégorie.</p></div>`;
+
+  els.compareTable.innerHTML = `
+    <div class="compare-section compare-section--table">
+      <h3 class="compare-section__title">Comparaison visuelle</h3>
+      <div class="compare-table__wrap">${header}${body}</div>
+    </div>`;
+
+  els.compareTable.querySelectorAll(".compare-table__row").forEach(row => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      openSpriteDetail(row.dataset.spriteId);
+    });
+  });
+
+  els.compareTable.querySelectorAll(".compare-action--detail").forEach(btn => {
+    btn.addEventListener("click", (e) => { e.stopPropagation(); openSpriteDetail(btn.dataset.spriteId); });
+  });
+
+  els.compareTable.querySelectorAll(".compare-action--priority").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setEntry(btn.dataset.variantId, { status: "priority" });
+      toast("Marqué comme priorité");
+      renderCompare();
+    });
+  });
+}
+
+function renderCompareRecommendations(result, aName, bName) {
+  if (!els.compareRecommendations) return;
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
-  const g = result.groups;
 
-  const sections = [];
-  sections.push(renderCompareSection("Possédé par les deux", g.bothOwned, (it) => compareItemHTML(it), true));
-  sections.push(renderCompareSection(`${safeA} possède · ${safeB} manque`, g.onlyUserA,
-    (it) => compareItemHTML(it, compareStatusTag(it.userB.status, { priority: it.userB.priority })), true));
-  sections.push(renderCompareSection(`${safeB} possède · ${safeA} manque`, g.onlyUserB,
-    (it) => compareItemHTML(it, compareStatusTag(it.userA.status, { priority: it.userA.priority })), true));
-  sections.push(renderCompareSection("Manque aux deux", g.bothMissing,
-    (it) => compareItemHTML(it, `${compareStatusTag(it.userA.status, { priority: it.userA.priority })} ${compareStatusTag(it.userB.status, { priority: it.userB.priority })}`), true));
+  const recA = result.groups.onlyUserB.filter(r => compareIsPriority(r.userA)).slice(0, 10);
+  const recB = result.groups.onlyUserA.filter(r => compareIsPriority(r.userB)).slice(0, 10);
+  const fallbackA = recA.length ? [] : result.groups.onlyUserB.slice(0, 5);
+  const fallbackB = recB.length ? [] : result.groups.onlyUserA.slice(0, 5);
 
-  if (g.unknown.length) {
-    sections.push(renderCompareSection("Données insuffisantes", g.unknown,
-      (it) => compareItemHTML(it, `${compareStatusTag(it.userA.status, { priority: it.userA.priority })} ${compareStatusTag(it.userB.status, { priority: it.userB.priority })}`)));
+  let html = `<div class="compare-section compare-section--recommendations"><h3 class="compare-section__title">Recommandations</h3><div class="compare-section__body">`;
+  if (!recA.length && !recB.length && !fallbackA.length && !fallbackB.length) {
+    html += `<p class="compare-empty">Aucune recommandation notable.</p>`;
+  } else {
+    if (recA.length || fallbackA.length) {
+      const list = (recA.length ? recA : fallbackA).map(r => compareItemHTML(r, `${compareStatusIcon(r.userA.status)} ${comparePriorityTag(r.userA)}`)).join("");
+      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${safeA} devrait obtenir de ${safeB}</h4><div class="compare-list">${list}</div></div>`;
+    }
+    if (recB.length || fallbackB.length) {
+      const list = (recB.length ? recB : fallbackB).map(r => compareItemHTML(r, `${compareStatusIcon(r.userB.status)} ${comparePriorityTag(r.userB)}`)).join("");
+      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${safeB} devrait obtenir de ${safeA}</h4><div class="compare-list">${list}</div></div>`;
+    }
   }
+  html += `</div></div>`;
+  els.compareRecommendations.innerHTML = html;
+}
 
-  els.compareLists.innerHTML = sections.join("");
+function renderCompareActions() {
+  if (!els.compareActions) return;
+  const filter = state.compareFilter || "all";
+  const options = [
+    { value: "all", label: "Tous" },
+    { value: "bothOwned", label: "En commun" },
+    { value: "onlyUserA", label: "Possédés par moi" },
+    { value: "onlyUserB", label: "Possédés par l'ami" },
+    { value: "bothMissing", label: "Manque aux deux" },
+    { value: "unknown", label: "Inconnus" }
+  ];
+  const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="Filtrer">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  els.compareActions.innerHTML = `
+    <div class="compare-actions-bar">
+      <label for="compareFilterSelect" class="compare-actions-label">Filtrer</label>
+      ${select}
+      <button type="button" class="login-btn" id="compareRefreshBtn">Actualiser</button>
+      <button type="button" class="ghost-button" id="compareShareActionBtn">Partager</button>
+    </div>`;
+
+  const filterSelect = $("#compareFilterSelect");
+  if (filterSelect) filterSelect.addEventListener("change", (e) => { state.compareFilter = e.target.value; renderCompare(); });
+
+  const refreshBtn = $("#compareRefreshBtn");
+  if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; renderCompare(); });
+
+  const shareBtn = $("#compareShareActionBtn");
+  if (shareBtn) shareBtn.addEventListener("click", shareCompareLink);
 }
 
 function renderCompare() {
-  if (!els.compareResults || !els.compareSummary || !els.compareLists) return;
+  if (!els.compareResults || !els.compareSummary || !els.compareTable || !els.compareRecommendations || !els.compareActions) return;
   if (!state.compareTarget) {
     els.compareResults.style.display = "none";
     if (els.compareStatus) els.compareStatus.textContent = "";
@@ -332,7 +435,9 @@ function renderCompare() {
   const userB = { id: state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
   const result = compareCollections(userA, userB, getCompareCatalogItems());
   renderCompareSummary(result, aName, bName);
-  renderCompareLists(result, aName, bName);
+  renderCompareActions();
+  renderCompareRecommendations(result, aName, bName);
+  renderCompareTable(result, aName, bName);
 }
 
 // ── Chargement et partage ───────────────────────────────────────────────────
