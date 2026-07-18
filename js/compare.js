@@ -301,10 +301,22 @@ function compareStatusIcon(status) {
   return statusEmoji(status);
 }
 
+function getCompareFilterRecords(result, filter) {
+  if (filter === "all") return result.records;
+  if (result.groups[filter]) return result.groups[filter];
+  if (filter === "differences" || filter === "missingMatch") {
+    return [...result.groups.onlyUserA, ...result.groups.onlyUserB];
+  }
+  if (filter === "priorities") {
+    return result.records.filter(r => compareIsPriority(r.userA) || compareIsPriority(r.userB));
+  }
+  return result.records;
+}
+
 function renderCompareTable(result, aName, bName) {
   if (!els.compareTable) return;
   const filter = state.compareFilter || "all";
-  const records = filter === "all" ? result.records : (result.groups[filter] || result.records);
+  const records = getCompareFilterRecords(result, filter);
 
   const header = `
     <div class="compare-table__header">
@@ -393,11 +405,14 @@ function renderCompareActions() {
   if (!els.compareActions) return;
   const filter = state.compareFilter || "all";
   const options = [
-    { value: "all", label: "Tous" },
+    { value: "all", label: "Tous les Sprites" },
+    { value: "differences", label: "Seulement les différences" },
+    { value: "missingMatch", label: "Missing Match (complémentaires)" },
+    { value: "priorities", label: "Seulement les priorités" },
+    { value: "bothMissing", label: "Manquantes aux deux" },
     { value: "bothOwned", label: "En commun" },
     { value: "onlyUserA", label: "Possédés par moi" },
     { value: "onlyUserB", label: "Possédés par l'ami" },
-    { value: "bothMissing", label: "Manque aux deux" },
     { value: "unknown", label: "Inconnus" }
   ];
   const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="Filtrer">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
