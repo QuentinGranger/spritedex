@@ -257,8 +257,20 @@ function renderCompareSummary(result, aName, bName) {
   const s = result.summary;
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
+  const ownerLine = (name, count, other) => `<strong>${name}</strong> possède <strong>${count}</strong> variante${count > 1 ? 's' : ''} qui manque${count > 1 ? 'nt' : ''} à <strong>${other}</strong>.`;
   els.compareSummary.innerHTML = `
-    <p class="compare-collective-message">Ensemble, vous couvrez <strong>${s.collectiveCompletionRate}%</strong> du catalogue (${s.collectiveOwnedCount} / ${s.catalogueVariantCount} variants).</p>
+    <div class="compare-main-indicators">
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${s.aPossessionRate}%</span><span class="compare-kpi__label">Complétion ${safeA}</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${s.bPossessionRate}%</span><span class="compare-kpi__label">Complétion ${safeB}</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${s.collectiveCompletionRate}%</span><span class="compare-kpi__label">Complétion collective</span></div>
+    </div>
+    <div class="compare-main-summary">
+      <p>${ownerLine(safeA, s.onlyUserACount, safeB)}</p>
+      <p>${ownerLine(safeB, s.onlyUserBCount, safeA)}</p>
+      <p>Vous possédez <strong>${s.bothOwnedCount}</strong> variante${s.bothOwnedCount > 1 ? 's' : ''} en commun.</p>
+      <p><strong>${s.bothMissingCount}</strong> variante${s.bothMissingCount > 1 ? 's' : ''} vous manquent à tous les deux.</p>
+      <p>Ensemble, vous couvrez <strong>${s.collectiveCompletionRate}%</strong> du catalogue.</p>
+    </div>
     <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${s.complementarityRate}%</strong>.</p>
     <div class="compare-summary-grid">
       <div class="compare-kpi"><span class="compare-kpi__value">${s.collectiveCompletionRate}%</span><span class="compare-kpi__label">Complétion collective</span></div>
