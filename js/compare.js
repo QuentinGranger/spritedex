@@ -48,6 +48,7 @@ function getCompareCatalogItems() {
         const available = variant.available !== undefined ? variant.available : sprite.available;
         const availabilityStatus = variant.availability?.status || sprite.availability?.status || "";
         const acquisitionMethod = variant.acquisition?.type || sprite.acquisitionMethod?.type || "";
+        const releaseDate = variant.availability?.startDate || sprite.availability?.startDate || variant.firstObservedAt || sprite.addedDate || null;
         items.push({
           id: stableVariantId,
           spriteId: sprite.id,
@@ -66,6 +67,7 @@ function getCompareCatalogItems() {
           available,
           availabilityStatus,
           acquisitionMethod,
+          releaseDate,
           legacyKeys
         });
       }
@@ -95,6 +97,7 @@ function getCompareCatalogItems() {
           available: sprite.available,
           availabilityStatus: sprite.availability?.status || "",
           acquisitionMethod: sprite.acquisitionMethod?.type || "",
+          releaseDate: sprite.availability?.startDate || sprite.addedDate || null,
           legacyKeys
         });
       }
@@ -394,6 +397,69 @@ function renderCompareCatalogFilters(records) {
     </details>`;
 }
 
+const COMPARE_RARITY_VALUE = {
+  "mythic": 0, "mythique": 0,
+  "legendary": 1, "légendaire": 1,
+  "epic": 2, "épique": 2,
+  "rare": 3,
+  "common": 4, "uncommon": 5
+};
+
+function compareRarityValue(rarity) {
+  return COMPARE_RARITY_VALUE[(rarity || "").toLowerCase()] ?? 9;
+}
+
+function compareDifferenceScore(r) {
+  const sa = compareClassify(r.userA);
+  const sb = compareClassify(r.userB);
+  if ((sa === "owned" && sb !== "owned") || (sb === "owned" && sa !== "owned")) return 3;
+  if (sa !== "unknown" && sb !== "unknown" && sa !== sb) return 2;
+  if (sa === "unknown" || sb === "unknown") return 1;
+  return 0;
+}
+
+function compareSortRecords(records, sort) {
+  const sorted = [...records];
+  switch (sort) {
+    case "alpha":
+      sorted.sort((a, b) => `${a.spriteName} ${a.variantName}`.localeCompare(`${b.spriteName} ${b.variantName}`));
+      break;
+    case "rarity-asc":
+      sorted.sort((a, b) => compareRarityValue(a.rarity) - compareRarityValue(b.rarity));
+      break;
+    case "rarity-desc":
+      sorted.sort((a, b) => compareRarityValue(b.rarity) - compareRarityValue(a.rarity));
+      break;
+    case "priority": {
+      sorted.sort((a, b) => {
+        const pa = (compareIsPriority(a.userA) || compareIsPriority(a.userB)) ? 0 : 1;
+        const pb = (compareIsPriority(b.userA) || compareIsPriority(b.userB)) ? 0 : 1;
+        if (pa !== pb) return pa - pb;
+        const pva = Math.min(priorityOrder(a.userA.priority || "none"), priorityOrder(a.userB.priority || "none"));
+        const pvb = Math.min(priorityOrder(b.userA.priority || "none"), priorityOrder(b.userB.priority || "none"));
+        return pva - pvb;
+      });
+      break;
+    }
+    case "availability": {
+      const order = { available: 0, unknown: 1, unavailable: 2, "": 3 };
+      sorted.sort((a, b) => (order[(a.availabilityStatus || "").toLowerCase()] ?? 3) - (order[(b.availabilityStatus || "").toLowerCase()] ?? 3));
+      break;
+    }
+    case "release-date":
+      sorted.sort((a, b) => {
+        const da = a.releaseDate ? new Date(a.releaseDate).getTime() : 0;
+        const db = b.releaseDate ? new Date(b.releaseDate).getTime() : 0;
+        return da - db;
+      });
+      break;
+    case "biggest-difference":
+      sorted.sort((a, b) => compareDifferenceScore(b) - compareDifferenceScore(a));
+      break;
+  }
+  return sorted;
+}
+
 function getCompareFilterRecords(result, filter) {
   if (filter === "all") return result.records;
   if (result.groups[filter]) return result.groups[filter];
@@ -410,8 +476,10 @@ function renderCompareTable(result, aName, bName) {
   if (!els.compareTable) return;
   const filter = state.compareFilter || "all";
   const catalogFilters = state.compareCatalogFilters || {};
+  const sort = state.compareSort || "alpha";
   let records = getCompareFilterRecords(result, filter);
   records = records.filter(r => matchesCompareCatalogFilters(r, catalogFilters));
+  records = compareSortRecords(records, sort);
 
   const header = `
     <div class="compare-table__header">
@@ -510,12 +578,25 @@ function renderCompareActions(result) {
     { value: "onlyUserB", label: "Possédés par l'ami" },
     { value: "unknown", label: "Inconnus" }
   ];
+  const sortOptions = [
+    { value: "alpha", label: "Ordre alphabétique" },
+    { value: "rarity-asc", label: "Rareté croissante" },
+    { value: "rarity-desc", label: "Rareté décroissante" },
+    { value: "priority", label: "Priorité" },
+    { value: "availability", label: "Disponibilité" },
+    { value: "release-date", label: "Date de sortie" },
+    { value: "biggest-difference", label: "Plus grande différence" }
+  ];
+  const sort = state.compareSort || "alpha";
   const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="Filtrer">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  const sortSelect = `<select id="compareSortSelect" class="compare-filter-select" aria-label="Trier">${sortOptions.map(o => `<option value="${o.value}" ${sort === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
   const catalogFilters = renderCompareCatalogFilters(result && result.records);
   els.compareActions.innerHTML = `
     <div class="compare-actions-bar">
       <label for="compareFilterSelect" class="compare-actions-label">Filtrer</label>
       ${select}
+      <label for="compareSortSelect" class="compare-actions-label">Trier</label>
+      ${sortSelect}
       <button type="button" class="login-btn" id="compareRefreshBtn">Actualiser</button>
       <button type="button" class="ghost-button" id="compareShareActionBtn">Partager</button>
     </div>
@@ -524,8 +605,11 @@ function renderCompareActions(result) {
   const filterSelect = $("#compareFilterSelect");
   if (filterSelect) filterSelect.addEventListener("change", (e) => { state.compareFilter = e.target.value; renderCompare(); });
 
+  const sortSelectEl = $("#compareSortSelect");
+  if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => { state.compareSort = e.target.value; renderCompare(); });
+
   const refreshBtn = $("#compareRefreshBtn");
-  if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; state.compareCatalogFilters = {}; renderCompare(); });
+  if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; state.compareSort = "alpha"; state.compareCatalogFilters = {}; renderCompare(); });
 
   const shareBtn = $("#compareShareActionBtn");
   if (shareBtn) shareBtn.addEventListener("click", shareCompareLink);
