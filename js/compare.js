@@ -46,6 +46,8 @@ function getCompareCatalogItems() {
         const releaseStatus = variant.releaseStatus || sprite.releaseStatus || "";
         const dataStatus = variant.dataStatus || sprite.dataStatus || "";
         const available = variant.available !== undefined ? variant.available : sprite.available;
+        const availabilityStatus = variant.availability?.status || sprite.availability?.status || "";
+        const acquisitionMethod = variant.acquisition?.type || sprite.acquisitionMethod?.type || "";
         items.push({
           id: stableVariantId,
           spriteId: sprite.id,
@@ -57,9 +59,13 @@ function getCompareCatalogItems() {
           rarity: variant.rarity || sprite.rarity,
           color: sprite.color,
           effect: variant.effect || sprite.effect,
+          seasonId: sprite.seasonId,
+          eventId: sprite.eventId,
           releaseStatus,
           dataStatus,
           available,
+          availabilityStatus,
+          acquisitionMethod,
           legacyKeys
         });
       }
@@ -82,9 +88,13 @@ function getCompareCatalogItems() {
           rarity: sprite.rarity,
           color: sprite.color,
           effect: sprite.effect,
+          seasonId: sprite.seasonId,
+          eventId: sprite.eventId,
           releaseStatus: sprite.releaseStatus || "",
           dataStatus: sprite.dataStatus || "",
           available: sprite.available,
+          availabilityStatus: sprite.availability?.status || "",
+          acquisitionMethod: sprite.acquisitionMethod?.type || "",
           legacyKeys
         });
       }
@@ -301,6 +311,89 @@ function compareStatusIcon(status) {
   return statusEmoji(status);
 }
 
+function compareSeasonLabel(seasonId) {
+  const s = (typeof SEASONS !== "undefined" && SEASONS[seasonId]) || null;
+  if (!s) return seasonId || "Inconnue";
+  return s.name || `Chapitre ${s.chapter} — Saison ${s.season}`;
+}
+
+function compareEventLabel(eventId) {
+  const e = (typeof EVENTS !== "undefined" && EVENTS[eventId]) || null;
+  if (!e) return eventId || "Aucun";
+  return e.name || eventId;
+}
+
+function compareAvailabilityLabel(status) {
+  const map = { available: "Disponible actuellement", unavailable: "Indisponible", unknown: "Inconnue" };
+  return map[(status || "").toLowerCase()] || status || "Inconnue";
+}
+
+function compareAcquisitionLabel(method) {
+  const map = { exploration: "Exploration", shop: "Boutique", challenge: "Défi", event: "Événement", unknown: "Inconnue" };
+  return map[(method || "").toLowerCase()] || method || "Inconnue";
+}
+
+function compareVariantTypeLabel(type) {
+  const m = (typeof VARIANT_META !== "undefined" && VARIANT_META[type]) || null;
+  return m ? m.label : (type || "Base");
+}
+
+function matchesCompareCatalogFilters(record, filters) {
+  if (!filters) return true;
+  if (filters.season && record.seasonId !== filters.season) return false;
+  if (filters.event && record.eventId !== filters.event) return false;
+  if (filters.rarity && record.rarity !== filters.rarity) return false;
+  if (filters.sprite && record.spriteId !== filters.sprite && record.spriteName !== filters.sprite) return false;
+  if (filters.variantType && record.variantType !== filters.variantType) return false;
+  if (filters.availability && record.availabilityStatus !== filters.availability) return false;
+  if (filters.acquisition && record.acquisitionMethod !== filters.acquisition) return false;
+  return true;
+}
+
+function getCompareFilterOptions(records, key, labelFn) {
+  const seen = new Map();
+  for (const r of records) {
+    const val = r[key];
+    if (val === undefined || val === null || val === "") continue;
+    if (!seen.has(val)) seen.set(val, labelFn(r));
+  }
+  return [...seen.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+}
+
+function renderCompareCatalogFilters(records) {
+  if (!records) return "";
+  state.compareCatalogFilters = state.compareCatalogFilters || {};
+  const filters = state.compareCatalogFilters;
+  const makeSelect = (key, label, options) => {
+    const current = filters[key] || "";
+    return `<div class="compare-catalog-filter"><label for="compareFilter-${key}">${escapeHtml(label)}</label><select id="compareFilter-${key}" class="compare-catalog-filter__select" data-filter-key="${key}"><option value="">Tous</option>${options.map(([val, lbl]) => `<option value="${escapeHtml(val)}" ${val === current ? "selected" : ""}>${escapeHtml(lbl)}</option>`).join("")}</select></div>`;
+  };
+
+  const seasonOpts = getCompareFilterOptions(records, "seasonId", r => compareSeasonLabel(r.seasonId));
+  const eventOpts = getCompareFilterOptions(records, "eventId", r => compareEventLabel(r.eventId));
+  const rarityOpts = getCompareFilterOptions(records, "rarity", r => r.rarity || "Inconnue");
+  const spriteOpts = getCompareFilterOptions(records, "spriteId", r => r.spriteName);
+  const variantOpts = getCompareFilterOptions(records, "variantType", r => compareVariantTypeLabel(r.variantType));
+  const availOpts = getCompareFilterOptions(records, "availabilityStatus", r => compareAvailabilityLabel(r.availabilityStatus));
+  const acqOpts = getCompareFilterOptions(records, "acquisitionMethod", r => compareAcquisitionLabel(r.acquisitionMethod));
+
+  const hasFilters = Object.keys(filters).some(k => filters[k]);
+  return `
+    <details class="compare-catalog-filters" ${hasFilters ? "open" : ""}>
+      <summary class="compare-catalog-filters__summary">Filtres du catalogue</summary>
+      <div class="compare-catalog-filters__grid">
+        ${makeSelect("season", "Saison", seasonOpts)}
+        ${makeSelect("event", "Événement", eventOpts)}
+        ${makeSelect("rarity", "Rareté", rarityOpts)}
+        ${makeSelect("sprite", "Sprite", spriteOpts)}
+        ${makeSelect("variantType", "Variante", variantOpts)}
+        ${makeSelect("availability", "Disponibilité", availOpts)}
+        ${makeSelect("acquisition", "Obtention", acqOpts)}
+      </div>
+      <button type="button" class="ghost-button compare-catalog-filters__reset" id="compareFilterReset">Réinitialiser les filtres</button>
+    </details>`;
+}
+
 function getCompareFilterRecords(result, filter) {
   if (filter === "all") return result.records;
   if (result.groups[filter]) return result.groups[filter];
@@ -316,7 +409,9 @@ function getCompareFilterRecords(result, filter) {
 function renderCompareTable(result, aName, bName) {
   if (!els.compareTable) return;
   const filter = state.compareFilter || "all";
-  const records = getCompareFilterRecords(result, filter);
+  const catalogFilters = state.compareCatalogFilters || {};
+  let records = getCompareFilterRecords(result, filter);
+  records = records.filter(r => matchesCompareCatalogFilters(r, catalogFilters));
 
   const header = `
     <div class="compare-table__header">
@@ -401,7 +496,7 @@ function renderCompareRecommendations(result, aName, bName) {
   els.compareRecommendations.innerHTML = html;
 }
 
-function renderCompareActions() {
+function renderCompareActions(result) {
   if (!els.compareActions) return;
   const filter = state.compareFilter || "all";
   const options = [
@@ -416,22 +511,35 @@ function renderCompareActions() {
     { value: "unknown", label: "Inconnus" }
   ];
   const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="Filtrer">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  const catalogFilters = renderCompareCatalogFilters(result && result.records);
   els.compareActions.innerHTML = `
     <div class="compare-actions-bar">
       <label for="compareFilterSelect" class="compare-actions-label">Filtrer</label>
       ${select}
       <button type="button" class="login-btn" id="compareRefreshBtn">Actualiser</button>
       <button type="button" class="ghost-button" id="compareShareActionBtn">Partager</button>
-    </div>`;
+    </div>
+    ${catalogFilters}`;
 
   const filterSelect = $("#compareFilterSelect");
   if (filterSelect) filterSelect.addEventListener("change", (e) => { state.compareFilter = e.target.value; renderCompare(); });
 
   const refreshBtn = $("#compareRefreshBtn");
-  if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; renderCompare(); });
+  if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; state.compareCatalogFilters = {}; renderCompare(); });
 
   const shareBtn = $("#compareShareActionBtn");
   if (shareBtn) shareBtn.addEventListener("click", shareCompareLink);
+
+  els.compareActions.querySelectorAll("[data-filter-key]").forEach(sel => {
+    sel.addEventListener("change", (e) => {
+      state.compareCatalogFilters = state.compareCatalogFilters || {};
+      state.compareCatalogFilters[e.target.dataset.filterKey] = e.target.value;
+      renderCompare();
+    });
+  });
+
+  const resetBtn = $("#compareFilterReset");
+  if (resetBtn) resetBtn.addEventListener("click", () => { state.compareCatalogFilters = {}; renderCompare(); });
 }
 
 function renderCompare() {
@@ -449,8 +557,9 @@ function renderCompare() {
   const userA = { id: state.userId || "userA", displayName: state.username || "Moi", collection: state.collection };
   const userB = { id: state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
   const result = compareCollections(userA, userB, getCompareCatalogItems());
+  state.lastCompareResult = result;
   renderCompareSummary(result, aName, bName);
-  renderCompareActions();
+  renderCompareActions(result);
   renderCompareRecommendations(result, aName, bName);
   renderCompareTable(result, aName, bName);
 }
