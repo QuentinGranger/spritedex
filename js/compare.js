@@ -29,7 +29,7 @@ function getCompareCatalogItems() {
     if (entries.length > 0) {
       for (const [variantType, variant] of entries) {
         const stableVariantId = variant.id || variantId(sprite.id, variantType);
-        const legacyKeys = [variantId(sprite.id, variantType)];
+        const legacyKeys = [`${sprite.id}::${variantType}`];
         if ((variantType || "").toLowerCase() === "base" || stableVariantId === sprite.id) {
           legacyKeys.push(sprite.id);
         }
@@ -54,7 +54,7 @@ function getCompareCatalogItems() {
     if (Array.isArray(sprite.variants)) {
       for (const variantType of sprite.variants) {
         const stableVariantId = variantId(sprite.id, variantType);
-        const legacyKeys = [stableVariantId];
+        const legacyKeys = [`${sprite.id}::${variantType}`];
         if ((variantType || "").toLowerCase() === "base") legacyKeys.push(sprite.id);
         items.push({
           id: stableVariantId,

@@ -261,13 +261,16 @@ function resolveLegacyKey(key, spriteMap) {
   if (!key || typeof key !== "string") return null;
   if (key.startsWith("fav_")) return key;
 
-  // Already stable base::variant format.
+  // Already looks like a stable variant id (e.g. sprite_water_holofoil)
+  if (key.toLowerCase().startsWith("sprite_") && !key.includes("::")) {
+    return key;
+  }
+
+  // Legacy "base::Variant" format.
   if (key.includes("::")) {
     const [base, variant] = key.split("::");
-    if (base.toLowerCase().startsWith("sprite_")) return key;
-    const resolvedBase = spriteMap[base.toLowerCase()];
-    if (!resolvedBase) return null;
-    return `${resolvedBase}::${normalizeVariantName(variant)}`;
+    const resolvedBase = spriteMap[base.toLowerCase()] || base;
+    return variantId(resolvedBase, normalizeVariantName(variant));
   }
 
   // Flat base_variant format like "sprite_water_holo" or "water_holo".
@@ -277,7 +280,7 @@ function resolveLegacyKey(key, spriteMap) {
       const base = key.replace(regex, "");
       const resolvedBase = spriteMap[base.toLowerCase()];
       if (!resolvedBase) return null;
-      return `${resolvedBase}::${normalizeVariantName(suffix)}`;
+      return variantId(resolvedBase, normalizeVariantName(suffix));
     }
   }
 
@@ -294,7 +297,7 @@ function resolveLegacyKey(key, spriteMap) {
   const baseName = baseParts.join(" ").trim();
   const resolvedBase = spriteMap[baseName.toLowerCase()];
   if (!resolvedBase) return null;
-  return `${resolvedBase}::${variant}`;
+  return variantId(resolvedBase, variant);
 }
 
 // Clean up localStorage collection: merge legacy/old-format keys into the current

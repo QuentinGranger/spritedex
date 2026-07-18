@@ -286,51 +286,101 @@ async function checkPrivacyAccess(req, targetUserId, privacy) {
   return "blocked";
 }
 
-// ── Sprite ID normalization : legacy short slugs -> stable catalog ids ──
-// spriteId format is "<base>::<variant>" (e.g. water::Base or sprite_water::Base).
-// Clients may still send old short ids from localStorage; normalize them to the
-// stable id so collections stay consistent across renames.
-async function normalizeSpriteEntryId(spriteId) {
-  if (!spriteId || typeof spriteId !== "string") return spriteId;
-  const sepIndex = spriteId.indexOf("::");
-  const base = sepIndex === -1 ? spriteId : spriteId.slice(0, sepIndex);
-  const variant = sepIndex === -1 ? "Base" : spriteId.slice(sepIndex + 2);
-  if (base.startsWith("sprite_")) return spriteId;
-  const result = await pool.query(
-    `SELECT id FROM sprites WHERE slug = $1 OR id = $1 LIMIT 1`,
-    [base]
-  );
-  if (result.rows.length === 0) return spriteId;
-  return `${result.rows[0].id}::${variant}`;
+// ── Stable catalog ID helpers ───────────────────────────────────────────────
+// Collections are keyed by the stable variant id (e.g. sprite_water_holofoil).
+// Each entry also carries its base sprite_id (e.g. sprite_water) so the system
+// never depends on display names or a "::" separator for matching.
+let catalogIdMapCache = null;
+let catalogIdMapCacheTs = 0;
+const CATALOG_MAP_TTL = 30_000;
+
+async function getCatalogIdMaps() {
+  const now = Date.now();
+  if (catalogIdMapCache && (now - catalogIdMapCacheTs) < CATALOG_MAP_TTL) {
+    return catalogIdMapCache;
+  }
+  const [variants, sprites] = await Promise.all([
+    pool.query("SELECT id, sprite_id, variant_type FROM sprite_variants"),
+    pool.query("SELECT id, slug FROM sprites")
+  ]);
+  const variantMap = {};
+  const typeToVariantId = {};
+  const spriteBySlug = {};
+  const spriteById = {};
+  for (const row of variants.rows) {
+    variantMap[row.id] = { spriteId: row.sprite_id, type: row.variant_type };
+    typeToVariantId[`${row.sprite_id}::${row.variant_type}`] = row.id;
+  }
+  for (const row of sprites.rows) {
+    spriteById[row.id] = row.id;
+    if (row.slug) spriteBySlug[row.slug] = row.id;
+  }
+  catalogIdMapCache = { variantMap, typeToVariantId, spriteBySlug, spriteById };
+  catalogIdMapCacheTs = now;
+  return catalogIdMapCache;
+}
+
+function normalizeVariantIdWithMaps(raw, maps) {
+  if (!raw || typeof raw !== "string") return { variantId: raw, spriteId: null };
+  if (raw.startsWith("fav_")) return { variantId: raw, spriteId: null };
+
+  // Already a stable variant id
+  if (maps.variantMap[raw]) {
+    return { variantId: raw, spriteId: maps.variantMap[raw].spriteId };
+  }
+
+  // Already a base sprite id (or slug resolves to one): the base variant
+  const baseFromId = maps.spriteById[raw];
+  if (baseFromId) return { variantId: raw, spriteId: baseFromId };
+  if (maps.spriteBySlug[raw]) {
+    const sid = maps.spriteBySlug[raw];
+    return { variantId: sid, spriteId: sid };
+  }
+
+  // Legacy composite "base::VariantType"
+  const sepIndex = raw.indexOf("::");
+  if (sepIndex !== -1) {
+    const baseRaw = raw.slice(0, sepIndex);
+    const typeRaw = raw.slice(sepIndex + 2);
+    const baseId = maps.spriteById[baseRaw] || maps.spriteBySlug[baseRaw] || baseRaw;
+    const key = `${baseId}::${typeRaw}`;
+    if (maps.typeToVariantId[key]) {
+      return { variantId: maps.typeToVariantId[key], spriteId: baseId };
+    }
+    // Case-insensitive variant type match
+    for (const [k, vid] of Object.entries(maps.typeToVariantId)) {
+      const [b, t] = k.split("::");
+      if (b === baseId && t.toLowerCase() === typeRaw.toLowerCase()) {
+        return { variantId: vid, spriteId: baseId };
+      }
+    }
+    // Unknown variant: keep a stable-looking composite id
+    return { variantId: `${baseId}::${typeRaw}`, spriteId: baseId };
+  }
+
+  return { variantId: raw, spriteId: raw };
+}
+
+async function normalizeVariantId(raw) {
+  const maps = await getCatalogIdMaps();
+  return normalizeVariantIdWithMaps(raw, maps);
 }
 
 async function normalizeCollection(collection) {
+  const maps = await getCatalogIdMaps();
   const normalized = {};
-  const slugs = new Set();
-  for (const spriteId of Object.keys(collection)) {
-    if (spriteId.startsWith("fav_")) { normalized[spriteId] = collection[spriteId]; continue; }
-    const sepIndex = spriteId.indexOf("::");
-    const base = sepIndex === -1 ? spriteId : spriteId.slice(0, sepIndex);
-    if (!base.startsWith("sprite_")) slugs.add(base);
-  }
-  const slugMap = {};
-  if (slugs.size > 0) {
-    const placeholders = Array.from(slugs).map((_, i) => `$${i + 1}`).join(",");
-    const result = await pool.query(
-      `SELECT id, slug FROM sprites WHERE slug IN (${placeholders})`,
-      Array.from(slugs)
-    );
-    for (const row of result.rows) slugMap[row.slug] = row.id;
-  }
-  for (const [spriteId, entry] of Object.entries(collection)) {
-    if (spriteId.startsWith("fav_")) continue;
-    const sepIndex = spriteId.indexOf("::");
-    const base = sepIndex === -1 ? spriteId : spriteId.slice(0, sepIndex);
-    const variant = sepIndex === -1 ? "Base" : spriteId.slice(sepIndex + 2);
-    const stableBase = base.startsWith("sprite_") ? base : (slugMap[base] || base);
-    normalized[`${stableBase}::${variant}`] = entry;
+  for (const [rawKey, entry] of Object.entries(collection)) {
+    if (rawKey.startsWith("fav_")) { normalized[rawKey] = entry; continue; }
+    const { variantId, spriteId } = normalizeVariantIdWithMaps(rawKey, maps);
+    normalized[variantId] = { ...entry, spriteId };
   }
   return normalized;
+}
+
+// Backward-compatible alias
+async function normalizeSpriteEntryId(spriteId) {
+  const { variantId } = await normalizeVariantId(spriteId);
+  return variantId;
 }
 
 const ACQUISITION_TYPES = new Set(["quest", "event", "exploration", "interaction", "reward", "challenge", "purchase", "automatic", "unknown"]);
@@ -865,7 +915,7 @@ app.get("/api/community-ownership", async (req, res) => {
     const totalActive = totalResult.rows[0]?.total || 0;
 
     const ownershipResult = await pool.query(
-      `SELECT split_part(se.sprite_id, '::', 1) AS base_id,
+      `SELECT COALESCE(se.sprite_id, split_part(se.variant_id, '::', 1)) AS base_id,
               COUNT(DISTINCT se.user_id)::int AS owners
        FROM sprite_entries se
        JOIN users u ON u.id = se.user_id
@@ -1285,12 +1335,13 @@ app.get("/api/export", async (req, res) => {
     const user = userResult.rows[0];
 
     const collectionResult = await pool.query(
-      "SELECT sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
+      "SELECT variant_id, sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
       [reqUser]
     );
     const collection = {};
     for (const row of collectionResult.rows) {
-      collection[row.sprite_id] = {
+      collection[row.variant_id] = {
+        spriteId: row.sprite_id,
         status: row.status,
         note: row.note || "",
         priority: row.priority || "none",
@@ -1443,12 +1494,12 @@ app.get("/api/shared/:token", async (req, res) => {
     }
     const user = userResult.rows[0];
     const entries = await pool.query(
-      "SELECT sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
+      "SELECT variant_id, sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
       [user.id]
     );
     const collection = {};
     for (const row of entries.rows) {
-      collection[row.sprite_id] = { status: row.status, priority: row.priority || "none" };
+      collection[row.variant_id] = { spriteId: row.sprite_id, status: row.status, priority: row.priority || "none" };
     }
     res.json({
       username: user.username,
@@ -1718,12 +1769,13 @@ app.get("/api/collection/:userId", async (req, res) => {
       return res.status(403).json({ error: "Collection non accessible" });
     }
     const result = await pool.query(
-      "SELECT sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
+      "SELECT variant_id, sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
       [userId]
     );
     const collection = {};
     for (const row of result.rows) {
-      collection[row.sprite_id] = {
+      collection[row.variant_id] = {
+        spriteId: row.sprite_id,
         status: row.status,
         note: row.note || "",
         priority: row.priority || "none",
@@ -1739,7 +1791,7 @@ app.get("/api/collection/:userId", async (req, res) => {
 });
 
 // ── Squad activity logger ──
-async function logSquadActivity(userId, spriteId, action) {
+async function logSquadActivity(userId, variantId, spriteId, action) {
   try {
     const squads = await pool.query(
       `SELECT sm.squad_id FROM squad_members sm WHERE sm.user_id = $1`,
@@ -1748,14 +1800,13 @@ async function logSquadActivity(userId, spriteId, action) {
     const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
     const username = userResult.rows[0]?.username || "Un joueur";
     const actionLabel = action === "owned" ? "a obtenu" : "a repéré";
-    const [spriteBase] = String(spriteId).split("_");
-    const spriteResult = await pool.query("SELECT name FROM sprites WHERE id = $1", [spriteBase]);
-    const spriteName = spriteResult.rows[0]?.name || spriteBase;
+    const spriteResult = await pool.query("SELECT name FROM sprites WHERE id = $1", [spriteId]);
+    const spriteName = spriteResult.rows[0]?.name || spriteId;
 
     for (const row of squads.rows) {
       await pool.query(
         `INSERT INTO squad_activity (squad_id, user_id, sprite_id, action) VALUES ($1, $2, $3, $4)`,
-        [row.squad_id, userId, spriteId, action]
+        [row.squad_id, userId, variantId, action]
       );
       // Notify squad members asynchronously; do not block the request.
       pushService.notifySquadMembers(pool, row.squad_id, userId, {
@@ -1776,37 +1827,38 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
   let { spriteId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   if (!spriteId || spriteId.length > 120) return res.status(400).json({ error: "spriteId invalide" });
-  spriteId = await normalizeSpriteEntryId(spriteId);
+  const { variantId, spriteId: baseSpriteId } = await normalizeVariantId(spriteId);
   const { status, note, priority, obtainedAt } = req.validatedBody;
   try {
     const prev = await pool.query(
-      `SELECT status FROM sprite_entries WHERE user_id = $1 AND sprite_id = $2`,
-      [userId, spriteId]
+      `SELECT status FROM sprite_entries WHERE user_id = $1 AND variant_id = $2`,
+      [userId, variantId]
     );
     const prevStatus = prev.rows.length ? prev.rows[0].status : "new";
 
     await pool.query(
-      `INSERT INTO sprite_entries (user_id, sprite_id, status, note, priority, obtained_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6::timestamptz, NOW())
-       ON CONFLICT (user_id, sprite_id)
-       DO UPDATE SET status = COALESCE($3, sprite_entries.status),
-                     note = COALESCE($4, sprite_entries.note),
-                     priority = COALESCE($5, sprite_entries.priority),
-                     obtained_at = COALESCE($6::timestamptz, sprite_entries.obtained_at),
+      `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, NOW())
+       ON CONFLICT (user_id, variant_id)
+       DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
+                     status = COALESCE($4, sprite_entries.status),
+                     note = COALESCE($5, sprite_entries.note),
+                     priority = COALESCE($6, sprite_entries.priority),
+                     obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
                      updated_at = NOW()`,
-      [userId, spriteId, status || "new", note ?? "", priority || "none", obtainedAt || null]
+      [userId, variantId, baseSpriteId, status || "new", note ?? "", priority || "none", obtainedAt || null]
     );
 
     const newStatus = status || "new";
     if (newStatus !== prevStatus) {
       pool.query(
         `INSERT INTO collection_history (user_id, sprite_id, old_status, new_status) VALUES ($1, $2, $3, $4)`,
-        [userId, spriteId, prevStatus, newStatus]
+        [userId, variantId, prevStatus, newStatus]
       ).catch(() => {});
     }
 
     if ((status === "owned") && prevStatus !== "owned") {
-      logSquadActivity(userId, spriteId, "owned");
+      logSquadActivity(userId, variantId, baseSpriteId, "owned");
     }
 
     res.json({ ok: true });
@@ -1826,17 +1878,20 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    for (const [spriteId, entry] of Object.entries(normalizedCollection)) {
-      if (spriteId.startsWith("fav_")) continue;
+    for (const [variantId, entry] of Object.entries(normalizedCollection)) {
+      if (variantId.startsWith("fav_")) continue;
       await client.query(
-        `INSERT INTO sprite_entries (user_id, sprite_id, status, note, priority, obtained_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6::timestamptz, COALESCE($7::timestamptz, NOW()))
-         ON CONFLICT (user_id, sprite_id)
-         DO UPDATE SET status = $3, note = $4, priority = $5,
-                       obtained_at = COALESCE($6::timestamptz, sprite_entries.obtained_at),
-                       updated_at = COALESCE($7::timestamptz, NOW())`,
+        `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, COALESCE($8::timestamptz, NOW()))
+         ON CONFLICT (user_id, variant_id)
+         DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
+                       status = $4,
+                       note = $5,
+                       priority = $6,
+                       obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
+                       updated_at = COALESCE($8::timestamptz, NOW())`,
         [
-          userId, spriteId,
+          userId, variantId, entry.spriteId || null,
           entry.status || "new",
           entry.note || "",
           entry.priority || "none",
@@ -1870,17 +1925,20 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    for (const [spriteId, entry] of Object.entries(normalizedCollection)) {
-      if (spriteId.startsWith("fav_")) continue;
+    for (const [variantId, entry] of Object.entries(normalizedCollection)) {
+      if (variantId.startsWith("fav_")) continue;
       await client.query(
-        `INSERT INTO sprite_entries (user_id, sprite_id, status, note, priority, obtained_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6::timestamptz, COALESCE($7::timestamptz, NOW()))
-         ON CONFLICT (user_id, sprite_id)
-         DO UPDATE SET status = $3, note = $4, priority = $5,
-                       obtained_at = COALESCE($6::timestamptz, sprite_entries.obtained_at),
-                       updated_at = COALESCE($7::timestamptz, NOW())`,
+        `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, COALESCE($8::timestamptz, NOW()))
+         ON CONFLICT (user_id, variant_id)
+         DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
+                       status = $4,
+                       note = $5,
+                       priority = $6,
+                       obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
+                       updated_at = COALESCE($8::timestamptz, NOW())`,
         [
-          userId, spriteId,
+          userId, variantId, entry.spriteId || null,
           entry.status || "new",
           entry.note || "",
           entry.priority || "none",
@@ -2923,15 +2981,47 @@ async function ensureSquadTables() {
       CREATE TABLE IF NOT EXISTS sprite_entries (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        sprite_id VARCHAR(100) NOT NULL,
+        variant_id VARCHAR(100) NOT NULL,
+        sprite_id VARCHAR(50),
         status VARCHAR(20) NOT NULL DEFAULT 'new',
         note TEXT DEFAULT '',
         priority TEXT DEFAULT 'none',
         obtained_at TIMESTAMPTZ,
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE (user_id, sprite_id)
+        UNIQUE (user_id, variant_id)
       );
       CREATE INDEX IF NOT EXISTS idx_sprite_entries_user ON sprite_entries (user_id);
+
+      -- Migrate old schema where the variant id was stored in a column named sprite_id
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='sprite_entries' AND column_name='sprite_id')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='sprite_entries' AND column_name='variant_id') THEN
+          ALTER TABLE sprite_entries RENAME COLUMN sprite_id TO variant_id;
+        END IF;
+      END $$;
+
+      ALTER TABLE sprite_entries ADD COLUMN IF NOT EXISTS sprite_id VARCHAR(50);
+
+      -- Backfill base sprite_id from variant_id using the catalog mapping
+      UPDATE sprite_entries se
+      SET sprite_id = COALESCE(
+        (SELECT sv.sprite_id FROM sprite_variants sv WHERE sv.id = se.variant_id LIMIT 1),
+        split_part(se.variant_id, '::', 1),
+        se.variant_id
+      )
+      WHERE sprite_id IS NULL;
+
+      -- Ensure the unique constraint on (user_id, variant_id) is present
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_indexes
+          WHERE tablename = 'sprite_entries' AND indexdef LIKE '%(user_id, variant_id)%'
+        ) THEN
+          ALTER TABLE sprite_entries ADD CONSTRAINT unique_user_variant UNIQUE (user_id, variant_id);
+        END IF;
+      END $$;
     `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sessions (

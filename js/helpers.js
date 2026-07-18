@@ -12,36 +12,48 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
-function variantId(spriteId, variant) {
-  return `${spriteId}::${variant}`;
+function variantId(spriteId, variantType) {
+  const details = SPRITE_VARIANTS?.[spriteId]?.[variantType];
+  if (details?.id) return details.id;
+  return `${spriteId}::${variantType}`;
 }
 
-function getSpriteImg(spriteId, variant) {
+function getSpriteImg(spriteId, variantType) {
   const images = SPRITE_IMAGES[spriteId];
   if (!images) return null;
-  return images[variant] || images.Base || null;
+  return images[variantType] || images.Base || null;
 }
 
-function spriteImgTag(spriteId, variant, className) {
-  const src = getSpriteImg(spriteId, variant);
+function spriteImgTag(spriteId, variantType, className) {
+  const src = getSpriteImg(spriteId, variantType);
   if (!src) return `<span class="${className}"></span>`;
-  return `<img src="${src}" alt="${spriteId} ${variant}" class="${className}" />`;
+  return `<img src="${src}" alt="${spriteId} ${variantType}" class="${className}" />`;
 }
 
 function getAllItems() {
-  return SPRITES.flatMap((sprite) =>
-    sprite.variants.map((variant) => ({
-      id: variantId(sprite.id, variant),
-      spriteId: sprite.id,
-      spriteName: sprite.name,
-      rarity: sprite.rarity,
-      img: getSpriteImg(sprite.id, variant),
-      color: sprite.color,
-      effect: sprite.effect,
-      variant,
-      variantBonus: VARIANT_META[variant]?.bonus ?? "Variante spéciale."
-    }))
-  );
+  return SPRITES.flatMap((sprite) => {
+    const details = sprite.variantDetails || SPRITE_VARIANTS?.[sprite.id] || {};
+    const variantTypes = Object.keys(details).length > 0
+      ? Object.keys(details)
+      : (Array.isArray(sprite.variants) ? sprite.variants : ["Base"]);
+    return variantTypes.map((variantType) => {
+      const variant = details[variantType] || { type: variantType, name: variantType };
+      return {
+        id: variant.id || variantId(sprite.id, variantType),
+        spriteId: sprite.id,
+        variantId: variant.id || variantId(sprite.id, variantType),
+        variantType,
+        variantName: variant.name || variantType,
+        spriteName: sprite.name,
+        rarity: variant.rarity || sprite.rarity,
+        img: variant.image || getSpriteImg(sprite.id, variantType),
+        color: sprite.color,
+        effect: variant.effect || sprite.effect,
+        variant: variantType,
+        variantBonus: VARIANT_META[variantType]?.bonus ?? "Variante spéciale."
+      };
+    });
+  });
 }
 
 function defaultEntry() {
