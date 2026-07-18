@@ -93,79 +93,105 @@ function compareEntry(collection, item) {
 }
 
 // ── Moteur de comparaison ───────────────────────────────────────────────────
-// userA et userB sont des objets collection { variantId: { status, priority, ... } }.
+// userA et userB sont des objets { id, displayName, collection }.
 // catalogue est une liste de variants (par défaut tous les variants sortis du catalogue).
-// Pour chaque variante on renvoie l'une des 5 catégories : both_owned, only_user_a,
-// only_user_b, both_missing, unknown.
+// Le résultat est normalisé : comparisonId, generatedAt, users, summary, groups.
 function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) {
-  const result = {
-    both_owned: [],
-    only_user_a: [],
-    only_user_b: [],
-    both_missing: [],
-    unknown: [],
-    summary: {
-      total: catalogue.length,
-      bothOwned: 0,
-      onlyUserA: 0,
-      onlyUserB: 0,
-      bothMissing: 0,
-      unknown: 0,
-      aOwned: 0,
-      bOwned: 0
-    }
+  const userAInfo = userA && typeof userA === "object" && "collection" in userA
+    ? userA
+    : { id: "userA", displayName: "Joueur A", collection: userA || {} };
+  const userBInfo = userB && typeof userB === "object" && "collection" in userB
+    ? userB
+    : { id: "userB", displayName: "Joueur B", collection: userB || {} };
+  const collectionA = userAInfo.collection;
+  const collectionB = userBInfo.collection;
+
+  const groups = {
+    bothOwned: [],
+    onlyUserA: [],
+    onlyUserB: [],
+    bothMissing: [],
+    unknown: []
   };
 
   for (const item of catalogue) {
-    const a = compareEntry(userA, item);
-    const b = compareEntry(userB, item);
+    const a = compareEntry(collectionA, item);
+    const b = compareEntry(collectionB, item);
     const sa = compareClassify(a);
     const sb = compareClassify(b);
-    const record = { item, entryA: a, entryB: b };
+
+    const record = {
+      variantId: item.variantId,
+      spriteId: item.spriteId,
+      variantType: item.variantType,
+      variantName: item.variantName,
+      spriteName: item.spriteName,
+      img: item.img,
+      rarity: item.rarity,
+      color: item.color,
+      userA: { status: a.status, priority: a.priority, note: a.note },
+      userB: { status: b.status, priority: b.priority, note: b.note }
+    };
 
     if (sa === "unknown" || sb === "unknown") {
-      result.unknown.push(record);
-      result.summary.unknown++;
-      continue;
-    }
-
-    if (sa === "owned" && sb === "owned") {
-      result.both_owned.push(record);
-      result.summary.bothOwned++;
-      result.summary.aOwned++;
-      result.summary.bOwned++;
+      groups.unknown.push(record);
+    } else if (sa === "owned" && sb === "owned") {
+      groups.bothOwned.push(record);
     } else if (sa === "owned" && sb !== "owned") {
-      result.only_user_a.push(record);
-      result.summary.onlyUserA++;
-      result.summary.aOwned++;
+      groups.onlyUserA.push(record);
     } else if (sb === "owned" && sa !== "owned") {
-      result.only_user_b.push(record);
-      result.summary.onlyUserB++;
-      result.summary.bOwned++;
+      groups.onlyUserB.push(record);
     } else if (sa === "missing" && sb === "missing") {
-      result.both_missing.push(record);
-      result.summary.bothMissing++;
+      groups.bothMissing.push(record);
     } else {
-      // Sécurité : statut non classifiable, on le met dans "unknown"
-      result.unknown.push(record);
-      result.summary.unknown++;
+      groups.unknown.push(record);
     }
   }
 
-  const total = result.summary.total;
-  result.summary.aPercent = total ? Math.round((result.summary.aOwned / total) * 100) : 0;
-  result.summary.bPercent = total ? Math.round((result.summary.bOwned / total) * 100) : 0;
-  const unionOwned = result.summary.aOwned + result.summary.bOwned - result.summary.bothOwned;
-  result.summary.collectiveCompletion = total ? Math.round((unionOwned / total) * 100) : 0;
-  const aMissing = result.summary.onlyUserB + result.summary.bothMissing;
-  const bMissing = result.summary.onlyUserA + result.summary.bothMissing;
-  const aCovered = result.summary.onlyUserB;
-  const bCovered = result.summary.onlyUserA;
-  const aComp = aMissing ? aCovered / aMissing : 1;
-  const bComp = bMissing ? bCovered / bMissing : 1;
-  result.summary.complementarity = Math.round(((aComp + bComp) / 2) * 100);
+  const total = catalogue.length;
+  const bothOwnedCount = groups.bothOwned.length;
+  const onlyUserACount = groups.onlyUserA.length;
+  const onlyUserBCount = groups.onlyUserB.length;
+  const bothMissingCount = groups.bothMissing.length;
+  const unknownCount = groups.unknown.length;
+  const aOwnedCount = bothOwnedCount + onlyUserACount;
+  const bOwnedCount = bothOwnedCount + onlyUserBCount;
+  const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
 
-  return result;
+  const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+  const aPossessionRate = toRate(aOwnedCount, total);
+  const bPossessionRate = toRate(bOwnedCount, total);
+  const collectiveCompletionRate = toRate(collectiveOwnedCount, total);
+  const complementarityRate = toRate(onlyUserACount + onlyUserBCount, total);
+
+  const comparisonId = (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `comparison_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+  return {
+    comparisonId,
+    generatedAt: new Date().toISOString(),
+    users: {
+      userA: { id: userAInfo.id, displayName: userAInfo.displayName },
+      userB: { id: userBInfo.id, displayName: userBInfo.displayName }
+    },
+    summary: {
+      catalogueVariantCount: total,
+      bothOwnedCount,
+      onlyUserACount,
+      onlyUserBCount,
+      bothMissingCount,
+      unknownCount,
+      aOwnedCount,
+      bOwnedCount,
+      aPossessionRate,
+      bPossessionRate,
+      collectiveOwnedCount,
+      collectiveCompletionRate,
+      complementarityRate
+    },
+    groups
+  };
 }
 
 // ── Rendu ──────────────────────────────────────────────────────────────────
@@ -213,23 +239,23 @@ function renderCompareSummary(result, aName, bName) {
   const safeB = escapeHtml(bName);
   els.compareSummary.innerHTML = `
     <div class="compare-summary-grid">
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.collectiveCompletion}%</span><span class="compare-kpi__label">Complétion collective</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.complementarity}%</span><span class="compare-kpi__label">Complémentarité</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.both_owned.length}</span><span class="compare-kpi__label">En commun</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.only_user_a.length}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.only_user_b.length}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.both_missing.length}</span><span class="compare-kpi__label">Manque aux deux</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.collectiveCompletionRate}%</span><span class="compare-kpi__label">Complétion collective</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.complementarityRate}%</span><span class="compare-kpi__label">Complémentarité</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.bothOwnedCount}</span><span class="compare-kpi__label">En commun</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserACount}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserBCount}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.bothMissingCount}</span><span class="compare-kpi__label">Manque aux deux</span></div>
     </div>
     <div class="compare-players">
       <div class="compare-player">
         <span class="compare-player__name">${safeA}</span>
-        <span class="compare-player__pct">${s.aPercent}% possédé</span>
-        <span class="compare-player__count">${s.aOwned} / ${s.total}</span>
+        <span class="compare-player__pct">${s.aPossessionRate}% possédé</span>
+        <span class="compare-player__count">${s.aOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
       <div class="compare-player">
         <span class="compare-player__name">${safeB}</span>
-        <span class="compare-player__pct">${s.bPercent}% possédé</span>
-        <span class="compare-player__count">${s.bOwned} / ${s.total}</span>
+        <span class="compare-player__pct">${s.bPossessionRate}% possédé</span>
+        <span class="compare-player__count">${s.bOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
     </div>`;
 }
@@ -237,19 +263,20 @@ function renderCompareSummary(result, aName, bName) {
 function renderCompareLists(result, aName, bName) {
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
+  const g = result.groups;
 
   const sections = [];
-  sections.push(renderCompareSection("Possédé par les deux", result.both_owned, (it) => compareItemHTML(it.item), true));
-  sections.push(renderCompareSection(`${safeA} possède · ${safeB} manque`, result.only_user_a,
-    (it) => compareItemHTML(it.item, compareStatusTag(it.entryB.status, it.entryB)), true));
-  sections.push(renderCompareSection(`${safeB} possède · ${safeA} manque`, result.only_user_b,
-    (it) => compareItemHTML(it.item, compareStatusTag(it.entryA.status, it.entryA)), true));
-  sections.push(renderCompareSection("Manque aux deux", result.both_missing,
-    (it) => compareItemHTML(it.item, `${compareStatusTag(it.entryA.status, it.entryA)} ${compareStatusTag(it.entryB.status, it.entryB)}`), true));
+  sections.push(renderCompareSection("Possédé par les deux", g.bothOwned, (it) => compareItemHTML(it), true));
+  sections.push(renderCompareSection(`${safeA} possède · ${safeB} manque`, g.onlyUserA,
+    (it) => compareItemHTML(it, compareStatusTag(it.userB.status, { priority: it.userB.priority })), true));
+  sections.push(renderCompareSection(`${safeB} possède · ${safeA} manque`, g.onlyUserB,
+    (it) => compareItemHTML(it, compareStatusTag(it.userA.status, { priority: it.userA.priority })), true));
+  sections.push(renderCompareSection("Manque aux deux", g.bothMissing,
+    (it) => compareItemHTML(it, `${compareStatusTag(it.userA.status, { priority: it.userA.priority })} ${compareStatusTag(it.userB.status, { priority: it.userB.priority })}`), true));
 
-  if (result.unknown.length) {
-    sections.push(renderCompareSection("Données insuffisantes", result.unknown,
-      (it) => compareItemHTML(it.item, `${compareStatusTag(it.entryA.status, it.entryA)} ${compareStatusTag(it.entryB.status, it.entryB)}`)));
+  if (g.unknown.length) {
+    sections.push(renderCompareSection("Données insuffisantes", g.unknown,
+      (it) => compareItemHTML(it, `${compareStatusTag(it.userA.status, { priority: it.userA.priority })} ${compareStatusTag(it.userB.status, { priority: it.userB.priority })}`)));
   }
 
   els.compareLists.innerHTML = sections.join("");
@@ -267,7 +294,9 @@ function renderCompare() {
   const bName = state.compareTarget.username || "Ami";
   if (els.comparePlayerAName) els.comparePlayerAName.textContent = aName;
   if (els.comparePlayerBName) els.comparePlayerBName.textContent = bName;
-  const result = compareCollections(state.collection, state.compareTarget.collection, getCompareCatalogItems());
+  const userA = { id: state.userId || "userA", displayName: state.username || "Moi", collection: state.collection };
+  const userB = { id: state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
+  const result = compareCollections(userA, userB, getCompareCatalogItems());
   renderCompareSummary(result, aName, bName);
   renderCompareLists(result, aName, bName);
 }
