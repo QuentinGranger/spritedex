@@ -13,6 +13,7 @@ const security = require("./security");
 const { seedReferenceData } = require("./sprite-data");
 const pushService = require("./push-service");
 const secLog = require("./security-logger");
+const analytics = require("./analytics");
 
 // On Render, RENDER_EXTERNAL_URL is auto-injected as the full public https URL.
 // Use it as the default public base so OAuth redirects and CORS work on the
@@ -2302,9 +2303,18 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
 
       result = compareCollectionsServer(userA, userB, catalogue);
       setCachedCompareResult(userAId, userBId, result);
+      analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId, userBId, source: "api" } });
     }
 
     result = applyServerCompareFilters(result, req.query);
+
+    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId, userBId, source: "api" } });
+    for (const [key, value] of Object.entries(req.query)) {
+      if (value && ["status", "seasonId", "eventId", "rarity", "variantType", "availability"].includes(key)) {
+        analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_filter_used", details: { filter: key, value: String(value) } });
+      }
+    }
+
     res.json(result);
   } catch (err) {
     console.error("[/api/comparisons]", err);
@@ -2358,6 +2368,8 @@ app.post("/api/compare/share", async (req, res) => {
     );
 
     secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_created", status: "ok" });
+    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_shared", details: { duration, source: "compare" } });
+    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "compare_invitation_generated", details: { source: "compare" } });
     res.json({
       token,
       url: `${req.protocol}://${req.get("host")}/compare/share/${token}`,
@@ -2405,6 +2417,8 @@ app.get("/api/compare/share/:token", async (req, res) => {
     const userB = { id: visitor || "visitor", displayName: visitorName, collection: visitorCollection };
     const catalogue = await getServerCompareCatalogItemsCached();
     const result = compareCollectionsServer(userA, userB, catalogue);
+
+    analytics.logCompareAnalyticsEvent(pool, { userId: visitor, event: "comparison_viewed", details: { source: "share", ownerId: share.owner_user_id } });
 
     res.json({
       token,
@@ -2454,6 +2468,38 @@ app.get("/api/compare/shares", async (req, res) => {
     res.json({ shares: result.rows });
   } catch (err) {
     console.error("[/api/compare/shares]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Compare analytics ──
+const COMPARE_ANALYTICS_EVENTS_SET = analytics.COMPARE_ANALYTICS_EVENTS;
+
+app.post("/api/analytics/compare", async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    const { event, details } = req.body || {};
+    if (!event || !COMPARE_ANALYTICS_EVENTS_SET.has(event)) {
+      return res.status(400).json({ error: "Événement inconnu" });
+    }
+    const cleanDetails = details && typeof details === "object" ? details : {};
+    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event, details: cleanDetails });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[/api/analytics/compare]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.get("/api/analytics/compare", async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
+    const metrics = await analytics.getCompareAnalyticsMetrics(pool, { days });
+    res.json(metrics);
+  } catch (err) {
+    console.error("[/api/analytics/compare]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
@@ -3891,6 +3937,7 @@ async function ensureSquadTables() {
     `);
     await pushService.ensurePushTables(pool);
     await secLog.ensureSecurityLogTable(pool);
+    await analytics.ensureCompareAnalyticsTable(pool);
     console.log("Squad tables ready");
   } catch (err) {
     console.error("Failed to create squad tables:", err);

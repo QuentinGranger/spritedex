@@ -1,6 +1,16 @@
 let compareWs = null;
 let compareWsReconnectTimer = null;
 
+function logCompareAnalytics(event, details = {}) {
+  try {
+    fetch(`${API_BASE}/analytics/compare`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ event, details })
+    }).catch(() => {});
+  } catch (e) {}
+}
+
 // ── Règles de statuts pour la comparaison ────────────────────────────────────
 const COMPARE_RULES = {
   owned: ["owned"],
@@ -613,6 +623,8 @@ function openCompareSprite(spriteId) {
 
   const dialog = document.getElementById("compareSpriteDialog");
   if (dialog && typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+  const hasMissing = records.some(r => r.userA.status !== "owned" || r.userB.status !== "owned");
+  logCompareAnalytics("missing_match_opened", { spriteId, hasMissing });
   state.compareSpriteId = spriteId;
 }
 
@@ -641,6 +653,7 @@ function attachCompareQuickActions(container, spriteIdForDialog = null) {
         if (!entry.obtainedAt) patch.obtainedAt = new Date().toISOString();
       }
       setEntry(sel.dataset.variantId, patch);
+      if (status === "priority") logCompareAnalytics("priority_added_from_comparison", { variantId: sel.dataset.variantId, source: "quick_action" });
       toast(statusLabel(status));
       renderCompare();
       if (spriteIdForDialog && state.compareSpriteId) openCompareSprite(state.compareSpriteId);
@@ -792,10 +805,10 @@ function renderCompareActions(result) {
     ${catalogFilters}`;
 
   const filterSelect = $("#compareFilterSelect");
-  if (filterSelect) filterSelect.addEventListener("change", (e) => { state.compareFilter = e.target.value; renderCompare(); });
+  if (filterSelect) filterSelect.addEventListener("change", (e) => { state.compareFilter = e.target.value; logCompareAnalytics("comparison_filter_used", { filter: "status", value: e.target.value }); renderCompare(); });
 
   const sortSelectEl = $("#compareSortSelect");
-  if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => { state.compareSort = e.target.value; renderCompare(); });
+  if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => { state.compareSort = e.target.value; logCompareAnalytics("comparison_filter_used", { filter: "sort", value: e.target.value }); renderCompare(); });
 
   const refreshBtn = $("#compareRefreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; state.compareSort = "alpha"; state.compareCatalogFilters = {}; renderCompare(); });
@@ -807,6 +820,7 @@ function renderCompareActions(result) {
     sel.addEventListener("change", (e) => {
       state.compareCatalogFilters = state.compareCatalogFilters || {};
       state.compareCatalogFilters[e.target.dataset.filterKey] = e.target.value;
+      logCompareAnalytics("comparison_filter_used", { filter: e.target.dataset.filterKey, value: e.target.value });
       renderCompare();
     });
   });
@@ -880,6 +894,7 @@ async function loadCompareTarget(raw) {
       avatarUrl: data.avatarUrl || "",
       collection: data.collection || {}
     };
+    logCompareAnalytics("comparison_viewed", { source: "shared_profile", targetId: data.id });
     if (els.compareTokenInput) els.compareTokenInput.value = raw;
     const url = new URL(location.href);
     url.searchParams.set("compare", token);
@@ -925,6 +940,7 @@ async function createCompareShare() {
     });
     if (!res.ok) throw new Error("create share failed");
     const data = await res.json();
+    logCompareAnalytics("compare_invitation_generated", { source: "compare_dialog" });
     const url = data.url;
     if (els.shareCompareResult) {
       els.shareCompareResult.innerHTML = `<p class="share-compare-url"><a href="${escapeHtml(url)}" target="_blank">${escapeHtml(url)}</a></p>`;
@@ -970,6 +986,7 @@ async function loadCompareShare(token) {
     };
 
     if (els.compareTokenInput) els.compareTokenInput.value = token;
+    logCompareAnalytics("app_returned_from_compare", { source: "share_link", targetId: state.compareTarget.userId });
     renderCompare();
     switchToCompareView();
     toast(`Comparaison avec ${state.compareTarget.username} chargée`);
