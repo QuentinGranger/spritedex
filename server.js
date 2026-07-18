@@ -511,6 +511,76 @@ function compareCollectionsServer(userA, userB, catalogue) {
   };
 }
 
+const COMPARE_CACHE_TTL_MS = (() => {
+  const v = parseInt(process.env.COMPARE_CACHE_TTL_MS, 10);
+  if (!isNaN(v)) return Math.max(30000, Math.min(120000, v));
+  return 60000;
+})();
+
+const compareCatalogCache = { data: null, expiresAt: 0 };
+const compareResultCache = new Map();
+const MAX_COMPARE_RESULT_CACHE = 500;
+
+function pruneCompareResultCache() {
+  const now = Date.now();
+  for (const [key, entry] of compareResultCache.entries()) {
+    if (entry.expiresAt < now) compareResultCache.delete(key);
+  }
+  if (compareResultCache.size > MAX_COMPARE_RESULT_CACHE) {
+    let oldestKey = null;
+    let oldest = Infinity;
+    for (const [key, entry] of compareResultCache.entries()) {
+      if (entry.createdAt < oldest) {
+        oldest = entry.createdAt;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) compareResultCache.delete(oldestKey);
+  }
+}
+
+function getCompareCacheKey(userAId, userBId) {
+  return `${userAId}:${userBId}`;
+}
+
+function invalidateCompareCacheForUser(userId) {
+  const uid = String(userId);
+  const prefix = `${uid}:`;
+  const suffix = `:${uid}`;
+  for (const key of compareResultCache.keys()) {
+    if (key === uid || key.startsWith(prefix) || key.endsWith(suffix)) {
+      compareResultCache.delete(key);
+    }
+  }
+}
+
+async function getServerCompareCatalogItemsCached() {
+  const now = Date.now();
+  if (compareCatalogCache.data && compareCatalogCache.expiresAt > now) {
+    return compareCatalogCache.data;
+  }
+  const data = await getServerCompareCatalogItems();
+  compareCatalogCache.data = data;
+  compareCatalogCache.expiresAt = now + COMPARE_CACHE_TTL_MS;
+  return data;
+}
+
+function getCachedCompareResult(userAId, userBId) {
+  pruneCompareResultCache();
+  const entry = compareResultCache.get(getCompareCacheKey(userAId, userBId));
+  if (entry && entry.expiresAt > Date.now()) return entry.result;
+  return null;
+}
+
+function setCachedCompareResult(userAId, userBId, result) {
+  pruneCompareResultCache();
+  compareResultCache.set(getCompareCacheKey(userAId, userBId), {
+    result,
+    expiresAt: Date.now() + COMPARE_CACHE_TTL_MS,
+    createdAt: Date.now()
+  });
+}
+
 function applyServerCompareFilters(result, query) {
   let records = result.records;
   const status = query.status;
@@ -2219,18 +2289,22 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
       return res.status(403).json({ error: "Collection non accessible" });
     }
 
-    const [catalogue, collectionA, collectionB] = await Promise.all([
-      getServerCompareCatalogItems(),
-      loadServerCompareCollection(userAId),
-      loadServerCompareCollection(userBId)
-    ]);
+    let result = getCachedCompareResult(userAId, userBId);
+    if (!result) {
+      const [catalogue, collectionA, collectionB] = await Promise.all([
+        getServerCompareCatalogItemsCached(),
+        loadServerCompareCollection(userAId),
+        loadServerCompareCollection(userBId)
+      ]);
 
-    const userA = { id: userAId, displayName: userMap[userAId].username || userAId, collection: collectionA };
-    const userB = { id: userBId, displayName: userMap[userBId].username || userBId, collection: collectionB };
+      const userA = { id: userAId, displayName: userMap[userAId].username || userAId, collection: collectionA };
+      const userB = { id: userBId, displayName: userMap[userBId].username || userBId, collection: collectionB };
 
-    let result = compareCollectionsServer(userA, userB, catalogue);
+      result = compareCollectionsServer(userA, userB, catalogue);
+      setCachedCompareResult(userAId, userBId, result);
+    }
+
     result = applyServerCompareFilters(result, req.query);
-
     res.json(result);
   } catch (err) {
     console.error("[/api/comparisons]", err);
@@ -2329,7 +2403,7 @@ app.get("/api/compare/share/:token", async (req, res) => {
 
     const userA = { id: share.owner_user_id, displayName: share.owner_username, collection: ownerCollection };
     const userB = { id: visitor || "visitor", displayName: visitorName, collection: visitorCollection };
-    const catalogue = await getServerCompareCatalogItems();
+    const catalogue = await getServerCompareCatalogItemsCached();
     const result = compareCollectionsServer(userA, userB, catalogue);
 
     res.json({
@@ -2426,6 +2500,7 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
 
     res.json({ ok: true });
     broadcastSquadUpdate(userId);
+    invalidateCompareCacheForUser(userId);
     broadcastCompareUpdate(userId, {
       changes: [{
         variantId,
@@ -2488,6 +2563,7 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
     }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     broadcastSquadUpdate(userId);
+    invalidateCompareCacheForUser(userId);
     broadcastCompareUpdate(userId, { changes });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -2547,6 +2623,7 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
       });
     }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
+    invalidateCompareCacheForUser(userId);
     broadcastCompareUpdate(userId, { changes });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -2563,6 +2640,7 @@ app.delete("/api/collection/:userId", async (req, res) => {
   try {
     await pool.query("DELETE FROM sprite_entries WHERE user_id = $1", [req.params.userId]);
     res.json({ ok: true });
+    invalidateCompareCacheForUser(req.params.userId);
     broadcastCompareUpdate(req.params.userId, { type: "compare_reset" });
   } catch (err) {
     console.error(err);
