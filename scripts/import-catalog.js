@@ -336,6 +336,83 @@ async function ensureSchema() {
       ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
   `);
+
+  // Étape 19 — Historique des modifications du catalogue.
+  // Chaque changement de champ (rareté, disponibilité, saison…) est journalisé
+  // avec l'ancienne et la nouvelle valeur, l'auteur, la date, la raison et la source.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS catalog_change_history (
+      id SERIAL PRIMARY KEY,
+      entity_type VARCHAR(30) NOT NULL DEFAULT 'sprite',
+      entity_id VARCHAR(100) NOT NULL,
+      field VARCHAR(100) NOT NULL,
+      previous_value JSONB,
+      new_value JSONB,
+      changed_by VARCHAR(100),
+      changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      reason TEXT,
+      source_id VARCHAR(100),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_change_history_entity ON catalog_change_history (entity_id, changed_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_change_history_changed_at ON catalog_change_history (changed_at DESC);
+  `);
+}
+
+// Étape 19 — journalise un changement de champ dans catalog_change_history.
+async function recordChange(client, {
+  entityType = "sprite",
+  entityId,
+  field,
+  previousValue,
+  newValue,
+  changedBy,
+  changedAt,
+  reason,
+  sourceId,
+}) {
+  await client.query(
+    `INSERT INTO catalog_change_history
+       (entity_type, entity_id, field, previous_value, new_value, changed_by, changed_at, reason, source_id)
+     VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7, $8, $9)`,
+    [
+      entityType,
+      entityId,
+      field,
+      JSON.stringify(previousValue ?? null),
+      JSON.stringify(newValue ?? null),
+      changedBy || null,
+      changedAt || new Date().toISOString(),
+      reason || null,
+      sourceId || null,
+    ]
+  );
+}
+
+// Compare une liste de champs {field, previousValue, newValue} pour une entité
+// et journalise uniquement ceux qui ont réellement changé. Ne journalise rien
+// si l'entité n'existait pas encore (création implicite) pour éviter le bruit.
+async function diffAndRecord(client, { entityType, entityId, existed, fields, meta }) {
+  if (!existed) return 0;
+  let recorded = 0;
+  for (const { field, previousValue, newValue } of fields) {
+    const prev = previousValue ?? null;
+    const next = newValue ?? null;
+    if (JSON.stringify(prev) === JSON.stringify(next)) continue;
+    await recordChange(client, {
+      entityType,
+      entityId,
+      field,
+      previousValue: prev,
+      newValue: next,
+      changedBy: meta.changedBy,
+      changedAt: meta.changedAt,
+      reason: meta.reason,
+      sourceId: meta.sourceId,
+    });
+    recorded++;
+  }
+  return recorded;
 }
 
 async function importCatalog() {
@@ -353,10 +430,33 @@ async function importCatalog() {
       variantEffectMap[key] = vd.extraEffect || null;
     }
 
-    // Fetch existing colors so we don't overwrite them with defaults
-    const existingSpritesRes = await client.query("SELECT id, color FROM sprites");
+    // Fetch existing colors so we don't overwrite them with defaults.
+    // Also snapshot pre-import field values so we can journalize what changes
+    // during this import (Étape 19 — historique des modifications).
+    const existingSpritesRes = await client.query(
+      "SELECT id, color, rarity, season_id, official_name, image, availability, data_status FROM sprites"
+    );
     const existingColors = {};
-    for (const row of existingSpritesRes.rows) existingColors[row.id] = row.color;
+    const existingSprites = {};
+    for (const row of existingSpritesRes.rows) {
+      existingColors[row.id] = row.color;
+      existingSprites[row.id] = row;
+    }
+    const existingVariantsRes = await client.query(
+      "SELECT id, sprite_id, rarity, release_status, image_path, availability, data_status FROM sprite_variants"
+    );
+    const existingVariants = {};
+    for (const row of existingVariantsRes.rows) existingVariants[row.id] = row;
+
+    // Metadata attached to every change recorded during this catalog import.
+    const changeMeta = {
+      changedBy: process.env.CATALOG_CHANGED_BY || "catalog_import",
+      changedAt: generatedAt || new Date().toISOString(),
+      reason: `Import du catalogue ${version}`,
+    };
+    // availability.status can be nested in a JSONB column; normalize reads.
+    const availStatusOf = (row) => (row && row.availability && typeof row.availability === "object" ? row.availability.status ?? null : null);
+    let totalChanges = 0;
 
     // 1. Import sources
     for (const src of catalog.sources || []) {
@@ -429,6 +529,24 @@ async function importCatalog() {
       const abilityDesc = s.ability?.descriptionFr || s.ability?.descriptionEn || "";
       const baseVariant = s.variants.find((v) => v.variantType === "base") || s.variants[0];
       const spriteImage = s.image || (baseVariant && (baseVariant.imagePath || baseVariant.suggestedImagePath)) || null;
+
+      // Étape 19 — journalise les champs modifiés par rapport à la base.
+      const prev = existingSprites[stableId];
+      const newRarity = s.rarity?.charAt(0).toUpperCase() + s.rarity?.slice(1);
+      const newAvailStatus = normalizeAvailabilityStatus(s.availability?.status, s.availability?.startDate, s.availability?.endDate);
+      totalChanges += await diffAndRecord(client, {
+        entityType: "sprite",
+        entityId: stableId,
+        existed: !!prev,
+        meta: { ...changeMeta, sourceId: (s.sourceIds || [])[0] || null },
+        fields: [
+          { field: "rarity", previousValue: prev?.rarity ?? null, newValue: newRarity ?? null },
+          { field: "seasonId", previousValue: prev?.season_id ?? null, newValue: s.seasonId ?? null },
+          { field: "officialName", previousValue: prev?.official_name ?? null, newValue: s.officialName ?? null },
+          { field: "image", previousValue: prev?.image ?? null, newValue: spriteImage ?? null },
+          { field: "availability.status", previousValue: availStatusOf(prev), newValue: newAvailStatus ?? null },
+        ],
+      });
 
       await client.query(
         `INSERT INTO sprites (
@@ -518,6 +636,22 @@ async function importCatalog() {
         const rarity = s.rarity?.charAt(0).toUpperCase() + s.rarity?.slice(1);
         const effect = variantEffectMap[v.variantType] || variantEffectMap[variantName.toLowerCase()] || null;
 
+        // Étape 19 — journalise les champs de variante modifiés.
+        const prevV = existingVariants[v.id];
+        const newVAvailStatus = normalizeAvailability(v.availability)?.status ?? null;
+        totalChanges += await diffAndRecord(client, {
+          entityType: "variant",
+          entityId: v.id,
+          existed: !!prevV,
+          meta: { ...changeMeta, sourceId: (v.sourceIds || [])[0] || null },
+          fields: [
+            { field: "rarity", previousValue: prevV?.rarity ?? null, newValue: rarity ?? null },
+            { field: "releaseStatus", previousValue: prevV?.release_status ?? null, newValue: v.releaseStatus ?? null },
+            { field: "imagePath", previousValue: prevV?.image_path ?? null, newValue: v.imagePath ?? null },
+            { field: "availability.status", previousValue: availStatusOf(prevV), newValue: newVAvailStatus },
+          ],
+        });
+
         await client.query(
           `INSERT INTO sprite_variants (
             id, sprite_id, variant_type, name, official_name, slug, rarity, release_status, first_observed_at,
@@ -589,6 +723,24 @@ async function importCatalog() {
     for (const s of catalog.unreleasedContent?.baseSprites || []) {
       const stableId = s.id;
       const unreleasedImage = s.image || null;
+
+      // Étape 19 — journalise les champs modifiés des sprites non publiés.
+      const prevU = existingSprites[stableId];
+      const newURarity = s.rarity?.charAt(0).toUpperCase() + s.rarity?.slice(1);
+      const newUAvailStatus = normalizeAvailabilityStatus(s.availability?.status, s.availability?.startDate, s.availability?.endDate);
+      totalChanges += await diffAndRecord(client, {
+        entityType: "sprite",
+        entityId: stableId,
+        existed: !!prevU,
+        meta: { ...changeMeta, sourceId: (s.sourceIds || [])[0] || null },
+        fields: [
+          { field: "rarity", previousValue: prevU?.rarity ?? null, newValue: newURarity ?? null },
+          { field: "seasonId", previousValue: prevU?.season_id ?? null, newValue: s.seasonId ?? null },
+          { field: "officialName", previousValue: prevU?.official_name ?? null, newValue: s.officialName ?? null },
+          { field: "image", previousValue: prevU?.image ?? null, newValue: unreleasedImage },
+          { field: "availability.status", previousValue: availStatusOf(prevU), newValue: newUAvailStatus ?? null },
+        ],
+      });
 
       await client.query(
         `INSERT INTO sprites (
@@ -748,6 +900,7 @@ async function importCatalog() {
 
     await client.query("COMMIT");
     console.log(`[IMPORT] Catalog ${version} imported successfully.`);
+    console.log(`[HISTORY] ${totalChanges} modification(s) journalisée(s) dans catalog_change_history.`);
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("[IMPORT] Failed:", err);

@@ -806,6 +806,56 @@ app.get("/api/sprites", async (req, res) => {
   }
 });
 
+// ── Historique des modifications du catalogue (Étape 19) ──
+// Liste les changements enregistrés (quoi, quand, pourquoi, par qui, source).
+// Filtres optionnels : ?entityId=sprite_water, ?field=availability.status,
+// ?limit=50&offset=0.
+app.get("/api/catalog-history", async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const offset = parseInt(req.query.offset, 10) || 0;
+    const conditions = [];
+    const params = [];
+    if (req.query.entityId) {
+      params.push(req.query.entityId);
+      conditions.push(`entity_id = $${params.length}`);
+    }
+    if (req.query.field) {
+      params.push(req.query.field);
+      conditions.push(`field = $${params.length}`);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    params.push(limit);
+    params.push(offset);
+    const result = await pool.query(
+      `SELECT id, entity_type, entity_id, field, previous_value, new_value,
+              changed_by, changed_at, reason, source_id
+       FROM catalog_change_history
+       ${where}
+       ORDER BY changed_at DESC, id DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+    res.json({
+      history: result.rows.map(r => ({
+        id: r.id,
+        entityType: r.entity_type,
+        entityId: r.entity_id,
+        field: r.field,
+        previousValue: r.previous_value,
+        newValue: r.new_value,
+        changedBy: r.changed_by,
+        changedAt: r.changed_at,
+        reason: r.reason,
+        sourceId: r.source_id,
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Helpers ──
 // PBKDF2-HMAC-SHA512 work factor. OWASP (2023) recommends 210 000 iterations
 // for PBKDF2-SHA512. Legacy accounts were hashed with 10 000 iterations; that
@@ -2981,6 +3031,23 @@ async function ensureSquadTables() {
         error TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS catalog_change_history (
+        id SERIAL PRIMARY KEY,
+        entity_type VARCHAR(30) NOT NULL DEFAULT 'sprite',
+        entity_id VARCHAR(100) NOT NULL,
+        field VARCHAR(100) NOT NULL,
+        previous_value JSONB,
+        new_value JSONB,
+        changed_by VARCHAR(100),
+        changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        reason TEXT,
+        source_id VARCHAR(100),
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_change_history_entity ON catalog_change_history (entity_id, changed_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_change_history_changed_at ON catalog_change_history (changed_at DESC);
     `);
     await pushService.ensurePushTables(pool);
     await secLog.ensureSecurityLogTable(pool);
