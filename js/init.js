@@ -1,22 +1,6 @@
 function setupOfflineIndicator() {
-  const indicator = document.createElement("div");
-  indicator.className = "offline-indicator";
-  indicator.id = "offlineIndicator";
-  indicator.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg> Hors ligne`;
-  document.body.appendChild(indicator);
-
-  function update() {
-    indicator.classList.toggle("visible", !navigator.onLine);
-  }
-  window.addEventListener("online", () => {
-    update();
-    toast("Connexion rétablie — synchronisation...");
-    if (state.userId) {
-      fullSync().then(() => toast("Synchronisation terminée"));
-    }
-  });
-  window.addEventListener("offline", update);
-  update();
+  // No visible indicator by design; safe-area padding in CSS keeps the UI clear of
+  // the status bar. The sync bar already reports offline state when relevant.
 }
 
 function handleJoinLink() {
