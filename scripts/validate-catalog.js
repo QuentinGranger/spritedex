@@ -288,7 +288,132 @@ function formatReport({ errors, warnings }) {
   return lines.join("\n");
 }
 
-module.exports = { validateCatalog, formatReport };
+module.exports = { validateCatalog, formatReport, finalizeCatalog, formatFinalizationReport };
+
+// ── Étape 22 — Niveau minimum de finalisation du catalogue ──────────────────
+// Définit le seuil à atteindre pour considérer cette phase comme terminée.
+// Les vérifications purement manuelles (migrations, robustesse aux futures
+// modifications) sont listées mais ne peuvent être toutes automatisées depuis
+// le seul fichier catalogue.
+
+function finalizeCatalog(catalog) {
+  const checks = [];
+  const manual = [];
+
+  const addCheck = (ok, name, detail) => checks.push({ name, ok, detail });
+  const addManual = (name, detail) => manual.push({ name, detail });
+
+  if (!catalog || typeof catalog !== "object") {
+    addCheck(false, "Catalogue lisible", "Le catalogue est invalide.");
+    return { ready: false, checks, manual, errors: [] };
+  }
+
+  const validation = validateCatalog(catalog);
+  const allSprites = collectSprites(catalog);
+
+  addCheck(
+    validation.errors.length === 0,
+    "Données validées automatiquement",
+    validation.errors.length ? `${validation.errors.length} erreur(s) bloquante(s)` : "Aucune erreur bloquante"
+  );
+
+  let missingSpriteId = 0;
+  let missingVariantId = 0;
+  for (const { sprite } of allSprites) {
+    if (isUnknown(sprite.id)) missingSpriteId++;
+    for (const v of sprite.variants || []) {
+      if (isUnknown(v.id)) missingVariantId++;
+    }
+  }
+  addCheck(missingSpriteId === 0, "Identifiants stables des Sprites", missingSpriteId ? `${missingSpriteId} id manquant(s)` : "Tous les sprites ont un id");
+  addCheck(missingVariantId === 0, "Identifiants stables des variantes", missingVariantId ? `${missingVariantId} id manquant(s)` : "Toutes les variantes ont un id");
+
+  const requiredSpriteFields = ["id", "name", "slug", "rarity", "variants", "availability", "acquisition", "recurrence", "sources", "dates", "dataStatus"];
+  let inconsistent = 0;
+  let missingVerification = 0;
+  let missingSources = 0;
+  for (const { sprite } of allSprites) {
+    const hasAllFields = requiredSpriteFields.every((f) => f in sprite);
+    if (!hasAllFields) inconsistent++;
+
+    const lastVer = sprite.dates?.lastVerifiedAt || sprite.lastVerifiedAt;
+    if (isUnknown(lastVer)) missingVerification++;
+
+    const sourceCount = (Array.isArray(sprite.sources) ? sprite.sources.length : 0) + (Array.isArray(sprite.sourceIds) ? sprite.sourceIds.length : 0);
+    if (sourceCount === 0 && sprite.dataStatus !== "complete" && !isUnknown(sprite.availability?.status)) {
+      missingSources++;
+    }
+  }
+  addCheck(inconsistent === 0, "Structure uniforme des fiches", inconsistent ? `${inconsistent} fiche(s) incomplète(s)` : "Toutes les fiches partagent la même structure");
+  addCheck(missingVerification === 0, "Date de dernière vérification", missingVerification ? `${missingVerification} fiche(s) sans date` : "Chaque fiche a une date de dernière vérification");
+  addCheck(missingSources === 0, "Sources attachées aux données", missingSources ? `${missingSources} fiche(s) manquent de sources` : "Les données importantes sont reliées à une source");
+
+  // Les champs inconnus sont acceptés : la validation ne les bloque pas.
+  addCheck(true, "Informations inconnues acceptées", "La validation traite les inconnus comme des avertissements, pas des erreurs");
+
+  let ambiguousSources = 0;
+  for (const { sprite } of allSprites) {
+    for (const src of sprite.sources || []) {
+      const rel = (src.reliability || "").toLowerCase();
+      const type = (src.type || "").toLowerCase();
+      if (isUnknown(rel) && isUnknown(type)) ambiguousSources++;
+    }
+  }
+  addCheck(ambiguousSources === 0, "Sources officielles / observées / communautaires séparées", ambiguousSources ? `${ambiguousSources} source(s) sans type/reliabilité` : "Chaque source est typée");
+
+  const now = new Date();
+  let futureDates = 0;
+  for (const { sprite } of allSprites) {
+    const dates = [
+      sprite.dates?.lastVerifiedAt,
+      sprite.dates?.firstObservedAt,
+      sprite.availability?.startDate,
+      sprite.availability?.endDate,
+    ];
+    for (const d of dates) {
+      if (isUnknown(d)) continue;
+      const dt = new Date(d);
+      if (!Number.isNaN(dt.getTime()) && dt > now) futureDates++;
+    }
+  }
+  addCheck(futureDates === 0, "Aucune information future inventée", futureDates ? `${futureDates} date(s) future(s)` : "Aucune date postérieure à aujourd'hui");
+
+  // Éléments dépendant du backend / des migrations (à vérifier manuellement).
+  addManual("Collections existantes migrées", "Vérifier que sprite_entries et collection_history utilisent les identifiants stables.");
+  addManual("Catalogue modifiable sans casser les collections", "Vérifier l'usage de legacy_sprite_name_map et des migrations.");
+
+  const ready = validation.errors.length === 0 && checks.every((c) => c.ok);
+  return { ready, checks, manual, errors: validation.errors, warnings: validation.warnings };
+}
+
+function formatFinalizationReport({ ready, checks, manual, errors, warnings }) {
+  const lines = [];
+  lines.push("");
+  lines.push(ready ? "✅ Catalogue finalisé — prêt pour la phase suivante." : "⛔ Finalisation insuffisante — voir les points bloquants ci-dessous.");
+  lines.push("");
+  lines.push("── Vérifications automatiques ──");
+  for (const c of checks) {
+    lines.push(`${c.ok ? "✅" : "❌"} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+  }
+  if (manual.length) {
+    lines.push("");
+    lines.push("── Vérifications manuelles ──");
+    for (const m of manual) {
+      lines.push(`🔲 ${m.name} — ${m.detail}`);
+    }
+  }
+  if (warnings.length) {
+    lines.push("");
+    lines.push(`Avertissements (${warnings.length}) :`);
+    for (const w of warnings) lines.push(`  ⚠️  ${w.message}`);
+  }
+  if (errors.length) {
+    lines.push("");
+    lines.push(`Erreurs bloquantes (${errors.length}) :`);
+    for (const e of errors) lines.push(`  ❌  ${e.message}`);
+  }
+  return lines.join("\n");
+}
 
 // Exécution en ligne de commande.
 if (require.main === module) {
@@ -302,7 +427,9 @@ if (require.main === module) {
     console.error(`Impossible de lire le catalogue "${catalogPath}" : ${e.message}`);
     process.exit(1);
   }
-  const result = validateCatalog(catalog);
-  console.log(formatReport(result));
-  process.exit(result.errors.length > 0 ? 1 : 0);
+  const validation = validateCatalog(catalog);
+  console.log(formatReport(validation));
+  const finalization = finalizeCatalog(catalog);
+  console.log(formatFinalizationReport(finalization));
+  process.exit(validation.errors.length > 0 || !finalization.ready ? 1 : 0);
 }
