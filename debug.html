@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#00e1ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="SpriteDex" />
+    <meta name="description" content="Ta collection de sprites — checklist, farm list, statistiques. Fonctionne hors ligne." />
+    <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/Favicon/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/Favicon/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/Favicon/apple-touch-icon.png" />
+    <title>SpriteDex — Checklist Fortnite</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/login.css" />
+    <link rel="stylesheet" href="css/shell.css" />
+    <link rel="stylesheet" href="css/card.css" />
+    <link rel="stylesheet" href="css/checklist.css" />
+    <link rel="stylesheet" href="css/missing.css" />
+    <link rel="stylesheet" href="css/stats.css" />
+    <link rel="stylesheet" href="css/dialogs.css" />
+    <link rel="stylesheet" href="css/squad.css" />
+    <link rel="stylesheet" href="css/news.css" />
+    <link rel="stylesheet" href="css/history.css" />
+    <link rel="stylesheet" href="css/effects.css" />
+    <link rel="stylesheet" href="css/account.css" />
+    <link rel="stylesheet" href="css/shared.css" />
+    <link rel="stylesheet" href="css/legal.css" />
+    <link rel="stylesheet" href="css/utility.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+    <style>
+      #videoSplash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: #0a0e1a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.5s ease;
+        cursor: pointer;
+        user-select: none;
+      }
+      #videoSplash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #videoSplash video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #videoSplash__skip {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 8px 18px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 999px;
+        color: rgba(255,255,255,0.7);
+        font-family: 'Rajdhani', sans-serif;
+        font-size: 0.8rem;
+        letter-spacing: 0.03em;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+<script>
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
+    const userId = params.get("userId");
+    if (token <body><body> userId) {
+      localStorage.setItem("spritedex_token", token);
+      localStorage.setItem("spritedex_user", JSON.stringify({ id: parseInt(userId, 10), username: "testdup" }));
+    }
+  })();
+</script>
+    <div id="videoSplash" aria-hidden="true">
+      <video id="videoSplashVid" src="splashScreen.mp4" muted playsinline autoplay preload="metadata"></video>
+      <div id="videoSplash__skip">Appuie pour passer</div>
+    </div>
+    <script>
+      (function () {
+        var overlay = document.getElementById("videoSplash");
+        var vid = document.getElementById("videoSplashVid");
+        if (!overlay || !vid) return;
+
+        // Splash screen is only wanted in the native Capacitor app, not on the website.
+        var isNative = typeof window !== "undefined" && window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform();
+        if (!isNative) {
+          overlay.parentNode.removeChild(overlay);
+          return;
+        }
+
+        // Show splash at most once per day per device.
+        var SPLASH_KEY = "spritedex_splash_seen";
+        var lastSeen = localStorage.getItem(SPLASH_KEY);
+        var oneDay = 24 * 60 * 60 * 1000;
+        if (lastSeen && Date.now() - parseInt(lastSeen, 10) < oneDay) {
+          overlay.parentNode.removeChild(overlay);
+          return;
+        }
+
+        var done = false;
+        function hide() {
+          if (done) return;
+          done = true;
+          try { localStorage.setItem(SPLASH_KEY, String(Date.now())); } catch (e) {}
+          if (vid && vid.pause) try { vid.pause(); } catch (e) {}
+          overlay.classList.add("is-hidden");
+          setTimeout(function () {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          }, 500);
+        }
+        vid.addEventListener("ended", hide);
+        vid.addEventListener("error", hide);
+        overlay.addEventListener("click", hide);
+        overlay.addEventListener("touchstart", hide, { passive: true });
+        // Safety net: never block the app for more than 5s
+        setTimeout(hide, 5000);
+        var p = vid.play();
+        if (p && p.catch) p.catch(hide);
+      })();
+    </script>
+    <div class="login-screen" id="loginScreen">
+      <div class="login-card">
+        <img src="LogoApp.png" alt="SpriteDex" class="login-logo" />
+        <h1 class="login-title">SpriteDex</h1>
+
+        <!-- Step 1: Inscription -->
+        <div class="onboarding-step active" id="onboardingStep1">
+          <h2 class="onboarding-heading">Créer un compte</h2>
+          <p class="login-sub">Sauvegarde ta collection et rejoins une escouade</p>
+
+          <div class="onboarding-choices">
+            <button class="onboarding-choice" data-method="google" id="authGoogle">
+              <div class="onboarding-choice__icon onboarding-choice__icon--google">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              </div>
+              <span class="onboarding-choice__label">Continuer avec Google</span>
+            </button>
+
+            <button class="onboarding-choice" data-method="email" id="authEmailChoice">
+              <div class="onboarding-choice__icon onboarding-choice__icon--email">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+              </div>
+              <span class="onboarding-choice__label">Continuer avec Email</span>
+            </button>
+
+            <button class="onboarding-choice" data-method="discord" id="authDiscord">
+              <div class="onboarding-choice__icon onboarding-choice__icon--discord">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+              </div>
+              <span class="onboarding-choice__label">Continuer avec Discord</span>
+            </button>
+          </div>
+
+          <p class="onboarding-switch">Déjà un compte ? <button class="onboarding-link" id="goToLogin">Se connecter</button></p>
+
+          <div class="onboarding-divider"><span>ou</span></div>
+
+          <button class="login-skip" id="loginSkip">Continuer sans compte</button>
+        </div>
+
+        <!-- Step 2: Connexion (existing user) -->
+        <div class="onboarding-step" id="onboardingStepLogin">
+          <button class="onboarding-back" id="backFromLogin" title="Retour">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+          </button>
+          <h2 class="onboarding-heading">Connexion</h2>
+          <p class="login-sub">Connecte-toi pour sauvegarder ta collection et rejoindre une squad.</p>
+
+          <div class="onboarding-providers-row">
+            <button class="onboarding-provider-btn" data-method="google" id="authGoogleLogin">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continuer avec Google
+            </button>
+            <div class="onboarding-providers-split">
+              <button class="onboarding-provider-btn onboarding-provider-btn--half" data-method="discord" id="authDiscordLogin">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                Discord
+              </button>
+            </div>
+          </div>
+
+          <div class="onboarding-divider"><span>ou</span></div>
+
+          <div class="login-form active" id="loginFormExisting">
+            <input type="email" id="loginEmail" class="login-input" placeholder="Email" autocomplete="email" />
+            <input type="password" id="loginPassword" class="login-input" placeholder="Mot de passe" autocomplete="current-password" />
+            <button class="login-btn" id="loginEmailBtn">Se connecter</button>
+          </div>
+
+          <p class="onboarding-switch"><button class="onboarding-link" id="forgotPassword">Mot de passe oublié ?</button></p>
+          <p class="onboarding-switch">Pas encore de compte ? <button class="onboarding-link" id="goToRegister">Créer un compte</button></p>
+        </div>
+
+        <!-- Step 3: Email registration form -->
+        <div class="onboarding-step" id="onboardingStepRegister">
+          <button class="onboarding-back" id="backFromRegister" title="Retour">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
+          </button>
+          <h2 class="onboarding-heading">Créer un compte</h2>
+          <p class="login-sub">Quelques infos et c'est parti</p>
+
+          <div class="login-form active" id="loginFormRegister">
+            <input type="text" id="registerUsername" class="login-input" placeholder="Pseudo" maxlength="50" autocomplete="username" />
+            <input type="email" id="registerEmail" class="login-input" placeholder="Email" autocomplete="email" />
+            <input type="password" id="registerPassword" class="login-input" placeholder="Mot de passe (min 6 car.)" autocomplete="new-password" />
+            <label class="cgu-check" id="registerCguLabel">
+              <input type="checkbox" id="registerCgu" />
+              <span class="cgu-check__box"></span>
+              <span class="cgu-check__text">J'accepte les <button class="onboarding-link" type="button" onclick="openLegal('cgu')">Conditions générales d'utilisation</button> et la <button class="onboarding-link" type="button" onclick="openLegal('politique-confidentialite')">Politique de confidentialité</button>.</span>
+            </label>
+            <label class="cgu-check" id="registerAgeLabel">
+              <input type="checkbox" id="registerAge" />
+              <span class="cgu-check__box"></span>
+              <span class="cgu-check__text">J'ai au moins 15 ans.</span>
+            </label>
+            <button class="login-btn" id="registerEmailBtn" disabled>Créer mon compte</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Profile setup (after registration) -->
+        <div class="onboarding-step" id="onboardingStepProfile">
+          <h2 class="onboarding-heading">Bienvenue dans SpriteDex</h2>
+          <p class="login-sub">Personnalise ton profil</p>
+
+          <label class="onboarding-label">Choisis ton pseudo :</label>
+          <input type="text" id="profileUsername" class="login-input" placeholder="Ton pseudo..." maxlength="50" />
+
+          <label class="onboarding-label">Avatar :</label>
+          <div class="avatar-picker" id="avatarPicker">
+            <div class="avatar-picker__item selected" data-avatar="">
+              <span class="avatar-picker__placeholder">?</span>
+            </div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jones.png"><img src="Personna/Jones.png" alt="Jones" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Peely.png"><img src="Personna/Peely.png" alt="Peely" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Fishstick.png"><img src="Personna/Fishstick.png" alt="Fishstick" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Drift.png"><img src="Personna/Drift.png" alt="Drift" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Midas.png"><img src="Personna/Midas.png" alt="Midas" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Meowscles.png"><img src="Personna/Meowscles.png" alt="Meowscles" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Skye.png"><img src="Personna/Skye.png" alt="Skye" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Crystal.png"><img src="Personna/Crystal.png" alt="Crystal" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Aura.png"><img src="Personna/Aura.png" alt="Aura" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raven.png"><img src="Personna/Raven.png" alt="Raven" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Omega.png"><img src="Personna/Omega.png" alt="Omega" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/SkullTrooper.png"><img src="Personna/SkullTrooper.png" alt="SkullTrooper" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/RenegadeRaider.png"><img src="Personna/RenegadeRaider.png" alt="RenegadeRaider" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BlackKnight.png"><img src="Personna/BlackKnight.png" alt="BlackKnight" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/CuddleTeamLeader.png"><img src="Personna/CuddleTeamLeader.png" alt="CuddleTeamLeader" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raptor.png"><img src="Personna/Raptor.png" alt="Raptor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jules.png"><img src="Personna/Jules.png" alt="Jules" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TNTina.png"><img src="Personna/TNTina.png" alt="TNTina" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Brutus.png"><img src="Personna/Brutus.png" alt="Brutus" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Hope.png"><img src="Personna/Hope.png" alt="Hope" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BriteBomber.png"><img src="Personna/BriteBomber.png" alt="BriteBomber" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/DrSlone.png"><img src="Personna/DrSlone.png" alt="DrSlone" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheFoundation.png"><img src="Personna/TheFoundation.png" alt="TheFoundation" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheVisitor.png"><img src="Personna/TheVisitor.png" alt="TheVisitor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheScientist.png"><img src="Personna/TheScientist.png" alt="TheScientist" /></div>
+          </div>
+
+          <label class="onboarding-label">Confidentialité :</label>
+          <div class="privacy-options" id="privacyOptions">
+            <label class="privacy-option">
+              <input type="radio" name="privacy" value="private" />
+              <span class="privacy-option__radio"></span>
+              <span class="privacy-option__text">Profil privé</span>
+            </label>
+            <label class="privacy-option selected">
+              <input type="radio" name="privacy" value="squad_only" checked />
+              <span class="privacy-option__radio"></span>
+              <span class="privacy-option__text">Visible par mes squads</span>
+            </label>
+            <label class="privacy-option">
+              <input type="radio" name="privacy" value="public" />
+              <span class="privacy-option__radio"></span>
+              <span class="privacy-option__text">Profil public via lien</span>
+            </label>
+          </div>
+
+          <button class="login-btn" id="profileSubmitBtn">Commencer</button>
+        </div>
+
+        <!-- Step 5: Transfer local collection -->
+        <div class="onboarding-step" id="onboardingStepTransfer">
+          <h2 class="onboarding-heading">Collection détectée</h2>
+          <p class="login-sub">Tu as déjà une collection locale.</p>
+
+          <div class="transfer-box">
+            <div class="transfer-box__preview">
+              <span class="transfer-box__count" id="transferCount">0</span>
+              <span class="transfer-box__label">sprites enregistrés</span>
+            </div>
+            <p class="transfer-box__text">Veux-tu la sauvegarder sur ton compte ?</p>
+          </div>
+
+          <div class="transfer-actions">
+            <button class="login-btn" id="transferYes">Sauvegarder ma collection</button>
+            <button class="transfer-actions__btn transfer-actions__btn--reset" id="transferNo">Repartir de zéro</button>
+            <button class="transfer-actions__btn transfer-actions__btn--later" id="transferLater">Plus tard</button>
+          </div>
+        </div>
+
+        <p class="login-hint" id="loginHint"></p>
+
+        <div class="login-legal-links">
+          <button class="onboarding-link" onclick="openLegal('privacyPolicy')">Politique de confidentialité</button>
+          <span>•</span>
+          <button class="onboarding-link" onclick="openLegal('mentionsLegales')">Mentions légales</button>
+        </div>
+
+        <p class="legal-disclaimer">SpriteDex est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
+      </div>
+    </div>
+
+    <div class="app-shell" id="appShell" style="display:none">
+      <header class="topbar">
+        <div>
+          <img src="LogoApp.png" alt="Fortnite Runner SpriteDex" class="topbar-logo" />
+        </div>
+        <div class="topbar-actions">
+          <div class="notif-wrap" id="notifWrap">
+            <button class="notif-bell" id="notifBell" aria-label="Notifications">
+              <svg class="notif-bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="notif-bell__badge" id="notifBadge" style="display:none">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown" style="display:none">
+              <div class="notif-dropdown__header">
+                <span class="notif-dropdown__title">Actus Sprites</span>
+                <button class="notif-dropdown__close" id="notifClose">✕</button>
+              </div>
+              <div class="notif-dropdown__list" id="notifList">
+                <p class="notif-dropdown__empty">Aucune actu récente.</p>
+              </div>
+            </div>
+          </div>
+          <button class="icon-button" id="themeToggle" aria-label="Changer le thème"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+          <button class="topbar-avatar" id="accountBtn" aria-label="Mon compte">
+            <img src="" alt="" id="topbarAvatarImg" class="topbar-avatar__img" style="display:none" />
+            <svg class="topbar-avatar__fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="sync-bar" id="syncBar" style="display:none">
+        <span class="sync-bar__icon" id="syncBarIcon"></span>
+        <span class="sync-bar__text" id="syncBarText"></span>
+      </div>
+
+      <!-- Account Panel -->
+      <div class="account-panel" id="accountPanel" style="display:none">
+        <header class="account-panel__header">
+          <h2 class="account-panel__title">Mon compte</h2>
+          <button class="account-panel__close" id="accountClose">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </header>
+
+        <!-- Email verification banner -->
+        <div class="email-banner" id="emailBanner" style="display:none">
+          <svg class="email-banner__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span class="email-banner__text">Email non vérifié — vérifie ta boîte mail</span>
+          <button class="email-banner__btn" id="resendVerification">Renvoyer</button>
+        </div>
+
+        <!-- Profile hero -->
+        <div class="profile-hero">
+          <div class="profile-hero__avatar" id="accountAvatarDisplay">
+            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <h2 class="profile-hero__name" id="accountUsername">—</h2>
+          <span class="profile-hero__since" id="accountSince">Membre depuis —</span>
+        </div>
+
+        <!-- Profile stats -->
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <span class="profile-stat__value" id="accountPercent">0%</span>
+            <span class="profile-stat__label">Progression</span>
+          </div>
+          <div class="profile-stat">
+            <span class="profile-stat__value" id="accountCompleted">0 / 0</span>
+            <span class="profile-stat__label">Sprites complétés</span>
+          </div>
+          <div class="profile-stat">
+            <span class="profile-stat__value" id="accountVariants">0 / 0</span>
+            <span class="profile-stat__label">Variantes possédées</span>
+          </div>
+          <div class="profile-stat">
+            <span class="profile-stat__value" id="accountPriorities">0</span>
+            <span class="profile-stat__label">Priorités</span>
+          </div>
+        </div>
+
+        <!-- Profile actions -->
+        <div class="profile-actions">
+          <button class="profile-action-btn" id="accountEditUsernameBtn">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Modifier pseudo
+          </button>
+          <button class="profile-action-btn" id="accountChangeAvatar">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Modifier avatar
+          </button>
+          <button class="profile-action-btn" id="accountGoCollection">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            Voir ma collection
+          </button>
+          <button class="profile-action-btn" id="accountShare">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Partager mon profil
+          </button>
+          <button class="profile-action-btn" id="accountRevokeShare" style="display:none">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            Désactiver le lien de partage
+          </button>
+        </div>
+
+        <div class="account-panel__sections">
+          <!-- Edit pseudo (hidden by default) -->
+          <div class="account-section" id="accountEditSection" style="display:none">
+            <h3 class="account-section__title">Modifier le pseudo</h3>
+            <div class="account-row">
+              <input type="text" class="account-row__input" id="accountEditUsername" maxlength="50" placeholder="Nouveau pseudo" />
+              <button class="account-save-btn" id="accountSaveProfile">Enregistrer</button>
+            </div>
+          </div>
+
+          <!-- Confidentialité -->
+          <div class="account-section">
+            <h3 class="account-section__title">Confidentialité</h3>
+            <div class="account-row">
+              <span class="account-row__label">Visibilité</span>
+              <select class="account-row__select" id="accountPrivacy">
+                <option value="private">Profil privé</option>
+                <option value="squad_only">Visible par mes squads</option>
+                <option value="public">Profil public</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="account-section">
+            <h3 class="account-section__title">Notifications</h3>
+            <div class="account-row">
+              <span class="account-row__label">Nouveaux sprites</span>
+              <label class="toggle"><input type="checkbox" id="notifNewSprites" checked /><span class="toggle__slider"></span></label>
+            </div>
+            <div class="account-row">
+              <span class="account-row__label">Nouvelles variantes</span>
+              <label class="toggle"><input type="checkbox" id="notifNewVariants" checked /><span class="toggle__slider"></span></label>
+            </div>
+            <div class="account-row">
+              <span class="account-row__label">Activité de squad</span>
+              <label class="toggle"><input type="checkbox" id="notifSquadActivity" checked /><span class="toggle__slider"></span></label>
+            </div>
+            <div class="account-row">
+              <span class="account-row__label">Résumé de session</span>
+              <label class="toggle"><input type="checkbox" id="notifSessionSummary" checked /><span class="toggle__slider"></span></label>
+            </div>
+            <div class="account-row">
+              <span class="account-row__label">Objectifs</span>
+              <label class="toggle"><input type="checkbox" id="notifGoals" checked /><span class="toggle__slider"></span></label>
+            </div>
+            <div class="account-row">
+              <span class="account-row__label">Synchronisation</span>
+              <label class="toggle"><input type="checkbox" id="notifSync" checked /><span class="toggle__slider"></span></label>
+            </div>
+            <div class="account-row">
+              <span class="account-row__label">Actus / news</span>
+              <label class="toggle"><input type="checkbox" id="notifNews" checked /><span class="toggle__slider"></span></label>
+            </div>
+          </div>
+
+          <!-- Sauvegarde -->
+          <div class="account-section">
+            <h3 class="account-section__title">Sauvegarde cloud</h3>
+            <div class="account-row">
+              <span class="account-row__label">Dernière sync</span>
+              <span class="account-row__value" id="accountLastSync">—</span>
+            </div>
+            <button class="account-row__btn" id="accountForceSync">Synchroniser maintenant</button>
+          </div>
+
+          <!-- Sécurité -->
+          <div class="account-section account-section--danger">
+            <h3 class="account-section__title">Sécurité</h3>
+            <button class="account-action-btn" id="accountLogout">Déconnexion</button>
+            <button class="account-action-btn account-action-btn--danger" id="accountDeleteOpen">Supprimer mon compte</button>
+          </div>
+
+          <!-- Informations et confidentialité -->
+          <div class="account-section">
+            <h3 class="account-section__title">Informations et confidentialité</h3>
+            <div class="legal-menu">
+              <button class="legal-menu__item" onclick="openLegal('mentions-legales')">
+                <span>Mentions légales</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('politique-confidentialite')">
+                <span>Politique de confidentialité</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('cgu')">
+                <span>Conditions générales d'utilisation</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('cookies')">
+                <span>Confidentialité et traceurs</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('donnees-personnelles')">
+                <span>Gérer mes données</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('suppression-compte')">
+                <span>Supprimer mon compte</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('contact')">
+                <span>Contacter le support</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('signalement')">
+                <span>Signaler un contenu</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('regles-communautaires')">
+                <span>Règles communautaires</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="legal-menu__item" onclick="openLegal('licences')">
+                <span>Licences et crédits</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avatar change modal -->
+      <div class="delete-modal" id="avatarModal" style="display:none">
+        <div class="delete-modal__backdrop" id="avatarModalClose"></div>
+        <div class="delete-modal__card">
+          <h3 class="delete-modal__title">Changer d'avatar</h3>
+          <div class="avatar-picker" id="avatarModalPicker">
+            <div class="avatar-picker__item" data-avatar=""><span class="avatar-picker__placeholder">?</span></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jones.png"><img src="Personna/Jones.png" alt="Jones" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Peely.png"><img src="Personna/Peely.png" alt="Peely" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Fishstick.png"><img src="Personna/Fishstick.png" alt="Fishstick" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Drift.png"><img src="Personna/Drift.png" alt="Drift" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Midas.png"><img src="Personna/Midas.png" alt="Midas" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Meowscles.png"><img src="Personna/Meowscles.png" alt="Meowscles" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Skye.png"><img src="Personna/Skye.png" alt="Skye" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Crystal.png"><img src="Personna/Crystal.png" alt="Crystal" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Aura.png"><img src="Personna/Aura.png" alt="Aura" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raven.png"><img src="Personna/Raven.png" alt="Raven" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Omega.png"><img src="Personna/Omega.png" alt="Omega" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/SkullTrooper.png"><img src="Personna/SkullTrooper.png" alt="SkullTrooper" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/RenegadeRaider.png"><img src="Personna/RenegadeRaider.png" alt="RenegadeRaider" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BlackKnight.png"><img src="Personna/BlackKnight.png" alt="BlackKnight" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/CuddleTeamLeader.png"><img src="Personna/CuddleTeamLeader.png" alt="CuddleTeamLeader" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raptor.png"><img src="Personna/Raptor.png" alt="Raptor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jules.png"><img src="Personna/Jules.png" alt="Jules" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TNTina.png"><img src="Personna/TNTina.png" alt="TNTina" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Brutus.png"><img src="Personna/Brutus.png" alt="Brutus" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Hope.png"><img src="Personna/Hope.png" alt="Hope" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BriteBomber.png"><img src="Personna/BriteBomber.png" alt="BriteBomber" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/DrSlone.png"><img src="Personna/DrSlone.png" alt="DrSlone" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheFoundation.png"><img src="Personna/TheFoundation.png" alt="TheFoundation" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheVisitor.png"><img src="Personna/TheVisitor.png" alt="TheVisitor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheScientist.png"><img src="Personna/TheScientist.png" alt="TheScientist" /></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete account modal -->
+      <div class="delete-modal" id="deleteModal" style="display:none">
+        <div class="delete-modal__backdrop" id="deleteModalClose"></div>
+        <div class="delete-modal__card">
+          <h3 class="delete-modal__title">Supprimer mon compte</h3>
+          <p class="delete-modal__desc">
+            Cette action désactive immédiatement ton compte : profil, collection cloud, escouades et préférences ne seront plus accessibles.<br>
+            Les données sont ensuite effacées définitivement dans un délai de <strong>30 jours</strong>.
+          </p>
+          <button class="delete-modal__export" id="deleteExportBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exporter mes données avant suppression
+          </button>
+          <label class="delete-modal__label">Écris <strong>SUPPRIMER</strong> pour confirmer :</label>
+          <input type="text" class="delete-modal__input" id="deleteConfirmInput" placeholder="SUPPRIMER" autocomplete="off" />
+          <button class="delete-modal__btn" id="deleteConfirmBtn" disabled>Supprimer définitivement</button>
+        </div>
+      </div>
+
+      <section class="hero-card">
+        <div>
+          <p class="muted">Progression collection</p>
+          <div class="progress-line">
+            <strong id="ownedCount">0</strong>
+            <span>/</span>
+            <span id="totalCount">0</span>
+            <span>variantes</span>
+          </div>
+        </div>
+        <div class="ring" aria-label="Pourcentage de progression">
+          <span id="percentCount">0%</span>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Navigation principale">
+        <button class="tab active" data-view="swipe">Swipe</button>
+        <button class="tab" data-view="checklist">Checklist</button>
+        <button class="tab" data-view="missing">Manquants</button>
+        <button class="tab" data-view="stats">Stats</button>
+        <button class="tab" data-view="squad">Escouade</button>
+        <button class="tab" data-view="history">Historique</button>
+      </nav>
+
+      <main>
+        <section class="view active" id="view-swipe">
+          <div class="deck-toolbar">
+            <select id="deckFilter" aria-label="Filtre du deck swipe">
+              <option value="all">Tous</option>
+              <option value="new">Non classés</option>
+              <option value="missing">Manquants</option>
+              <option value="priority">Prioritaires</option>
+              <option value="unsure">À vérifier</option>
+              <option value="spotted">Rares vus</option>
+              <option value="owned">Possédés</option>
+            </select>
+            <button class="ghost-button" id="shuffleDeck">Mélanger</button>
+          </div>
+
+          <div class="deck-zone">
+            <article class="sprite-card" id="spriteCard">
+              <div class="swipe-badge" id="swipeBadge">OK</div>
+              <div class="card-glow"></div>
+              <div class="sprite-avatar" id="spriteAvatar">💧</div>
+              <p class="rarity-pill" id="cardRarity">Rare</p>
+              <h2 id="cardName">Water Sprite</h2>
+              <p class="variant-name" id="cardVariant">Base</p>
+              <p class="effect" id="cardEffect">Effet du sprite</p>
+              <div class="card-progress" id="cardProgress">
+                <div class="card-progress__label">Progression : <strong id="cardProgressText">0 / 6</strong></div>
+                <div class="card-progress__track"><div class="card-progress__fill" id="cardProgressFill"></div></div>
+              </div>
+              <div class="status-row">
+                <span id="cardStatus">Statut : Non classé</span>
+                <span id="cardIndex">1/1</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="swipe-actions" aria-label="Actions de swipe">
+            <button class="action danger" id="markMissing">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span>Pas encore</span>
+            </button>
+            <button class="action neutral" id="markUnsure">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+              <span>A verifier</span>
+            </button>
+            <button class="action star" id="markPriority">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Priorite</span>
+            </button>
+            <button class="action success" id="markOwned">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Je l’ai</span>
+            </button>
+          </div>
+
+          <p class="hint">Swipe → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note</p>
+        </section>
+
+        <section class="view" id="view-checklist">
+          <div class="checklist-toolbar">
+            <div class="search-box">
+              <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="searchInput" type="search" placeholder="Rechercher sprite, variante, rareté..." />
+            </div>
+            <div class="filter-chips-bar" id="filterChipsBar">
+              <button class="filter-chip active" data-filter="all">Tous</button>
+              <button class="filter-chip" data-filter="owned">Possédés</button>
+              <button class="filter-chip" data-filter="missing">Manquants</button>
+              <button class="filter-chip" data-filter="priority">Prioritaires</button>
+              <button class="filter-chip" data-filter="unsure">À vérifier</button>
+              <button class="filter-chip" data-filter="spotted">Rares vus</button>
+              <button class="filter-chip" data-filter="unavailable">Indispos</button>
+              <button class="filter-chip" data-filter="complete">100%</button>
+              <button class="filter-chip" data-filter="incomplete">Incomplets</button>
+            </div>
+            <div class="sort-bar">
+              <label class="sort-bar__label">Tri :</label>
+              <select id="checklistSort" class="sort-bar__select">
+                <option value="alpha">Alphabétique</option>
+                <option value="progress-asc">Moins complété</option>
+                <option value="progress-desc">Plus complété</option>
+                <option value="rarity-desc">Plus rare d'abord</option>
+                <option value="rarity-asc">Plus commun d'abord</option>
+                <option value="priority">Par priorité</option>
+                <option value="recent">Par nouveauté</option>
+              </select>
+            </div>
+          </div>
+          <div class="bulk-actions">
+            <button class="ghost-button" id="exportData">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exporter
+            </button>
+            <label class="ghost-button file-label">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importer
+              <input id="importData" type="file" accept="application/json" hidden />
+            </label>
+            <button class="ghost-button danger-text" id="resetData">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Reset
+            </button>
+          </div>
+          <div class="checklist-list" id="checklistList"></div>
+        </section>
+
+        <section class="view" id="view-missing">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Farm list</p>
+              <h2>Ce qu’il te manque</h2>
+            </div>
+            <button class="ghost-button" id="copyMissing">Copier la liste</button>
+          </div>
+          <div class="missing-list" id="missingList"></div>
+        </section>
+
+        <section class="view" id="view-stats">
+          <div class="stats-page">
+
+            <div class="stats-hero" id="statsHero">
+              <div class="stats-hero__ring">
+                <svg class="stats-hero__svg" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="url(#statGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="327" id="statsRingCircle"/>
+                  <defs><linearGradient id="statGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00e1ff"/><stop offset="100%" stop-color="#00ff87"/></linearGradient></defs>
+                </svg>
+                <span class="stats-hero__pct" id="statsHeroPct">0%</span>
+              </div>
+              <div class="stats-hero__text">
+                <h2>Progression totale</h2>
+                <p id="statsHeroDetail">0 / 0 variantes collectées</p>
+              </div>
+            </div>
+
+            <div class="stats-kpis">
+              <div class="stats-kpi">
+                <span class="stats-kpi__value" id="kpiSprites">0 / 0</span>
+                <span class="stats-kpi__label">Sprites possédés</span>
+              </div>
+              <div class="stats-kpi">
+                <span class="stats-kpi__value" id="kpiVariants">0 / 0</span>
+                <span class="stats-kpi__label">Variantes possédées</span>
+              </div>
+              <div class="stats-kpi">
+                <span class="stats-kpi__value" id="kpiPriorities">0</span>
+                <span class="stats-kpi__label">Priorités restantes</span>
+              </div>
+            </div>
+
+            <div class="stats-module">
+              <h3 class="stats-module__title">Par rareté</h3>
+              <div id="rarityBars"></div>
+            </div>
+
+            <div class="stats-module">
+              <h3 class="stats-module__title">Par variante</h3>
+              <div id="variantBars"></div>
+            </div>
+
+            <div class="stats-insights" id="statsInsights"></div>
+
+          </div>
+        </section>
+
+        <section class="view" id="view-squad">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Comparateur</p>
+              <h2>Escouade</h2>
+            </div>
+          </div>
+
+          <!-- Squad lobby: create or join -->
+          <div class="squad-lobby" id="squadLobby">
+            <div class="squad-lobby__card">
+              <h3 class="squad-lobby__title">Créer une escouade</h3>
+              <div class="squad-lobby__row">
+                <input type="text" id="squadNameInput" class="squad-input" placeholder="Nom de l'escouade (optionnel)" maxlength="50" />
+                <button class="ghost-button" id="squadCreateBtn">Créer</button>
+              </div>
+            </div>
+            <div class="squad-lobby__divider"><span>ou</span></div>
+            <div class="squad-lobby__card">
+              <h3 class="squad-lobby__title">Rejoindre avec un code</h3>
+              <div class="squad-lobby__row">
+                <input type="text" id="squadCodeInput" class="squad-input squad-input--code" placeholder="SPRITE-XXXX" maxlength="20" />
+                <button class="ghost-button" id="squadJoinBtn">Rejoindre</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active squad view (hidden until squad is active) -->
+          <div class="squad-active" id="squadActive" style="display:none">
+            <div class="squad-active__header">
+              <div class="squad-active__info">
+                <h3 class="squad-active__name" id="squadActiveName">Mon escouade</h3>
+                <span class="squad-active__code" id="squadActiveCode">SPRITE-0000</span>
+                <button class="squad-copy-code" id="squadCopyCode" title="Copier le code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+              </div>
+              <button class="ghost-button danger-text" id="squadLeaveBtn">Quitter</button>
+            </div>
+            <div id="squadAdminWrap"></div>
+            <div class="squad-members" id="squadMembers"></div>
+            <div class="squad-controls">
+              <div class="squad-search">
+                <input type="text" id="squadSearchInput" class="squad-input" placeholder="Rechercher un sprite…" />
+              </div>
+              <div class="squad-filters">
+                <select id="squadFilter" class="sort-bar__select">
+                  <optgroup label="Essentiels">
+                    <option value="all">Tout afficher</option>
+                    <option value="diff">Manque à quelqu'un</option>
+                    <option value="missing-all">Personne ne l'a</option>
+                    <option value="team-prio">Priorités de l'équipe</option>
+                    <option value="duo">Duo — échange possible</option>
+                  </optgroup>
+                  <optgroup label="Perso">
+                    <option value="missing-me">Ce qu'il me manque</option>
+                    <option value="exclusive">Mes exclusivités</option>
+                    <option value="everyone">Tout le monde l'a</option>
+                  </optgroup>
+                  <optgroup label="Rareté">
+                    <option value="rarity:Mythique">Mythique</option>
+                    <option value="rarity:Légendaire">Légendaire</option>
+                    <option value="rarity:Épique">Épique</option>
+                    <option value="rarity:Rare">Rare</option>
+                  </optgroup>
+                  <optgroup label="Variante" id="squadVariantGroup">
+                  </optgroup>
+                </select>
+                <button class="ghost-button squad-refresh-btn" id="squadRefreshBtn">↻</button>
+              </div>
+              <div class="squad-view-toggle">
+                <button class="squad-view-btn active" data-squad-view="table" title="Tableau">▦</button>
+                <button class="squad-view-btn" data-squad-view="cards" title="Manque à qui ?">▤</button>
+                <button class="squad-view-btn" data-squad-view="hunt" title="À farmer">⊘</button>
+                <button class="squad-view-btn" data-squad-view="duel" title="Duel 1v1">⇄</button>
+                <button class="squad-view-btn" data-squad-view="session" title="Session rapide"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="history" title="Historique"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+              </div>
+            </div>
+            <div class="squad-duel-bar" id="squadDuelBar" style="display:none">
+              <select id="duelPlayerA" class="sort-bar__select duel-select"></select>
+              <span class="duel-vs">↔</span>
+              <select id="duelPlayerB" class="sort-bar__select duel-select"></select>
+            </div>
+            <div class="squad-counter" id="squadCounter"></div>
+            <div class="squad-table-wrap" id="squadTableWrap">
+              <p class="squad-empty">Chargement...</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-history">
+          <h2 class="section-title">Historique de collection</h2>
+          <div class="history-stats" id="historyStats"></div>
+          <div class="history-weekly" id="historyWeekly"></div>
+          <h3 class="history-subtitle">Derniers changements</h3>
+          <div class="history-list" id="historyList">
+            <p class="squad-empty">Chargement…</p>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <dialog id="detailDialog">
+      <form method="dialog" class="dialog-card">
+        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <div class="sprite-avatar dialog-avatar" id="dialogAvatar">💧</div>
+        <p class="rarity-pill" id="dialogRarity">Rare</p>
+        <h2 id="dialogTitle">Sprite</h2>
+        <p class="variant-name" id="dialogVariant">Variante</p>
+        <p class="effect" id="dialogEffect">Effet</p>
+        <div class="dialog-priority" id="dialogPriorityBar">
+          <span class="dialog-priority__label">Priorité de farm :</span>
+          <div class="dialog-priority__chips">
+            <button type="button" class="prio-chip" data-prio="urgent">Urgent</button>
+            <button type="button" class="prio-chip" data-prio="important">Important</button>
+            <button type="button" class="prio-chip" data-prio="medium">Moyen</button>
+            <button type="button" class="prio-chip" data-prio="low">Faible</button>
+            <button type="button" class="prio-chip" data-prio="ignored">Ignoré</button>
+          </div>
+        </div>
+        <label class="note-label">
+          Note perso
+          <textarea id="dialogNote" rows="4" placeholder="Ex : à farmer samedi, trade avec un pote…"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="ghost-button" id="dialogOwned">Possédé</button>
+          <button type="button" class="ghost-button" id="dialogMissing">Manquant</button>
+          <button type="button" class="ghost-button" id="dialogPriority">Priorité</button>
+          <button type="button" class="ghost-button" id="dialogUnsure">À vérifier</button>
+          <button type="button" class="ghost-button" id="dialogUnavailable">Indispo</button>
+          <button type="button" class="ghost-button" id="dialogSpotted">Rare vu</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="spriteDetailDialog" class="sprite-detail-dialog">
+      <form method="dialog" class="sprite-detail">
+        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <div class="sprite-detail__content" id="spriteDetailContent"></div>
+      </form>
+    </dialog>
+
+    <dialog id="legalDialog" class="legal-dialog">
+      <div class="dialog-card">
+        <button class="close-button" onclick="document.getElementById('legalDialog').close()">×</button>
+        <div class="legal-dialog__content" id="legalContent"></div>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/helpers.js"></script>
+    <script src="js/legal-content.js"></script>
+    <script src="js/legal.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/render-card.js"></script>
+    <script src="js/render-checklist.js"></script>
+    <script src="js/render-missing.js"></script>
+    <script src="js/render-stats.js"></script>
+    <script src="js/render-squad.js"></script>
+    <script src="js/render-news.js"></script>
+    <script src="js/render-history.js"></script>
+    <script src="js/render-shared.js"></script>
+    <script src="js/dialogs.js"></script>
+    <script src="js/data-io.js"></script>
+    <script src="js/swipe.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/account.js"></script>
+    <script src="js/push-client.js"></script>
+    <script src="js/init.js"></script>
+    <script src="js/mobile.js"></script>
+  </body>
+</html>

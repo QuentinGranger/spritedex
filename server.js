@@ -522,6 +522,56 @@ async function ensureSource(sourceId, options = {}) {
   );
 }
 
+// Collapse sprites that share the same slug into a single canonical entry.
+// Prefers the "sprite_"-prefixed id (the stable scheme used by collections and
+// migrations) and backfills any missing / "unknown" fields from the twin so no
+// real catalog data (rarity, effect, images, variants…) is lost.
+function dedupeSpritesBySlug(sprites) {
+  const isUnknown = (v) => v === null || v === undefined || v === "" || v === "unknown";
+
+  function mergePreferring(canonical, other) {
+    const merged = { ...canonical };
+    // Scalar fields: keep canonical value unless it is unknown/empty.
+    for (const key of ["rarity", "effect", "color", "image", "officialName", "seasonId", "eventId", "addedDate"]) {
+      if (isUnknown(merged[key]) && !isUnknown(other[key])) merged[key] = other[key];
+    }
+    // Arrays: prefer the richer (longer) one.
+    for (const key of ["variants", "variantIds", "availabilityPeriods", "sourceIds", "sources"]) {
+      const a = Array.isArray(merged[key]) ? merged[key] : [];
+      const b = Array.isArray(other[key]) ? other[key] : [];
+      if (b.length > a.length) merged[key] = b;
+    }
+    // Objects (images / variantDetails): prefer the one with more keys.
+    for (const key of ["images", "variantDetails"]) {
+      const a = merged[key] && typeof merged[key] === "object" ? merged[key] : {};
+      const b = other[key] && typeof other[key] === "object" ? other[key] : {};
+      if (Object.keys(b).length > Object.keys(a).length) merged[key] = b;
+    }
+    return merged;
+  }
+
+  const groups = new Map();
+  for (const sprite of sprites) {
+    const slug = sprite.slug || sprite.id.replace(/^sprite_/, "").replace(/_/g, "-");
+    if (!groups.has(slug)) groups.set(slug, []);
+    groups.get(slug).push(sprite);
+  }
+
+  const result = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) { result.push(group[0]); continue; }
+    // Canonical: the "sprite_"-prefixed row if present, else the first.
+    const canonical = group.find(s => s.id.startsWith("sprite_")) || group[0];
+    let merged = canonical;
+    for (const other of group) {
+      if (other === canonical) continue;
+      merged = mergePreferring(merged, other);
+    }
+    result.push(merged);
+  }
+  return result;
+}
+
 // ── Sprites : données de référence ──
 app.get("/api/sprites", async (req, res) => {
   try {
@@ -736,8 +786,16 @@ app.get("/api/sprites", async (req, res) => {
       };
     });
 
+    // ── Dedupe sprites sharing the same slug ──────────────────────────────
+    // Legacy data on some deployments contains two rows per sprite under two id
+    // schemes (e.g. "water" from an older catalog import and "sprite_water" from
+    // the seed). This collapses them into a single canonical entry (prefer the
+    // "sprite_"-prefixed id) and backfills any missing/unknown fields from the
+    // twin so the checklist/cards never show duplicates.
+    const dedupedSprites = dedupeSpritesBySlug(sprites);
+
     res.json({
-      sprites,
+      sprites: dedupedSprites,
       seasons: Object.values(seasonsMap),
       events: Object.values(eventsMap),
       variantMeta: variantsResult.rows
