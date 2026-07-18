@@ -258,6 +258,7 @@ function renderCompareSummary(result, aName, bName) {
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
   els.compareSummary.innerHTML = `
+    <p class="compare-collective-message">Ensemble, vous couvrez <strong>${s.collectiveCompletionRate}%</strong> du catalogue (${s.collectiveOwnedCount} / ${s.catalogueVariantCount} variants).</p>
     <div class="compare-summary-grid">
       <div class="compare-kpi"><span class="compare-kpi__value">${s.collectiveCompletionRate}%</span><span class="compare-kpi__label">Complétion collective</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.complementarityRate}%</span><span class="compare-kpi__label">Complémentarité</span></div>
