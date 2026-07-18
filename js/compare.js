@@ -1,3 +1,6 @@
+let compareWs = null;
+let compareWsReconnectTimer = null;
+
 // ── Règles de statuts pour la comparaison ────────────────────────────────────
 const COMPARE_RULES = {
   owned: ["owned"],
@@ -798,13 +801,16 @@ function renderCompare() {
   if (els.comparePlayerAName) els.comparePlayerAName.textContent = aName;
   if (els.comparePlayerBName) els.comparePlayerBName.textContent = bName;
   const userA = { id: state.userId || "userA", displayName: state.username || "Moi", collection: state.collection };
-  const userB = { id: state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
+  const userB = { id: state.compareTarget.userId || state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
   const result = compareCollections(userA, userB, getCompareCatalogItems());
   state.lastCompareResult = result;
   renderCompareSummary(result, aName, bName);
   renderCompareActions(result);
   renderCompareRecommendations(result, aName, bName);
   renderCompareTable(result, aName, bName);
+
+  connectCompareWs();
+  if (state.compareTarget.userId) sendCompareSubscribe(state.compareTarget.userId);
 }
 
 // ── Chargement et partage ───────────────────────────────────────────────────
@@ -842,6 +848,7 @@ async function loadCompareTarget(raw) {
     const data = await res.json();
     state.compareToken = token;
     state.compareTarget = {
+      userId: data.id,
       username: data.username || "Ami",
       avatarUrl: data.avatarUrl || "",
       collection: data.collection || {}
@@ -930,6 +937,7 @@ async function loadCompareShare(token) {
     }
 
     state.compareTarget = {
+      userId: owner?.id,
       username: owner?.displayName || "Ami",
       collection: ownerCollection
     };
@@ -964,6 +972,98 @@ async function handleCompareShareParams() {
   if (!token) return false;
   await loadCompareShare(token);
   return true;
+}
+
+// ── WebSocket temps réel pour la comparaison ──
+function connectCompareWs() {
+  if (compareWs && (compareWs.readyState === WebSocket.CONNECTING || compareWs.readyState === WebSocket.OPEN)) return;
+  if (!state.userId) return;
+  try {
+    compareWs = new WebSocket(WS_URL);
+  } catch (e) {
+    console.error("[compare ws] connect failed", e);
+    return;
+  }
+
+  compareWs.onopen = () => {
+    compareWs.send(JSON.stringify({ type: "auth", token: localStorage.getItem(TOKEN_KEY) }));
+    if (state.compareTarget?.userId) {
+      sendCompareSubscribe(state.compareTarget.userId);
+    }
+  };
+
+  compareWs.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      handleCompareWsMessage(msg);
+    } catch (e) {}
+  };
+
+  compareWs.onclose = () => {
+    compareWs = null;
+    clearTimeout(compareWsReconnectTimer);
+    compareWsReconnectTimer = setTimeout(connectCompareWs, 3000);
+  };
+
+  compareWs.onerror = () => {
+    if (compareWs) compareWs.close();
+  };
+}
+
+function sendCompareSubscribe(userId) {
+  if (!compareWs || compareWs.readyState !== WebSocket.OPEN || !userId) return;
+  compareWs.send(JSON.stringify({ type: "compare_subscribe", targetUserId: userId }));
+}
+
+function handleCompareWsMessage(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === "compare_update" || msg.type === "compare_reset") {
+    updateCompareFromMessage(msg);
+  }
+}
+
+function updateCompareFromMessage(msg) {
+  if (!state.compareTarget) return;
+  const targetId = state.compareTarget.userId;
+  const isTarget = targetId && String(targetId) === String(msg.userId);
+  const isSelf = state.userId && String(state.userId) === String(msg.userId);
+  if (!isTarget && !isSelf) return;
+
+  if (msg.type === "compare_reset") {
+    if (isTarget) state.compareTarget.collection = {};
+    if (isSelf) state.collection = {};
+  } else if (msg.type === "compare_update" && Array.isArray(msg.changes)) {
+    for (const ch of msg.changes) {
+      const entry = {
+        status: ch.status || "new",
+        priority: ch.priority || "none",
+        note: ch.note || "",
+        obtainedAt: ch.obtainedAt || null
+      };
+      if (isTarget) state.compareTarget.collection[ch.variantId] = entry;
+      if (isSelf) state.collection[ch.variantId] = entry;
+    }
+    if (isTarget && msg.changes.length > 0) {
+      showCompareUpdateToast(msg, msg.changes[0]);
+    }
+  }
+
+  const currentTab = document.querySelector('.tab[data-view="compare"]');
+  if (currentTab && currentTab.classList.contains("active")) {
+    renderCompare();
+  } else if (isTarget || isSelf) {
+    renderCompare();
+  }
+}
+
+function showCompareUpdateToast(msg, change) {
+  const catalog = getCompareCatalogItems().find(i => i.variantId === change.variantId);
+  const spriteName = catalog?.spriteName || change.spriteId || "un sprite";
+  const variantName = catalog?.variantName || "";
+  const displayName = state.compareTarget?.username || "Votre ami";
+  const action = (change.status === "owned") ? "a obtenu" : "a mis à jour";
+  const label = variantName && variantName !== "Base" ? `${spriteName} (${variantName})` : spriteName;
+  toast(`${displayName} ${action} ${label}`);
 }
 
 function setupCompareEvents() {

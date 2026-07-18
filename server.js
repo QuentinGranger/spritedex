@@ -54,6 +54,10 @@ wss.on("connection", (ws) => {
           ws._userId = String(userId);
           if (!wsClients.has(ws._userId)) wsClients.set(ws._userId, new Set());
           wsClients.get(ws._userId).add(ws);
+        } else if (msg.type === "compare_subscribe" && msg.targetUserId) {
+          ws._compareTarget = String(msg.targetUserId);
+        } else if (msg.type === "compare_unsubscribe") {
+          ws._compareTarget = null;
         }
       } catch {}
     })();
@@ -108,6 +112,24 @@ async function broadcastSquadUpdate(userId) {
     }
   } catch (e) {
     console.warn("broadcastSquadUpdate error", e);
+  }
+}
+
+// Broadcast a collection update to the user's own sockets and to anyone
+// currently comparing with that user.
+function broadcastCompareUpdate(userId, payload) {
+  try {
+    const uid = String(userId);
+    const data = JSON.stringify({ ...payload, userId: uid });
+    if (!wss || !wss.clients) return;
+    for (const ws of wss.clients) {
+      if (ws.readyState !== 1) continue;
+      if (ws._userId === uid || ws._compareTarget === uid) {
+        try { ws.send(data); } catch {}
+      }
+    }
+  } catch (e) {
+    console.warn("broadcastCompareUpdate error", e);
   }
 }
 
@@ -1747,6 +1769,7 @@ app.get("/api/shared/:token", async (req, res) => {
       collection[row.variant_id] = { spriteId: row.sprite_id, status: row.status, priority: row.priority || "none" };
     }
     res.json({
+      id: user.id,
       username: user.username,
       avatarUrl: user.avatar_url || "",
       createdAt: user.created_at,
@@ -2378,6 +2401,16 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
 
     res.json({ ok: true });
     broadcastSquadUpdate(userId);
+    broadcastCompareUpdate(userId, {
+      changes: [{
+        variantId,
+        spriteId: baseSpriteId,
+        status: newStatus,
+        priority: priority || "none",
+        note: note ?? "",
+        obtainedAt: obtainedAt || null
+      }]
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2416,8 +2449,21 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
       );
     }
     await client.query("COMMIT");
+    const changes = [];
+    for (const [variantId, entry] of Object.entries(normalizedCollection)) {
+      if (variantId.startsWith("fav_")) continue;
+      changes.push({
+        variantId,
+        spriteId: entry.spriteId || null,
+        status: entry.status || "new",
+        priority: entry.priority || "none",
+        note: entry.note || "",
+        obtainedAt: entry.obtainedAt || null
+      });
+    }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     broadcastSquadUpdate(userId);
+    broadcastCompareUpdate(userId, { changes });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -2463,7 +2509,20 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
       );
     }
     await client.query("COMMIT");
+    const changes = [];
+    for (const [variantId, entry] of Object.entries(normalizedCollection)) {
+      if (variantId.startsWith("fav_")) continue;
+      changes.push({
+        variantId,
+        spriteId: entry.spriteId || null,
+        status: entry.status || "new",
+        priority: entry.priority || "none",
+        note: entry.note || "",
+        obtainedAt: entry.obtainedAt || null
+      });
+    }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
+    broadcastCompareUpdate(userId, { changes });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -2479,6 +2538,7 @@ app.delete("/api/collection/:userId", async (req, res) => {
   try {
     await pool.query("DELETE FROM sprite_entries WHERE user_id = $1", [req.params.userId]);
     res.json({ ok: true });
+    broadcastCompareUpdate(req.params.userId, { type: "compare_reset" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
