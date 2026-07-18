@@ -227,3 +227,103 @@
   font-weight: 700;
   color: var(--text);
 }
+
+/* ── Community Stats ── */
+.community-module + .community-module { margin-top: 20px; }
+
+.community-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+
+.community-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.community-table th,
+.community-table td {
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+}
+
+.community-table th {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.community-table tbody tr:last-child td { border-bottom: 0; }
+
+.community-table__name { color: var(--text); font-weight: 600; }
+.community-table__rate { font-family: var(--font-heading); color: var(--accent); }
+.community-table__rank { font-family: var(--font-heading); color: var(--accent-2); white-space: nowrap; }
+
+.community-legend {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.community-legend p { margin-bottom: 8px; color: var(--text); }
+
+.community-legend ul { margin: 0; padding-left: 18px; }
+
+.community-legend li { margin-bottom: 6px; }
+
+.community-legend__dash {
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.community-legend__zero {
+  font-family: var(--font-heading);
+  color: var(--accent);
+}
+
+.community-subtitle {
+  font-size: 0.82rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  margin: 16px 0 10px;
+}
+
+.community-ownership { text-align: center; }
+
+.community-ownership__text {
+  font-size: 1.1rem;
+  font-family: var(--font-heading);
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.community-ownership__text strong {
+  color: var(--accent-2);
+  text-shadow: 0 0 10px rgba(0, 225, 255, 0.25);
+}
+
+.community-ownership__note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+}

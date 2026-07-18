@@ -98,4 +98,5 @@ function renderStats() {
   `;
 
   els.statsInsights.innerHTML = insights;
+  renderCommunityStats();
 }

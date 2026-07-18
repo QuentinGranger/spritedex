@@ -69,6 +69,7 @@ const els = {
   rarityBars: $("#rarityBars"),
   variantBars: $("#variantBars"),
   statsInsights: $("#statsInsights"),
+  communityStats: $("#communityStats"),
   squadLobby: $("#squadLobby"),
   squadActive: $("#squadActive"),
   squadNameInput: $("#squadNameInput"),
