@@ -20,6 +20,61 @@ function compareIsPriority(entry) {
   return !!(entry.priority && entry.priority !== "none" && entry.priority !== "ignored");
 }
 
+// Build a stable catalog list keyed by variant.id (e.g. sprite_water_holofoil).
+function getCompareCatalogItems() {
+  const items = [];
+  for (const sprite of SPRITES || []) {
+    const variantDetails = sprite.variantDetails || {};
+    const entries = Object.entries(variantDetails);
+    if (entries.length > 0) {
+      for (const [variantType, variant] of entries) {
+        const stableVariantId = variant.id || variantId(sprite.id, variantType);
+        const legacyKeys = [variantId(sprite.id, variantType)];
+        if ((variantType || "").toLowerCase() === "base" || stableVariantId === sprite.id) {
+          legacyKeys.push(sprite.id);
+        }
+        const type = variant.type || variantType;
+        items.push({
+          id: stableVariantId,
+          spriteId: sprite.id,
+          variantId: stableVariantId,
+          variantType: type,
+          variantName: variant.name || variantType,
+          spriteName: sprite.name || sprite.id,
+          img: variant.image || (sprite.images && sprite.images[variantType]) || getSpriteImg(sprite.id, variantType),
+          rarity: variant.rarity || sprite.rarity,
+          color: sprite.color,
+          effect: variant.effect || sprite.effect,
+          legacyKeys
+        });
+      }
+      continue;
+    }
+    // Fallback for older catalog payloads
+    if (Array.isArray(sprite.variants)) {
+      for (const variantType of sprite.variants) {
+        const stableVariantId = variantId(sprite.id, variantType);
+        const legacyKeys = [stableVariantId];
+        if ((variantType || "").toLowerCase() === "base") legacyKeys.push(sprite.id);
+        items.push({
+          id: stableVariantId,
+          spriteId: sprite.id,
+          variantId: stableVariantId,
+          variantType,
+          variantName: variantType,
+          spriteName: sprite.name || sprite.id,
+          img: getSpriteImg(sprite.id, variantType),
+          rarity: sprite.rarity,
+          color: sprite.color,
+          effect: sprite.effect,
+          legacyKeys
+        });
+      }
+    }
+  }
+  return items;
+}
+
 function compareClassify(entry) {
   const s = entry?.status;
   if (compareIsOwned(s)) return "owned";
@@ -27,12 +82,18 @@ function compareClassify(entry) {
   return "unknown";
 }
 
-function compareEntry(collection, id) {
-  return collection[id] || defaultEntry();
+function compareEntry(collection, item) {
+  if (!collection) return defaultEntry();
+  // Prefer stable variantId, then legacy composite key(s).
+  const keys = [item.variantId, item.id, ...(item.legacyKeys || [])];
+  for (const key of keys) {
+    if (key && collection[key]) return collection[key];
+  }
+  return defaultEntry();
 }
 
 // ── Moteur de comparaison ───────────────────────────────────────────────────
-function compareCollections(collectionA, collectionB, labelA, labelB, items = getAllItems()) {
+function compareCollections(collectionA, collectionB, labelA, labelB, items = getCompareCatalogItems()) {
   const total = items.length;
   const result = {
     total,
@@ -140,7 +201,7 @@ function compareItemHTML(item, extraHTML = "") {
       ${img}
       <div class="compare-item__info">
         <span class="compare-item__name">${escapeHtml(item.spriteName)}</span>
-        <span class="compare-item__variant">${escapeHtml(item.variant || "Base")}</span>
+        <span class="compare-item__variant">${escapeHtml(item.variantName || item.variant || "Base")}</span>
       </div>
       ${extraHTML ? `<div class="compare-item__extra">${extraHTML}</div>` : ""}
     </div>`;
