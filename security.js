@@ -1,4 +1,4 @@
-// ── SpriteDex : Security helpers (rate limiting, headers, validation, env checks) ──
+// ── SPRITNEX : Security helpers (rate limiting, headers, validation, env checks) ──
 const { z } = require("zod");
 
 // ─────────────────────────────────────────────────────────────────

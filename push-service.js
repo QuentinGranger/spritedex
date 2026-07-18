@@ -1,4 +1,4 @@
-// ── SpriteDex push notification service ─────────────────────────────────────
+// ── SPRITNEX push notification service ─────────────────────────────────────
 // Handles registration, storage and dispatch of push tokens for Web Push
 // (VAPID) and native Capacitor/FCM/APNS tokens.
 //
@@ -165,7 +165,7 @@ async function getSquadMemberTokens(pool, squadId, excludeUserId) {
 function buildNotificationPayload({ title, body, icon, url, badge }) {
   return {
     notification: {
-      title: title || "SpriteDex",
+      title: title || "SPRITNEX",
       body: body || "",
       icon: icon || "/icons/icon-192x192.png",
       badge: badge || "/icons/icon-72x72.png",

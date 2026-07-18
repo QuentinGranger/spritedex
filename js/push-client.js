@@ -1,4 +1,4 @@
-// ── SpriteDex push notification client ───────────────────────────────────────
+// ── SPRITNEX push notification client ───────────────────────────────────────
 // Registers the device for push notifications on web (Push API + service worker)
 // and native (Capacitor Push Notifications plugin). Tokens are sent to the
 // backend at /api/push/register.

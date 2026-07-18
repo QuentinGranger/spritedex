@@ -144,7 +144,7 @@ function setupEvents() {
   els.exportData.addEventListener("click", exportData);
   els.importData.addEventListener("change", (event) => importData(event.target.files[0]));
   els.resetData.addEventListener("click", async () => {
-    const ok = confirm("Réinitialiser toute ta checklist SpriteDex ?");
+    const ok = confirm("Réinitialiser toute ta checklist SPRITNEX ?");
     if (!ok) return;
     state.collection = {};
     localStorage.setItem(STORAGE_KEY, JSON.stringify({}));

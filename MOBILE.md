@@ -1,4 +1,4 @@
-# SpriteDex — Native mobile app (Capacitor)
+# SPRITNEX — Native mobile app (Capacitor)
 
 The native iOS/Android apps reuse the exact same web frontend, bundled into a
 native shell with [Capacitor](https://capacitorjs.com). Data still comes from the

@@ -94,10 +94,10 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { notification: { title: "SpriteDex", body: "" } };
+    payload = { notification: { title: "SPRITNEX", body: "" } };
   }
   const notif = payload.notification || {};
-  const title = notif.title || "SpriteDex";
+  const title = notif.title || "SPRITNEX";
   const options = {
     body: notif.body || "",
     icon: notif.icon || "/Favicon/android-chrome-192x192.png",

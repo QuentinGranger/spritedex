@@ -134,7 +134,7 @@ const pool = process.env.DATABASE_URL
 
 // ── Resend : email service ──
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = process.env.FROM_EMAIL || "SpriteDex <quentinsavigny@protonmail.com>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "SPRITNEX <quentinsavigny@protonmail.com>";
 const APP_URL = process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
 
 async function sendVerificationEmail(toEmail, token) {
@@ -143,10 +143,10 @@ async function sendVerificationEmail(toEmail, token) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: toEmail,
-      subject: "Vérifie ton email — SpriteDex",
+      subject: "Vérifie ton email — SPRITNEX",
       html: `
         <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0c0f20;color:#eef0ff;border-radius:16px;">
-          <h1 style="font-size:24px;margin:0 0 8px;color:#00e1ff;">SpriteDex</h1>
+          <h1 style="font-size:24px;margin:0 0 8px;color:#00e1ff;">SPRITNEX</h1>
           <p style="margin:0 0 24px;color:rgba(255,255,255,0.7);font-size:14px;">Confirme ton adresse email pour activer ton compte.</p>
           <a href="${verifyUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#00e1ff,#8d7cff);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Vérifier mon email</a>
           <p style="margin:24px 0 0;color:rgba(255,255,255,0.4);font-size:12px;">Si tu n'as pas créé de compte, ignore cet email.</p>
@@ -165,10 +165,10 @@ async function sendPasswordResetEmail(toEmail, token) {
     await resend.emails.send({
       from: FROM_EMAIL,
       to: toEmail,
-      subject: "Réinitialisation de mot de passe — SpriteDex",
+      subject: "Réinitialisation de mot de passe — SPRITNEX",
       html: `
         <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0c0f20;color:#eef0ff;border-radius:16px;">
-          <h1 style="font-size:24px;margin:0 0 8px;color:#00e1ff;">SpriteDex</h1>
+          <h1 style="font-size:24px;margin:0 0 8px;color:#00e1ff;">SPRITNEX</h1>
           <p style="margin:0 0 24px;color:rgba(255,255,255,0.7);font-size:14px;">Une demande de réinitialisation de mot de passe a été effectuée. Ce lien expire dans 1 heure.</p>
           <a href="${resetUrl}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#00e1ff,#8d7cff);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">Réinitialiser mon mot de passe</a>
           <p style="margin:24px 0 0;color:rgba(255,255,255,0.4);font-size:12px;">Si tu n'as pas fait cette demande, ignore cet email — ton mot de passe reste inchangé.</p>
@@ -856,7 +856,7 @@ app.get("/api/catalog-history", async (req, res) => {
   }
 });
 
-// ── Community ownership : taux réel de possession par les collections actives SpriteDex ──
+// ── Community ownership : taux réel de possession par les collections actives SPRITNEX ──
 app.get("/api/community-ownership", async (req, res) => {
   try {
     const totalResult = await pool.query(
@@ -1759,7 +1759,7 @@ async function logSquadActivity(userId, spriteId, action) {
       );
       // Notify squad members asynchronously; do not block the request.
       pushService.notifySquadMembers(pool, row.squad_id, userId, {
-        title: "SpriteDex — Escouade",
+        title: "SPRITNEX — Escouade",
         body: `${username} ${actionLabel} ${spriteName}`,
         icon: "/icons/icon-192x192.png",
         url: `/?squad=${row.squad_id}`
@@ -2709,7 +2709,7 @@ async function refreshNews() {
 async function notifyNewsSubscribers(items) {
   if (!items.length) return;
   const title = items.length === 1
-    ? "Nouvelle actu SpriteDex"
+    ? "Nouvelle actu SPRITNEX"
     : `${items.length} nouvelles actus`;
   const body = items.length === 1
     ? items[0].title || "Un article vient d'être ajouté"
@@ -3144,6 +3144,6 @@ ensureSquadTables()
       secLog.purgeOldSecurityLogs(pool);
     }, 24 * 60 * 60 * 1000); // once per day
     server.listen(PORT, () => {
-      console.log(`SpriteDex API + WebSocket running on http://localhost:${PORT}`);
+      console.log(`SPRITNEX API + WebSocket running on http://localhost:${PORT}`);
     });
   });

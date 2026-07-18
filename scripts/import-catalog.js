@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const { Pool } = require("pg");
 const { validateCatalog, formatReport } = require("./validate-catalog");
 
-const CATALOG_PATH = process.argv[2] || path.join(__dirname, "..", "SpriteDex Catalogue Juil 18 2026.json");
+const CATALOG_PATH = process.argv[2] || path.join(__dirname, "..", "SPRITNEX Catalogue Juil 18 2026.json");
 
 function shouldUseSSL(url) {
   if (!url) return false;

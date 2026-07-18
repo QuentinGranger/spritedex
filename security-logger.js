@@ -1,4 +1,4 @@
-// ── SpriteDex security audit logger ─────────────────────────────────────────
+// ── SPRITNEX security audit logger ─────────────────────────────────────────
 // Records security-relevant events with a 12-month retention window.
 // Events: login, register, password reset, email verification, account deletion,
 // OAuth login, profile update, share link changes, consent update, push token changes.

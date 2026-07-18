@@ -87,7 +87,7 @@ function showCookieBanner() {
   banner.innerHTML = `
     <div class="cookie-banner__text">
       <strong>Confidentialité et traceurs</strong>
-      <p>SpriteDex utilise uniquement des traceurs strictement nécessaires au fonctionnement (session, authentification, préférences). Aucun traceur de mesure d'audience n'est chargé.</p>
+      <p>SPRITNEX utilise uniquement des traceurs strictement nécessaires au fonctionnement (session, authentification, préférences). Aucun traceur de mesure d'audience n'est chargé.</p>
     </div>
     <div class="cookie-banner__actions">
       <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieDetails">Voir les détails</button>
@@ -123,7 +123,7 @@ function openCookiePreferences() {
         </div>
         <label class="toggle"><input type="checkbox" checked disabled /><span class="toggle__slider"></span></label>
       </div>
-      <p class="cookie-dialog__notice">Aucun traceur de mesure d'audience, de publicité ou de profilage n'est chargé dans cette version de SpriteDex.</p>
+      <p class="cookie-dialog__notice">Aucun traceur de mesure d'audience, de publicité ou de profilage n'est chargé dans cette version de SPRITNEX.</p>
       <div class="cookie-dialog__actions">
         <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookiePrefOk">J'ai compris</button>
       </div>

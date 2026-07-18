@@ -1,4 +1,4 @@
-// Static reference data for SpriteDex (sprites, their variants and images).
+// Static reference data for SPRITNEX (sprites, their variants and images).
 // Shared by seed.js (CLI seeding) and server.js (auto-seed on boot when the
 // database is empty), so the dataset lives in exactly one place.
 

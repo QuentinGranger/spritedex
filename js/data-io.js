@@ -1,6 +1,6 @@
 function exportData() {
   const payload = {
-    app: "SpriteDex",
+    app: "SPRITNEX",
     version: 1,
     exportedAt: new Date().toISOString(),
     collection: state.collection

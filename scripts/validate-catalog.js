@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Étape 17 — Validation automatique du catalogue
 //
-// Vérifie l'intégrité d'un catalogue SpriteDex AVANT publication/import.
+// Vérifie l'intégrité d'un catalogue SPRITNEX AVANT publication/import.
 //
 // Règle d'or : une information INCONNUE (null / "unknown") ne bloque JAMAIS la
 // publication — elle génère au plus un AVERTISSEMENT. En revanche, une véritable
@@ -419,7 +419,7 @@ function formatFinalizationReport({ ready, checks, manual, errors, warnings }) {
 if (require.main === module) {
   const fs = require("fs");
   const path = require("path");
-  const catalogPath = process.argv[2] || path.join(__dirname, "..", "SpriteDex Catalogue Juil 18 2026.json");
+  const catalogPath = process.argv[2] || path.join(__dirname, "..", "SPRITNEX Catalogue Juil 18 2026.json");
   let catalog;
   try {
     catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));

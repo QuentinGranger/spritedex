@@ -1,4 +1,4 @@
-# SpriteDex — Checklist Fortnite
+# SPRITNEX — Checklist Fortnite
 
 Application web statique pour suivre les Sprites Fortnite et leurs variantes.
 
