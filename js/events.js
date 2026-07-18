@@ -4,6 +4,7 @@ function renderAll() {
   renderMissing();
   renderStats();
   renderCard();
+  renderCompare();
 }
 
 function setupEvents() {
@@ -19,6 +20,9 @@ function setupEvents() {
       }
       if (tab.dataset.view === "history") {
         renderHistory();
+      }
+      if (tab.dataset.view === "compare") {
+        renderCompare();
       }
     });
   });
@@ -210,6 +214,7 @@ function setupEvents() {
     });
   });
 
+  setupCompareEvents();
   setupSwipeGestures();
 
   // Register the service worker for the web PWA only. In the native (Capacitor)

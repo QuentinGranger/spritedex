@@ -22,7 +22,9 @@ const state = {
   squadView: "table",
   activeSquad: null,
   squadCreatedBy: null,
-  squadJoinOpen: true
+  squadJoinOpen: true,
+  compareTarget: null,
+  compareToken: null
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -97,5 +99,15 @@ const els = {
   dialogTitle: $("#dialogTitle"),
   dialogVariant: $("#dialogVariant"),
   dialogEffect: $("#dialogEffect"),
-  dialogNote: $("#dialogNote")
+  dialogNote: $("#dialogNote"),
+  compareForm: $("#compareForm"),
+  compareTokenInput: $("#compareTokenInput"),
+  compareLoadBtn: $("#compareLoadBtn"),
+  compareShareBtn: $("#compareShareBtn"),
+  compareStatus: $("#compareStatus"),
+  compareResults: $("#compareResults"),
+  compareSummary: $("#compareSummary"),
+  compareLists: $("#compareLists"),
+  comparePlayerAName: $("#comparePlayerAName"),
+  comparePlayerBName: $("#comparePlayerBName")
 };

@@ -142,6 +142,7 @@ async function init() {
         setupAccountPanel();
         buildDeck();
         renderAll();
+        await handleCompareParams();
         await restoreSquad();
         handleJoinLink();
         setupNotifBell();
@@ -162,6 +163,7 @@ async function init() {
       setupAccountPanel();
       buildDeck();
       renderAll();
+      await handleCompareParams();
       await restoreSquad();
       handleJoinLink();
       setupNotifBell();
