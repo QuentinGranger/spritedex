@@ -490,10 +490,9 @@ function renderCompareTable(result, aName, bName) {
     </div>`;
 
   const rows = records.map(r => {
-    const canPrioritize = r.userA.status !== "owned";
     const actions = `
       <button type="button" class="compare-action compare-action--detail" data-sprite-id="${r.spriteId}">Fiche</button>
-      ${canPrioritize ? `<button type="button" class="compare-action compare-action--priority" data-variant-id="${r.variantId}">Priorité</button>` : ""}`;
+      ${compareQuickActionsHTML(r.variantId, r.userA.status)}`;
     return `
       <div class="compare-table__row" data-sprite-id="${r.spriteId}" data-variant-id="${r.variantId}">
         <span class="compare-table__cell compare-table__cell--variant">
@@ -518,7 +517,7 @@ function renderCompareTable(result, aName, bName) {
 
   els.compareTable.querySelectorAll(".compare-table__row").forEach(row => {
     row.addEventListener("click", (e) => {
-      if (e.target.closest("button")) return;
+      if (e.target.closest("button, select")) return;
       openCompareSprite(row.dataset.spriteId);
     });
   });
@@ -527,14 +526,7 @@ function renderCompareTable(result, aName, bName) {
     btn.addEventListener("click", (e) => { e.stopPropagation(); openCompareSprite(btn.dataset.spriteId); });
   });
 
-  els.compareTable.querySelectorAll(".compare-action--priority").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setEntry(btn.dataset.variantId, { status: "priority" });
-      toast("Marqué comme priorité");
-      renderCompare();
-    });
-  });
+  attachCompareQuickActions(els.compareTable);
 }
 
 function openCompareSprite(spriteId) {
@@ -571,6 +563,7 @@ function openCompareSprite(spriteId) {
         <span class="compare-sprite-table__cell compare-sprite-table__cell--name">${escapeHtml(compareVariantTypeLabel(r.variantType))}</span>
         <span class="compare-sprite-table__cell">${aStatus}</span>
         <span class="compare-sprite-table__cell">${bStatus}</span>
+        <span class="compare-sprite-table__cell compare-sprite-table__cell--actions">${compareQuickActionsHTML(r.variantId, r.userA.status)}</span>
       </div>`;
   }).join("");
 
@@ -580,13 +573,61 @@ function openCompareSprite(spriteId) {
         <span class="compare-sprite-table__cell">Variante</span>
         <span class="compare-sprite-table__cell">${safeA}</span>
         <span class="compare-sprite-table__cell">${safeB}</span>
+        <span class="compare-sprite-table__cell compare-sprite-table__cell--actions">Action</span>
       </div>
       <div class="compare-sprite-table__body">${rows}</div>
     </div>`;
 
   els.compareSpriteDetailContent.innerHTML = `${header}${table}`;
+  attachCompareQuickActions(els.compareSpriteDetailContent, true);
+
   const dialog = document.getElementById("compareSpriteDialog");
-  if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+  if (dialog && typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+  state.compareSpriteId = spriteId;
+}
+
+function compareQuickActionsHTML(variantId, selectedStatus) {
+  const options = [
+    { value: "", label: "Action" },
+    { value: "owned", label: "Possédé" },
+    { value: "missing", label: "Manquant" },
+    { value: "priority", label: "Prioritaire" },
+    { value: "spotted", label: "Repéré" }
+  ];
+  const select = `<select class="compare-status-select" data-variant-id="${variantId}">${options.map(o => `<option value="${o.value}" ${selectedStatus === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  const noteBtn = `<button type="button" class="compare-action compare-action--note" data-variant-id="${variantId}">Note</button>`;
+  return `<span class="compare-quick-actions">${select}${noteBtn}</span>`;
+}
+
+function attachCompareQuickActions(container, spriteIdForDialog = null) {
+  container.querySelectorAll(".compare-status-select").forEach(sel => {
+    sel.addEventListener("change", (e) => {
+      e.stopPropagation();
+      const status = e.target.value;
+      if (!status) return;
+      const patch = { status };
+      if (status === "owned") {
+        const entry = getEntry(sel.dataset.variantId);
+        if (!entry.obtainedAt) patch.obtainedAt = new Date().toISOString();
+      }
+      setEntry(sel.dataset.variantId, patch);
+      toast(statusLabel(status));
+      renderCompare();
+      if (spriteIdForDialog && state.compareSpriteId) openCompareSprite(state.compareSpriteId);
+    });
+  });
+
+  container.querySelectorAll(".compare-action--note").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const note = prompt("Note :");
+      if (note !== null) {
+        setEntry(btn.dataset.variantId, { note });
+        renderCompare();
+        if (spriteIdForDialog && state.compareSpriteId) openCompareSprite(state.compareSpriteId);
+      }
+    });
+  });
 }
 
 function groupCompareRecordsBy(records, key) {
