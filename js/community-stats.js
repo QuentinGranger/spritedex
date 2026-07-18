@@ -39,14 +39,6 @@ const BASE_SPRITE_RANKING = [
   { rank: 5, label: "ex æquo", names: ["Duck Sprite", "Ghost Sprite", "Demon Sprite", "King Sprite"], rate: "9 %" }
 ];
 
-let communityOwnershipRate = 0.083;
-
-function setCommunityOwnershipRate(rate) {
-  if (typeof rate === "number" && !Number.isNaN(rate)) {
-    communityOwnershipRate = rate;
-  }
-}
-
 function formatCommunityPercent(rate) {
   return (rate).toLocaleString("fr-FR", {
     style: "percent",
@@ -95,8 +87,6 @@ function renderCommunityStats() {
       </tr>
     `;
   }).join("");
-
-  const ownership = formatCommunityPercent(communityOwnershipRate);
 
   container.innerHTML = `
     <div class="stats-module community-module">
@@ -169,8 +159,57 @@ function renderCommunityStats() {
 
     <div class="stats-module community-module community-ownership">
       <h3 class="stats-module__title">Taux de possession SpriteDex</h3>
-      <p class="community-ownership__text">Possédé par <strong>${ownership}</strong> des collections SpriteDex actives.</p>
-      <p class="community-ownership__note">SpriteDex ne dispose pas des données de l’ensemble des joueurs Fortnite.</p>
+      <div id="communityOwnershipDetail">
+        <p class="community-ownership__note">Chargement des statistiques SpriteDex…</p>
+      </div>
     </div>
   `;
+  loadCommunityOwnership();
+}
+
+function loadCommunityOwnership() {
+  const detail = document.getElementById("communityOwnershipDetail");
+  if (!detail) return;
+
+  const escape = typeof escapeHtml === "function"
+    ? escapeHtml
+    : (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  fetch("/api/community-ownership")
+    .then((r) => {
+      if (!r.ok) throw new Error("network");
+      return r.json();
+    })
+    .then((data) => {
+      const total = data.totalActive || 0;
+      const rows = (data.sprites || [])
+        .sort((a, b) => (b.ownershipRate || 0) - (a.ownershipRate || 0))
+        .map((s) => `
+          <tr>
+            <td class="community-table__name">${escape(s.name || s.spriteId || "?")}</td>
+            <td class="community-table__rate">${formatCommunityPercent(s.ownershipRate || 0)}</td>
+            <td class="community-table__muted">${s.owners ?? 0} / ${total}</td>
+          </tr>
+        `).join("");
+      detail.innerHTML = `
+        <p class="community-ownership__note">Collections SpriteDex actives : ${total}</p>
+        <div class="community-table-wrapper">
+          <table class="community-table">
+            <thead>
+              <tr>
+                <th>Sprite</th>
+                <th>Possédé par</th>
+                <th>Collections</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <p class="community-ownership__note">SpriteDex ne dispose pas des données de l’ensemble des joueurs Fortnite.</p>
+      `;
+    })
+    .catch((err) => {
+      detail.innerHTML = `<p class="community-ownership__note">Impossible de charger les statistiques SpriteDex.</p>`;
+      console.error("[community-ownership]", err);
+    });
 }

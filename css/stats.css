@@ -267,6 +267,7 @@
 .community-table__name { color: var(--text); font-weight: 600; }
 .community-table__rate { font-family: var(--font-heading); color: var(--accent); }
 .community-table__rank { font-family: var(--font-heading); color: var(--accent-2); white-space: nowrap; }
+.community-table__muted { color: var(--muted); font-size: 0.78rem; }
 
 .community-legend {
   padding: 14px;

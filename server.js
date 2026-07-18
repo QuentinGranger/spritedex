@@ -856,6 +856,51 @@ app.get("/api/catalog-history", async (req, res) => {
   }
 });
 
+// ── Community ownership : taux réel de possession par les collections actives SpriteDex ──
+app.get("/api/community-ownership", async (req, res) => {
+  try {
+    const totalResult = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL`
+    );
+    const totalActive = totalResult.rows[0]?.total || 0;
+
+    const ownershipResult = await pool.query(
+      `SELECT split_part(se.sprite_id, '::', 1) AS base_id,
+              COUNT(DISTINCT se.user_id)::int AS owners
+       FROM sprite_entries se
+       JOIN users u ON u.id = se.user_id
+       WHERE se.status = 'owned'
+         AND u.deleted_at IS NULL
+       GROUP BY base_id`
+    );
+    const ownershipMap = new Map(ownershipResult.rows.map(r => [r.base_id, r.owners]));
+
+    const spritesResult = await pool.query(
+      `SELECT id, name, rarity FROM sprites
+       WHERE is_released IS DISTINCT FROM FALSE
+       ORDER BY name`
+    );
+
+    const sprites = spritesResult.rows.map(s => {
+      const owners = ownershipMap.get(s.id) || 0;
+      const rate = totalActive > 0 ? owners / totalActive : 0;
+      return {
+        spriteId: s.id,
+        name: s.name,
+        rarity: s.rarity,
+        owners,
+        totalActive,
+        ownershipRate: Number(rate.toFixed(6))
+      };
+    });
+
+    res.json({ totalActive, sprites });
+  } catch (err) {
+    console.error("[community-ownership]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Helpers ──
 // PBKDF2-HMAC-SHA512 work factor. OWASP (2023) recommends 210 000 iterations
 // for PBKDF2-SHA512. Legacy accounts were hashed with 10 000 iterations; that
