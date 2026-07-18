@@ -340,6 +340,14 @@ async function loadCompareTarget(raw) {
   }
   try {
     const res = await fetch(`${API_BASE}/shared/${encodeURIComponent(token)}`, { headers: authHeadersOnly() });
+    if (res.status === 403) {
+      toast("Ce profil est privé ou tu n’as pas l’autorisation de le comparer");
+      return;
+    }
+    if (res.status === 404) {
+      toast("Lien de partage invalide ou révoqué");
+      return;
+    }
     if (!res.ok) throw new Error("shared failed");
     const data = await res.json();
     state.compareToken = token;

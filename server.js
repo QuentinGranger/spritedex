@@ -278,11 +278,26 @@ async function shareSquad(userA, userB) {
   return result.rows.length > 0;
 }
 
+async function areFriends(userA, userB) {
+  if (!userA || !userB) return false;
+  const result = await pool.query(
+    `SELECT 1 FROM friends
+     WHERE status = 'accepted'
+       AND ((user_id = $1 AND friend_user_id = $2)
+         OR (user_id = $2 AND friend_user_id = $1))
+     LIMIT 1`,
+    [userA, userB]
+  );
+  return result.rows.length > 0;
+}
+
 async function checkPrivacyAccess(req, targetUserId, privacy) {
   const reqUser = await getRequestingUser(req);
   if (String(reqUser) === String(targetUserId)) return "full";
   if (privacy === "public") return "full";
-  if (privacy === "squad_only" && reqUser && await shareSquad(reqUser, targetUserId)) return "full";
+  if (!reqUser) return "blocked";
+  if (privacy === "friends_only" && await areFriends(reqUser, targetUserId)) return "full";
+  if (privacy === "squad_only" && await shareSquad(reqUser, targetUserId)) return "full";
   return "blocked";
 }
 
@@ -1493,6 +1508,10 @@ app.get("/api/shared/:token", async (req, res) => {
       return res.status(404).json({ error: "Lien de partage invalide ou révoqué" });
     }
     const user = userResult.rows[0];
+    const access = await checkPrivacyAccess(req, user.id, user.privacy || "squad_only");
+    if (access === "blocked") {
+      return res.status(403).json({ error: "Profil non accessible" });
+    }
     const entries = await pool.query(
       "SELECT variant_id, sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
       [user.id]
@@ -1505,6 +1524,7 @@ app.get("/api/shared/:token", async (req, res) => {
       username: user.username,
       avatarUrl: user.avatar_url || "",
       createdAt: user.created_at,
+      privacy: user.privacy || "squad_only",
       collection
     });
   } catch (err) {
@@ -1530,7 +1550,7 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
       sets.push(`avatar_url = $${idx++}`);
       vals.push(avatarUrl || "");
     }
-    if (privacy && ["public", "squad_only", "private"].includes(privacy)) {
+    if (privacy && ["public", "friends_only", "squad_only", "private"].includes(privacy)) {
       sets.push(`privacy = $${idx++}`);
       vals.push(privacy);
     }
@@ -1560,6 +1580,88 @@ app.delete("/api/profile/:userId", async (req, res) => {
     await pool.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
     res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Friends (used by friends_only privacy) ──
+app.get("/api/friends", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const result = await pool.query(
+      `SELECT u.id, u.username, u.avatar_url, f.status, f.created_at
+       FROM friends f
+       JOIN users u ON (CASE WHEN f.user_id = $1 THEN f.friend_user_id ELSE f.user_id END) = u.id
+       WHERE (f.user_id = $1 OR f.friend_user_id = $1) AND u.deleted_at IS NULL`,
+      [reqUser]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.post("/api/friends/:friendId/request", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  const friendId = req.params.friendId;
+  if (String(reqUser) === String(friendId)) return res.status(400).json({ error: "Tu ne peux pas t'ajouter toi-même" });
+  try {
+    const exists = await pool.query("SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL", [friendId]);
+    if (!exists.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
+    await pool.query(
+      `INSERT INTO friends (user_id, friend_user_id, status) VALUES ($1, $2, 'pending')
+       ON CONFLICT (user_id, friend_user_id) DO UPDATE SET status = 'pending', updated_at = NOW()`,
+      [reqUser, friendId]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.post("/api/friends/:friendId/accept", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  const friendId = req.params.friendId;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `INSERT INTO friends (user_id, friend_user_id, status, updated_at) VALUES ($1, $2, 'accepted', NOW())
+       ON CONFLICT (user_id, friend_user_id) DO UPDATE SET status = 'accepted', updated_at = NOW()`,
+      [reqUser, friendId]
+    );
+    await client.query(
+      `UPDATE friends SET status = 'accepted', updated_at = NOW() WHERE user_id = $1 AND friend_user_id = $2`,
+      [friendId, reqUser]
+    );
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete("/api/friends/:friendId", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  const friendId = req.params.friendId;
+  try {
+    await pool.query(
+      `DELETE FROM friends WHERE (user_id = $1 AND friend_user_id = $2) OR (user_id = $2 AND friend_user_id = $1)`,
+      [reqUser, friendId]
+    );
+    res.json({ ok: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3075,6 +3177,16 @@ async function ensureSquadTables() {
       -- lookups by user_id alone (used by shareSquad() to find common squads
       -- between two users on every privacy check) — add a dedicated index.
       CREATE INDEX IF NOT EXISTS idx_squad_members_user ON squad_members (user_id);
+
+      CREATE TABLE IF NOT EXISTS friends (
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        friend_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (user_id, friend_user_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_friends_friend ON friends (friend_user_id);
     `);
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS join_open BOOLEAN NOT NULL DEFAULT TRUE`);
     await pool.query(`
