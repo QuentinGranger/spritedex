@@ -215,6 +215,119 @@ window.addEventListener("online", () => {
 });
 window.addEventListener("offline", () => updateSyncStatus());
 
+function bestStatus(a, b) {
+  const order = { owned: 100, spotted: 90, priority: 80, missing: 70, unsure: 60, unavailable: 50, new: 0 };
+  return (order[a] || 0) >= (order[b] || 0) ? a : b;
+}
+
+function bestPriority(a, b) {
+  const order = { urgent: 100, important: 80, medium: 60, low: 40, ignored: 20, none: 0 };
+  return (order[a] || 0) >= (order[b] || 0) ? a : b;
+}
+
+function earliest(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return a < b ? a : b;
+}
+
+function latest(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
+}
+
+function normalizeVariantName(name) {
+  const n = (name || "").trim();
+  const lower = n.toLowerCase();
+  if (lower === "holo" || lower === "holofoil") return "Holofoil";
+  const known = ["Base", "Holofoil", "Galaxy", "Gold", "Gummy", "Gem", "Rift"].find(v => v.toLowerCase() === lower);
+  if (known) return known;
+  return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+}
+
+// Build a runtime map from old display names / slugs to current sprite ids.
+function buildSpriteNameMap() {
+  const map = {};
+  for (const s of SPRITES || []) {
+    if (s.name) map[s.name.toLowerCase()] = s.id;
+    if (s.officialName) map[s.officialName.toLowerCase()] = s.id;
+    if (s.slug) map[s.slug.toLowerCase()] = s.id;
+  }
+  return map;
+}
+
+function resolveLegacyKey(key, spriteMap) {
+  if (!key || typeof key !== "string") return null;
+  if (key.startsWith("fav_")) return key;
+
+  // Already stable base::variant format.
+  if (key.includes("::")) {
+    const [base, variant] = key.split("::");
+    if (base.toLowerCase().startsWith("sprite_")) return key;
+    const resolvedBase = spriteMap[base.toLowerCase()];
+    if (!resolvedBase) return null;
+    return `${resolvedBase}::${normalizeVariantName(variant)}`;
+  }
+
+  // Flat base_variant format like "sprite_water_holo" or "water_holo".
+  for (const suffix of ["Holofoil", "Holo", "Galaxy", "Gold", "Gummy", "Gem", "Rift", "Base"]) {
+    const regex = new RegExp(`[_-]${suffix.toLowerCase()}$`, "i");
+    if (regex.test(key)) {
+      const base = key.replace(regex, "");
+      const resolvedBase = spriteMap[base.toLowerCase()];
+      if (!resolvedBase) return null;
+      return `${resolvedBase}::${normalizeVariantName(suffix)}`;
+    }
+  }
+
+  // Try to extract a trailing variant word from the display name, e.g. "Water Sprite Holo".
+  const parts = key.trim().split(/\s+/);
+  let variant = "Base";
+  let baseParts = parts;
+  const last = parts[parts.length - 1];
+  const matched = ["Holofoil", "Holo", "Galaxy", "Gold", "Gummy", "Gem", "Rift", "Base"].find(v => v.toLowerCase() === last.toLowerCase());
+  if (matched) {
+    variant = normalizeVariantName(matched);
+    baseParts = parts.slice(0, -1);
+  }
+  const baseName = baseParts.join(" ").trim();
+  const resolvedBase = spriteMap[baseName.toLowerCase()];
+  if (!resolvedBase) return null;
+  return `${resolvedBase}::${variant}`;
+}
+
+// Clean up localStorage collection: merge legacy/old-format keys into the current
+// stable `spriteId::variant` format. This fixes duplicate checklist / card entries
+// caused by old localStorage keys matching the same variant.
+function normalizeLocalCollection() {
+  if (!SPRITES || !SPRITES.length) return;
+  const spriteMap = buildSpriteNameMap();
+  const normalized = {};
+  const unknown = {};
+
+  for (const [key, entry] of Object.entries(state.collection || {})) {
+    if (key.startsWith("fav_")) { normalized[key] = entry; continue; }
+    const resolved = resolveLegacyKey(key, spriteMap);
+    if (!resolved) { unknown[key] = entry; continue; }
+
+    if (normalized[resolved]) {
+      const existing = normalized[resolved];
+      existing.status = bestStatus(existing.status, entry.status);
+      existing.priority = bestPriority(existing.priority, entry.priority);
+      existing.note = [existing.note, entry.note].filter(Boolean).join("\n---\n");
+      if (entry.obtainedAt) existing.obtainedAt = earliest(existing.obtainedAt, entry.obtainedAt);
+      if (entry.updatedAt) existing.updatedAt = latest(existing.updatedAt, entry.updatedAt);
+    } else {
+      normalized[resolved] = { ...entry };
+    }
+  }
+
+  // Preserve unrecognized keys so no data is deleted.
+  state.collection = { ...normalized, ...unknown };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.collection));
+}
+
 async function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -227,6 +340,9 @@ async function load() {
   if (!serverLoaded && Object.keys(state.collection).length > 0) {
     await migrateLocalToServer();
   }
+
+  // Merge/dedupe legacy keys after server merge.
+  normalizeLocalCollection();
 
   // Flush any pending changes from a previous offline session
   if (state.userId && getSyncQueue().length > 0) {
