@@ -93,91 +93,77 @@ function compareEntry(collection, item) {
 }
 
 // ── Moteur de comparaison ───────────────────────────────────────────────────
-function compareCollections(collectionA, collectionB, labelA, labelB, items = getCompareCatalogItems()) {
-  const total = items.length;
+// userA et userB sont des objets collection { variantId: { status, priority, ... } }.
+// catalogue est une liste de variants (par défaut tous les variants sortis du catalogue).
+// Pour chaque variante on renvoie l'une des 5 catégories : both_owned, only_user_a,
+// only_user_b, both_missing, unknown.
+function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) {
   const result = {
-    total,
-    bothOwn: [],
-    onlyA: [],
-    onlyB: [],
-    bothMissing: [],
-    aOwnUnknown: [],
-    bOwnUnknown: [],
-    other: [],
-    aPrioBHas: [],
-    bPrioAHas: [],
-    bothPrio: [],
-    aPrioOnly: [],
-    bPrioOnly: [],
-    aOwnCount: 0, bOwnCount: 0,
-    aMissingCount: 0, bMissingCount: 0,
-    aUnknownCount: 0, bUnknownCount: 0,
-    aMissingTotal: 0, bMissingTotal: 0,
-    aMissingCovered: 0, bMissingCovered: 0,
-    unionOwned: 0,
-    labelA, labelB
+    both_owned: [],
+    only_user_a: [],
+    only_user_b: [],
+    both_missing: [],
+    unknown: [],
+    summary: {
+      total: catalogue.length,
+      bothOwned: 0,
+      onlyUserA: 0,
+      onlyUserB: 0,
+      bothMissing: 0,
+      unknown: 0,
+      aOwned: 0,
+      bOwned: 0
+    }
   };
 
-  for (const item of items) {
-    const a = compareEntry(collectionA, item.id);
-    const b = compareEntry(collectionB, item.id);
+  for (const item of catalogue) {
+    const a = compareEntry(userA, item);
+    const b = compareEntry(userB, item);
     const sa = compareClassify(a);
     const sb = compareClassify(b);
-    const pa = compareIsPriority(a);
-    const pb = compareIsPriority(b);
+    const record = { item, entryA: a, entryB: b };
 
-    if (sa === "owned") result.aOwnCount++;
-    else if (sa === "missing") result.aMissingCount++;
-    else result.aUnknownCount++;
-
-    if (sb === "owned") result.bOwnCount++;
-    else if (sb === "missing") result.bMissingCount++;
-    else result.bUnknownCount++;
-
-    if (sa === "owned" || sb === "owned") result.unionOwned++;
-
-    if (sa === "missing") {
-      result.aMissingTotal++;
-      if (sb === "owned") result.aMissingCovered++;
-    }
-    if (sb === "missing") {
-      result.bMissingTotal++;
-      if (sa === "owned") result.bMissingCovered++;
+    if (sa === "unknown" || sb === "unknown") {
+      result.unknown.push(record);
+      result.summary.unknown++;
+      continue;
     }
 
     if (sa === "owned" && sb === "owned") {
-      result.bothOwn.push(item);
-    } else if (sa === "owned" && sb === "missing") {
-      result.onlyA.push({ item, bStatus: b.status, bEntry: b });
-    } else if (sb === "owned" && sa === "missing") {
-      result.onlyB.push({ item, aStatus: a.status, aEntry: a });
+      result.both_owned.push(record);
+      result.summary.bothOwned++;
+      result.summary.aOwned++;
+      result.summary.bOwned++;
+    } else if (sa === "owned" && sb !== "owned") {
+      result.only_user_a.push(record);
+      result.summary.onlyUserA++;
+      result.summary.aOwned++;
+    } else if (sb === "owned" && sa !== "owned") {
+      result.only_user_b.push(record);
+      result.summary.onlyUserB++;
+      result.summary.bOwned++;
     } else if (sa === "missing" && sb === "missing") {
-      result.bothMissing.push({ item, aStatus: a.status, bStatus: b.status });
-    } else if (sa === "owned" && sb === "unknown") {
-      result.aOwnUnknown.push({ item, bStatus: b.status });
-    } else if (sb === "owned" && sa === "unknown") {
-      result.bOwnUnknown.push({ item, aStatus: a.status });
+      result.both_missing.push(record);
+      result.summary.bothMissing++;
     } else {
-      result.other.push({ item, aStatus: a.status, bStatus: b.status });
-    }
-
-    if (pa || pb) {
-      const aHas = sa === "owned";
-      const bHas = sb === "owned";
-      if (pa && pb) result.bothPrio.push({ item, aEntry: a, bEntry: b });
-      else if (pa && bHas) result.aPrioBHas.push({ item, aEntry: a });
-      else if (pb && aHas) result.bPrioAHas.push({ item, bEntry: b });
-      else if (pa) result.aPrioOnly.push({ item, aEntry: a });
-      else if (pb) result.bPrioOnly.push({ item, bEntry: b });
+      // Sécurité : statut non classifiable, on le met dans "unknown"
+      result.unknown.push(record);
+      result.summary.unknown++;
     }
   }
 
-  result.aPercent = total ? Math.round((result.aOwnCount / total) * 100) : 0;
-  result.bPercent = total ? Math.round((result.bOwnCount / total) * 100) : 0;
-  result.collectiveCompletion = total ? Math.round((result.unionOwned / total) * 100) : 0;
-  const aComp = result.aMissingTotal ? result.aMissingCovered / result.aMissingTotal : 1;
-  const bComp = result.bMissingTotal ? result.bMissingCovered / result.bMissingTotal : 1;
-  result.complementarity = Math.round(((aComp + bComp) / 2) * 100);
+  const total = result.summary.total;
+  result.summary.aPercent = total ? Math.round((result.summary.aOwned / total) * 100) : 0;
+  result.summary.bPercent = total ? Math.round((result.summary.bOwned / total) * 100) : 0;
+  const unionOwned = result.summary.aOwned + result.summary.bOwned - result.summary.bothOwned;
+  result.summary.collectiveCompletion = total ? Math.round((unionOwned / total) * 100) : 0;
+  const aMissing = result.summary.onlyUserB + result.summary.bothMissing;
+  const bMissing = result.summary.onlyUserA + result.summary.bothMissing;
+  const aCovered = result.summary.onlyUserB;
+  const bCovered = result.summary.onlyUserA;
+  const aComp = aMissing ? aCovered / aMissing : 1;
+  const bComp = bMissing ? bCovered / bMissing : 1;
+  result.summary.complementarity = Math.round(((aComp + bComp) / 2) * 100);
 
   return result;
 }
@@ -222,27 +208,28 @@ function renderCompareSection(title, items, renderItem, open = false) {
 }
 
 function renderCompareSummary(result, aName, bName) {
+  const s = result.summary;
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
   els.compareSummary.innerHTML = `
     <div class="compare-summary-grid">
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.collectiveCompletion}%</span><span class="compare-kpi__label">Complétion collective</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.complementarity}%</span><span class="compare-kpi__label">Complémentarité</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.bothOwn.length}</span><span class="compare-kpi__label">En commun</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.onlyA.length}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.onlyB.length}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${result.bothMissing.length}</span><span class="compare-kpi__label">Manque aux deux</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.collectiveCompletion}%</span><span class="compare-kpi__label">Complétion collective</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.complementarity}%</span><span class="compare-kpi__label">Complémentarité</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${result.both_owned.length}</span><span class="compare-kpi__label">En commun</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${result.only_user_a.length}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${result.only_user_b.length}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${result.both_missing.length}</span><span class="compare-kpi__label">Manque aux deux</span></div>
     </div>
     <div class="compare-players">
       <div class="compare-player">
         <span class="compare-player__name">${safeA}</span>
-        <span class="compare-player__pct">${result.aPercent}% possédé</span>
-        <span class="compare-player__count">${result.aOwnCount} / ${result.total}</span>
+        <span class="compare-player__pct">${s.aPercent}% possédé</span>
+        <span class="compare-player__count">${s.aOwned} / ${s.total}</span>
       </div>
       <div class="compare-player">
         <span class="compare-player__name">${safeB}</span>
-        <span class="compare-player__pct">${result.bPercent}% possédé</span>
-        <span class="compare-player__count">${result.bOwnCount} / ${result.total}</span>
+        <span class="compare-player__pct">${s.bPercent}% possédé</span>
+        <span class="compare-player__count">${s.bOwned} / ${s.total}</span>
       </div>
     </div>`;
 }
@@ -252,49 +239,17 @@ function renderCompareLists(result, aName, bName) {
   const safeB = escapeHtml(bName);
 
   const sections = [];
-  sections.push(renderCompareSection("Possédé par les deux", result.bothOwn, (it) => compareItemHTML(it), true));
-  sections.push(renderCompareSection(`${safeA} possède · ${safeB} manque`, result.onlyA,
-    (it) => compareItemHTML(it.item, compareStatusTag(it.bStatus, it.bEntry)), true));
-  sections.push(renderCompareSection(`${safeB} possède · ${safeA} manque`, result.onlyB,
-    (it) => compareItemHTML(it.item, compareStatusTag(it.aStatus, it.aEntry)), true));
-  sections.push(renderCompareSection("Manque aux deux", result.bothMissing,
-    (it) => compareItemHTML(it.item, `<span class="ci-status">${compareStatusTag(it.aStatus, {priority: null})}</span><span class="ci-status">${compareStatusTag(it.bStatus, {priority: null})}</span>`), true));
+  sections.push(renderCompareSection("Possédé par les deux", result.both_owned, (it) => compareItemHTML(it.item), true));
+  sections.push(renderCompareSection(`${safeA} possède · ${safeB} manque`, result.only_user_a,
+    (it) => compareItemHTML(it.item, compareStatusTag(it.entryB.status, it.entryB)), true));
+  sections.push(renderCompareSection(`${safeB} possède · ${safeA} manque`, result.only_user_b,
+    (it) => compareItemHTML(it.item, compareStatusTag(it.entryA.status, it.entryA)), true));
+  sections.push(renderCompareSection("Manque aux deux", result.both_missing,
+    (it) => compareItemHTML(it.item, `${compareStatusTag(it.entryA.status, it.entryA)} ${compareStatusTag(it.entryB.status, it.entryB)}`), true));
 
-  // Priorités / opportunités d’échange
-  if (result.aPrioBHas.length || result.bPrioAHas.length || result.bothPrio.length || result.aPrioOnly.length || result.bPrioOnly.length) {
-    const prioParts = [];
-    if (result.aPrioBHas.length) {
-      prioParts.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Priorités de ${safeA} que ${safeB} possède</h4><div class="compare-list">${result.aPrioBHas.map(it => compareItemHTML(it.item, comparePriorityTag(it.aEntry))).join("")}</div></div>`);
-    }
-    if (result.bPrioAHas.length) {
-      prioParts.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Priorités de ${safeB} que ${safeA} possède</h4><div class="compare-list">${result.bPrioAHas.map(it => compareItemHTML(it.item, comparePriorityTag(it.bEntry))).join("")}</div></div>`);
-    }
-    if (result.bothPrio.length) {
-      prioParts.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Priorités communes</h4><div class="compare-list">${result.bothPrio.map(it => compareItemHTML(it.item, `${comparePriorityTag(it.aEntry)} ${comparePriorityTag(it.bEntry)}`)).join("")}</div></div>`);
-    }
-    if (result.aPrioOnly.length) {
-      prioParts.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Autres priorités de ${safeA}</h4><div class="compare-list">${result.aPrioOnly.map(it => compareItemHTML(it.item, comparePriorityTag(it.aEntry))).join("")}</div></div>`);
-    }
-    if (result.bPrioOnly.length) {
-      prioParts.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Autres priorités de ${safeB}</h4><div class="compare-list">${result.bPrioOnly.map(it => compareItemHTML(it.item, comparePriorityTag(it.bEntry))).join("")}</div></div>`);
-    }
-    sections.push(`<details class="compare-section" open><summary class="compare-section__title"><span>Priorités</span><span class="compare-section__count">${result.aPrioBHas.length + result.bPrioAHas.length + result.bothPrio.length + result.aPrioOnly.length + result.bPrioOnly.length}</span></summary><div class="compare-section__body">${prioParts.join("")}</div></details>`);
-  }
-
-  // Non renseigné chez l’un des deux
-  const unknownCount = result.aOwnUnknown.length + result.bOwnUnknown.length + result.other.length;
-  if (unknownCount) {
-    const unknownItems = [];
-    if (result.aOwnUnknown.length) {
-      unknownItems.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Possédé par ${safeA} · non renseigné chez ${safeB}</h4><div class="compare-list">${result.aOwnUnknown.map(it => compareItemHTML(it.item)).join("")}</div></div>`);
-    }
-    if (result.bOwnUnknown.length) {
-      unknownItems.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Possédé par ${safeB} · non renseigné chez ${safeA}</h4><div class="compare-list">${result.bOwnUnknown.map(it => compareItemHTML(it.item)).join("")}</div></div>`);
-    }
-    if (result.other.length) {
-      unknownItems.push(`<div class="compare-subsection"><h4 class="compare-subsection__title">Autres différences</h4><div class="compare-list">${result.other.map(it => compareItemHTML(it.item, `<span class="ci-status">${statusLabel(it.aStatus)}</span> <span class="ci-status">${statusLabel(it.bStatus)}</span>`)).join("")}</div></div>`);
-    }
-    sections.push(`<details class="compare-section"><summary class="compare-section__title"><span>Non renseigné / autres</span><span class="compare-section__count">${unknownCount}</span></summary><div class="compare-section__body">${unknownItems.join("")}</div></details>`);
+  if (result.unknown.length) {
+    sections.push(renderCompareSection("Données insuffisantes", result.unknown,
+      (it) => compareItemHTML(it.item, `${compareStatusTag(it.entryA.status, it.entryA)} ${compareStatusTag(it.entryB.status, it.entryB)}`)));
   }
 
   els.compareLists.innerHTML = sections.join("");
@@ -312,7 +267,7 @@ function renderCompare() {
   const bName = state.compareTarget.username || "Ami";
   if (els.comparePlayerAName) els.comparePlayerAName.textContent = aName;
   if (els.comparePlayerBName) els.comparePlayerBName.textContent = bName;
-  const result = compareCollections(state.collection, state.compareTarget.collection, aName, bName);
+  const result = compareCollections(state.collection, state.compareTarget.collection, getCompareCatalogItems());
   renderCompareSummary(result, aName, bName);
   renderCompareLists(result, aName, bName);
 }
