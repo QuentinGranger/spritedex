@@ -613,36 +613,15 @@
       </section>
 
       <nav class="tabs" aria-label="Navigation principale">
-        <button class="tab active" data-view="compare">Compare</button>
+        <button class="tab active" data-view="squad">Compare</button>
         <button class="tab" data-view="swipe">Swipe</button>
         <button class="tab" data-view="checklist">Checklist</button>
         <button class="tab" data-view="missing">Manquants</button>
         <button class="tab" data-view="stats">Stats</button>
-        <button class="tab" data-view="squad">Escouade</button>
         <button class="tab" data-view="history">Historique</button>
       </nav>
 
       <main>
-        <section class="view active" id="view-compare">
-          <div class="compare-hero">
-            <h2>Comparaison</h2>
-            <p>Compare ta collection avec un ami pour voir ce que vous pouvez vous échanger.</p>
-          </div>
-          <form class="compare-form" id="compareForm">
-            <label for="compareTokenInput">Lien ou token de partage de ton ami</label>
-            <input type="text" id="compareTokenInput" placeholder="https://...?share=... ou token" autocomplete="off" />
-            <button type="submit" class="login-btn" id="compareLoadBtn">Comparer</button>
-            <button type="button" class="ghost-button" id="compareShareBtn">Partager ma collection</button>
-          </form>
-          <div class="compare-status" id="compareStatus"></div>
-          <div class="compare-results" id="compareResults" style="display:none">
-            <div class="compare-summary" id="compareSummary"></div>
-            <div class="compare-table" id="compareTable"></div>
-            <div class="compare-recommendations" id="compareRecommendations"></div>
-            <div class="compare-actions" id="compareActions"></div>
-          </div>
-        </section>
-
         <section class="view" id="view-swipe">
           <div class="deck-toolbar">
             <select id="deckFilter" aria-label="Filtre du deck swipe">
@@ -808,14 +787,42 @@
           </div>
         </section>
 
-        <section class="view" id="view-squad">
+        <section class="view active" id="view-squad">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Comparateur</p>
-              <h2>Escouade</h2>
+              <h2>Comparaison</h2>
             </div>
           </div>
 
+          <div class="compare-mode-toggle" role="tablist" aria-label="Mode de comparaison">
+            <button type="button" class="compare-mode-btn active" data-compare-mode="friend">Ami · 1v1</button>
+            <button type="button" class="compare-mode-btn" data-compare-mode="squad">Escouade</button>
+          </div>
+
+          <!-- Friend (1v1) comparison mode -->
+          <div class="compare-mode-panel" id="compareModeFriend">
+            <div class="compare-hero">
+              <h2>Comparaison avec un ami</h2>
+              <p>Compare ta collection avec un ami pour voir ce que vous pouvez vous échanger.</p>
+            </div>
+            <form class="compare-form" id="compareForm">
+              <label for="compareTokenInput">Lien ou token de partage de ton ami</label>
+              <input type="text" id="compareTokenInput" placeholder="https://...?share=... ou token" autocomplete="off" />
+              <button type="submit" class="login-btn" id="compareLoadBtn">Comparer</button>
+              <button type="button" class="ghost-button" id="compareShareBtn">Partager ma collection</button>
+            </form>
+            <div class="compare-status" id="compareStatus"></div>
+            <div class="compare-results" id="compareResults" style="display:none">
+              <div class="compare-summary" id="compareSummary"></div>
+              <div class="compare-table" id="compareTable"></div>
+              <div class="compare-recommendations" id="compareRecommendations"></div>
+              <div class="compare-actions" id="compareActions"></div>
+            </div>
+          </div>
+
+          <!-- Squad (group) comparison mode -->
+          <div class="compare-mode-panel" id="compareModeSquad" style="display:none">
           <!-- Squad lobby: create or join -->
           <div class="squad-lobby" id="squadLobby">
             <div class="squad-lobby__card">
@@ -894,6 +901,7 @@
             <div class="squad-table-wrap" id="squadTableWrap">
               <p class="squad-empty">Chargement...</p>
             </div>
+          </div>
           </div>
         </section>
 

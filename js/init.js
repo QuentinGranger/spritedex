@@ -12,6 +12,9 @@ function handleJoinLink() {
     toast("Tu es déjà dans une escouade. Quitte-la d'abord.");
     return;
   }
+  const squadTab = document.querySelector('.tab[data-view="squad"]');
+  if (squadTab) squadTab.click();
+  if (typeof setCompareMode === "function") setCompareMode("squad");
   els.squadCodeInput.value = code;
   joinSquad();
 }

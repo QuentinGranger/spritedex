@@ -12,17 +12,21 @@ function setupEvents() {
     tab.addEventListener("click", () => {
       els.tabs.forEach((button) => button.classList.toggle("active", button === tab));
       els.views.forEach((view) => view.classList.toggle("active", view.id === `view-${tab.dataset.view}`));
-      if (tab.dataset.view === "squad" && state.activeSquad) {
-        loadSquad(state.activeSquad);
-        startSquadPolling();
+      if (tab.dataset.view === "squad") {
+        if (state.compareMode === "squad") {
+          if (state.activeSquad) {
+            loadSquad(state.activeSquad);
+            startSquadPolling();
+          }
+        } else {
+          renderCompare();
+          stopSquadPolling();
+        }
       } else {
         stopSquadPolling();
       }
       if (tab.dataset.view === "history") {
         renderHistory();
-      }
-      if (tab.dataset.view === "compare") {
-        renderCompare();
       }
     });
   });

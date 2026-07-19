@@ -800,3 +800,34 @@
   font-size: 0.9rem;
   text-align: center;
 }
+
+/* ── Merged compare/squad mode toggle ── */
+.compare-mode-toggle {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.compare-mode-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.compare-mode-btn.active,
+.compare-mode-btn:hover {
+  background: var(--accent);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.compare-mode-panel {
+  animation: fadeIn 0.2s ease;
+}

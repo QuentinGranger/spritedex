@@ -24,7 +24,8 @@ const state = {
   squadCreatedBy: null,
   squadJoinOpen: true,
   compareTarget: null,
-  compareToken: null
+  compareToken: null,
+  compareMode: "friend"
 };
 
 const $ = (selector) => document.querySelector(selector);

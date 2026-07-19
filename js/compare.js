@@ -989,9 +989,30 @@ async function loadCompareShare(token) {
   }
 }
 
+function setCompareMode(mode) {
+  state.compareMode = mode === "squad" ? "squad" : "friend";
+  const friendPanel = document.getElementById("compareModeFriend");
+  const squadPanel = document.getElementById("compareModeSquad");
+  document.querySelectorAll(".compare-mode-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.compareMode === state.compareMode);
+  });
+  if (friendPanel) friendPanel.style.display = state.compareMode === "friend" ? "" : "none";
+  if (squadPanel) squadPanel.style.display = state.compareMode === "squad" ? "" : "none";
+  if (state.compareMode === "friend") {
+    renderCompare();
+    if (typeof stopSquadPolling === "function") stopSquadPolling();
+  } else {
+    if (state.activeSquad && typeof loadSquad === "function") {
+      loadSquad(state.activeSquad);
+      startSquadPolling();
+    }
+  }
+}
+
 function switchToCompareView() {
-  const tab = document.querySelector('.tab[data-view="compare"]');
+  const tab = document.querySelector('.tab[data-view="squad"]');
   if (tab) tab.click();
+  setCompareMode("friend");
 }
 
 async function handleCompareParams() {
@@ -1085,10 +1106,7 @@ function updateCompareFromMessage(msg) {
     }
   }
 
-  const currentTab = document.querySelector('.tab[data-view="compare"]');
-  if (currentTab && currentTab.classList.contains("active")) {
-    renderCompare();
-  } else if (isTarget || isSelf) {
+  if (isTarget || isSelf) {
     renderCompare();
   }
 }
@@ -1104,6 +1122,9 @@ function showCompareUpdateToast(msg, change) {
 }
 
 function setupCompareEvents() {
+  document.querySelectorAll(".compare-mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => setCompareMode(btn.dataset.compareMode));
+  });
   if (els.compareForm) {
     els.compareForm.addEventListener("submit", (e) => {
       e.preventDefault();
