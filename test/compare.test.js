@@ -37,7 +37,7 @@ async function registerUser(username) {
   const res = await fetch(`${API}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password: "password123", username })
+    body: JSON.stringify({ email, password: "password123", username, ageConfirmed: true, cguAccepted: true })
   });
   const data = await res.json();
   assert.ok(res.ok, `register failed: ${JSON.stringify(data)}`);

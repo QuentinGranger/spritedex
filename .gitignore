@@ -14,3 +14,4 @@ www/
 # Each platform has its own .gitignore for build artifacts / public web copies.
 .tmp-sprites-api.json
 debug.html
+.vapid-keys.json
