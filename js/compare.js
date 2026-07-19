@@ -183,14 +183,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
     const sb = compareClassify(b);
 
     const record = {
-      variantId: item.variantId,
-      spriteId: item.spriteId,
-      variantType: item.variantType,
-      variantName: item.variantName,
-      spriteName: item.spriteName,
-      img: item.img,
-      rarity: item.rarity,
-      color: item.color,
+      ...item,
       userA: { status: a.status, priority: a.priority, note: a.note },
       userB: { status: b.status, priority: b.priority, note: b.note }
     };
