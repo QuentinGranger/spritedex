@@ -3,6 +3,7 @@ const express = require("express");
 const { Pool } = require("pg");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const cookieParser = require("cookie-parser");
 const { WebSocketServer } = require("ws");
@@ -28,6 +29,15 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 const PORT = process.env.PORT || 3000;
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 // ── WebSocket : client registry ──
 // Maps userId (string) -> Set of ws clients
@@ -3976,8 +3986,53 @@ async function purgeDeletedAccounts() {
 }
 
 // ── SPA routes for shareable compare links ──
-app.get("/compare/share/:token", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+app.get("/compare/share/:token", async (req, res) => {
+  try {
+    const token = req.params.token;
+    const file = path.join(__dirname, "index.html");
+    if (!/^[a-f0-9]{64}$/i.test(token)) return res.sendFile(file);
+
+    const shareRes = await pool.query(
+      `SELECT t.*, u.username as owner_username
+       FROM compare_share_tokens t
+       JOIN users u ON u.id = t.owner_user_id
+       WHERE t.token = $1 AND t.revoked_at IS NULL
+         AND (t.expires_at IS NULL OR t.expires_at > NOW())
+         AND u.deleted_at IS NULL`,
+      [token]
+    );
+    if (!shareRes.rows.length) return res.sendFile(file);
+
+    const share = shareRes.rows[0];
+    const ownerCollection = share.collection_visible ? await loadCollectionForShare(share.owner_user_id, share) : {};
+    const catalogue = await getServerCompareCatalogItemsCached();
+    const result = compareCollectionsServer(
+      { id: share.owner_user_id, displayName: share.owner_username, collection: ownerCollection },
+      { id: "visitor", displayName: "Visiteur", collection: {} },
+      catalogue
+    );
+
+    const title = `Compare ta collection avec ${escapeHtml(share.owner_username)} — SpriteDex`;
+    const description = `Complétion collective : ${result.summary.collectiveCompletionRate}%. Découvre qui manque de quelles variantes sur SpriteDex.`;
+    const host = `${req.protocol}://${req.get("host")}`;
+    const image = `${host}/icon-512.png`;
+    const url = `${host}/compare/share/${token}`;
+
+    const html = fs.readFileSync(file, "utf8");
+    const meta = `<meta property="og:title" content="${title.replace(/"/g, "&quot;")}">
+<meta property="og:description" content="${description.replace(/"/g, "&quot;")}">
+<meta property="og:image" content="${image}">
+<meta property="og:url" content="${url}">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title.replace(/"/g, "&quot;")}">
+<meta name="twitter:description" content="${description.replace(/"/g, "&quot;")}">
+<meta name="twitter:image" content="${image}">`;
+    res.send(html.replace("</head>", `${meta}\n</head>`));
+  } catch (err) {
+    console.error("[/compare/share/:token] social card error:", err);
+    res.sendFile(path.join(__dirname, "index.html"));
+  }
 });
 
 ensureSquadTables()
