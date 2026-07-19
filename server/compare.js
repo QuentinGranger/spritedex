@@ -67,7 +67,7 @@ function isVariantReleasedAndActiveServer(item) {
 
 async function getServerCompareCatalogItems() {
   const [spritesRes, variantsRes] = await Promise.all([
-    pool.query(`SELECT id, name, rarity, color, season_id, event_id, acquisition, availability, data_status, release_status, available, added_date FROM sprites`),
+    pool.query(`SELECT id, name, rarity, color, season_id, event_id, acquisition, availability, data_status, is_released, available, added_date FROM sprites`),
     pool.query(`SELECT id, sprite_id, variant_type, name, rarity, release_status, data_status, acquisition, availability, first_observed_at, image_path, suggested_image_path FROM sprite_variants`)
   ]);
   const spriteMap = Object.fromEntries(spritesRes.rows.map(s => [s.id, s]));
@@ -89,12 +89,13 @@ async function getServerCompareCatalogItems() {
       color: sprite.color,
       seasonId: sprite.season_id,
       eventId: sprite.event_id,
-      releaseStatus: v.release_status || sprite.release_status || "",
+      releaseStatus: v.release_status || "",
       dataStatus: v.data_status || sprite.data_status || "",
       availabilityStatus: variantAvailability.status,
       acquisitionMethod: variantAcquisition.type,
       releaseDate: variantAvailability.startDate || v.first_observed_at || sprite.added_date,
-      available: v.available !== undefined ? v.available : sprite.available
+      available: v.available !== undefined ? v.available : sprite.available,
+      isReleased: sprite.is_released
     });
   }
   return items;

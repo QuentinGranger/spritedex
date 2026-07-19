@@ -90,8 +90,8 @@ async function cleanup(user) {
 async function run() {
   console.log(`\nRunning SPRITNEX compare tests against ${BASE}\n`);
 
-  const quentin = await registerUser("QuentinCmp");
-  const lucy = await registerUser("LucyCmp");
+  const quentin = await registerUser(`QuentinCmp${rnd()}`);
+  const lucy = await registerUser(`LucyCmp${rnd()}`);
 
   // Public by default is needed for cross-user comparison
   await setPrivacy(quentin, "public");
@@ -130,6 +130,9 @@ async function run() {
   await test("only Quentin owned => onlyUserA", async () => {
     await prepare();
     await setEntry(quentin.token, quentin.id, vOnlyA, "owned");
+    // Lucy must have an explicit "missing" status: an absent entry defaults to
+    // "new" (unknown) and would land in the unknown group, mirroring js/compare.js.
+    await setEntry(lucy.token, lucy.id, vOnlyA, "missing");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
     const record = data.records.find(r => r.variantId === vOnlyA);
     assert.ok(record, "variant not in result");
@@ -141,6 +144,8 @@ async function run() {
   await test("only Lucy owned => onlyUserB", async () => {
     await prepare();
     await setEntry(lucy.token, lucy.id, vOnlyB, "owned");
+    // Quentin must be explicitly "missing" (absent defaults to unknown).
+    await setEntry(quentin.token, quentin.id, vOnlyB, "missing");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
     const record = data.records.find(r => r.variantId === vOnlyB);
     assert.ok(record, "variant not in result");
@@ -183,20 +188,25 @@ async function run() {
     await setEntry(quentin.token, quentin.id, vBoth, "owned");
     await setEntry(lucy.token, lucy.id, vBoth, "owned");
     await setEntry(quentin.token, quentin.id, vOnlyA, "owned");
+    await setEntry(lucy.token, lucy.id, vOnlyA, "missing");
     await setEntry(lucy.token, lucy.id, vOnlyB, "owned");
+    await setEntry(quentin.token, quentin.id, vOnlyB, "missing");
     await setEntry(quentin.token, quentin.id, vBothMissing, "missing");
     await setEntry(lucy.token, lucy.id, vBothMissing, "missing");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
     const s = data.summary;
+    // Group counts are independent of catalogue size (all other variants are
+    // unknown for both users). Rates depend on the total active variant count.
+    const total = s.catalogueVariantCount;
     assert.strictEqual(s.aOwnedCount, 2, "A owned count");
     assert.strictEqual(s.bOwnedCount, 2, "B owned count");
     assert.strictEqual(s.bothOwnedCount, 1, "both owned count");
     assert.strictEqual(s.onlyUserACount, 1, "only A count");
     assert.strictEqual(s.onlyUserBCount, 1, "only B count");
     assert.strictEqual(s.bothMissingCount, 1, "both missing count");
-    assert.strictEqual(s.aPossessionRate, 50, "A possession rate");
-    assert.strictEqual(s.bPossessionRate, 50, "B possession rate");
-    assert.strictEqual(s.collectiveCompletionRate, 75, "collective completion rate");
+    assert.strictEqual(s.aPossessionRate, +(2 / total * 100).toFixed(2), "A possession rate");
+    assert.strictEqual(s.bPossessionRate, +(2 / total * 100).toFixed(2), "B possession rate");
+    assert.strictEqual(s.collectiveCompletionRate, +(3 / total * 100).toFixed(2), "collective completion rate");
     assert.strictEqual(s.complementarityRate, +(2 / 3 * 100).toFixed(2), "complementarity rate");
   });
 

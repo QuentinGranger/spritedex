@@ -215,17 +215,16 @@ app.get("/api/shared/:token", async (req, res) => {
   }
   try {
     const userResult = await pool.query(
-      "SELECT id, username, avatar_url, created_at FROM users WHERE share_token = $1 AND deleted_at IS NULL",
+      "SELECT id, username, avatar_url, privacy, created_at FROM users WHERE share_token = $1 AND deleted_at IS NULL",
       [token]
     );
     if (!userResult.rows.length) {
       return res.status(404).json({ error: "Lien de partage invalide ou révoqué" });
     }
     const user = userResult.rows[0];
-    const access = await checkPrivacyAccess(req, user.id, user.privacy || "squad_only");
-    if (access === "blocked") {
-      return res.status(403).json({ error: "Profil non accessible" });
-    }
+    // An opaque share token is itself a deliberate, revocable capability grant:
+    // possessing it authorizes read-only access regardless of the account's
+    // `privacy` discovery setting. Notes are never exposed (not selected below).
     const entries = await pool.query(
       "SELECT variant_id, sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
       [user.id]
