@@ -199,8 +199,9 @@ async function loadServerCompareCollection(userId) {
 }
 
 const SQUAD_MATRIX_STATUS = {
-  UNANIMOUS: "unanimous",
-  MULTIPLE_OWNERS: "multiple_owners",
+  OWNED_BY_EVERYONE: "owned_by_everyone",
+  HIGHLY_SHARED: "highly_shared",
+  SHARED: "shared",
   SINGLE_OWNER: "single_owner",
   MISSING_ALL: "missing_all",
   UNKNOWN: "unknown"
@@ -254,15 +255,18 @@ async function buildSquadCollectionMatrix(members, catalogue) {
 
     const ownerCount = owners.length;
     const memberCount = memberList.length;
+    const half = Math.ceil(memberCount / 2);
     let status;
     if (ownerCount === 0) {
       status = unknownMembers.length === 0 ? SQUAD_MATRIX_STATUS.MISSING_ALL : SQUAD_MATRIX_STATUS.UNKNOWN;
     } else if (ownerCount === memberCount) {
-      status = SQUAD_MATRIX_STATUS.UNANIMOUS;
-    } else if (ownerCount === 1) {
-      status = SQUAD_MATRIX_STATUS.SINGLE_OWNER;
+      status = SQUAD_MATRIX_STATUS.OWNED_BY_EVERYONE;
+    } else if (ownerCount >= half) {
+      status = SQUAD_MATRIX_STATUS.HIGHLY_SHARED;
+    } else if (ownerCount >= 2) {
+      status = SQUAD_MATRIX_STATUS.SHARED;
     } else {
-      status = SQUAD_MATRIX_STATUS.MULTIPLE_OWNERS;
+      status = SQUAD_MATRIX_STATUS.SINGLE_OWNER;
     }
 
     matrix.push({
@@ -401,6 +405,69 @@ function getSquadMissingVariants(matrix, squadName) {
   return {
     totalMissing: missing.length,
     variants: missing,
+    bySprite,
+    byRarity,
+    byEvent,
+    byAvailability,
+    byVariantType
+  };
+}
+
+function classifySquadShared(row) {
+  if (row.ownerCount < 2) return null;
+  const half = Math.ceil(row.memberCount / 2);
+  if (row.ownerCount === row.memberCount) return "owned_by_everyone";
+  if (row.ownerCount >= half) return "highly_shared";
+  return "shared";
+}
+
+function getSquadSharedVariants(matrix) {
+  const shared = [];
+  for (const row of matrix) {
+    const classification = classifySquadShared(row);
+    if (!classification) continue;
+
+    const display = `${row.spriteName} ${row.variantName} est possédé par ${row.ownerCount} membre${row.ownerCount > 1 ? 's' : ''} sur ${row.memberCount}.`;
+    shared.push({
+      variantId: row.variantId,
+      spriteId: row.spriteId,
+      spriteName: row.spriteName,
+      variantName: row.variantName,
+      variantType: row.variantType,
+      img: row.img,
+      rarity: row.rarity,
+      eventId: row.eventId,
+      availabilityStatus: row.availabilityStatus,
+      owners: row.owners,
+      ownerCount: row.ownerCount,
+      memberCount: row.memberCount,
+      classification,
+      display
+    });
+  }
+
+  const groupBy = (key, labelFn) => {
+    const groups = {};
+    for (const v of shared) {
+      const k = (v[key] === null || v[key] === undefined || v[key] === "") ? "_none" : v[key];
+      if (!groups[k]) groups[k] = { key: k, label: labelFn(v, k), count: 0, variants: [] };
+      groups[k].variants.push(v);
+      groups[k].count++;
+    }
+    return Object.values(groups).sort((a, b) => b.count - a.count || String(a.label).localeCompare(String(b.label)));
+  };
+
+  const bySprite = groupBy("spriteId", (v) => v.spriteName || v.spriteId);
+  const byRarity = groupBy("rarity", (v, k) => k === "_none" ? "Rareté inconnue" : `Rareté ${k}`);
+  const byEvent = groupBy("eventId", (v, k) => k === "_none" ? "Hors événement" : `Événement ${k}`);
+  const byAvailability = groupBy("availabilityStatus", (v, k) => k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`);
+  const byVariantType = groupBy("variantType", (v, k) => k);
+  const byClassification = groupBy("classification", (v, k) => k);
+
+  return {
+    totalShared: shared.length,
+    variants: shared,
+    byClassification,
     bySprite,
     byRarity,
     byEvent,
@@ -1134,4 +1201,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadMissingVariants, getSquadRecommendations, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadMissingVariants, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
