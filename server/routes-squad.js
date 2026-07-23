@@ -1368,6 +1368,135 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
   return { teamSize: size, mode: rankingMode, filterValue, teams: ranked };
 }
 
+async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}) {
+  const [catalogueAll, membersRes] = await Promise.all([
+    compare.getServerCompareCatalogItemsCached(),
+    pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
+  ]);
+  const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const total = catalogue.length;
+  const memberIds = membersRes.rows.map(r => r.user_id);
+
+  const usersRes = await pool.query(
+    `SELECT id, username, display_name, avatar_url
+     FROM users
+     WHERE id = ANY($1) AND deleted_at IS NULL AND (suspended_until IS NULL OR suspended_until < NOW())`,
+    [memberIds]
+  );
+
+  const members = [];
+  for (const u of usersRes.rows) {
+    if (await canViewCollection(reqUser, u.id)) {
+      const collection = await compare.loadServerCompareCollection(u.id);
+      const owned = new Set();
+      for (const [variantId, entry] of Object.entries(collection)) {
+        if (compare.compareServerIsOwned(entry.status)) owned.add(variantId);
+      }
+      members.push({
+        id: u.id,
+        username: u.username,
+        displayName: u.display_name || u.username,
+        avatarUrl: u.avatar_url || "",
+        owned
+      });
+    }
+  }
+
+  let targetVariantIds = [];
+  let minRequiredCount = 0;
+  let targetLabel = "";
+
+  if (targetType === "coverage") {
+    const targetPercent = Math.max(1, Math.min(100, parseFloat(options.target) || 80));
+    minRequiredCount = Math.ceil(total * targetPercent / 100);
+    targetVariantIds = catalogue.map(i => i.id);
+    targetLabel = `${targetPercent}% du catalogue`;
+  } else if (targetType === "event") {
+    if (!options.eventId) throw new Error("eventId requis");
+    targetVariantIds = catalogue.filter(i => i.eventId === options.eventId).map(i => i.id);
+    targetLabel = `toutes les variantes de l'événement ${options.eventId}`;
+  } else if (targetType === "rarity") {
+    const rarity = options.rarity || "mythic";
+    targetVariantIds = catalogue.filter(i => i.rarity === rarity).map(i => i.id);
+    targetLabel = `toutes les variantes ${rarity}`;
+  } else if (targetType === "custom") {
+    const ids = String(options.variantIds || "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
+    const validSet = new Set(catalogue.map(i => i.id));
+    targetVariantIds = ids.filter(id => validSet.has(id));
+    targetLabel = "liste personnalisée";
+  } else {
+    throw new Error("targetType invalide");
+  }
+
+  const targetSet = new Set(targetVariantIds);
+  const targetTotal = targetSet.size;
+  if (targetTotal === 0) return null;
+  if (minRequiredCount === 0) minRequiredCount = targetTotal;
+
+  const maxK = Math.min(members.length, 8);
+  for (let k = 1; k <= maxK; k++) {
+    const current = [];
+    function generate(start) {
+      if (current.length === k) {
+        evaluate([...current]);
+        return;
+      }
+      for (let i = start; i < members.length; i++) {
+        current.push(i);
+        generate(i + 1);
+        current.pop();
+      }
+    }
+
+    let found = null;
+    function evaluate(indices) {
+      if (found) return;
+      const union = new Set();
+      for (const idx of indices) {
+        for (const vid of members[idx].owned) union.add(vid);
+      }
+
+      let coveredTargetCount = 0;
+      for (const vid of union) {
+        if (targetSet.has(vid)) coveredTargetCount++;
+      }
+
+      if (coveredTargetCount >= minRequiredCount) {
+        let totalOwned = 0;
+        for (const idx of indices) totalOwned += members[idx].owned.size;
+
+        found = {
+          minPlayers: k,
+          targetType,
+          targetLabel,
+          targetTotal,
+          minRequiredCount,
+          coveredTargetCount,
+          targetCoverageRate: targetTotal ? Math.round((coveredTargetCount / targetTotal) * 10000) / 100 : 0,
+          globalCoveredVariantCount: union.size,
+          globalTotalVariantCount: total,
+          globalCoverageRate: total ? Math.round((union.size / total) * 10000) / 100 : 0,
+          duplicatePossessionCount: totalOwned - union.size,
+          members: indices.map(idx => ({
+            userId: members[idx].id,
+            username: members[idx].username,
+            displayName: members[idx].displayName,
+            avatarUrl: members[idx].avatarUrl
+          }))
+        };
+      }
+    }
+
+    generate(0);
+    if (found) return found;
+  }
+
+  return null;
+}
+
 async function getSquadCompletionScope(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
@@ -1535,6 +1664,49 @@ app.get("/api/squads/:code/best-teams", async (req, res) => {
     });
   } catch (err) {
     console.error("[/api/squads/:code/best-teams]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : minimum team for a target ──
+app.get("/api/squads/:code/minimum-team", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const targetType = req.query.targetType || "coverage";
+    const validTypes = ["coverage", "event", "rarity", "custom"];
+    if (!validTypes.includes(targetType)) {
+      return res.status(400).json({ error: "targetType invalide" });
+    }
+
+    const options = {};
+    if (targetType === "coverage") options.target = req.query.target || 80;
+    if (targetType === "event") options.eventId = req.query.eventId;
+    if (targetType === "rarity") options.rarity = req.query.rarity || "mythic";
+    if (targetType === "custom") options.variantIds = req.query.variantIds;
+
+    if ((targetType === "event" && !options.eventId) || (targetType === "custom" && !options.variantIds)) {
+      return res.status(400).json({ error: "Paramètre manquant pour ce targetType" });
+    }
+
+    const result = await getSquadMinimumTeam(squad, reqUser, targetType, options);
+    if (!result) {
+      return res.status(404).json({ error: "Aucune équipe ne peut couvrir l'objectif jusqu'à 8 joueurs" });
+    }
+
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      ...result,
+      display: `${result.minPlayers} joueur${result.minPlayers > 1 ? 's' : ''} suffisent pour couvrir ${result.targetLabel} (${result.coveredTargetCount}/${result.targetTotal}).`
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/minimum-team]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
