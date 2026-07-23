@@ -792,6 +792,30 @@ function getSquadMemberRecommendations(matrix, assignments, memberId) {
   return result;
 }
 
+function getSquadCollectivePlan(matrix, assignments) {
+  const byMember = {};
+  let totalCollectiveGain = 0;
+
+  for (const assignment of assignments) {
+    if (!assignment.responsible) continue;
+    totalCollectiveGain += assignment.collectiveCoverageGain || 0;
+    const key = String(assignment.responsible.userId);
+    if (!byMember[key]) {
+      byMember[key] = {
+        userId: assignment.responsible.userId,
+        username: assignment.responsible.username,
+        recommendations: []
+      };
+    }
+    const row = matrix.find(r => r.variantId === assignment.variantId);
+    const memberEntry = row ? (row.members || []).find(m => String(m.userId) === key) : null;
+    byMember[key].recommendations.push(formatSquadMemberRecommendation(assignment, memberEntry));
+  }
+
+  const members = Object.values(byMember).sort((a, b) => String(a.username).localeCompare(String(b.username)));
+  return { members, totalCollectiveGain };
+}
+
 function getSquadHelpScores(matrix, targetUserId, options = {}) {
   const priorityWeight = options.priorityWeight || 3;
   const normalWeight = options.normalWeight || 1;
@@ -1782,4 +1806,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadCollectivePlan, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
