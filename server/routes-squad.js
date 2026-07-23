@@ -1137,6 +1137,66 @@ async function getSquadComplementaryPairs(squad, reqUser) {
   return pairs.slice(0, 15);
 }
 
+async function getSquadBestPair(squad, reqUser) {
+  const [catalogueAll, membersRes] = await Promise.all([
+    compare.getServerCompareCatalogItemsCached(),
+    pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
+  ]);
+  const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const memberIds = membersRes.rows.map(r => r.user_id);
+
+  const usersRes = await pool.query(
+    `SELECT id, username, display_name, avatar_url
+     FROM users
+     WHERE id = ANY($1) AND deleted_at IS NULL AND (suspended_until IS NULL OR suspended_until < NOW())`,
+    [memberIds]
+  );
+
+  const allowed = [];
+  for (const u of usersRes.rows) {
+    if (await canViewCollection(reqUser, u.id)) allowed.push(u);
+  }
+  if (allowed.length < 2) return null;
+
+  const collections = await Promise.all(allowed.map(u => compare.loadServerCompareCollection(u.id)));
+  const pairs = [];
+  for (let i = 0; i < allowed.length; i++) {
+    for (let j = i + 1; j < allowed.length; j++) {
+      const a = allowed[i];
+      const b = allowed[j];
+      const userA = { id: a.id, displayName: a.display_name || a.username, collection: collections[i] };
+      const userB = { id: b.id, displayName: b.display_name || b.username, collection: collections[j] };
+
+      let result = compare.getCachedCompareResult(a.id, b.id);
+      if (!result) {
+        result = compare.compareCollectionsServer(userA, userB, catalogue);
+        compare.setCachedCompareResult(a.id, b.id, result);
+      }
+
+      const s = result.summary;
+      pairs.push({
+        userAId: a.id,
+        userAName: a.display_name || a.username,
+        userAAvatar: a.avatar_url || "",
+        userBId: b.id,
+        userBName: b.display_name || b.username,
+        userBAvatar: b.avatar_url || "",
+        display: `${a.display_name || a.username} × ${b.display_name || b.username}`,
+        coveredVariantCount: s.collectiveOwnedCount,
+        totalVariantCount: s.catalogueVariantCount,
+        coverageRate: s.collectiveCompletionRate,
+        uniqueVariantCount: s.onlyUserACount + s.onlyUserBCount,
+        duplicateVariantCount: s.bothOwnedCount,
+        complementarityRate: s.complementarityRate,
+        complementarityScore: s.complementarityScore
+      });
+    }
+  }
+
+  pairs.sort((a, b) => b.coverageRate - a.coverageRate || b.complementarityScore - a.complementarityScore);
+  return pairs[0] || null;
+}
+
 async function getSquadCompletionScope(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
@@ -1235,6 +1295,33 @@ app.get("/api/squads/:code/most-complementary-pair", async (req, res) => {
     res.json({ squadCode: squad.code, squadName: squad.name, mostComplementaryPair });
   } catch (err) {
     console.error("[/api/squads/:code/most-complementary-pair]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : best pair by coverage ──
+app.get("/api/squads/:code/best-pair", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const bestPair = await getSquadBestPair(squad, reqUser);
+    if (!bestPair) {
+      return res.status(404).json({ error: "Pas assez de membres visibles pour former une paire" });
+    }
+
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      bestPair,
+      display: `${bestPair.userAName} et ${bestPair.userBName} forment la meilleure paire avec ${bestPair.coverageRate}% du catalogue couvert.`
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/best-pair]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
