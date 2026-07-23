@@ -237,6 +237,7 @@ app.get("/api/squads/:code", async (req, res) => {
     );
 
     const allActiveMemberIds = membersResult.rows.map(m => m.id);
+    const matrixMembers = membersResult.rows.map(m => ({ userId: m.id, username: m.username || String(m.id), visible: true }));
     const members = [];
     const visibleMemberIds = [];
     for (const member of membersResult.rows) {
@@ -288,12 +289,19 @@ app.get("/api/squads/:code", async (req, res) => {
     const statsFresh = statsRes.rows.length &&
       (Date.now() - new Date(statsRes.rows[0].computed_at).getTime()) < 60000;
 
-    const [completionSummary, recommendationsList] = await Promise.all([
+    const [completionSummary, recommendationsList, matrix] = await Promise.all([
       statsFresh
         ? Promise.resolve({ collectiveCompletionRate: parseFloat(statsRes.rows[0].collective_completion_rate), totalVariants: 0, ownedCount: 0 })
         : compare.getSquadCollectiveCompletionSummary(allActiveMemberIds),
-      compare.getSquadRecommendations(visibleMemberIds)
+      compare.getSquadRecommendations(visibleMemberIds),
+      compare.buildSquadCollectionMatrix(matrixMembers)
     ]);
+
+    const uniqueOwners = compare.getSquadUniqueOwners(matrix);
+    const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
+    for (const m of members) {
+      m.uniqueVariantCount = uniqueCountByUser.get(String(m.userId)) || 0;
+    }
     const recommendations = recommendationsList.map(r => ({
       variantId: r.variantId,
       spriteId: r.spriteId,
@@ -314,6 +322,7 @@ app.get("/api/squads/:code", async (req, res) => {
       joinOpen: squad.join_open !== false,
       members,
       collectiveCompletionRate,
+      uniqueVariantTotal: uniqueOwners.totalUnique,
       recommendations
     });
   } catch (err) {
