@@ -1197,8 +1197,11 @@ async function getSquadBestPair(squad, reqUser) {
   return pairs[0] || null;
 }
 
-async function getSquadBestTeams(squad, reqUser, teamSize) {
+async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filterValue = null) {
   const size = Math.max(2, Math.min(4, parseInt(teamSize, 10) || 3));
+  const validModes = new Set(["global", "mythic", "event", "duplicates", "complementarity"]);
+  const rankingMode = validModes.has(mode) ? mode : "global";
+
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
     pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
@@ -1231,9 +1234,18 @@ async function getSquadBestTeams(squad, reqUser, teamSize) {
     }
   }
 
-  if (members.length < size) return { teamSize: size, teams: [] };
+  if (members.length < size) return { teamSize: size, mode: rankingMode, teams: [] };
 
   const total = catalogue.length;
+  const rarityTotals = {};
+  const eventTotals = {};
+  for (const item of catalogue) {
+    const r = item.rarity || "_none";
+    const e = item.eventId || "_none";
+    rarityTotals[r] = (rarityTotals[r] || 0) + 1;
+    eventTotals[e] = (eventTotals[e] || 0) + 1;
+  }
+
   const teams = [];
 
   function evaluate(indices) {
@@ -1271,6 +1283,15 @@ async function getSquadBestTeams(squad, reqUser, teamSize) {
       coverageByEvent[eventId] = (coverageByEvent[eventId] || 0) + 1;
     }
 
+    const mythicTotal = rarityTotals["mythic"] || 0;
+    const mythicCovered = coverageByRarity["mythic"] || 0;
+    const mythicCoverageRate = mythicTotal ? Math.round((mythicCovered / mythicTotal) * 10000) / 100 : 0;
+
+    const eventId = filterValue || "_none";
+    const eventTotal = eventTotals[eventId] || 0;
+    const eventCovered = coverageByEvent[eventId] || 0;
+    const eventCoverageRate = eventTotal ? Math.round((eventCovered / eventTotal) * 10000) / 100 : 0;
+
     let pairCompSum = 0;
     let pairCount = 0;
     for (let i = 0; i < indices.length; i++) {
@@ -1297,6 +1318,8 @@ async function getSquadBestTeams(squad, reqUser, teamSize) {
       coveredVariantCount,
       totalVariantCount: total,
       coverageRate,
+      mythicCoverageRate,
+      eventCoverageRate,
       uniqueVariantCount,
       sharedVariantCount,
       duplicatePossessionCount,
@@ -1320,13 +1343,29 @@ async function getSquadBestTeams(squad, reqUser, teamSize) {
 
   generate(0, []);
 
-  teams.sort((a, b) =>
-    b.coverageRate - a.coverageRate ||
-    b.averageComplementarityRate - a.averageComplementarityRate ||
-    b.uniqueVariantCount - a.uniqueVariantCount
-  );
+  switch (rankingMode) {
+    case "mythic":
+      teams.sort((a, b) => b.mythicCoverageRate - a.mythicCoverageRate || b.coverageRate - a.coverageRate);
+      break;
+    case "event":
+      teams.sort((a, b) => b.eventCoverageRate - a.eventCoverageRate || b.coverageRate - a.coverageRate);
+      break;
+    case "duplicates":
+      teams.sort((a, b) => a.duplicatePossessionCount - b.duplicatePossessionCount || b.coverageRate - a.coverageRate);
+      break;
+    case "complementarity":
+      teams.sort((a, b) => b.averageComplementarityRate - a.averageComplementarityRate || b.coverageRate - a.coverageRate);
+      break;
+    default:
+      teams.sort((a, b) =>
+        b.coverageRate - a.coverageRate ||
+        b.averageComplementarityRate - a.averageComplementarityRate ||
+        b.uniqueVariantCount - a.uniqueVariantCount
+      );
+  }
 
-  return { teamSize: size, teams: teams.slice(0, 5) };
+  const ranked = teams.slice(0, 10).map((t, i) => ({ rank: i + 1, ...t }));
+  return { teamSize: size, mode: rankingMode, filterValue, teams: ranked };
 }
 
 async function getSquadCompletionScope(squad, reqUser) {
@@ -1473,13 +1512,21 @@ app.get("/api/squads/:code/best-teams", async (req, res) => {
       return res.status(400).json({ error: "La taille d'équipe doit être entre 2 et 4" });
     }
 
-    const result = await getSquadBestTeams(squad, reqUser, teamSize);
+    const mode = req.query.mode || "global";
+    const filterValue = req.query.eventId || req.query.rarity || null;
+    if (mode === "event" && !filterValue) {
+      return res.status(400).json({ error: "eventId requis pour le mode event" });
+    }
+
+    const result = await getSquadBestTeams(squad, reqUser, teamSize, mode, filterValue);
     const bestTeam = result.teams[0] || null;
 
     res.json({
       squadCode: squad.code,
       squadName: squad.name,
       teamSize,
+      mode: result.mode,
+      filterValue: result.filterValue,
       bestTeam,
       teams: result.teams,
       display: bestTeam
