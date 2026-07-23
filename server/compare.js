@@ -753,18 +753,58 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
 
 function formatSquadMemberRecommendation(assignment, memberEntry = null) {
   const codes = [];
+  const explanation = [];
 
-  if (assignment.ownerCount === 0) codes.push("missing_from_entire_squad");
-  else codes.push("partially_missing");
+  if (assignment.ownerCount === 0) {
+    codes.push("missing_from_entire_squad");
+    explanation.push("Personne dans la squad ne possède cette variante.");
+  } else {
+    codes.push("partially_missing");
+    explanation.push(`Cette variante est déjà possédée par ${assignment.ownerCount} membre${assignment.ownerCount > 1 ? 's' : ''} de la squad.`);
+  }
 
-  if (assignment.availability === "available_now") codes.push("available_now");
-  else if (assignment.availability === "upcoming") codes.push("upcoming");
+  if (assignment.availability === "available_now") {
+    codes.push("available_now");
+    explanation.push("Elle est disponible actuellement.");
+  } else if (assignment.availability === "upcoming") {
+    codes.push("upcoming");
+    explanation.push("Elle sera disponible prochainement.");
+  }
 
-  if (assignment.deadlineScore > 0) codes.push("event_ending_soon");
-  if (assignment.isObjectiveTarget) codes.push("active_goal_target");
-  if (assignment.priorityCount > 0) codes.push("priority_by_members");
-  if (memberEntry && compareServerIsPriority(memberEntry)) codes.push("member_marked_priority");
-  if (assignment.rarityScore >= 7) codes.push("rare_variant");
+  if (assignment.deadlineScore > 0 && assignment.endDate) {
+    codes.push("event_ending_soon");
+    const days = Math.max(1, Math.ceil((new Date(assignment.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+    explanation.push(`Son événement se termine dans ${days} jour${days > 1 ? 's' : ''}.`);
+  }
+
+  if (assignment.isObjectiveTarget) {
+    codes.push("active_goal_target");
+    explanation.push("Elle est ciblée par un objectif actif.");
+  }
+
+  if (assignment.priorityCount > 0) {
+    codes.push("priority_by_members");
+    explanation.push(`${assignment.priorityCount} membre${assignment.priorityCount > 1 ? 's' : ''} ${assignment.priorityCount > 1 ? 'l\'ont' : 'l\'a'} marquée prioritaire.`);
+  }
+
+  if (memberEntry && compareServerIsPriority(memberEntry)) {
+    codes.push("member_marked_priority");
+    explanation.push("Cette variante est prioritaire pour toi.");
+  }
+
+  if (assignment.rarityScore >= 7) {
+    codes.push("rare_variant");
+    explanation.push("C'est une variante rare.");
+  }
+
+  if (assignment.collectiveCoverageDelta > 0) {
+    explanation.push(`Cette acquisition ferait progresser la squad de ${assignment.collectiveCoverageDelta} point${assignment.collectiveCoverageDelta === 1 ? '' : 's'}.`);
+  }
+
+  if (assignment.assignmentReason && assignment.assignmentReason !== "Aucun membre éligible") {
+    const cleanReason = assignment.assignmentReason.replace(/^a marqué cette variante en priorité,?\s*/, "");
+    if (cleanReason) explanation.push(`Critère d'assignation : ${cleanReason}.`);
+  }
 
   return {
     variantId: assignment.variantId,
@@ -777,7 +817,8 @@ function formatSquadMemberRecommendation(assignment, memberEntry = null) {
     collectiveGain: assignment.collectiveCoverageGain,
     projectedCompletionGain: assignment.collectiveCoverageDelta,
     impactType: assignment.impactType,
-    reasonCodes: codes
+    reasonCodes: codes,
+    explanation
   };
 }
 
