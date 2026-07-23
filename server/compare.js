@@ -198,18 +198,102 @@ async function loadServerCompareCollection(userId) {
   return collection;
 }
 
+const SQUAD_MATRIX_STATUS = {
+  UNANIMOUS: "unanimous",
+  MULTIPLE_OWNERS: "multiple_owners",
+  SINGLE_OWNER: "single_owner",
+  MISSING_ALL: "missing_all",
+  UNKNOWN: "unknown"
+};
+
+async function buildSquadCollectionMatrix(members, catalogue) {
+  if (!members || members.length === 0) return [];
+  const memberList = members.map(m => {
+    if (m && typeof m === "object" && m.userId !== undefined) {
+      return { userId: m.userId, username: m.username || String(m.userId), visible: m.visible !== false };
+    }
+    return { userId: m, username: String(m), visible: true };
+  });
+
+  const activeCatalogue = (catalogue || await getServerCompareCatalogItemsCached()).filter(isVariantReleasedAndActiveServer);
+  const collections = await Promise.all(memberList.map(async (m) => {
+    if (!m.visible) return {};
+    return loadServerCompareCollection(m.userId);
+  }));
+
+  const matrix = [];
+  for (const item of activeCatalogue) {
+    const owners = [];
+    const missingMembers = [];
+    const unknownMembers = [];
+    const memberDetails = [];
+
+    for (let i = 0; i < memberList.length; i++) {
+      const m = memberList[i];
+      const entry = m.visible
+        ? (collections[i][item.id] || compareServerDefaultEntry())
+        : { status: "unknown", priority: "none", note: "" };
+      const classification = m.visible ? compareServerClassify(entry) : "unknown";
+
+      memberDetails.push({
+        userId: m.userId,
+        username: m.username,
+        status: entry.status || "new",
+        priority: entry.priority || "none",
+        classification
+      });
+
+      if (classification === "owned") {
+        owners.push(m.username);
+      } else if (classification === "missing") {
+        missingMembers.push(m.username);
+      } else {
+        unknownMembers.push(m.username);
+      }
+    }
+
+    const ownerCount = owners.length;
+    const memberCount = memberList.length;
+    let status;
+    if (ownerCount === 0) {
+      status = unknownMembers.length === 0 ? SQUAD_MATRIX_STATUS.MISSING_ALL : SQUAD_MATRIX_STATUS.UNKNOWN;
+    } else if (ownerCount === memberCount) {
+      status = SQUAD_MATRIX_STATUS.UNANIMOUS;
+    } else if (ownerCount === 1) {
+      status = SQUAD_MATRIX_STATUS.SINGLE_OWNER;
+    } else {
+      status = SQUAD_MATRIX_STATUS.MULTIPLE_OWNERS;
+    }
+
+    matrix.push({
+      variantId: item.id,
+      spriteId: item.spriteId,
+      spriteName: item.spriteName,
+      variantName: item.variantName,
+      img: item.img,
+      owners,
+      missingMembers,
+      unknownMembers,
+      ownerCount,
+      missingCount: missingMembers.length,
+      unknownCount: unknownMembers.length,
+      memberCount,
+      status,
+      members: memberDetails
+    });
+  }
+
+  return matrix;
+}
+
 async function getSquadCollectiveCompletionSummary(memberIds, catalogue) {
   if (!memberIds || memberIds.length === 0) {
     return { collectiveCompletionRate: 0, totalVariants: 0, ownedCount: 0 };
   }
-  const activeCatalogue = (catalogue || await getServerCompareCatalogItemsCached()).filter(isVariantReleasedAndActiveServer);
-  const total = activeCatalogue.length;
-  const collections = await Promise.all(memberIds.map(id => loadServerCompareCollection(id)));
-  let ownedCount = 0;
-  for (const item of activeCatalogue) {
-    const owned = collections.some(c => compareServerClassify(c[item.id] || compareServerDefaultEntry()) === "owned");
-    if (owned) ownedCount++;
-  }
+  const members = memberIds.map(id => ({ userId: id, username: String(id), visible: true }));
+  const matrix = await buildSquadCollectionMatrix(members, catalogue);
+  const total = matrix.length;
+  const ownedCount = matrix.filter(r => r.ownerCount > 0).length;
   return {
     collectiveCompletionRate: total ? Math.round((ownedCount / total) * 10000) / 100 : 0,
     totalVariants: total,
@@ -219,31 +303,26 @@ async function getSquadCollectiveCompletionSummary(memberIds, catalogue) {
 
 async function getSquadRecommendations(memberIds, catalogue) {
   if (!memberIds || memberIds.length < 2) return [];
-  const activeCatalogue = (catalogue || await getServerCompareCatalogItemsCached()).filter(isVariantReleasedAndActiveServer);
-  const collections = await Promise.all(memberIds.map(id => loadServerCompareCollection(id)));
+  const members = memberIds.map(id => ({ userId: id, username: String(id), visible: true }));
+  const matrix = await buildSquadCollectionMatrix(members, catalogue);
   const recs = [];
-  for (const item of activeCatalogue) {
-    let ownedBy = 0;
+  for (const row of matrix) {
     let wantedBy = 0;
-    for (const collection of collections) {
-      const entry = collection[item.id] || compareServerDefaultEntry();
-      const status = compareServerClassify(entry);
-      if (status === "owned") {
-        ownedBy++;
-      } else if (compareServerIsRecommend(status) || compareServerIsPriority(entry)) {
-        wantedBy++;
-      }
+    for (const m of row.members) {
+      if (m.classification === "owned") continue;
+      const entry = { status: m.status, priority: m.priority };
+      if (compareServerIsRecommend(m.status) || compareServerIsPriority(entry)) wantedBy++;
     }
-    if (ownedBy > 0 && wantedBy > 0) {
+    if (row.ownerCount > 0 && wantedBy > 0) {
       recs.push({
-        variantId: item.id,
-        spriteId: item.spriteId,
-        spriteName: item.spriteName,
-        variantName: item.variantName,
-        img: item.img,
-        ownedByCount: ownedBy,
+        variantId: row.variantId,
+        spriteId: row.spriteId,
+        spriteName: row.spriteName,
+        variantName: row.variantName,
+        img: row.img,
+        ownedByCount: row.ownerCount,
         wantedByCount: wantedBy,
-        score: wantedBy * 100 + ownedBy
+        score: wantedBy * 100 + row.ownerCount
       });
     }
   }
@@ -934,4 +1013,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadRecommendations, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadRecommendations, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
