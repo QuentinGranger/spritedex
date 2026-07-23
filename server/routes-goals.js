@@ -14,10 +14,15 @@ app.post("/api/collection-goals", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
-  const { title, description, squadId, variantId } = req.body || {};
+  const { title, description, squadId, variantId, variantIds } = req.body || {};
   const cleanTitle = String(title || "").trim();
   if (!cleanTitle) return res.status(400).json({ error: "Titre requis" });
   if (cleanTitle.length > 200) return res.status(400).json({ error: "Titre trop long (200 max)" });
+
+  const targetVariantIds = Array.isArray(variantIds)
+    ? variantIds.map(String).filter(Boolean)
+    : (variantId ? [String(variantId).trim()] : []);
+  const primaryVariantId = targetVariantIds[0] || (variantId ? String(variantId).trim() : null);
 
   try {
     let squadIdNum = null;
@@ -54,10 +59,17 @@ app.post("/api/collection-goals", async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO collection_goals (user_id, squad_id, title, description, variant_id, status)
-       VALUES ($1, $2, $3, $4, $5, 'active')
+      `INSERT INTO collection_goals (user_id, squad_id, title, description, variant_id, target_variant_ids, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'active')
        RETURNING id, created_at`,
-      [reqUser, squadIdNum, cleanTitle, description ? String(description).trim().slice(0, 1000) : null, variantId ? String(variantId).trim() : null]
+      [
+        reqUser,
+        squadIdNum,
+        cleanTitle,
+        description ? String(description).trim().slice(0, 1000) : null,
+        primaryVariantId,
+        targetVariantIds.length ? targetVariantIds : null
+      ]
     );
 
     if (squadIdNum) {
@@ -69,7 +81,8 @@ app.post("/api/collection-goals", async (req, res) => {
       id: result.rows[0].id,
       title: cleanTitle,
       description: description ? String(description).trim().slice(0, 1000) : null,
-      variant_id: variantId ? String(variantId).trim() : null,
+      variant_id: primaryVariantId,
+      target_variant_ids: targetVariantIds.length ? targetVariantIds : null,
       squad_id: squadIdNum,
       user_id: reqUser,
       status: "active",
@@ -122,6 +135,125 @@ app.get("/api/collection-goals/:goalId/feasibility", async (req, res) => {
   }
 });
 
+// ── Collection goals : convert a recommendation into a real goal ──
+app.post("/api/collection-goals/from-recommendation", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+
+  const { recommendation, confirm, overrides } = req.body || {};
+  if (!recommendation || typeof recommendation !== "object") {
+    return res.status(400).json({ error: "Recommendation requise" });
+  }
+
+  const rawSquadId = overrides?.squadId || recommendation?.squadId || req.body?.squadId;
+  let squadIdNum = null;
+  if (rawSquadId) {
+    if (!/^\d+$/.test(String(rawSquadId))) {
+      return res.status(400).json({ error: "squadId invalide" });
+    }
+    squadIdNum = Number(rawSquadId);
+    const membership = await pool.query(
+      "SELECT 1 FROM squad_members WHERE squad_id = $1 AND user_id = $2 AND status = 'active'",
+      [squadIdNum, reqUser]
+    );
+    if (!membership.rows.length) {
+      return res.status(403).json({ error: "Vous n'êtes pas membre actif de cette escouade" });
+    }
+  }
+
+  const target = recommendation.target || {};
+  const variantIds = overrides?.variantIds || target.variantIds || (target.variant_id ? [target.variant_id] : []);
+  const cleanVariantIds = Array.isArray(variantIds) ? variantIds.map(String).filter(Boolean) : [];
+
+  const title = String(overrides?.title || recommendation.title || "Nouvel objectif").trim();
+  if (!title) return res.status(400).json({ error: "Titre requis" });
+  if (title.length > 200) return res.status(400).json({ error: "Titre trop long (200 max)" });
+
+  const deadline = overrides?.deadline || recommendation.deadline || null;
+  const participants = recommendation.participants || [];
+  const assignedMemberIds = overrides?.assignedMemberIds || participants.map(p => p.userId).filter(Boolean);
+  const assignedMemberNames = participants.map(p => p.username || p.userId).filter(Boolean);
+  const expectedGain = recommendation.expectedCollectiveGain ?? "—";
+  const reason = recommendation.reason || "Objectif issu d'une recommandation";
+  const currentProgress = recommendation.currentProgress ?? 0;
+
+  const descriptionParts = [String(reason)];
+  if (expectedGain !== "—") descriptionParts.push(`Gain collectif attendu : ${expectedGain} variante(s).`);
+  if (currentProgress !== null) descriptionParts.push(`Progression initiale : ${currentProgress}%.`);
+  if (deadline) descriptionParts.push(`Date limite : ${new Date(deadline).toLocaleString("fr-FR")}.`);
+  if (assignedMemberNames.length) descriptionParts.push(`Membres assignés : ${assignedMemberNames.join(", ")}.`);
+  const description = descriptionParts.join(" ").slice(0, 1000);
+
+  const primaryVariantId = cleanVariantIds[0] || null;
+
+  const prefill = {
+    title,
+    description,
+    variantId: primaryVariantId,
+    variantIds: cleanVariantIds,
+    assignedMemberIds,
+    deadline,
+    squadId: squadIdNum,
+    initialProgress: currentProgress,
+    notifications: true
+  };
+
+  if (!confirm) {
+    return res.json({ prefill });
+  }
+
+  try {
+    if (squadIdNum) {
+      const [squadResult, activeGoalsResult] = await Promise.all([
+        pool.query("SELECT max_active_goals_per_member FROM squads WHERE id = $1", [squadIdNum]),
+        pool.query(
+          "SELECT COUNT(*) AS cnt FROM collection_goals WHERE user_id = $1 AND squad_id = $2 AND status = 'active'",
+          [reqUser, squadIdNum]
+        )
+      ]);
+      const maxActiveGoals = squadResult.rows[0]?.max_active_goals_per_member ?? 3;
+      const activeGoalCount = parseInt(activeGoalsResult.rows[0].cnt, 10);
+      if (activeGoalCount >= maxActiveGoals) {
+        return res.status(429).json({ error: "Limite d'objectifs actifs atteinte", maxActiveGoals, activeGoalCount });
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO collection_goals (user_id, squad_id, title, description, variant_id, target_variant_ids, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'active')
+       RETURNING id, created_at`,
+      [reqUser, squadIdNum, title, description || null, primaryVariantId, cleanVariantIds.length ? cleanVariantIds : null]
+    );
+
+    if (squadIdNum) {
+      logSquadGoalCreated(squadIdNum, reqUser, title).catch(err => console.error("[goals] squad activity log failed", err));
+      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.rows[0].id, title, variantIds: cleanVariantIds } });
+    }
+
+    broadcastGoalUpdate({
+      id: result.rows[0].id,
+      title,
+      description,
+      variant_id: primaryVariantId,
+      target_variant_ids: cleanVariantIds.length ? cleanVariantIds : null,
+      squad_id: squadIdNum,
+      user_id: reqUser,
+      status: "active",
+      created_at: result.rows[0].created_at
+    }, "created").catch(err => console.error("[goals] broadcast failed", err));
+
+    res.status(201).json({
+      ok: true,
+      goalId: result.rows[0].id,
+      createdAt: result.rows[0].created_at,
+      prefill
+    });
+  } catch (err) {
+    console.error("[/api/collection-goals/from-recommendation]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Collection goals : list for the requesting user ──
 app.get("/api/collection-goals", async (req, res) => {
   const reqUser = await getRequestingUser(req);
@@ -129,7 +261,7 @@ app.get("/api/collection-goals", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT g.id, g.user_id, g.squad_id, g.title, g.description, g.variant_id, g.status, g.created_at, g.updated_at,
+      `SELECT g.id, g.user_id, g.squad_id, g.title, g.description, g.variant_id, g.target_variant_ids, g.status, g.created_at, g.updated_at,
               s.code AS squad_code, s.name AS squad_name
        FROM collection_goals g
        LEFT JOIN squads s ON s.id = g.squad_id
@@ -148,6 +280,7 @@ app.get("/api/collection-goals", async (req, res) => {
         title: g.title,
         description: g.description,
         variantId: g.variant_id,
+        variantIds: Array.isArray(g.target_variant_ids) ? g.target_variant_ids : (g.variant_id ? [g.variant_id] : []),
         status: g.status,
         createdAt: g.created_at,
         updatedAt: g.updated_at
@@ -160,13 +293,14 @@ app.get("/api/collection-goals", async (req, res) => {
 });
 
 async function getGoalFeasibility(goal, reqUser) {
-  if (!goal.variant_id) {
+  const variantId = goal.variant_id || (Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length ? goal.target_variant_ids[0] : null);
+  if (!variantId) {
     return { error: "Cet objectif n'est pas lié à une variante" };
   }
 
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const item = activeCatalogue.find(i => i.id === goal.variant_id);
+  const item = activeCatalogue.find(i => i.id === variantId);
   if (!item) {
     return { error: "Variante non trouvée dans le catalogue actif" };
   }
@@ -189,7 +323,7 @@ async function getGoalFeasibility(goal, reqUser) {
 
   const ownedRes = await pool.query(
     "SELECT COUNT(DISTINCT user_id)::int AS cnt FROM sprite_entries WHERE variant_id = $1 AND status = 'owned' AND user_id = ANY($2)",
-    [goal.variant_id, memberIds]
+    [variantId, memberIds]
   );
   const ownedCount = ownedRes.rows[0].cnt || 0;
   const missingCount = activeMemberCount - ownedCount;
@@ -245,7 +379,7 @@ async function getGoalFeasibility(goal, reqUser) {
   const totalActive = totalActiveRes.rows[0].cnt || 1;
   const ownersRes = await pool.query(
     "SELECT COUNT(DISTINCT user_id)::int AS cnt FROM sprite_entries WHERE variant_id = $1 AND status = 'owned'",
-    [goal.variant_id]
+    [variantId]
   );
   const communityOwners = ownersRes.rows[0].cnt || 0;
   const communityRate = communityOwners / totalActive;
@@ -265,7 +399,7 @@ async function getGoalFeasibility(goal, reqUser) {
   if (missingCount <= 0) {
     return {
       completed: true,
-      variantId: goal.variant_id,
+      variantId,
       missingCount: 0,
       activeMemberCount,
       remainingDays,
@@ -285,7 +419,7 @@ async function getGoalFeasibility(goal, reqUser) {
 
   return {
     completed: false,
-    variantId: goal.variant_id,
+    variantId,
     missingCount,
     activeMemberCount,
     remainingDays,
@@ -304,10 +438,13 @@ async function checkAffectedGoals(userId, variantId) {
   if (!userId || !variantId) return;
   try {
     const goals = await pool.query(
-      `SELECT id, user_id, squad_id, variant_id, title, created_at
+      `SELECT id, user_id, squad_id, variant_id, target_variant_ids, title, created_at
        FROM collection_goals
        WHERE status = 'active'
-         AND variant_id = $1
+         AND (
+           variant_id = $1
+           OR (target_variant_ids IS NOT NULL AND $1 = ANY(target_variant_ids))
+         )
          AND (
            user_id = $2
            OR squad_id IN (SELECT squad_id FROM squad_members WHERE user_id = $2 AND status = 'active')
@@ -316,26 +453,29 @@ async function checkAffectedGoals(userId, variantId) {
     );
 
     for (const goal of goals.rows) {
+      const targetIds = Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length
+        ? goal.target_variant_ids
+        : (goal.variant_id ? [goal.variant_id] : []);
+      if (!targetIds.length) continue;
+
       let completed = false;
       if (goal.squad_id) {
-        const owned = await pool.query(
-          `SELECT 1
-           FROM sprite_entries se
-           JOIN squad_members sm ON sm.user_id = se.user_id
-           WHERE sm.squad_id = $1
-             AND sm.status = 'active'
-             AND se.variant_id = $2
-             AND se.status = 'owned'
-           LIMIT 1`,
-          [goal.squad_id, variantId]
+        const membersRes = await pool.query(
+          "SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'",
+          [goal.squad_id]
         );
-        completed = owned.rows.length > 0;
+        const memberIds = membersRes.rows.map(r => r.user_id);
+        const ownedRes = await pool.query(
+          "SELECT DISTINCT variant_id FROM sprite_entries WHERE user_id = ANY($1) AND variant_id = ANY($2) AND status = 'owned'",
+          [memberIds, targetIds]
+        );
+        completed = ownedRes.rows.length === targetIds.length;
       } else {
-        const owned = await pool.query(
-          "SELECT 1 FROM sprite_entries WHERE user_id = $1 AND variant_id = $2 AND status = 'owned' LIMIT 1",
-          [goal.user_id, variantId]
+        const ownedRes = await pool.query(
+          "SELECT DISTINCT variant_id FROM sprite_entries WHERE user_id = $1 AND variant_id = ANY($2) AND status = 'owned'",
+          [goal.user_id, targetIds]
         );
-        completed = owned.rows.length > 0;
+        completed = ownedRes.rows.length === targetIds.length;
       }
 
       if (completed) {
@@ -346,21 +486,21 @@ async function checkAffectedGoals(userId, variantId) {
         goal.status = "completed";
         goal.updated_at = new Date().toISOString();
         broadcastGoalUpdate(goal, "completed").catch(err => console.error("[goals] broadcast failed", err));
-        analytics.logProductAnalyticsEvent(pool, { userId, squadId: goal.squad_id || null, event: "shared_goal_completed", details: { goalId: goal.id, variantId } });
+        analytics.logProductAnalyticsEvent(pool, { userId, squadId: goal.squad_id || null, event: "shared_goal_completed", details: { goalId: goal.id, variantIds: targetIds } });
         if (goal.squad_id) {
-          logSquadGoalCompleted(goal.squad_id, userId, goal.title || null, variantId).catch(err => console.error("[goals] squad goal completed log failed", err));
+          logSquadGoalCompleted(goal.squad_id, userId, goal.title || null, targetIds.join(", ")).catch(err => console.error("[goals] squad goal completed log failed", err));
         }
-          const userResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
-          const actorName = userResult.rows[0]?.username || "Quelqu'un";
-          pushService.createNotification(pool, {
-            recipientId: goal.user_id,
-            actorId: userId,
-            type: "goal_completed",
-            entityId: goal.variant_id,
-            context: { goalId: goal.id },
-            message: `Objectif${goal.title ? ` : ${goal.title}` : ""} atteint par ${actorName}.`,
-            url: "/collection"
-          }).catch(err => console.error("[goals] notification failed", err));
+        const userResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
+        const actorName = userResult.rows[0]?.username || "Quelqu'un";
+        pushService.createNotification(pool, {
+          recipientId: goal.user_id,
+          actorId: userId,
+          type: "goal_completed",
+          entityId: goal.variant_id,
+          context: { goalId: goal.id },
+          message: `Objectif${goal.title ? ` : ${goal.title}` : ""} atteint par ${actorName}.`,
+          url: "/collection"
+        }).catch(err => console.error("[goals] notification failed", err));
       }
     }
   } catch (err) {
