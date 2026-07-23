@@ -9,6 +9,8 @@ const engineDefinitions = {
   totalUnique: "Nombre de variantes possédées par exactement un membre de la squad.",
   totalShared: "Nombre de variantes possédées par au moins deux membres de la squad.",
   averageOwnershipRate: "Moyenne du taux de possession individuel des membres actifs de la squad.",
+  includedMemberCount: "Nombre de collections partagées avec la squad et utilisées dans les calculs.",
+  excludedPrivateCollections: "Nombre de collections privées exclues des calculs pour respecter la confidentialité.",
   mostComplementaryMember: "Membre apportant le plus grand nombre de variantes que les autres membres de la squad ne possèdent pas.",
   missingAll: "Variantes que personne dans la squad ne possède.",
   uniqueOwner: "Variantes possédées par un seul membre de la squad.",
@@ -102,6 +104,16 @@ function renderEngineOverview(r) {
         <div class="engine-card__value">${s.totalUnique || 0}</div>
         <div class="engine-card__label">${explain("Variantes uniques", "totalUnique")}</div>
       </div>
+      <div class="engine-card">
+        <div class="engine-card__value">${s.includedMemberCount != null ? s.includedMemberCount : "—"}/${s.totalActiveMembers || 0}</div>
+        <div class="engine-card__label">${explain("Collections utilisées", "includedMemberCount")}</div>
+      </div>
+      ${s.excludedPrivateCollections > 0 ? `
+        <div class="engine-card engine-card--warning">
+          <div class="engine-card__value">${s.excludedPrivateCollections}</div>
+          <div class="engine-card__label">${explain("Collections privées exclues", "excludedPrivateCollections")}</div>
+        </div>
+      ` : ""}
     </div>
     <div class="engine-section">
       <h4 class="engine-section__title">${explain("Membre le plus complémentaire", "mostComplementaryMember")}</h4>

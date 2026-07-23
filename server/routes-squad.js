@@ -1964,6 +1964,8 @@ async function getSquadRecommendedGoals(squad, reqUser) {
   const matrix = await compare.buildSquadCollectionMatrix(members, catalogueAll);
   if (matrix.length === 0) return { goals: [] };
 
+  const visibleMembers = members.filter(m => m.visible);
+
   const totalVariants = matrix.length;
   const coveredVariants = matrix.filter(r => r.ownerCount > 0).length;
   const completionRate = totalVariants ? Math.round((coveredVariants / totalVariants) * 10000) / 100 : 0;
@@ -1983,7 +1985,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
       type: "completion_milestone",
       title: `Atteindre ${nextMilestone} % de complétion collective cette semaine`,
       target: { kind: "completion_rate", value: nextMilestone, missingVariants: missingForMilestone },
-      participants: members.map(m => ({ userId: m.userId, username: m.username })),
+      participants: visibleMembers.map(m => ({ userId: m.userId, username: m.username })),
       deadline,
       currentProgress: completionRate,
       reason: `La squad est actuellement à ${completionRate} % de complétion. ${missingForMilestone} variante${missingForMilestone > 1 ? 's' : ''} supplémentaire${missingForMilestone > 1 ? 's' : ''} atteindraient l'objectif.`,
@@ -2001,7 +2003,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
   for (const event of eventsResult.rows) {
     const eventVariants = matrix.filter(r => r.eventId === event.id);
     if (eventVariants.length === 0) continue;
-    const missing = eventVariants.filter(r => r.ownerCount === 0);
+    const missing = eventVariants.filter(r => r.ownerCount === 0 && r.unknownCount === 0);
     if (missing.length === 0) continue;
     const covered = eventVariants.filter(r => r.ownerCount > 0).length;
     const urgency = compare.classifyEventUrgency(event.end_date);
@@ -2011,7 +2013,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
       type: "event_variants",
       title: `Obtenir ${missing.length} variante${missing.length > 1 ? 's' : ''} encore manquante${missing.length > 1 ? 's' : ''} avant la fin de ${event.name}`,
       target: { kind: "event_variants", eventId: event.id, eventName: event.name, variantIds: missing.map(r => r.variantId), names: displayNames + suffix },
-      participants: members.map(m => ({ userId: m.userId, username: m.username })),
+      participants: visibleMembers.map(m => ({ userId: m.userId, username: m.username })),
       deadline: event.end_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       currentProgress: eventVariants.length ? Math.round((covered / eventVariants.length) * 10000) / 100 : 0,
       urgency,
@@ -2026,7 +2028,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
   // 3. Rarity goals for currently available variants missing from the squad
   const byRarity = new Map();
   for (const row of matrix) {
-    if (row.ownerCount === 0 && row.availabilityStatus === "available_now") {
+    if (row.ownerCount === 0 && row.unknownCount === 0 && compare.classifyRecommendationAvailability(row.availabilityStatus) === "available_now") {
       const rarity = row.rarity || "_none";
       if (!byRarity.has(rarity)) byRarity.set(rarity, []);
       byRarity.get(rarity).push(row);
@@ -2044,7 +2046,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
       type: "rarity_completion",
       title: `Compléter toutes les variantes ${rarity} actuellement disponibles`,
       target: { kind: "rarity", rarity, variantIds: rows.map(r => r.variantId), names: names + suffix },
-      participants: members.map(m => ({ userId: m.userId, username: m.username })),
+      participants: visibleMembers.map(m => ({ userId: m.userId, username: m.username })),
       deadline,
       currentProgress: totalRarity ? Math.round((coveredRarity / totalRarity) * 10000) / 100 : 0,
       reason: `${rows.length} variante${rows.length > 1 ? 's' : ''} ${rarity} disponible${rows.length > 1 ? 's' : ''} ne sont pas encore dans la collection collective.`,
@@ -2130,10 +2132,11 @@ async function getSquadCompletionScope(squad, reqUser) {
     includedMembers.push(memberId);
   }
 
+  const includedIds = new Set(includedMembers.map(id => String(id)));
   const membersForMatrix = membersRes.rows.map(r => ({
     userId: r.user_id,
     username: String(r.user_id),
-    visible: true
+    visible: includedIds.has(String(r.user_id))
   }));
   const matrix = await compare.buildSquadCollectionMatrix(membersForMatrix, activeCatalogue);
   const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
@@ -2176,6 +2179,9 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
   ]);
   const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
   const matrix = await compare.buildSquadCollectionMatrix(members, activeCatalogue);
+
+  const includedMembers = members.filter(m => m.visible);
+  const excludedPrivateCollections = members.length - includedMembers.length;
 
   const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
   const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
@@ -2229,7 +2235,7 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
     ownerCount: r.ownerCount,
     missingCount: r.missingCount,
     unknownCount: r.unknownCount,
-    isMissingAll: r.ownerCount === 0,
+    isMissingAll: r.ownerCount === 0 && r.unknownCount === 0,
     isUniqueOwner: r.ownerCount === 1,
     isDuplicate: r.ownerCount >= 2,
     isPriority: priorityIds.has(r.variantId),
@@ -2240,6 +2246,10 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
   const warnings = [];
   if (members.length === 0) warnings.push("Aucun membre actif dans l'escouade.");
   if (activeCatalogue.length === 0) warnings.push("Aucune variante active dans le catalogue.");
+  if (excludedPrivateCollections > 0) {
+    const plural = excludedPrivateCollections > 1;
+    warnings.push(`Les calculs utilisent ${includedMembers.length} collection${includedMembers.length > 1 ? 's' : ''} sur ${members.length}. ${excludedPrivateCollections} collection${plural ? 's' : ''} privée${plural ? 's' : ''} ${plural ? 'sont' : 'est'} exclue${plural ? 's' : ''} pour confidentialité.`);
+  }
   if (unknownCount > activeCatalogue.length * 0.25) warnings.push("Plus de 25 % des collections sont inconnues, les statistiques peuvent être sous-estimées.");
 
   return {
@@ -2252,6 +2262,8 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
       squadName: squad.name,
       catalogueVariantCount: activeCatalogue.length,
       totalActiveMembers: members.length,
+      includedMemberCount: includedMembers.length,
+      excludedPrivateCollections,
       collectiveCompletionRate: completion.collectiveCompletionRate,
       coveredVariantCount: completion.coveredVariantCount,
       averageOwnershipRate: averageOwnership.averageOwnershipRate,
@@ -2678,7 +2690,7 @@ app.get("/api/squads/:squadId/completion/missing", async (req, res) => {
     const members = await buildSquadCompletionMembers(squad, reqUser);
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const result = compare.getSquadMissingVariants(matrix, squad.name);
-    const missingFromEntireSquad = matrix.filter(r => r.ownerCount === 0).map(r => ({
+    const missingFromEntireSquad = matrix.filter(r => r.ownerCount === 0 && r.unknownCount === 0).map(r => ({
       variantId: r.variantId,
       spriteId: r.spriteId,
       spriteName: r.spriteName,
