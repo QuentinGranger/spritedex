@@ -1079,8 +1079,12 @@ async function getSquadComplementaryPairs(squad, reqUser) {
         userBId: b.id,
         userBName: b.display_name || b.username,
         userBAvatar: b.avatar_url || "",
+        display: `${a.display_name || a.username} × ${b.display_name || b.username}`,
         complementarityRate: result.summary.complementarityRate,
-        complementarityScore: result.summary.complementarityScore
+        complementarityScore: result.summary.complementarityScore,
+        combinedCoverageRate: result.summary.collectiveCompletionRate,
+        combinedCoverageCount: result.summary.collectiveOwnedCount,
+        totalVariantCount: result.summary.catalogueVariantCount
       });
     }
   }
