@@ -1616,6 +1616,56 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
   }
 });
 
+// ── Squad : who can help a given member the most ──
+app.get("/api/squads/:code/helpful/:memberId", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const targetUserId = req.params.memberId;
+    const membersResult = await pool.query(
+      `SELECT sm.user_id, u.username
+       FROM squad_members sm
+       JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+      [squad.id]
+    );
+
+    const targetRow = membersResult.rows.find(r => String(r.user_id) === String(targetUserId));
+    if (!targetRow) return res.status(404).json({ error: "Membre introuvable dans l'escouade" });
+
+    const members = [];
+    for (const r of membersResult.rows) {
+      const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+      members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
+    }
+
+    const matrix = await compare.buildSquadCollectionMatrix(members);
+    const helpers = compare.getSquadHelpScores(matrix, targetUserId, {
+      priorityWeight: 3,
+      normalWeight: 1
+    });
+
+    const topHelper = helpers[0] || null;
+
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      targetUserId,
+      targetUsername: targetRow.username || String(targetRow.user_id),
+      topHelper,
+      helpers
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/helpful/:memberId]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Squad : join link redirect ──
 app.get("/squad/join/:code", (req, res) => {
   const code = req.params.code.trim().toUpperCase();

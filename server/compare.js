@@ -728,6 +728,58 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
   return assignments;
 }
 
+function getSquadHelpScores(matrix, targetUserId, options = {}) {
+  const priorityWeight = options.priorityWeight || 3;
+  const normalWeight = options.normalWeight || 1;
+  const helpers = {};
+
+  for (const row of matrix) {
+    const target = row.members.find(m => String(m.userId) === String(targetUserId));
+    if (!target || target.visible === false) continue;
+
+    const wantsHelp = compareServerIsMissing(target.status) || compareServerIsRecommend(target.status);
+    if (!wantsHelp) continue;
+    const isPriority = compareServerIsPriority(target);
+
+    for (const m of row.members) {
+      if (String(m.userId) === String(targetUserId)) continue;
+      if (m.visible === false) continue;
+      if (m.classification !== "owned") continue;
+
+      const key = String(m.userId);
+      if (!helpers[key]) {
+        helpers[key] = {
+          userId: m.userId,
+          username: m.username,
+          normalHelpCount: 0,
+          priorityHelpCount: 0,
+          helpScore: 0
+        };
+      }
+
+      const h = helpers[key];
+      if (isPriority) {
+        h.priorityHelpCount += 1;
+        h.helpScore += priorityWeight;
+      } else {
+        h.normalHelpCount += 1;
+        h.helpScore += normalWeight;
+      }
+    }
+  }
+
+  const result = Object.values(helpers);
+  result.sort((a, b) => b.helpScore - a.helpScore || b.priorityHelpCount - a.priorityHelpCount || String(a.username).localeCompare(String(b.username)));
+
+  for (const h of result) {
+    const total = h.normalHelpCount + h.priorityHelpCount;
+    const priorityPart = h.priorityHelpCount > 0 ? `, dont ${h.priorityHelpCount} prioritaire${h.priorityHelpCount > 1 ? 's' : ''}` : "";
+    h.display = `${h.username} peut aider avec ${total} variante${total > 1 ? 's' : ''} manquante${total > 1 ? 's' : ''}${priorityPart}.`;
+  }
+
+  return result;
+}
+
 function classifySquadMissing(row) {
   if (row.ownerCount !== 0) return null;
   if (row.missingCount === 0) return null;
@@ -1666,4 +1718,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadHelpScores, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
