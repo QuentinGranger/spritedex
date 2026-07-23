@@ -159,8 +159,10 @@ async function getServerCompareCatalogItems() {
       releaseStatus: v.release_status || "",
       dataStatus: v.data_status || sprite.data_status || "",
       availabilityStatus: variantAvailability.status,
+      availabilityEndDate: variantAvailability.endDate || null,
       acquisitionMethod: variantAcquisition.type,
       releaseDate: variantAvailability.startDate || v.first_observed_at || sprite.added_date,
+      endDate: variantAvailability.endDate || null,
       available: v.available !== undefined ? v.available : sprite.available,
       isReleased: sprite.is_released
     });
@@ -280,6 +282,7 @@ async function buildSquadCollectionMatrix(members, catalogue) {
       seasonId: item.seasonId,
       eventId: item.eventId,
       availabilityStatus: item.availabilityStatus,
+      endDate: item.endDate || null,
       owners,
       missingMembers,
       unknownMembers,
@@ -400,6 +403,92 @@ async function getSquadRecommendations(memberIds, catalogue) {
     immediateCount: immediate.length,
     watchListCount: watchList.length
   };
+}
+
+const RARITY_ACQUISITION_SCORES = {
+  mythic: 10,
+  legendary: 8,
+  epic: 6,
+  rare: 4,
+  uncommon: 2,
+  common: 1
+};
+
+function getAcquisitionRarityScore(rarity) {
+  const r = String(rarity || "").toLowerCase();
+  return RARITY_ACQUISITION_SCORES[r] || 0;
+}
+
+function getAcquisitionAvailabilityScore(availability) {
+  switch (availability) {
+    case "available_now": return 15;
+    case "upcoming": return 12;
+    case "unknown": return 6;
+    case "not_observed": return 4;
+    case "ended": return 0;
+    default: return 5;
+  }
+}
+
+function getDeadlineScore(endDate, availability) {
+  if (!endDate || (availability !== "available_now" && availability !== "upcoming")) return 0;
+  const end = new Date(endDate);
+  const now = new Date();
+  const diffMs = end - now;
+  if (diffMs <= 0) return 0;
+  const daysUntil = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (daysUntil > 7) return 0;
+  return Math.max(0, 10 - daysUntil);
+}
+
+function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
+  const results = [];
+  const now = new Date();
+
+  for (const row of matrix) {
+    if (row.ownerCount >= row.memberCount) continue;
+
+    let priorityCount = 0;
+    for (const m of row.members) {
+      if (compareServerIsPriority({ status: m.status, priority: m.priority })) priorityCount++;
+    }
+
+    const availability = classifyRecommendationAvailability(row.availabilityStatus);
+    const impactScore = Math.round((row.missingCount / row.memberCount) * 35);
+    const priorityScore = Math.round((priorityCount / row.memberCount) * 20);
+    const availabilityScore = getAcquisitionAvailabilityScore(availability);
+    const rarityScore = getAcquisitionRarityScore(row.rarity);
+    const deadlineScore = getDeadlineScore(row.endDate, availability);
+    const objectiveScore = activeGoalVariantIds.has(row.variantId) ? 10 : 0;
+
+    const score = Math.min(100, impactScore + priorityScore + availabilityScore + rarityScore + deadlineScore + objectiveScore);
+
+    results.push({
+      variantId: row.variantId,
+      spriteId: row.spriteId,
+      spriteName: row.spriteName,
+      variantName: row.variantName,
+      img: row.img,
+      rarity: row.rarity,
+      availability,
+      availabilityStatus: row.availabilityStatus,
+      endDate: row.endDate,
+      missingCount: row.missingCount,
+      missingMemberNames: row.missingMembers,
+      priorityCount,
+      isObjectiveTarget: objectiveScore > 0,
+      impactScore,
+      priorityScore,
+      availabilityScore,
+      rarityScore,
+      deadlineScore,
+      objectiveScore,
+      score
+    });
+  }
+
+  results.sort((a, b) => b.score - a.score || getAcquisitionRarityScore(b.rarity) - getAcquisitionRarityScore(a.rarity) || String(a.spriteName).localeCompare(String(b.spriteName)));
+  return results.slice(0, 50);
 }
 
 function classifySquadMissing(row) {
@@ -1340,4 +1429,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };

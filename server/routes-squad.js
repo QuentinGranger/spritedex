@@ -1501,6 +1501,52 @@ app.delete("/api/squads/:code", async (req, res) => {
 // (which uses /api/squads/:code for squad comparisons instead), so removing
 // it does not affect any existing feature.
 
+// ── Squad : acquisition priority (Level 2) ──
+app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const [membersResult, goalsResult] = await Promise.all([
+      pool.query(
+        `SELECT sm.user_id, u.username
+         FROM squad_members sm
+         JOIN users u ON u.id = sm.user_id
+         WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+        [squad.id]
+      ),
+      pool.query(
+        "SELECT variant_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
+        [squad.id]
+      )
+    ]);
+
+    const members = membersResult.rows.map(r => ({
+      userId: r.user_id,
+      username: r.username || String(r.user_id),
+      visible: true
+    }));
+
+    const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+    const matrix = await compare.buildSquadCollectionMatrix(members);
+    const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      activeGoalCount: activeGoalVariantIds.size,
+      priorities
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/acquisition-priority]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Squad : join link redirect ──
 app.get("/squad/join/:code", (req, res) => {
   const code = req.params.code.trim().toUpperCase();
