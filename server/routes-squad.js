@@ -1558,6 +1558,71 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, met
   return null;
 }
 
+async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariantIds) {
+  const catalogueAll = await compare.getServerCompareCatalogItemsCached();
+  const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const total = catalogue.length;
+  const validIds = new Set(catalogue.map(i => i.id));
+
+  const membersResult = await pool.query(
+    `SELECT sm.user_id, u.username
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+    [squad.id]
+  );
+
+  const targetRow = membersResult.rows.find(r => String(r.user_id) === String(memberId));
+  if (!targetRow) throw new Error("Membre introuvable dans l'escouade");
+  if (!(await canViewCollection(reqUser, memberId))) {
+    throw new Error("La collection de ce membre n'est pas visible");
+  }
+
+  const members = [];
+  for (const r of membersResult.rows) {
+    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    if (!visible) continue;
+    const collection = await compare.loadServerCompareCollection(r.user_id);
+    const owned = new Set();
+    for (const [variantId, entry] of Object.entries(collection)) {
+      if (compare.compareServerIsOwned(entry.status)) owned.add(variantId);
+    }
+    members.push({ userId: r.user_id, username: r.username, owned });
+  }
+
+  const rawIds = Array.isArray(acquireVariantIds)
+    ? acquireVariantIds
+    : String(acquireVariantIds || "").split(",").map(s => s.trim()).filter(Boolean);
+  const newVariantIds = rawIds.filter(id => validIds.has(id));
+  const extraSet = new Set(newVariantIds);
+
+  function computeCoverage(extraByUser = null) {
+    const union = new Set();
+    for (const m of members) {
+      const isTarget = String(m.userId) === String(memberId);
+      const set = extraByUser && isTarget ? new Set([...m.owned, ...extraByUser]) : m.owned;
+      for (const vid of set) union.add(vid);
+    }
+    const coveredCount = union.size;
+    const completionRate = total ? Math.round((coveredCount / total) * 10000) / 100 : 0;
+    return { coveredCount, completionRate };
+  }
+
+  const before = computeCoverage();
+  const after = computeCoverage(extraSet);
+
+  return {
+    memberId,
+    acquireVariantIds: newVariantIds,
+    before,
+    after,
+    difference: {
+      coveredCount: after.coveredCount - before.coveredCount,
+      completionRate: Math.round((after.completionRate - before.completionRate) * 100) / 100
+    }
+  };
+}
+
 async function getSquadCompletionScope(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
@@ -1773,6 +1838,44 @@ app.get("/api/squads/:code/minimum-team", async (req, res) => {
     });
   } catch (err) {
     console.error("[/api/squads/:code/minimum-team]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : simulate acquisition without modifying collections ──
+app.post("/api/squads/:code/simulate-acquisition", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const memberId = req.body.memberId;
+    let acquireVariantIds = req.body.acquireVariantIds;
+
+    if (!memberId) {
+      return res.status(400).json({ error: "memberId requis" });
+    }
+    if (!acquireVariantIds) {
+      return res.status(400).json({ error: "acquireVariantIds requis" });
+    }
+
+    const result = await simulateSquadAcquisition(squad, reqUser, memberId, acquireVariantIds);
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      ...result
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/simulate-acquisition]", err);
+    if (err.message === "Membre introuvable dans l'escouade") {
+      return res.status(404).json({ error: err.message });
+    }
+    if (err.message === "La collection de ce membre n'est pas visible") {
+      return res.status(403).json({ error: err.message });
+    }
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
