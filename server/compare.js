@@ -445,8 +445,13 @@ function getSquadMissingVariants(matrix, squadName) {
   const byAvailability = groupBy("availabilityStatus", (v, k) => k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`);
   const byVariantType = groupBy("variantType", (v, k) => k);
 
+  const confirmedMissingCount = missing.filter(v => v.classification === "confirmed_missing").length;
+  const possiblyMissingCount = missing.length - confirmedMissingCount;
+
   return {
     totalMissing: missing.length,
+    confirmedMissingCount,
+    possiblyMissingCount,
     variants: missing,
     bySprite,
     byRarity,
@@ -507,8 +512,15 @@ function getSquadSharedVariants(matrix) {
   const byVariantType = groupBy("variantType", (v, k) => k);
   const byClassification = groupBy("classification", (v, k) => k);
 
+  const sharedCount = shared.filter(v => v.classification === "shared").length;
+  const highlySharedCount = shared.filter(v => v.classification === "highly_shared").length;
+  const ownedByEveryoneCount = shared.filter(v => v.classification === "owned_by_everyone").length;
+
   return {
     totalShared: shared.length,
+    sharedCount,
+    highlySharedCount,
+    ownedByEveryoneCount,
     variants: shared,
     byClassification,
     bySprite,
@@ -533,6 +545,53 @@ function getSquadMostComplementaryMember(matrix, squadName = "La squad") {
     uniqueVariantCount: top.count,
     display: `${top.username} est actuellement le membre le plus complémentaire de ${squadName}.`,
     contributionDisplay: `${top.username} apporte ${top.count} variante${top.count > 1 ? 's' : ''} absentes des autres collections.`
+  };
+}
+
+function getSquadLevel1Analysis(matrix, squadName, pairComplementarity = []) {
+  const completion = getSquadCollectiveCompletion(matrix, squadName);
+  const missing = getSquadMissingVariants(matrix, squadName);
+  const uniqueOwners = getSquadUniqueOwners(matrix);
+  const sharedVariants = getSquadSharedVariants(matrix);
+
+  const memberList = (matrix && matrix[0] && matrix[0].members) || [];
+  const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
+  const members = [];
+
+  for (const member of memberList) {
+    const userKey = String(member.userId);
+    let ownedCount = 0;
+    let knownCount = 0;
+    for (const row of matrix) {
+      const m = row.members.find(x => String(x.userId) === userKey);
+      if (!m) continue;
+      if (m.classification === "owned") ownedCount++;
+      if (m.classification !== "unknown") knownCount++;
+    }
+    members.push({
+      userId: member.userId,
+      username: member.username,
+      ownedCount,
+      uniqueContributionCount: uniqueCountByUser.get(userKey) || 0,
+      collectionReliabilityRate: completion.totalVariantCount ? Math.round((knownCount / completion.totalVariantCount) * 10000) / 100 : 0
+    });
+  }
+
+  return {
+    summary: {
+      catalogueVariantCount: completion.totalVariantCount,
+      coveredVariantCount: completion.coveredVariantCount,
+      collectiveCompletionRate: completion.collectiveCompletionRate,
+      confirmedMissingCount: missing.confirmedMissingCount,
+      possiblyMissingCount: missing.possiblyMissingCount,
+      singleOwnerVariantCount: uniqueOwners.totalUnique,
+      sharedVariantCount: sharedVariants.totalShared
+    },
+    members,
+    missingVariants: missing.variants,
+    singleOwnerVariants: uniqueOwners.uniqueVariants,
+    sharedVariants: sharedVariants.variants,
+    pairComplementarity
   };
 }
 
@@ -1261,4 +1320,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };

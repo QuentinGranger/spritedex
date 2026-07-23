@@ -1234,6 +1234,43 @@ app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
   }
 });
 
+// ── Squad : Level 1 analysis ──
+app.get("/api/squads/:code/analysis", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const membersResult = await pool.query(
+      `SELECT sm.user_id, u.username, u.collection_visibility
+       FROM squad_members sm
+       JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+      [squad.id]
+    );
+
+    const matrixMembers = membersResult.rows.map(r => ({
+      userId: r.user_id,
+      username: r.username || String(r.user_id),
+      visible: true
+    }));
+
+    const [matrix, pairs] = await Promise.all([
+      compare.buildSquadCollectionMatrix(matrixMembers),
+      getSquadComplementaryPairs(squad, reqUser)
+    ]);
+
+    const analysis = compare.getSquadLevel1Analysis(matrix, squad.name, pairs);
+    res.json({ squadCode: squad.code, squadName: squad.name, ...analysis });
+  } catch (err) {
+    console.error("[/api/squads/:code/analysis]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // ── Squad Completion Engine : scope definition ──
 app.get("/api/squads/:code/completion", async (req, res) => {
   const reqUser = await getRequestingUser(req);
