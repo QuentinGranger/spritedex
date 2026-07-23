@@ -1368,7 +1368,7 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
   return { teamSize: size, mode: rankingMode, filterValue, teams: ranked };
 }
 
-async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}) {
+async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, method = "auto") {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
     pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
@@ -1436,7 +1436,67 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}) {
   if (targetTotal === 0) return null;
   if (minRequiredCount === 0) minRequiredCount = targetTotal;
 
-  const maxK = Math.min(members.length, 8);
+  const useGreedy = method === "greedy" || (method === "auto" && members.length > 8) || (method === "exhaustive" && members.length > 10);
+
+  if (useGreedy) {
+    const remaining = new Set(targetSet);
+    const selected = [];
+    const used = new Set();
+
+    while (selected.length < members.length && remaining.size > targetTotal - minRequiredCount) {
+      let bestIdx = -1;
+      let bestNew = 0;
+
+      for (let idx = 0; idx < members.length; idx++) {
+        if (used.has(idx)) continue;
+        let newCovered = 0;
+        for (const vid of members[idx].owned) {
+          if (remaining.has(vid)) newCovered++;
+        }
+        if (newCovered > bestNew) {
+          bestNew = newCovered;
+          bestIdx = idx;
+        }
+      }
+
+      if (bestIdx === -1 || bestNew === 0) break;
+
+      used.add(bestIdx);
+      selected.push(bestIdx);
+      for (const vid of members[bestIdx].owned) remaining.delete(vid);
+    }
+
+    const coveredTargetCount = targetTotal - remaining.size;
+    const union = new Set();
+    let totalOwned = 0;
+    for (const idx of selected) {
+      totalOwned += members[idx].owned.size;
+      for (const vid of members[idx].owned) union.add(vid);
+    }
+
+    return {
+      minPlayers: selected.length,
+      calculationMethod: "greedy_approximation",
+      targetType,
+      targetLabel,
+      targetTotal,
+      minRequiredCount,
+      coveredTargetCount,
+      targetCoverageRate: targetTotal ? Math.round((coveredTargetCount / targetTotal) * 10000) / 100 : 0,
+      globalCoveredVariantCount: union.size,
+      globalTotalVariantCount: total,
+      globalCoverageRate: total ? Math.round((union.size / total) * 10000) / 100 : 0,
+      duplicatePossessionCount: totalOwned - union.size,
+      members: selected.map(idx => ({
+        userId: members[idx].id,
+        username: members[idx].username,
+        displayName: members[idx].displayName,
+        avatarUrl: members[idx].avatarUrl
+      }))
+    };
+  }
+
+  const maxK = members.length;
   for (let k = 1; k <= maxK; k++) {
     const current = [];
     function generate(start) {
@@ -1470,6 +1530,7 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}) {
 
         found = {
           minPlayers: k,
+          calculationMethod: "exhaustive",
           targetType,
           targetLabel,
           targetTotal,
@@ -1694,9 +1755,14 @@ app.get("/api/squads/:code/minimum-team", async (req, res) => {
       return res.status(400).json({ error: "Paramètre manquant pour ce targetType" });
     }
 
-    const result = await getSquadMinimumTeam(squad, reqUser, targetType, options);
+    const method = req.query.method || "auto";
+    if (!["auto", "greedy", "exhaustive"].includes(method)) {
+      return res.status(400).json({ error: "method invalide (auto, greedy, exhaustive)" });
+    }
+
+    const result = await getSquadMinimumTeam(squad, reqUser, targetType, options, method);
     if (!result) {
-      return res.status(404).json({ error: "Aucune équipe ne peut couvrir l'objectif jusqu'à 8 joueurs" });
+      return res.status(404).json({ error: "Aucune équipe ne peut couvrir l'objectif" });
     }
 
     res.json({
