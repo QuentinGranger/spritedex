@@ -447,6 +447,35 @@ function getDeadlineScore(endDate, availability) {
   return Math.max(0, 10 - daysUntil);
 }
 
+function classifyEventUrgency(endDate, options = {}) {
+  const now = options.now ? new Date(options.now) : new Date();
+  const endingTodayHours = Number(options.endingTodayHours) || 24;
+  const urgentDays = Number(options.urgentDays) || 7;
+  const soonDays = Number(options.soonDays) || 14;
+
+  if (!endDate) return { level: "unknown", daysRemaining: null, hoursRemaining: null };
+  const end = new Date(endDate);
+  if (isNaN(end.getTime())) return { level: "unknown", daysRemaining: null, hoursRemaining: null };
+
+  const diffMs = end.getTime() - now.getTime();
+  const diffHrs = diffMs / (1000 * 60 * 60);
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+  if (diffMs <= 0) {
+    return { level: "ended", daysRemaining: Math.floor(diffDays), hoursRemaining: Math.floor(diffHrs) };
+  }
+  if (diffMs <= endingTodayHours * 60 * 60 * 1000) {
+    return { level: "ending_today", daysRemaining: Math.ceil(diffDays), hoursRemaining: Math.floor(diffHrs) };
+  }
+  if (diffDays <= urgentDays) {
+    return { level: "urgent", daysRemaining: Math.ceil(diffDays), hoursRemaining: Math.floor(diffHrs) };
+  }
+  if (diffDays <= soonDays) {
+    return { level: "soon", daysRemaining: Math.ceil(diffDays), hoursRemaining: Math.floor(diffHrs) };
+  }
+  return { level: "normal", daysRemaining: Math.ceil(diffDays), hoursRemaining: Math.floor(diffHrs) };
+}
+
 function getAcquisitionPriorityLevel(score) {
   if (score >= 70) return "haute";
   if (score >= 40) return "moyenne";
@@ -1847,4 +1876,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadCollectivePlan, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, classifyEventUrgency, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadCollectivePlan, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };

@@ -3,6 +3,7 @@
 const { buildAcquisitionMethod, buildAvailability, buildDates, buildRecurrence, computeMissingFields, dedupeSpritesBySlug, normalizeDataStatus } = require("./catalog");
 const { app } = require("./core");
 const { pool } = require("./db");
+const { classifyEventUrgency } = require("./compare");
 
 // ── Sprites : données de référence ──
 app.get("/api/sprites", async (req, res) => {
@@ -329,6 +330,53 @@ app.get("/api/community-ownership", async (req, res) => {
     res.json({ totalActive, sprites });
   } catch (err) {
     console.error("[community-ownership]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Events : urgency levels with configurable thresholds ──
+app.get("/api/events/urgency", async (req, res) => {
+  try {
+    const eventsResult = await pool.query(
+      `SELECT id, name, type, start_date, end_date, season_id
+       FROM events
+       ORDER BY end_date NULLS LAST, start_date NULLS LAST, name`
+    );
+
+    const options = {
+      endingTodayHours: Math.max(1, parseInt(req.query.endingTodayHours) || 24),
+      urgentDays: Math.max(1, parseInt(req.query.urgentDays) || 7),
+      soonDays: Math.max(1, parseInt(req.query.soonDays) || 14)
+    };
+
+    const events = eventsResult.rows.map(row => {
+      const urgency = classifyEventUrgency(row.end_date, options);
+      return {
+        eventId: row.id,
+        name: row.name,
+        type: row.type,
+        seasonId: row.season_id,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        level: urgency.level,
+        daysRemaining: urgency.daysRemaining,
+        hoursRemaining: urgency.hoursRemaining
+      };
+    });
+
+    const levelOrder = { ending_today: 0, urgent: 1, soon: 2, normal: 3, ended: 4, unknown: 5 };
+    events.sort((a, b) => {
+      const ao = levelOrder[a.level] ?? 6;
+      const bo = levelOrder[b.level] ?? 6;
+      if (ao !== bo) return ao - bo;
+      const ad = a.daysRemaining ?? Infinity;
+      const bd = b.daysRemaining ?? Infinity;
+      return ad - bd;
+    });
+
+    res.json({ events, options });
+  } catch (err) {
+    console.error("[/api/events/urgency]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
