@@ -597,9 +597,7 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
     const row = matrix.find(r => r.variantId === variant.variantId);
     if (!row) continue;
 
-    let bestCandidate = null;
-    let bestScore = -Infinity;
-    let bestReasons = [];
+    const candidates = [];
 
     for (const m of row.members || []) {
       if (m.classification === "owned") continue;
@@ -608,9 +606,9 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
       if (!s) continue;
 
       const isPriority = compareServerIsPriority({ status: m.status, priority: m.priority });
-      const spriteOwned = s.ownedBySprite[variant.spriteId] || 0;
-      const rarityOwned = s.ownedByRarity[variant.rarity || "_none"] || 0;
-      const typeOwned = s.ownedByVariantType[variant.variantType || "Base"] || 0;
+      const spriteOwned = s.ownedBySprite[row.spriteId] || 0;
+      const rarityOwned = s.ownedByRarity[row.rarity || "_none"] || 0;
+      const typeOwned = s.ownedByVariantType[row.variantType || "Base"] || 0;
       const activeGoals = activeGoalCounts[String(m.userId)] || 0;
       const lastActive = lastActiveByUser[String(m.userId)];
       const daysSince = lastActive ? Math.floor((now - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24)) : 999;
@@ -650,24 +648,34 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
       score -= activeGoals * 5;
       score -= assignedCount * 15;
 
-      if (score > bestScore) {
-        bestScore = score;
-        bestCandidate = { userId: m.userId, username: m.username };
-        bestReasons = reasons.length ? reasons : ["meilleur candidat"];
-      }
+      candidates.push({
+        userId: m.userId,
+        username: m.username,
+        score,
+        reasons: reasons.length ? reasons : ["meilleur candidat"]
+      });
     }
 
-    if (bestCandidate) {
-      assignedCounts[String(bestCandidate.userId)] = (assignedCounts[String(bestCandidate.userId)] || 0) + 1;
-      assignments.push({
-        ...variant,
-        recommendedMember: bestCandidate,
-        assignmentScore: Math.round(bestScore),
-        assignmentReason: bestReasons.join(", ")
-      });
-    } else {
-      assignments.push({ ...variant });
+    candidates.sort((a, b) => b.score - a.score);
+
+    const primary = candidates[0] || null;
+    const secondary = candidates[1] || null;
+
+    if (primary) {
+      assignedCounts[String(primary.userId)] = (assignedCounts[String(primary.userId)] || 0) + 1;
     }
+
+    assignments.push({
+      ...variant,
+      responsible: primary ? { userId: primary.userId, username: primary.username } : null,
+      secondary: secondary ? { userId: secondary.userId, username: secondary.username } : null,
+      assignmentScore: primary ? Math.round(primary.score) : null,
+      assignmentReason: primary ? primary.reasons.join(", ") : null,
+      secondaryScore: secondary ? Math.round(secondary.score) : null,
+      secondaryReason: secondary ? secondary.reasons.join(", ") : null,
+      // legacy alias for compatibility
+      recommendedMember: primary ? { userId: primary.userId, username: primary.username } : null
+    });
   }
 
   return assignments;
