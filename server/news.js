@@ -2,8 +2,9 @@
 
 const pushService = require("../push-service");
 const { buildDates, buildRecurrence, ensureSource } = require("./catalog");
-const { app, wss } = require("./core");
+const { app } = require("./core");
 const { pool } = require("./db");
+const { broadcastNewsUpdate } = require("./ws");
 const crypto = require("crypto");
 const puppeteer = require("puppeteer-core");
 
@@ -382,6 +383,7 @@ async function extractEventsFromNews(newsItems) {
   if (insertedEventIds.size > 0) {
     console.log(`[EVENTS] ${insertedEventIds.size} events extracted from news`);
   }
+  return { count: insertedEventIds.size, eventIds: Array.from(insertedEventIds) };
 }
 
 async function extractAvailabilityFromNews(newsItems) {
@@ -548,7 +550,6 @@ async function refreshNews() {
   }
   if (insertedItems.length > 0) {
     console.log(`News: ${insertedItems.length} new items inserted`);
-    broadcastNews();
     notifyNewsSubscribers(insertedItems);
   }
 
@@ -563,9 +564,17 @@ async function refreshNews() {
       publishedAt: item.date,
     });
   }
-  await extractEventsFromNews(existingNews.rows);
+  const eventExtraction = await extractEventsFromNews(existingNews.rows);
   await extractAvailabilityFromNews(existingNews.rows);
   await extractRecurrenceFromNews(existingNews.rows);
+
+  broadcastNewsUpdate({
+    newItems: insertedItems.map(i => ({ source: i.source, title: i.title, link: i.link, image: i.image, date: i.date })).slice(0, 5),
+    newCount: insertedItems.length,
+    extractedEvents: eventExtraction.eventIds.slice(0, 5),
+    extractedEventCount: eventExtraction.count,
+    timestamp: new Date().toISOString()
+  });
 }
 
 async function notifyNewsSubscribers(items) {
@@ -588,13 +597,6 @@ async function notifyNewsSubscribers(items) {
   } catch (err) {
     console.error("[PUSH] Failed to send news notification:", err);
   }
-}
-
-function broadcastNews() {
-  const msg = JSON.stringify({ type: "news_update" });
-  wss.clients.forEach(client => {
-    if (client.readyState === 1) client.send(msg);
-  });
 }
 
 let newsInterval = null;
@@ -626,4 +628,4 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
-module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, broadcastNews, detectEventInfo, extractAvailabilityFromNews, extractEventsFromNews, extractRecurrenceFromNews, fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews, matchesSpriteKeywords, newsHash, newsInterval, notifyNewsSubscribers, refreshNews, startNewsCron };
+module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, detectEventInfo, extractAvailabilityFromNews, extractEventsFromNews, extractRecurrenceFromNews, fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews, matchesSpriteKeywords, newsHash, newsInterval, notifyNewsSubscribers, refreshNews, startNewsCron };

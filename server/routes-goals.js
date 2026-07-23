@@ -4,6 +4,7 @@ const { getRequestingUser } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const compare = require("./compare");
+const { broadcastGoalUpdate } = require("./ws");
 const analytics = require("../analytics");
 const pushService = require("../push-service");
 const { logSquadGoalCreated, logSquadGoalCompleted } = require("./squad-activity");
@@ -63,6 +64,17 @@ app.post("/api/collection-goals", async (req, res) => {
       logSquadGoalCreated(squadIdNum, reqUser, cleanTitle).catch(err => console.error("[goals] squad activity log failed", err));
       analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.rows[0].id, title: cleanTitle, variantId: variantId ? String(variantId).trim() : null } });
     }
+
+    broadcastGoalUpdate({
+      id: result.rows[0].id,
+      title: cleanTitle,
+      description: description ? String(description).trim().slice(0, 1000) : null,
+      variant_id: variantId ? String(variantId).trim() : null,
+      squad_id: squadIdNum,
+      user_id: reqUser,
+      status: "active",
+      created_at: result.rows[0].created_at
+    }, "created").catch(err => console.error("[goals] broadcast failed", err));
 
     res.status(201).json({
       ok: true,
@@ -292,7 +304,7 @@ async function checkAffectedGoals(userId, variantId) {
   if (!userId || !variantId) return;
   try {
     const goals = await pool.query(
-      `SELECT id, user_id, squad_id, variant_id
+      `SELECT id, user_id, squad_id, variant_id, title, created_at
        FROM collection_goals
        WHERE status = 'active'
          AND variant_id = $1
@@ -331,6 +343,9 @@ async function checkAffectedGoals(userId, variantId) {
           "UPDATE collection_goals SET status = 'completed', updated_at = NOW() WHERE id = $1",
           [goal.id]
         );
+        goal.status = "completed";
+        goal.updated_at = new Date().toISOString();
+        broadcastGoalUpdate(goal, "completed").catch(err => console.error("[goals] broadcast failed", err));
         analytics.logProductAnalyticsEvent(pool, { userId, squadId: goal.squad_id || null, event: "shared_goal_completed", details: { goalId: goal.id, variantId } });
         if (goal.squad_id) {
           logSquadGoalCompleted(goal.squad_id, userId, goal.title || null, variantId).catch(err => console.error("[goals] squad goal completed log failed", err));
