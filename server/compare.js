@@ -335,31 +335,51 @@ async function getSquadRecommendations(memberIds, catalogue) {
   return recs.slice(0, 50);
 }
 
-function isMissingFromSquad(row) {
-  if (row.ownerCount !== 0) return false;
-  if (row.unknownCount > 0) return false;
-  if (row.missingCount === 0) return false;
-  const threshold = row.memberCount <= 1 ? 1 : Math.ceil(row.memberCount / 2);
-  return row.missingCount >= threshold;
+function classifySquadMissing(row) {
+  if (row.ownerCount !== 0) return null;
+  if (row.missingCount === 0) return null;
+
+  if (row.unknownCount === 0 && row.missingCount === row.memberCount) {
+    return "confirmed_missing";
+  }
+
+  if (row.unknownCount > 0 && row.missingCount >= row.unknownCount) {
+    return "possibly_missing";
+  }
+
+  return null;
 }
 
 function getSquadMissingVariants(matrix, squadName) {
-  const missing = matrix.filter(isMissingFromSquad).map(row => ({
-    variantId: row.variantId,
-    spriteId: row.spriteId,
-    spriteName: row.spriteName,
-    variantName: row.variantName,
-    variantType: row.variantType,
-    img: row.img,
-    rarity: row.rarity,
-    eventId: row.eventId,
-    availabilityStatus: row.availabilityStatus,
-    ownerCount: row.ownerCount,
-    missingMemberCount: row.missingCount,
-    unknownMemberCount: row.unknownCount,
-    classification: "missing_from_squad",
-    display: `Aucun membre de ${squadName} ne possède ${row.spriteName} ${row.variantName}.`
-  }));
+  const missing = [];
+  for (const row of matrix) {
+    const classification = classifySquadMissing(row);
+    if (!classification) continue;
+
+    let display;
+    if (classification === "confirmed_missing") {
+      display = `Aucun membre de ${squadName} ne possède ${row.spriteName} ${row.variantName}.`;
+    } else {
+      display = `Cette variante semble manquer à la squad, mais ${row.unknownCount} collection${row.unknownCount > 1 ? 's' : ''} ne ${row.unknownCount > 1 ? 'sont' : 'est'} pas à jour.`;
+    }
+
+    missing.push({
+      variantId: row.variantId,
+      spriteId: row.spriteId,
+      spriteName: row.spriteName,
+      variantName: row.variantName,
+      variantType: row.variantType,
+      img: row.img,
+      rarity: row.rarity,
+      eventId: row.eventId,
+      availabilityStatus: row.availabilityStatus,
+      ownerCount: row.ownerCount,
+      missingMemberCount: row.missingCount,
+      unknownMemberCount: row.unknownCount,
+      classification,
+      display
+    });
+  }
 
   const groupBy = (key, labelFn) => {
     const groups = {};
