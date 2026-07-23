@@ -287,6 +287,7 @@ app.get("/api/squads/:code", async (req, res) => {
 
     const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
     const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
+    const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
     const uniqueOwners = compare.getSquadUniqueOwners(matrix);
     const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
     for (const m of members) {
@@ -318,6 +319,7 @@ app.get("/api/squads/:code", async (req, res) => {
       ownedVariantsSum: averageOwnership.ownedVariantsSum,
       averageVariantCount: averageOwnership.averageVariantCount,
       averageOwnershipDisplay: averageOwnership.display,
+      mostComplementaryMember,
       uniqueVariantTotal: uniqueOwners.totalUnique,
       recommendations
     });
@@ -1172,6 +1174,62 @@ app.get("/api/squads/:code/complementary-pairs", async (req, res) => {
     res.json({ squadCode: squad.code, squadName: squad.name, pairs });
   } catch (err) {
     console.error("[/api/squads/:code/complementary-pairs]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : most complementary pair ──
+app.get("/api/squads/:code/most-complementary-pair", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const pairs = await getSquadComplementaryPairs(squad, reqUser);
+    const mostComplementaryPair = pairs[0] || null;
+    res.json({ squadCode: squad.code, squadName: squad.name, mostComplementaryPair });
+  } catch (err) {
+    console.error("[/api/squads/:code/most-complementary-pair]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : most complementary member ──
+app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query(
+      "SELECT id, code, name FROM squads WHERE code = $1",
+      [req.params.code.trim().toUpperCase()]
+    );
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const membersResult = await pool.query(
+      `SELECT sm.user_id, u.username
+       FROM squad_members sm
+       JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+      [squad.id]
+    );
+
+    const members = membersResult.rows.map(r => ({
+      userId: r.user_id,
+      username: r.username || String(r.user_id),
+      visible: true
+    }));
+
+    const matrix = await compare.buildSquadCollectionMatrix(members);
+    const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
+
+    res.json({ squadCode: squad.code, squadName: squad.name, mostComplementaryMember });
+  } catch (err) {
+    console.error("[/api/squads/:code/most-complementary-member]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
