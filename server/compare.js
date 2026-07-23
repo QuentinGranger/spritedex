@@ -481,14 +481,23 @@ function buildAcquisitionPriorityDisplay(item) {
     reasons.push("elle est ciblée par un objectif actif");
   }
 
-  if (reasons.length === 0) {
-    return `Priorité ${level} pour ${item.spriteName} ${item.variantName}.`;
+  let impactSentence = "";
+  if (item.impactType === "collective") {
+    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} ferait passer la couverture collective de ${item.collectiveCoverageBefore}% à ${item.collectiveCoverageAfter}%.`;
+  } else if (item.impactType === "individual") {
+    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} n'augmenterait pas la couverture collective (déjà possédée par ${item.ownerCount} membre${item.ownerCount > 1 ? 's' : ''}).`;
   }
-  return `Priorité ${level} : ${reasons.join(", ")}.`;
+
+  if (reasons.length === 0) {
+    return `Priorité ${level} pour ${item.spriteName} ${item.variantName}.${impactSentence}`;
+  }
+  return `Priorité ${level} : ${reasons.join(", ")}.${impactSentence}`;
 }
 
 function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
   const results = [];
+  const totalVariants = matrix.length;
+  const coveredVariants = totalVariants ? matrix.filter(r => r.ownerCount > 0).length : 0;
 
   for (const row of matrix) {
     if (row.ownerCount >= row.memberCount) continue;
@@ -516,6 +525,13 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
       activeGoal: objectiveScore
     };
 
+    const impactType = row.ownerCount === 0 ? "collective" : "individual";
+    const collectiveCoverageBefore = totalVariants ? Math.round((coveredVariants / totalVariants) * 10000) / 100 : 0;
+    const collectiveCoverageAfter = impactType === "collective" && totalVariants
+      ? Math.round(((coveredVariants + 1) / totalVariants) * 10000) / 100
+      : collectiveCoverageBefore;
+    const collectiveCoverageGain = impactType === "collective" ? 1 : 0;
+
     const item = {
       variantId: row.variantId,
       spriteId: row.spriteId,
@@ -538,7 +554,11 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
       availabilityScore,
       rarityScore,
       deadlineScore,
-      objectiveScore
+      objectiveScore,
+      impactType,
+      collectiveCoverageBefore,
+      collectiveCoverageAfter,
+      collectiveCoverageGain
     };
 
     item.display = buildAcquisitionPriorityDisplay(item);
