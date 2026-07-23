@@ -178,6 +178,13 @@ function newsHash(source, title, date) {
   return crypto.createHash("md5").update(`${source}|${title}|${date}`).digest("hex");
 }
 
+function safeIsoDate(value) {
+  const fallback = new Date().toISOString();
+  if (!value) return fallback;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
+}
+
 async function fetchFortniteAPINews() {
   const results = [];
   try {
@@ -264,7 +271,9 @@ async function fetchFortniteGGNews() {
         const lines = body.split("\n").map(l => l.trim()).filter(Boolean);
         for (let i = 0; i < lines.length; i++) {
           if (/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(lines[i])) {
-            entries.push({ title: lines[i + 1] || "", desc: lines[i + 2] || "", date: lines[i], img: null });
+            const title = lines[i + 1] || "";
+            const desc = lines[i + 2] || "";
+            if (title.trim()) entries.push({ title: title.trim(), desc: desc.trim(), date: lines[i], img: null });
           }
         }
       }
@@ -274,7 +283,7 @@ async function fetchFortniteGGNews() {
     for (const item of items) {
       const text = `${item.title} ${item.desc}`;
       if (matchesSpriteKeywords(text)) {
-        const dateStr = item.date ? (new Date(item.date).toISOString() || new Date().toISOString()) : new Date().toISOString();
+        const dateStr = safeIsoDate(item.date);
         results.push({
           source: "fortnite.gg",
           title: item.title,
@@ -288,7 +297,7 @@ async function fetchFortniteGGNews() {
     }
     console.log(`Fortnite.gg scraped: ${items.length} items, ${results.length} matched`);
   } catch (err) {
-    console.error("Fortnite.gg scrape failed:", err.message);
+    console.error(`[NEWS][fortnite.gg] Scrape failed at ${new Date().toISOString()}:`, err.name, err.message);
   } finally {
     if (browser) await browser.close();
   }
@@ -603,8 +612,8 @@ let newsInterval = null;
 async function startNewsCron() {
   await pool.query(`UPDATE sprite_news SET link = 'https://fortnite.com/news?lang=fr' WHERE (link IS NULL OR link = 'https://www.fortnite.com/news') AND source LIKE 'fortnite-api%'`).catch(() => {});
   await pool.query(`UPDATE sprite_news SET link = 'https://fortnite.gg/news' WHERE link IS NULL AND source = 'fortnite.gg'`).catch(() => {});
-  refreshNews();
-  newsInterval = setInterval(refreshNews, 30 * 60 * 1000);
+  refreshNews().catch(err => console.error("[NEWS] initial refresh failed:", err.message));
+  newsInterval = setInterval(() => refreshNews().catch(err => console.error("[NEWS] cron refresh failed:", err.message)), 30 * 60 * 1000);
 }
 
 // ── News : API endpoint ──
