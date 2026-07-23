@@ -97,12 +97,98 @@ function renderEngineOverview(r) {
   `;
 }
 
+const engineFilters = {
+  missingAll: false,
+  uniqueOwner: false,
+  duplicates: false,
+  availableNow: false,
+  priorities: false,
+  rarity: "",
+  season: "",
+  event: "",
+  variantType: ""
+};
+
+function getEngineAllVariants() {
+  return (squadEngineReport && squadEngineReport.analysis && squadEngineReport.analysis.allVariants) || [];
+}
+
+function applyEngineFilters(variants) {
+  const f = engineFilters;
+  const hasCategory = f.missingAll || f.uniqueOwner || f.duplicates;
+  return variants.filter(v => {
+    if (hasCategory) {
+      const categoryOk = (f.missingAll && v.isMissingAll) || (f.uniqueOwner && v.isUniqueOwner) || (f.duplicates && v.isDuplicate);
+      if (!categoryOk) return false;
+    }
+    if (f.availableNow && !v.isAvailableNow) return false;
+    if (f.priorities && !v.isPriority) return false;
+    if (f.rarity && v.rarity !== f.rarity) return false;
+    if (f.season && v.seasonId !== f.season) return false;
+    if (f.event && v.eventId !== f.event) return false;
+    if (f.variantType && v.variantType !== f.variantType) return false;
+    return true;
+  });
+}
+
+function engineFilterControl() {
+  const all = getEngineAllVariants();
+  const rarityOptions = distinctOptions(all, "rarity", r => r ? `Rareté ${r}` : "Rareté inconnue");
+  const seasonOptions = distinctOptions(all, "seasonId", id => id ? (SEASONS[id]?.name || id) : "Hors saison");
+  const eventOptions = distinctOptions(all, "eventId", id => id ? (EVENTS[id]?.name || id) : "Hors événement");
+  const typeOptions = distinctOptions(all, "variantType", t => t || "Type inconnu");
+  return `
+    <div class="engine-filter-bar" id="squadEngineFilterBar">
+      <div class="engine-filter-group">
+        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="missingAll" ${engineFilters.missingAll ? "checked" : ""}> Manque à toute la squad</label>
+        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="uniqueOwner" ${engineFilters.uniqueOwner ? "checked" : ""}> Propriétaire unique</label>
+        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="duplicates" ${engineFilters.duplicates ? "checked" : ""}> Doublons</label>
+        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="availableNow" ${engineFilters.availableNow ? "checked" : ""}> Disponibles actuellement</label>
+        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="priorities" ${engineFilters.priorities ? "checked" : ""}> Priorités</label>
+      </div>
+      <div class="engine-filter-group engine-filter-group--selects">
+        <select class="engine-select" data-engine-filter="rarity"><option value="">Toutes raretés</option>${rarityOptions}</select>
+        <select class="engine-select" data-engine-filter="season"><option value="">Toutes saisons</option>${seasonOptions}</select>
+        <select class="engine-select" data-engine-filter="event"><option value="">Tous événements</option>${eventOptions}</select>
+        <select class="engine-select" data-engine-filter="variantType"><option value="">Tous types</option>${typeOptions}</select>
+      </div>
+      <button type="button" class="ghost-button" id="squadEngineResetFilters">Réinitialiser</button>
+    </div>
+  `;
+}
+
+function distinctOptions(arr, key, labelFn) {
+  const map = new Map();
+  for (const item of arr) {
+    const raw = item[key];
+    const value = (raw === null || raw === undefined || raw === "") ? "_none" : String(raw);
+    if (!map.has(value)) map.set(value, labelFn(raw));
+  }
+  return Array.from(map.entries()).sort((a, b) => String(a[1]).localeCompare(String(b[1]))).map(([value, label]) => `<option value="${escapeHtml(value)}" ${engineFilters[key] === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
+}
+
+function renderEngineFilterResults(filtered) {
+  return `
+    <div class="engine-section">
+      <h4 class="engine-section__title">Résultats filtrés (${filtered.length})</h4>
+      <div class="engine-chip-list">
+        ${filtered.slice(0, 60).map(v => `<span class="engine-chip" title="${escapeHtml(v.variantId)}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`).join("")}
+        ${filtered.length > 60 ? `<span class="engine-chip">+${filtered.length - 60} autres</span>` : ""}
+      </div>
+    </div>
+  `;
+}
+
 function renderEngineMissing(r) {
   const m = (r.analysis && r.analysis.missing) || {};
   const variants = m.variants || [];
   const confirmed = variants.filter(v => v.classification === "confirmed_missing");
   const maybe = variants.filter(v => v.classification !== "confirmed_missing");
+  const all = getEngineAllVariants();
+  const filtered = applyEngineFilters(all);
   return `
+    ${engineFilterControl()}
+    <div id="squadEngineFilterResults">${renderEngineFilterResults(filtered)}</div>
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
         <div class="engine-card__value">${confirmed.length}</div>
@@ -207,6 +293,40 @@ function renderEngineOptimization(r) {
   `;
 }
 
+function readEngineFilters() {
+  const bar = document.getElementById("squadEngineFilterBar");
+  if (!bar) return;
+  bar.querySelectorAll("[data-engine-filter]").forEach(el => {
+    const key = el.dataset.engineFilter;
+    if (el.tagName === "INPUT" && el.type === "checkbox") {
+      engineFilters[key] = el.checked;
+    } else {
+      engineFilters[key] = el.value;
+    }
+  });
+}
+
+function refreshEngineFilterResults() {
+  readEngineFilters();
+  const results = document.getElementById("squadEngineFilterResults");
+  if (!results) return;
+  results.innerHTML = renderEngineFilterResults(applyEngineFilters(getEngineAllVariants()));
+}
+
+function resetEngineFilters() {
+  engineFilters.missingAll = false;
+  engineFilters.uniqueOwner = false;
+  engineFilters.duplicates = false;
+  engineFilters.availableNow = false;
+  engineFilters.priorities = false;
+  engineFilters.rarity = "";
+  engineFilters.season = "";
+  engineFilters.event = "";
+  engineFilters.variantType = "";
+  refreshEngineFilterResults();
+  if (squadEngineTab === "missing") renderSquadEngineTab("missing");
+}
+
 function setupSquadEngine() {
   if (!els.squadEngineBtn) return;
   els.squadEngineBtn.addEventListener("click", showSquadEngine);
@@ -216,6 +336,16 @@ function setupSquadEngine() {
   document.querySelectorAll(".squad-engine__tab").forEach(btn => {
     btn.addEventListener("click", () => switchSquadEngineTab(btn.dataset.engineTab));
   });
+  const missingPanel = document.getElementById("squadEnginePanel-missing");
+  if (missingPanel) {
+    missingPanel.addEventListener("change", (e) => {
+      const input = e.target.closest("[data-engine-filter]");
+      if (input) refreshEngineFilterResults();
+    });
+    missingPanel.addEventListener("click", (e) => {
+      if (e.target.closest("#squadEngineResetFilters")) resetEngineFilters();
+    });
+  }
 }
 
 setupSquadEngine();

@@ -2207,12 +2207,34 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
   const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
   const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
   const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+  const priorityIds = new Set(priorities.map(p => p.variantId).filter(Boolean));
   const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
     excludedSeasonIds: new Set(),
     activeGoalVariantCounts,
     memberGoalVariantSet,
     maxGoalAssignments: 2
   });
+
+  const allVariants = matrix.map(r => ({
+    variantId: r.variantId,
+    spriteId: r.spriteId,
+    spriteName: r.spriteName,
+    variantName: r.variantName,
+    variantType: r.variantType,
+    img: r.img,
+    rarity: r.rarity,
+    seasonId: r.seasonId,
+    eventId: r.eventId,
+    availabilityStatus: r.availabilityStatus,
+    ownerCount: r.ownerCount,
+    missingCount: r.missingCount,
+    unknownCount: r.unknownCount,
+    isMissingAll: r.ownerCount === 0,
+    isUniqueOwner: r.ownerCount === 1,
+    isDuplicate: r.ownerCount >= 2,
+    isPriority: priorityIds.has(r.variantId),
+    isAvailableNow: r.availabilityStatus === "available"
+  }));
 
   const unknownCount = matrix.reduce((sum, r) => sum + r.unknownCount, 0);
   const warnings = [];
@@ -2244,7 +2266,8 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
       uniqueOwners,
       shared,
       mostComplementaryMember: mostComplementary,
-      bestPair
+      bestPair,
+      allVariants
     },
     recommendations: {
       activeGoalCount: activeGoalVariantIds.size,
