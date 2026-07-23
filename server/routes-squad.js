@@ -293,15 +293,20 @@ app.get("/api/squads/:code", async (req, res) => {
     for (const m of members) {
       m.uniqueVariantCount = uniqueCountByUser.get(String(m.userId)) || 0;
     }
-    const recommendations = recommendationsList.map(r => ({
+    const mapRecommendation = (r) => ({
       variantId: r.variantId,
       spriteId: r.spriteId,
       spriteName: r.spriteName,
       variantName: r.variantName,
       img: r.img,
+      availability: r.availability,
+      availabilityStatus: r.availabilityStatus,
       ownedByCount: r.ownedByCount,
       wantedByCount: r.wantedByCount
-    }));
+    });
+
+    const recommendations = (recommendationsList.immediate || []).map(mapRecommendation);
+    const watchListRecommendations = (recommendationsList.watchList || []).map(mapRecommendation);
 
     res.json({
       id: squad.id,
@@ -321,7 +326,10 @@ app.get("/api/squads/:code", async (req, res) => {
       averageOwnershipDisplay: averageOwnership.display,
       mostComplementaryMember,
       uniqueVariantTotal: uniqueOwners.totalUnique,
-      recommendations
+      recommendations,
+      watchListRecommendations,
+      immediateRecommendationCount: recommendationsList.immediateCount || 0,
+      watchListRecommendationCount: recommendationsList.watchListCount || 0
     });
   } catch (err) {
     console.error(err);

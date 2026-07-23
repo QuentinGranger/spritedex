@@ -353,8 +353,17 @@ async function getSquadCollectiveCompletionSummary(memberIds, catalogue) {
   };
 }
 
+function classifyRecommendationAvailability(availabilityStatus) {
+  const s = (availabilityStatus || "").toLowerCase();
+  if (s === "available" || s === "active" || s === "live") return "available_now";
+  if (s === "upcoming" || s === "coming_soon" || s === "soon") return "upcoming";
+  if (s === "ended" || s === "expired" || s === "over") return "ended";
+  if (s === "not_observed" || s === "not_seen" || s === "missing") return "not_observed";
+  return "unknown";
+}
+
 async function getSquadRecommendations(memberIds, catalogue) {
-  if (!memberIds || memberIds.length < 2) return [];
+  if (!memberIds || memberIds.length < 2) return { immediate: [], watchList: [], immediateCount: 0, watchListCount: 0 };
   const members = memberIds.map(id => ({ userId: id, username: String(id), visible: true }));
   const matrix = await buildSquadCollectionMatrix(members, catalogue);
   const recs = [];
@@ -366,12 +375,15 @@ async function getSquadRecommendations(memberIds, catalogue) {
       if (compareServerIsRecommend(m.status) || compareServerIsPriority(entry)) wantedBy++;
     }
     if (row.ownerCount > 0 && wantedBy > 0) {
+      const availability = classifyRecommendationAvailability(row.availabilityStatus);
       recs.push({
         variantId: row.variantId,
         spriteId: row.spriteId,
         spriteName: row.spriteName,
         variantName: row.variantName,
         img: row.img,
+        availability,
+        availabilityStatus: row.availabilityStatus,
         ownedByCount: row.ownerCount,
         wantedByCount: wantedBy,
         score: wantedBy * 100 + row.ownerCount
@@ -379,7 +391,15 @@ async function getSquadRecommendations(memberIds, catalogue) {
     }
   }
   recs.sort((a, b) => b.score - a.score);
-  return recs.slice(0, 50);
+  const immediate = recs.filter(r => r.availability === "available_now" || r.availability === "upcoming");
+  const watchList = recs.filter(r => r.availability === "ended" || r.availability === "not_observed" || r.availability === "unknown");
+
+  return {
+    immediate: immediate.slice(0, 50),
+    watchList: watchList.slice(0, 50),
+    immediateCount: immediate.length,
+    watchListCount: watchList.length
+  };
 }
 
 function classifySquadMissing(row) {

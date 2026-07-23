@@ -138,19 +138,22 @@ async function getSquadPreview(squad, reqUser) {
 async function refreshSquadStats(squadId) {
   const members = await getSquadActiveMembers(squadId, null);
   const memberIds = members.map(m => m.userId);
-  const [completion, recommendations] = await Promise.all([
+  const [completion, recommendationsData] = await Promise.all([
     compare.getSquadCollectiveCompletionSummary(memberIds),
     compare.getSquadRecommendations(memberIds)
   ]);
 
   await logSquadCompletionMilestone(squadId, completion.collectiveCompletionRate);
 
-  const recPayload = JSON.stringify(recommendations.map(r => ({
+  const immediateRecs = (recommendationsData.immediate || []);
+  const recPayload = JSON.stringify(immediateRecs.map(r => ({
     variantId: r.variantId,
     spriteId: r.spriteId,
     spriteName: r.spriteName,
     variantName: r.variantName,
     img: r.img,
+    availability: r.availability,
+    availabilityStatus: r.availabilityStatus,
     ownedByCount: r.ownedByCount,
     wantedByCount: r.wantedByCount
   })));
