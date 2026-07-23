@@ -7,6 +7,7 @@ const { canViewCollection, getRequestingUser, getVisibility, isBlocked, requireS
 const { app } = require("./core");
 const { pool } = require("./db");
 const crypto = require("crypto");
+const { invalidateSquadAnalysisCacheForUser } = require("./squad-analysis-cache");
 
 // ── Profile : GET ──
 app.get("/api/profile/:userId", async (req, res) => {
@@ -360,6 +361,7 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
     if (sets.length === 0) return res.status(400).json({ error: "Rien à mettre à jour" });
     vals.push(userId);
     await pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $${idx}`, vals);
+    invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "profile_updated", status: "ok", details: { changed: sets.map(s => s.split(" = ")[0]) } });
     const updated = await pool.query(
       `SELECT id, username, display_name, avatar_url, privacy,
@@ -412,6 +414,7 @@ app.delete("/api/profile/:userId", async (req, res) => {
 
     await client.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
     await client.query("COMMIT");
+    invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
     res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
   } catch (err) {
@@ -434,6 +437,7 @@ app.post("/api/profile/:userId/suspend", security.validateBody(security.schemas.
       "UPDATE users SET suspended_at = NOW(), suspended_until = $1 WHERE id = $2 AND deleted_at IS NULL",
       [until.toISOString(), userId]
     );
+    invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_suspended", status: "ok", details: { until } });
     res.json({ ok: true, suspendedUntil: until.toISOString() });
   } catch (err) {
@@ -450,6 +454,7 @@ app.post("/api/profile/:userId/unsuspend", async (req, res) => {
       "UPDATE users SET suspended_at = NULL, suspended_until = NULL WHERE id = $1 AND deleted_at IS NULL",
       [userId]
     );
+    invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_unsuspended", status: "ok" });
     res.json({ ok: true });
   } catch (err) {

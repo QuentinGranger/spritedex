@@ -7,6 +7,7 @@ const { pool } = require("./db");
 const { broadcastNewsUpdate } = require("./ws");
 const crypto = require("crypto");
 const puppeteer = require("puppeteer-core");
+const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
 
 // ── News : sprite update system ──
 const SPRITE_KEYWORDS = [
@@ -391,6 +392,7 @@ async function extractEventsFromNews(newsItems) {
 
   if (insertedEventIds.size > 0) {
     console.log(`[EVENTS] ${insertedEventIds.size} events extracted from news`);
+    invalidateSquadAnalysisCache();
   }
   return { count: insertedEventIds.size, eventIds: Array.from(insertedEventIds) };
 }
@@ -475,6 +477,7 @@ async function extractAvailabilityFromNews(newsItems) {
 
   if (updated > 0) {
     console.log(`[AVAILABILITY] ${updated} sprite availability updates extracted from news`);
+    invalidateSquadAnalysisCache();
   }
 }
 
@@ -529,6 +532,7 @@ async function extractRecurrenceFromNews(newsItems) {
 
   if (updated > 0) {
     console.log(`[RECURRENCE] ${updated} sprite recurrence updates extracted from news`);
+    invalidateSquadAnalysisCache();
   }
 }
 

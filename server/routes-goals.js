@@ -8,6 +8,7 @@ const { broadcastGoalUpdate } = require("./ws");
 const analytics = require("../analytics");
 const pushService = require("../push-service");
 const { logSquadGoalCreated, logSquadGoalCompleted } = require("./squad-activity");
+const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
 
 async function hasBlockedPair(userIds) {
   const ids = [...new Set(userIds.map(String))];
@@ -98,6 +99,8 @@ app.post("/api/collection-goals", async (req, res) => {
       status: "active",
       created_at: result.rows[0].created_at
     }, "created").catch(err => console.error("[goals] broadcast failed", err));
+
+    if (squadIdNum) invalidateSquadAnalysisCache(squadIdNum);
 
     res.status(201).json({
       ok: true,
@@ -257,6 +260,8 @@ app.post("/api/collection-goals/from-recommendation", async (req, res) => {
       status: "active",
       created_at: result.rows[0].created_at
     }, "created").catch(err => console.error("[goals] broadcast failed", err));
+
+    if (squadIdNum) invalidateSquadAnalysisCache(squadIdNum);
 
     res.status(201).json({
       ok: true,
@@ -499,6 +504,7 @@ async function checkAffectedGoals(userId, variantId) {
           "UPDATE collection_goals SET status = 'completed', updated_at = NOW() WHERE id = $1",
           [goal.id]
         );
+        if (goal.squad_id) invalidateSquadAnalysisCache(goal.squad_id);
         goal.status = "completed";
         goal.updated_at = new Date().toISOString();
         broadcastGoalUpdate(goal, "completed").catch(err => console.error("[goals] broadcast failed", err));

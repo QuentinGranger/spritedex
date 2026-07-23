@@ -7,6 +7,7 @@ const analytics = require("../analytics");
 const compare = require("./compare");
 const pushService = require("../push-service");
 const { logSquadMemberJoined, logSquadCompletionMilestone } = require("./squad-activity");
+const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
 
 const ACTIVE_FRIEND_STATUSES = ["pending", "accepted", "blocked"];
 
@@ -383,6 +384,7 @@ async function acceptInvitation(invitationId, reqUser) {
     "UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1",
     [invitationId]
   );
+  invalidateSquadAnalysisCache(invitation.squad_id);
 
   const statsRes = await pool.query(
     "SELECT collective_completion_rate FROM squad_stats WHERE squad_id = $1",
