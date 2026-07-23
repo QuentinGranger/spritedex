@@ -280,23 +280,12 @@ app.get("/api/squads/:code", async (req, res) => {
       });
     }
 
-    // Use pre-aggregated squad_stats when fresh; otherwise compute live.
-    // Recommendations and per-member data still respect privacy blocks.
-    const statsRes = await pool.query(
-      "SELECT collective_completion_rate, computed_at FROM squad_stats WHERE squad_id = $1",
-      [squad.id]
-    );
-    const statsFresh = statsRes.rows.length &&
-      (Date.now() - new Date(statsRes.rows[0].computed_at).getTime()) < 60000;
-
-    const [completionSummary, recommendationsList, matrix] = await Promise.all([
-      statsFresh
-        ? Promise.resolve({ collectiveCompletionRate: parseFloat(statsRes.rows[0].collective_completion_rate), totalVariants: 0, ownedCount: 0 })
-        : compare.getSquadCollectiveCompletionSummary(allActiveMemberIds),
+    const [recommendationsList, matrix] = await Promise.all([
       compare.getSquadRecommendations(visibleMemberIds),
       compare.buildSquadCollectionMatrix(matrixMembers)
     ]);
 
+    const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
     const uniqueOwners = compare.getSquadUniqueOwners(matrix);
     const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
     for (const m of members) {
@@ -311,7 +300,6 @@ app.get("/api/squads/:code", async (req, res) => {
       ownedByCount: r.ownedByCount,
       wantedByCount: r.wantedByCount
     }));
-    const collectiveCompletionRate = completionSummary.collectiveCompletionRate;
 
     res.json({
       id: squad.id,
@@ -321,7 +309,10 @@ app.get("/api/squads/:code", async (req, res) => {
       createdAt: squad.created_at,
       joinOpen: squad.join_open !== false,
       members,
-      collectiveCompletionRate,
+      collectiveCompletionRate: completion.collectiveCompletionRate,
+      coveredVariantCount: completion.coveredVariantCount,
+      totalVariantCount: completion.totalVariantCount,
+      collectiveCompletionDisplay: completion.display,
       uniqueVariantTotal: uniqueOwners.totalUnique,
       recommendations
     });
@@ -1130,6 +1121,14 @@ async function getSquadCompletionScope(squad, reqUser) {
     includedMembers.push(memberId);
   }
 
+  const membersForMatrix = membersRes.rows.map(r => ({
+    userId: r.user_id,
+    username: String(r.user_id),
+    visible: true
+  }));
+  const matrix = await compare.buildSquadCollectionMatrix(membersForMatrix, activeCatalogue);
+  const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
+
   return {
     squadCode: squad.code,
     squadName: squad.name,
@@ -1139,7 +1138,9 @@ async function getSquadCompletionScope(squad, reqUser) {
     includedMemberCount: includedMembers.length,
     excludedUnreleasedVariants: allVariantCount - activeCatalogue.length,
     excludedPrivateCollections,
-    excludedInsufficientCollections
+    excludedInsufficientCollections,
+    ...completion,
+    collectiveCompletionDisplay: completion.display
   };
 }
 

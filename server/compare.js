@@ -295,18 +295,31 @@ async function buildSquadCollectionMatrix(members, catalogue) {
   return matrix;
 }
 
+function getSquadCollectiveCompletion(matrix, squadName = "La squad") {
+  const total = matrix.length;
+  const covered = matrix.filter(r => r.ownerCount > 0).length;
+  const rate = total ? Math.round((covered / total) * 10000) / 100 : 0;
+  const formattedRate = rate.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  const display = `${squadName} couvre ${formattedRate} % du catalogue.`;
+  return {
+    collectiveCompletionRate: rate,
+    coveredVariantCount: covered,
+    totalVariantCount: total,
+    display
+  };
+}
+
 async function getSquadCollectiveCompletionSummary(memberIds, catalogue) {
   if (!memberIds || memberIds.length === 0) {
     return { collectiveCompletionRate: 0, totalVariants: 0, ownedCount: 0 };
   }
   const members = memberIds.map(id => ({ userId: id, username: String(id), visible: true }));
   const matrix = await buildSquadCollectionMatrix(members, catalogue);
-  const total = matrix.length;
-  const ownedCount = matrix.filter(r => r.ownerCount > 0).length;
+  const result = getSquadCollectiveCompletion(matrix, "");
   return {
-    collectiveCompletionRate: total ? Math.round((ownedCount / total) * 10000) / 100 : 0,
-    totalVariants: total,
-    ownedCount
+    collectiveCompletionRate: result.collectiveCompletionRate,
+    totalVariants: result.totalVariantCount,
+    ownedCount: result.coveredVariantCount
   };
 }
 
@@ -1201,4 +1214,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadMissingVariants, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadMissingVariants, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
