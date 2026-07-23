@@ -270,7 +270,12 @@ async function buildSquadCollectionMatrix(members, catalogue) {
       spriteId: item.spriteId,
       spriteName: item.spriteName,
       variantName: item.variantName,
+      variantType: item.variantType || "Base",
       img: item.img,
+      rarity: item.rarity,
+      seasonId: item.seasonId,
+      eventId: item.eventId,
+      availabilityStatus: item.availabilityStatus,
       owners,
       missingMembers,
       unknownMembers,
@@ -328,6 +333,60 @@ async function getSquadRecommendations(memberIds, catalogue) {
   }
   recs.sort((a, b) => b.score - a.score);
   return recs.slice(0, 50);
+}
+
+function isMissingFromSquad(row) {
+  if (row.ownerCount !== 0) return false;
+  if (row.unknownCount > 0) return false;
+  if (row.missingCount === 0) return false;
+  const threshold = row.memberCount <= 1 ? 1 : Math.ceil(row.memberCount / 2);
+  return row.missingCount >= threshold;
+}
+
+function getSquadMissingVariants(matrix, squadName) {
+  const missing = matrix.filter(isMissingFromSquad).map(row => ({
+    variantId: row.variantId,
+    spriteId: row.spriteId,
+    spriteName: row.spriteName,
+    variantName: row.variantName,
+    variantType: row.variantType,
+    img: row.img,
+    rarity: row.rarity,
+    eventId: row.eventId,
+    availabilityStatus: row.availabilityStatus,
+    ownerCount: row.ownerCount,
+    missingMemberCount: row.missingCount,
+    unknownMemberCount: row.unknownCount,
+    classification: "missing_from_squad",
+    display: `Aucun membre de ${squadName} ne possède ${row.spriteName} ${row.variantName}.`
+  }));
+
+  const groupBy = (key, labelFn) => {
+    const groups = {};
+    for (const v of missing) {
+      const k = (v[key] === null || v[key] === undefined || v[key] === "") ? "_none" : v[key];
+      if (!groups[k]) groups[k] = { key: k, label: labelFn(v, k), count: 0, variants: [] };
+      groups[k].variants.push(v);
+      groups[k].count++;
+    }
+    return Object.values(groups).sort((a, b) => b.count - a.count || String(a.label).localeCompare(String(b.label)));
+  };
+
+  const bySprite = groupBy("spriteId", (v) => v.spriteName || v.spriteId);
+  const byRarity = groupBy("rarity", (v, k) => k === "_none" ? "Rareté inconnue" : `Rareté ${k}`);
+  const byEvent = groupBy("eventId", (v, k) => k === "_none" ? "Hors événement" : `Événement ${k}`);
+  const byAvailability = groupBy("availabilityStatus", (v, k) => k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`);
+  const byVariantType = groupBy("variantType", (v, k) => k);
+
+  return {
+    totalMissing: missing.length,
+    variants: missing,
+    bySprite,
+    byRarity,
+    byEvent,
+    byAvailability,
+    byVariantType
+  };
 }
 
 const DEFAULT_COMPLEMENTARITY_RARITY_WEIGHTS = {
@@ -1013,4 +1072,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadRecommendations, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadCollectiveCompletionSummary, getSquadMissingVariants, getSquadRecommendations, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
