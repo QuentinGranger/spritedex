@@ -441,9 +441,48 @@ function getDeadlineScore(endDate, availability) {
   return Math.max(0, 10 - daysUntil);
 }
 
+function getAcquisitionPriorityLevel(score) {
+  if (score >= 70) return "haute";
+  if (score >= 40) return "moyenne";
+  return "à surveiller";
+}
+
+function buildAcquisitionPriorityDisplay(item) {
+  const level = getAcquisitionPriorityLevel(item.score);
+  const reasons = [];
+
+  if (item.ownerCount === 0) {
+    reasons.push("personne dans la squad ne possède cette variante");
+  } else if (item.missingCount > 0) {
+    reasons.push(`${item.missingCount} membre${item.missingCount > 1 ? 's' : ''} de la squad ${item.missingCount > 1 ? 'la recherchent' : 'la recherche'}`);
+  }
+
+  if (item.priorityCount > 0) {
+    reasons.push(`${item.priorityCount} membre${item.priorityCount > 1 ? 's l\'ont marquée prioritaire' : ' l\'a marquée prioritaire'}`);
+  }
+
+  if (item.availability === "available_now") {
+    reasons.push("elle est disponible actuellement");
+  } else if (item.availability === "upcoming") {
+    reasons.push("elle sera disponible prochainement");
+  }
+
+  if (item.deadlineScore > 0) {
+    reasons.push("l'événement se termine bientôt");
+  }
+
+  if (item.isObjectiveTarget) {
+    reasons.push("elle est ciblée par un objectif actif");
+  }
+
+  if (reasons.length === 0) {
+    return `Priorité ${level} pour ${item.spriteName} ${item.variantName}.`;
+  }
+  return `Priorité ${level} : ${reasons.join(", ")}.`;
+}
+
 function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
   const results = [];
-  const now = new Date();
 
   for (const row of matrix) {
     if (row.ownerCount >= row.memberCount) continue;
@@ -462,8 +501,16 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
     const objectiveScore = activeGoalVariantIds.has(row.variantId) ? 10 : 0;
 
     const score = Math.min(100, impactScore + priorityScore + availabilityScore + rarityScore + deadlineScore + objectiveScore);
+    const scoreDetails = {
+      collectiveImpact: impactScore,
+      personalPriority: priorityScore,
+      availability: availabilityScore,
+      rarity: rarityScore,
+      eventUrgency: deadlineScore,
+      activeGoal: objectiveScore
+    };
 
-    results.push({
+    const item = {
       variantId: row.variantId,
       spriteId: row.spriteId,
       spriteName: row.spriteName,
@@ -473,18 +520,23 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
       availability,
       availabilityStatus: row.availabilityStatus,
       endDate: row.endDate,
+      ownerCount: row.ownerCount,
       missingCount: row.missingCount,
       missingMemberNames: row.missingMembers,
       priorityCount,
       isObjectiveTarget: objectiveScore > 0,
+      score,
+      scoreDetails,
       impactScore,
       priorityScore,
       availabilityScore,
       rarityScore,
       deadlineScore,
-      objectiveScore,
-      score
-    });
+      objectiveScore
+    };
+
+    item.display = buildAcquisitionPriorityDisplay(item);
+    results.push(item);
   }
 
   results.sort((a, b) => b.score - a.score || getAcquisitionRarityScore(b.rarity) - getAcquisitionRarityScore(a.rarity) || String(a.spriteName).localeCompare(String(b.spriteName)));
