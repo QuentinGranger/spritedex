@@ -7,7 +7,7 @@ const { normalizeCollection, normalizeVariantId } = require("./catalog");
 const { invalidateCompareCacheForUser } = require("./compare");
 const { app } = require("./core");
 const { pool } = require("./db");
-const { broadcastCompareUpdate, broadcastSquadUpdate } = require("./ws");
+const { broadcastCompareUpdate, broadcastSquadUpdate, broadcastSquadCompletionUpdate } = require("./ws");
 const { logSquadCollectionEvent } = require("./squad-activity");
 const { refreshSquadStats, scheduleSquadStatsRefresh } = require("./routes-squad-invitations");
 const { checkAffectedGoals } = require("./routes-goals");
@@ -173,6 +173,7 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
     await checkAffectedGoals(userId, variantId);
     res.json({ ok: true });
     broadcastSquadUpdate(userId);
+    broadcastSquadCompletionUpdate(userId);
     notifyCollectionChanges(userId, [{
       variantId,
       spriteId: baseSpriteId,
@@ -264,6 +265,7 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
     }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     broadcastSquadUpdate(userId);
+    broadcastSquadCompletionUpdate(userId);
     invalidateCompareCacheForUser(userId);
     invalidateSquadAnalysisCacheForUser(userId);
     notifyCollectionChanges(userId, notifyChanges);
@@ -351,6 +353,8 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     invalidateCompareCacheForUser(userId);
     invalidateSquadAnalysisCacheForUser(userId);
+    broadcastSquadUpdate(userId);
+    broadcastSquadCompletionUpdate(userId);
     notifyCollectionChanges(userId, notifyChanges);
     broadcastCompareUpdate(userId, { changes: compareChanges });
   } catch (err) {
@@ -370,6 +374,7 @@ app.delete("/api/collection/:userId", async (req, res) => {
     res.json({ ok: true });
     invalidateCompareCacheForUser(req.params.userId);
     invalidateSquadAnalysisCacheForUser(req.params.userId);
+    broadcastSquadCompletionUpdate(req.params.userId);
     broadcastCompareUpdate(req.params.userId, { type: "compare_reset" });
   } catch (err) {
     console.error(err);

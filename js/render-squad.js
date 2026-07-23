@@ -129,6 +129,14 @@ function connectSquadWs() {
       if (msg.type === "squad_update" && msg.code === state.activeSquad) {
         loadSquad(state.activeSquad);
       }
+      if (msg.type === "squad_completion_update" && msg.code === state.activeSquad && msg.summary) {
+        if (typeof squadEngineReport !== "undefined" && squadEngineReport) {
+          squadEngineReport.summary = msg.summary;
+          squadEngineReport.catalogueVersion = msg.summary.catalogueVersion;
+          squadEngineReport.generatedAt = msg.summary.generatedAt;
+          if (typeof renderSquadEngineTab === "function") renderSquadEngineTab(squadEngineTab);
+        }
+      }
       if (msg.type === "news_update") {
         checkNewsNotifications();
         if (notifDropdownOpen) {

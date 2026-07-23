@@ -1,8 +1,9 @@
 // ws.js — extracted from server.js
 
-const { validateSession } = require("./auth");
+const { validateSession, canViewCollection } = require("./auth");
 const { wss } = require("./core");
 const { Pool } = require("pg");
+const compare = require("./compare");
 
 // ── WebSocket : client registry ──
 // Maps userId (string) -> Set of ws clients
@@ -104,6 +105,141 @@ async function broadcastSquadUpdate(userId) {
     }
   } catch (e) {
     console.warn("broadcastSquadUpdate error", e);
+  }
+}
+
+// Build per-member completion summaries for a squad.
+// Returns a Map viewerUserId -> summary object.
+async function getSquadCompletionSummaryForAll(squad) {
+  const membersRes = await pool.query(
+    `SELECT sm.user_id, u.username, u.display_name
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+    [squad.id]
+  );
+
+  const members = membersRes.rows.map(r => ({
+    userId: r.user_id,
+    username: r.username || String(r.user_id)
+  }));
+
+  const catalogueAll = await compare.getServerCompareCatalogItemsCached();
+  const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const allMembers = members.map(m => ({ ...m, visible: true }));
+  const allMatrix = await compare.buildSquadCollectionMatrix(allMembers, activeCatalogue);
+
+  const visibility = new Map();
+  await Promise.all(members.flatMap(viewer => members.map(async member => {
+    const key = `${viewer.userId}:${member.userId}`;
+    if (String(viewer.userId) === String(member.userId)) {
+      visibility.set(key, true);
+      return;
+    }
+    visibility.set(key, await canViewCollection(viewer.userId, member.userId));
+  })));
+
+  const { computeCatalogueVersion } = require("./squad-analysis-cache");
+  const catalogueVersion = computeCatalogueVersion(catalogueAll);
+  const generatedAt = new Date().toISOString();
+
+  const summaries = new Map();
+  for (const viewer of members) {
+    const viewerKey = String(viewer.userId);
+    const memberVisibility = members.map(m =>
+      String(m.userId) === viewerKey || visibility.get(`${viewerKey}:${m.userId}`)
+    );
+
+    const derivedMatrix = allMatrix.map(row => {
+      let ownerCount = 0;
+      let missingCount = 0;
+      let unknownCount = 0;
+      const owners = [];
+      const missingMembers = [];
+      const unknownMembers = [];
+      const maskedMembers = row.members.map((m, idx) => {
+        const visible = memberVisibility[idx];
+        if (!visible) {
+          unknownCount++;
+          unknownMembers.push(m.username);
+          return { ...m, status: "unknown", priority: "none", note: "", classification: "unknown", visible: false };
+        }
+        if (m.classification === "owned") { ownerCount++; owners.push(m.username); }
+        else if (m.classification === "missing") { missingCount++; missingMembers.push(m.username); }
+        else { unknownCount++; unknownMembers.push(m.username); }
+        return { ...m, visible: true };
+      });
+
+      return {
+        ...row,
+        ownerCount,
+        missingCount,
+        unknownCount,
+        owners,
+        missingMembers,
+        unknownMembers,
+        members: maskedMembers
+      };
+    });
+
+    const completion = compare.getSquadCollectiveCompletion(derivedMatrix, squad.name);
+    const averageOwnership = compare.getSquadAverageOwnership(derivedMatrix, squad.name);
+    const missing = compare.getSquadMissingVariants(derivedMatrix, squad.name);
+    const uniqueOwners = compare.getSquadUniqueOwners(derivedMatrix);
+    const shared = compare.getSquadSharedVariants(derivedMatrix);
+    const mostComplementary = compare.getSquadMostComplementaryMember(derivedMatrix, squad.name);
+
+    const includedMembers = members.filter((_, idx) => memberVisibility[idx]);
+
+    summaries.set(viewerKey, {
+      squadCode: squad.code,
+      squadName: squad.name,
+      catalogueVariantCount: activeCatalogue.length,
+      catalogueVersion,
+      generatedAt,
+      totalActiveMembers: members.length,
+      includedMemberCount: includedMembers.length,
+      excludedPrivateCollections: members.length - includedMembers.length,
+      collectiveCompletionRate: completion.collectiveCompletionRate,
+      coveredVariantCount: completion.coveredVariantCount,
+      averageOwnershipRate: averageOwnership.averageOwnershipRate,
+      totalMissing: missing.totalMissing,
+      totalUnique: uniqueOwners.totalUnique,
+      totalShared: shared.totalShared,
+      mostComplementaryMember: mostComplementary ? {
+        userId: mostComplementary.userId,
+        username: mostComplementary.username,
+        uniqueVariantCount: mostComplementary.uniqueVariantCount
+      } : null
+    });
+  }
+
+  return summaries;
+}
+
+// Broadcast a server-computed completion summary to all active squad members.
+async function broadcastSquadCompletionUpdate(userId) {
+  try {
+    const squadsResult = await pool.query(
+      `SELECT s.id, s.code, s.name FROM squads s
+       JOIN squad_members sm ON sm.squad_id = s.id
+       WHERE sm.user_id = $1 AND sm.status = 'active'`,
+      [userId]
+    );
+
+    for (const row of squadsResult.rows) {
+      const summaries = await getSquadCompletionSummaryForAll({ id: row.id, code: row.code, name: row.name });
+      for (const [viewerId, summary] of summaries) {
+        const sockets = wsClients.get(viewerId);
+        if (!sockets) continue;
+        const payload = JSON.stringify({ type: "squad_completion_update", code: row.code, summary });
+        for (const ws of sockets) {
+          if (ws.readyState === 1) ws.send(payload);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("broadcastSquadCompletionUpdate error", e);
   }
 }
 
@@ -215,4 +351,4 @@ function broadcastNewsUpdate(payload) {
   }
 }
 
-module.exports = { broadcastCompareUpdate, broadcastGoalUpdate, broadcastNewsUpdate, broadcastSquadUpdate, pool, shouldUseSSL, wsClients };
+module.exports = { broadcastCompareUpdate, broadcastGoalUpdate, broadcastNewsUpdate, broadcastSquadUpdate, broadcastSquadCompletionUpdate, pool, shouldUseSSL, wsClients };
