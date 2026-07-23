@@ -483,7 +483,8 @@ function buildAcquisitionPriorityDisplay(item) {
 
   let impactSentence = "";
   if (item.impactType === "collective") {
-    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} ferait passer la couverture collective de ${item.collectiveCoverageBefore}% à ${item.collectiveCoverageAfter}%.`;
+    const delta = item.collectiveCoverageDelta;
+    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} ferait passer la couverture collective de ${item.collectiveCoverageBefore}% à ${item.collectiveCoverageAfter}% (gain de ${delta >= 0 ? '+' : ''}${delta} point${delta === 1 || delta === -1 ? '' : 's'}).`;
   } else if (item.impactType === "individual") {
     impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} n'augmenterait pas la couverture collective (déjà possédée par ${item.ownerCount} membre${item.ownerCount > 1 ? 's' : ''}).`;
   }
@@ -531,6 +532,7 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
       ? Math.round(((coveredVariants + 1) / totalVariants) * 10000) / 100
       : collectiveCoverageBefore;
     const collectiveCoverageGain = impactType === "collective" ? 1 : 0;
+    const collectiveCoverageDelta = Math.round((collectiveCoverageAfter - collectiveCoverageBefore) * 100) / 100;
 
     const item = {
       variantId: row.variantId,
@@ -558,7 +560,8 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
       impactType,
       collectiveCoverageBefore,
       collectiveCoverageAfter,
-      collectiveCoverageGain
+      collectiveCoverageGain,
+      collectiveCoverageDelta
     };
 
     item.display = buildAcquisitionPriorityDisplay(item);
