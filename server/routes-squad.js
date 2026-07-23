@@ -1553,16 +1553,16 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
       [squad.id]
     );
 
-    const members = membersResult.rows.map(r => ({
-      userId: r.user_id,
-      username: r.username || String(r.user_id),
-      visible: true
-    }));
+    const members = [];
+    for (const r of membersResult.rows) {
+      const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+      members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
+    }
     const memberIds = members.map(m => m.userId);
 
     const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
       pool.query(
-        "SELECT variant_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
+        "SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
         [squad.id]
       ),
       pool.query(
@@ -1576,12 +1576,33 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
     ]);
 
     const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+    const activeGoalVariantCounts = new Map();
+    const memberGoalVariantSet = new Set();
+    for (const r of goalsResult.rows) {
+      if (!r.variant_id) continue;
+      const key = `${r.user_id}:${r.variant_id}`;
+      memberGoalVariantSet.add(key);
+      activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
+    }
+
     const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
     const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
 
+    const excludedSeasonIds = new Set(
+      String(req.query.excludeSeason || "")
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean)
+    );
+
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser);
+    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+      excludedSeasonIds,
+      activeGoalVariantCounts,
+      memberGoalVariantSet,
+      maxGoalAssignments: 2
+    });
 
     res.json({
       squadCode: squad.code,

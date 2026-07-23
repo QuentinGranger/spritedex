@@ -3,7 +3,7 @@
 const analytics = require("../analytics");
 const secLog = require("../security-logger");
 const { areFriends, canViewCollection, checkPrivacyAccess, getCollectionAccessReason, getRequestingUser, getVisibility, isBlocked, shareSquad } = require("./auth");
-const { buildAcquisitionMethod, buildAvailability } = require("./catalog");
+const { buildAcquisitionMethod, buildAvailability, buildRecurrence } = require("./catalog");
 const { app } = require("./core");
 const { pool } = require("./db");
 const crypto = require("crypto");
@@ -144,6 +144,7 @@ async function getServerCompareCatalogItems() {
     if (!sprite) continue;
     const variantAcquisition = buildAcquisitionMethod(v.acquisition && Object.keys(v.acquisition || {}).length ? v.acquisition : sprite.acquisition);
     const variantAvailability = buildAvailability(v.availability && Object.keys(v.availability || {}).length ? v.availability : sprite.availability);
+    const variantRecurrence = buildRecurrence(variantAvailability.recurrence);
     items.push({
       id: v.id,
       variantId: v.id,
@@ -160,6 +161,8 @@ async function getServerCompareCatalogItems() {
       dataStatus: v.data_status || sprite.data_status || "",
       availabilityStatus: variantAvailability.status,
       availabilityEndDate: variantAvailability.endDate || null,
+      availability: { ...variantAvailability, recurrence: variantRecurrence },
+      availabilityRecurrenceStatus: variantRecurrence.status,
       acquisitionMethod: variantAcquisition.type,
       releaseDate: variantAvailability.startDate || v.first_observed_at || sprite.added_date,
       endDate: variantAvailability.endDate || null,
@@ -243,7 +246,8 @@ async function buildSquadCollectionMatrix(members, catalogue) {
         username: m.username,
         status: entry.status || "new",
         priority: entry.priority || "none",
-        classification
+        classification,
+        visible: m.visible !== false
       });
 
       if (classification === "owned") {
@@ -282,6 +286,8 @@ async function buildSquadCollectionMatrix(members, catalogue) {
       seasonId: item.seasonId,
       eventId: item.eventId,
       availabilityStatus: item.availabilityStatus,
+      availability: item.availability,
+      availabilityRecurrenceStatus: item.availabilityRecurrenceStatus,
       endDate: item.endDate || null,
       owners,
       missingMembers,
@@ -587,7 +593,31 @@ function computeSquadMemberStats(matrix) {
   return stats;
 }
 
-function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {}, lastActiveByUser = {}) {
+function isVariantAssignableForAcquisition(row, variant, excludedSeasonIds, activeGoalVariantCounts, memberGoalVariantSet, maxGoalAssignments) {
+  const availability = classifyRecommendationAvailability(row.availabilityStatus);
+  if (availability === "ended" || availability === "not_observed") {
+    const recurrence = row.availability?.recurrence?.status || "unknown";
+    if (!["confirmed_recurring", "possible_return"].includes(recurrence)) {
+      return false;
+    }
+  }
+
+  if (row.seasonId && excludedSeasonIds.has(String(row.seasonId))) return false;
+
+  const variantGoalCount = activeGoalVariantCounts.get(variant.variantId) || 0;
+  if (variantGoalCount >= maxGoalAssignments) return false;
+
+  return true;
+}
+
+function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {}, lastActiveByUser = {}, options = {}) {
+  const {
+    excludedSeasonIds = new Set(),
+    activeGoalVariantCounts = new Map(),
+    memberGoalVariantSet = new Set(),
+    maxGoalAssignments = 2
+  } = options;
+
   const stats = computeSquadMemberStats(matrix);
   const assignments = [];
   const assignedCounts = {};
@@ -597,10 +627,27 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
     const row = matrix.find(r => r.variantId === variant.variantId);
     if (!row) continue;
 
+    if (!isVariantAssignableForAcquisition(row, variant, excludedSeasonIds, activeGoalVariantCounts, memberGoalVariantSet, maxGoalAssignments)) {
+      assignments.push({
+        ...variant,
+        responsible: null,
+        secondary: null,
+        assignmentScore: null,
+        assignmentReason: "Variante non assignable",
+        secondaryScore: null,
+        secondaryReason: null,
+        recommendedMember: null,
+        notAssignable: true
+      });
+      continue;
+    }
+
     const candidates = [];
 
     for (const m of row.members || []) {
       if (m.classification === "owned") continue;
+      if (m.visible === false) continue;
+      if (memberGoalVariantSet.has(`${m.userId}:${variant.variantId}`)) continue;
 
       const s = stats[String(m.userId)];
       if (!s) continue;
@@ -670,7 +717,7 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
       responsible: primary ? { userId: primary.userId, username: primary.username } : null,
       secondary: secondary ? { userId: secondary.userId, username: secondary.username } : null,
       assignmentScore: primary ? Math.round(primary.score) : null,
-      assignmentReason: primary ? primary.reasons.join(", ") : null,
+      assignmentReason: primary ? primary.reasons.join(", ") : "Aucun membre éligible",
       secondaryScore: secondary ? Math.round(secondary.score) : null,
       secondaryReason: secondary ? secondary.reasons.join(", ") : null,
       // legacy alias for compatibility
