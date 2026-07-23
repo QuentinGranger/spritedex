@@ -286,6 +286,7 @@ app.get("/api/squads/:code", async (req, res) => {
     ]);
 
     const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
+    const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
     const uniqueOwners = compare.getSquadUniqueOwners(matrix);
     const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
     for (const m of members) {
@@ -313,6 +314,10 @@ app.get("/api/squads/:code", async (req, res) => {
       coveredVariantCount: completion.coveredVariantCount,
       totalVariantCount: completion.totalVariantCount,
       collectiveCompletionDisplay: completion.display,
+      averageOwnershipRate: averageOwnership.averageOwnershipRate,
+      ownedVariantsSum: averageOwnership.ownedVariantsSum,
+      averageVariantCount: averageOwnership.averageVariantCount,
+      averageOwnershipDisplay: averageOwnership.display,
       uniqueVariantTotal: uniqueOwners.totalUnique,
       recommendations
     });
@@ -1128,6 +1133,7 @@ async function getSquadCompletionScope(squad, reqUser) {
   }));
   const matrix = await compare.buildSquadCollectionMatrix(membersForMatrix, activeCatalogue);
   const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
+  const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
 
   return {
     squadCode: squad.code,
@@ -1140,7 +1146,11 @@ async function getSquadCompletionScope(squad, reqUser) {
     excludedPrivateCollections,
     excludedInsufficientCollections,
     ...completion,
-    collectiveCompletionDisplay: completion.display
+    collectiveCompletionDisplay: completion.display,
+    averageOwnershipRate: averageOwnership.averageOwnershipRate,
+    ownedVariantsSum: averageOwnership.ownedVariantsSum,
+    averageVariantCount: averageOwnership.averageVariantCount,
+    averageOwnershipDisplay: averageOwnership.display
   };
 }
 
