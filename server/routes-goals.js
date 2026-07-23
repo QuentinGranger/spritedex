@@ -31,6 +31,24 @@ app.post("/api/collection-goals", async (req, res) => {
       if (!membership.rows.length) {
         return res.status(403).json({ error: "Vous n'êtes pas membre actif de cette escouade" });
       }
+
+      const [squadResult, activeGoalsResult] = await Promise.all([
+        pool.query("SELECT max_active_goals_per_member FROM squads WHERE id = $1", [squadIdNum]),
+        pool.query(
+          "SELECT COUNT(*) AS cnt FROM collection_goals WHERE user_id = $1 AND squad_id = $2 AND status = 'active'",
+          [reqUser, squadIdNum]
+        )
+      ]);
+
+      const maxActiveGoals = squadResult.rows[0]?.max_active_goals_per_member ?? 3;
+      const activeGoalCount = parseInt(activeGoalsResult.rows[0].cnt, 10);
+      if (activeGoalCount >= maxActiveGoals) {
+        return res.status(429).json({
+          error: "Limite d'objectifs actifs atteinte",
+          maxActiveGoals,
+          activeGoalCount
+        });
+      }
     }
 
     const result = await pool.query(

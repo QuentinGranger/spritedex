@@ -351,6 +351,7 @@ async function ensureSquadTables() {
     `);
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS join_open BOOLEAN NOT NULL DEFAULT TRUE`);
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS logo_url TEXT`);
+    await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS max_active_goals_per_member INTEGER NOT NULL DEFAULT 3`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sprite_variants (
         id VARCHAR(100) PRIMARY KEY,

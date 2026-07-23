@@ -213,7 +213,7 @@ async function memberAcceptsFriendRequests(reqUser, memberId) {
 app.get("/api/squads/:code", async (req, res) => {
   try {
     const squadResult = await pool.query(
-      "SELECT id, code, name, created_by, created_at, join_open FROM squads WHERE code = $1",
+      "SELECT id, code, name, created_by, created_at, join_open, max_active_goals_per_member FROM squads WHERE code = $1",
       [req.params.code.trim().toUpperCase()]
     );
     if (!squadResult.rows.length) {
@@ -315,6 +315,7 @@ app.get("/api/squads/:code", async (req, res) => {
       createdBy: squad.created_by,
       createdAt: squad.created_at,
       joinOpen: squad.join_open !== false,
+      maxActiveGoalsPerMember: squad.max_active_goals_per_member,
       members,
       collectiveCompletionRate: completion.collectiveCompletionRate,
       coveredVariantCount: completion.coveredVariantCount,
@@ -466,6 +467,39 @@ app.post("/api/squads/:code/toggle-join", async (req, res) => {
     res.json({ ok: true, joinOpen: newState });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : update settings (creator only) ──
+app.post("/api/squads/:code/settings", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const { maxActiveGoalsPerMember } = req.body || {};
+    const squadResult = await pool.query(
+      "SELECT id, created_by, max_active_goals_per_member FROM squads WHERE code = $1",
+      [req.params.code.trim().toUpperCase()]
+    );
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (String(squad.created_by) !== String(reqUser)) {
+      return res.status(403).json({ error: "Seul le créateur peut modifier les paramètres" });
+    }
+
+    if (maxActiveGoalsPerMember === undefined || maxActiveGoalsPerMember === null || maxActiveGoalsPerMember === "") {
+      return res.status(400).json({ error: "maxActiveGoalsPerMember requis" });
+    }
+
+    const parsed = parseInt(maxActiveGoalsPerMember, 10);
+    if (Number.isNaN(parsed) || parsed < 1 || parsed > 20) {
+      return res.status(400).json({ error: "maxActiveGoalsPerMember doit être entre 1 et 20" });
+    }
+
+    await pool.query("UPDATE squads SET max_active_goals_per_member = $1 WHERE id = $2", [parsed, squad.id]);
+    res.json({ ok: true, maxActiveGoalsPerMember: parsed });
+  } catch (err) {
+    console.error("[/api/squads/:code/settings]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
