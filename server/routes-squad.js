@@ -1945,6 +1945,137 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
   };
 }
 
+async function getSquadRecommendedGoals(squad, reqUser) {
+  const membersResult = await pool.query(
+    `SELECT sm.user_id, u.username, u.display_name
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+    [squad.id]
+  );
+
+  const members = [];
+  for (const r of membersResult.rows) {
+    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    members.push({ userId: r.user_id, username: r.username, visible });
+  }
+
+  const catalogueAll = await compare.getServerCompareCatalogItemsCached();
+  const matrix = await compare.buildSquadCollectionMatrix(members, catalogueAll);
+  if (matrix.length === 0) return { goals: [] };
+
+  const totalVariants = matrix.length;
+  const coveredVariants = matrix.filter(r => r.ownerCount > 0).length;
+  const completionRate = totalVariants ? Math.round((coveredVariants / totalVariants) * 10000) / 100 : 0;
+
+  const priorities = compare.getSquadAcquisitionPriority(matrix);
+  const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities);
+
+  const goals = [];
+
+  // 1. Completion milestone goal
+  const nextMilestone = Math.min(100, Math.ceil((completionRate + 0.01) / 5) * 5);
+  if (nextMilestone > completionRate) {
+    const targetCovered = Math.ceil((nextMilestone / 100) * totalVariants);
+    const missingForMilestone = Math.max(0, targetCovered - coveredVariants);
+    const deadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    goals.push({
+      type: "completion_milestone",
+      title: `Atteindre ${nextMilestone} % de complétion collective cette semaine`,
+      target: { kind: "completion_rate", value: nextMilestone, missingVariants: missingForMilestone },
+      participants: members.map(m => ({ userId: m.userId, username: m.username })),
+      deadline,
+      currentProgress: completionRate,
+      reason: `La squad est actuellement à ${completionRate} % de complétion. ${missingForMilestone} variante${missingForMilestone > 1 ? 's' : ''} supplémentaire${missingForMilestone > 1 ? 's' : ''} atteindraient l'objectif.`,
+      expectedCollectiveGain: missingForMilestone
+    });
+  }
+
+  // 2. Event-based goals
+  const eventsResult = await pool.query(
+    `SELECT id, name, end_date FROM events
+     WHERE end_date IS NULL OR end_date > NOW() - INTERVAL '1 day'
+     ORDER BY end_date NULLS LAST`
+  );
+  const eventGoals = [];
+  for (const event of eventsResult.rows) {
+    const eventVariants = matrix.filter(r => r.eventId === event.id);
+    if (eventVariants.length === 0) continue;
+    const missing = eventVariants.filter(r => r.ownerCount === 0);
+    if (missing.length === 0) continue;
+    const covered = eventVariants.filter(r => r.ownerCount > 0).length;
+    const urgency = compare.classifyEventUrgency(event.end_date);
+    const displayNames = missing.slice(0, 5).map(r => `${r.spriteName} ${r.variantName}`).join(", ");
+    const suffix = missing.length > 5 ? ` et ${missing.length - 5} autres` : "";
+    eventGoals.push({
+      type: "event_variants",
+      title: `Obtenir ${missing.length} variante${missing.length > 1 ? 's' : ''} encore manquante${missing.length > 1 ? 's' : ''} avant la fin de ${event.name}`,
+      target: { kind: "event_variants", eventId: event.id, eventName: event.name, variantIds: missing.map(r => r.variantId), names: displayNames + suffix },
+      participants: members.map(m => ({ userId: m.userId, username: m.username })),
+      deadline: event.end_date || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      currentProgress: eventVariants.length ? Math.round((covered / eventVariants.length) * 10000) / 100 : 0,
+      urgency,
+      reason: `L'événement ${event.name} est classé "${urgency.level}"${urgency.daysRemaining !== null ? ` et se termine dans ${urgency.daysRemaining} jour(s)` : ""}.`,
+      expectedCollectiveGain: missing.length
+    });
+  }
+  const levelOrder = { ending_today: 0, urgent: 1, soon: 2, normal: 3, unknown: 4, ended: 5 };
+  eventGoals.sort((a, b) => (levelOrder[a.urgency.level] ?? 4) - (levelOrder[b.urgency.level] ?? 4) || b.expectedCollectiveGain - a.expectedCollectiveGain);
+  goals.push(...eventGoals.slice(0, 3));
+
+  // 3. Rarity goals for currently available variants missing from the squad
+  const byRarity = new Map();
+  for (const row of matrix) {
+    if (row.ownerCount === 0 && row.availabilityStatus === "available_now") {
+      const rarity = row.rarity || "_none";
+      if (!byRarity.has(rarity)) byRarity.set(rarity, []);
+      byRarity.get(rarity).push(row);
+    }
+  }
+  for (const [rarity, rows] of byRarity) {
+    if (!rows.length) continue;
+    const totalRarity = matrix.filter(r => (r.rarity || "_none") === rarity).length;
+    const coveredRarity = matrix.filter(r => (r.rarity || "_none") === rarity && r.ownerCount > 0).length;
+    const ends = rows.map(r => r.endDate).filter(Boolean).sort();
+    const deadline = ends.length ? ends[0] : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const names = rows.slice(0, 5).map(r => `${r.spriteName} ${r.variantName}`).join(", ");
+    const suffix = rows.length > 5 ? ` et ${rows.length - 5} autres` : "";
+    goals.push({
+      type: "rarity_completion",
+      title: `Compléter toutes les variantes ${rarity} actuellement disponibles`,
+      target: { kind: "rarity", rarity, variantIds: rows.map(r => r.variantId), names: names + suffix },
+      participants: members.map(m => ({ userId: m.userId, username: m.username })),
+      deadline,
+      currentProgress: totalRarity ? Math.round((coveredRarity / totalRarity) * 10000) / 100 : 0,
+      reason: `${rows.length} variante${rows.length > 1 ? 's' : ''} ${rarity} disponible${rows.length > 1 ? 's' : ''} ne sont pas encore dans la collection collective.`,
+      expectedCollectiveGain: rows.length
+    });
+  }
+
+  // 4. Distributed assignment among top complementary members
+  const topAssignments = assignments.filter(a => a.impactType === "collective" && a.responsible).slice(0, 5);
+  if (topAssignments.length >= 1) {
+    const variantIds = topAssignments.map(a => a.variantId);
+    const names = topAssignments.slice(0, 5).map(a => `${a.spriteName} ${a.variantName}`).join(", ");
+    const suffix = topAssignments.length > 5 ? ` et ${topAssignments.length - 5} autres` : "";
+    const participants = [...new Map(topAssignments.map(a => [a.responsible.userId, a.responsible])).values()];
+    const ends = topAssignments.map(a => a.endDate).filter(Boolean).sort();
+    const deadline = ends.length ? ends[0] : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    goals.push({
+      type: "distributed_assignment",
+      title: `Répartir ${topAssignments.length} variantes manquantes entre ${participants.map(p => p.username).join(", ")}`,
+      target: { kind: "variants_assignment", variantIds, names: names + suffix },
+      participants,
+      deadline,
+      currentProgress: 0,
+      reason: "Ces variantes sont manquantes de toute la squad et les membres sélectionnés sont les mieux placés pour les obtenir.",
+      expectedCollectiveGain: topAssignments.length
+    });
+  }
+
+  return { goals };
+}
+
 async function getSquadCompletionScope(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
@@ -2286,6 +2417,27 @@ app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
     res.json({ squadCode: squad.code, squadName: squad.name, mostComplementaryMember });
   } catch (err) {
     console.error("[/api/squads/:code/most-complementary-member]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : recommended goals ──
+app.get("/api/squads/:code/recommended-goals", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query(
+      "SELECT id, code, name FROM squads WHERE code = $1",
+      [req.params.code.trim().toUpperCase()]
+    );
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const result = await getSquadRecommendedGoals(squad, reqUser);
+    res.json({ squadCode: squad.code, squadName: squad.name, ...result });
+  } catch (err) {
+    console.error("[/api/squads/:code/recommended-goals]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
