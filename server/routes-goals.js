@@ -1,6 +1,6 @@
 // routes-goals.js — collection goals (personal or collective).
 
-const { getRequestingUser } = require("./auth");
+const { getRequestingUser, isBlocked } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const compare = require("./compare");
@@ -8,6 +8,16 @@ const { broadcastGoalUpdate } = require("./ws");
 const analytics = require("../analytics");
 const pushService = require("../push-service");
 const { logSquadGoalCreated, logSquadGoalCompleted } = require("./squad-activity");
+
+async function hasBlockedPair(userIds) {
+  const ids = [...new Set(userIds.map(String))];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      if (await isBlocked(ids[i], ids[j])) return true;
+    }
+  }
+  return false;
+}
 
 // ── Collection goals : create ──
 app.post("/api/collection-goals", async (req, res) => {
@@ -172,6 +182,12 @@ app.post("/api/collection-goals/from-recommendation", async (req, res) => {
   const deadline = overrides?.deadline || recommendation.deadline || null;
   const participants = recommendation.participants || [];
   const assignedMemberIds = overrides?.assignedMemberIds || participants.map(p => p.userId).filter(Boolean);
+
+  const blockedGoalMemberIds = [reqUser, ...assignedMemberIds].filter(Boolean);
+  if (await hasBlockedPair(blockedGoalMemberIds)) {
+    return res.status(403).json({ error: "Impossible de créer un objectif entre des membres bloqués" });
+  }
+
   const assignedMemberNames = participants.map(p => p.username || p.userId).filter(Boolean);
   const expectedGain = recommendation.expectedCollectiveGain ?? "—";
   const reason = recommendation.reason || "Objectif issu d'une recommandation";

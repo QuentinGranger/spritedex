@@ -662,7 +662,7 @@ function isVariantAssignableForAcquisition(row, variant, excludedSeasonIds, acti
   return true;
 }
 
-function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {}, lastActiveByUser = {}, options = {}) {
+async function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {}, lastActiveByUser = {}, options = {}) {
   const {
     excludedSeasonIds = new Set(),
     activeGoalVariantCounts = new Map(),
@@ -674,6 +674,20 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
   const assignments = [];
   const assignedCounts = {};
   const now = Date.now();
+
+  const firstRow = matrix[0];
+  const matrixMemberIds = (firstRow && firstRow.members || []).map(m => m.userId).filter(Boolean);
+  const blockedPairs = new Set();
+  for (let i = 0; i < matrixMemberIds.length; i++) {
+    for (let j = i + 1; j < matrixMemberIds.length; j++) {
+      const a = matrixMemberIds[i];
+      const b = matrixMemberIds[j];
+      if (await isBlocked(a, b)) {
+        blockedPairs.add(`${a}:${b}`);
+        blockedPairs.add(`${b}:${a}`);
+      }
+    }
+  }
 
   for (const variant of priorities) {
     const row = matrix.find(r => r.variantId === variant.variantId);
@@ -757,8 +771,17 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
 
     candidates.sort((a, b) => b.score - a.score);
 
-    const primary = candidates[0] || null;
-    const secondary = candidates[1] || null;
+    let primary = null;
+    let secondary = null;
+    for (const c of candidates) {
+      if (!primary) {
+        primary = c;
+        continue;
+      }
+      if (!secondary && !blockedPairs.has(`${primary.userId}:${c.userId}`)) {
+        secondary = c;
+      }
+    }
 
     if (primary) {
       assignedCounts[String(primary.userId)] = (assignedCounts[String(primary.userId)] || 0) + 1;

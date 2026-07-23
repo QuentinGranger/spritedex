@@ -1102,9 +1102,17 @@ async function getSquadComplementaryPairs(squad, reqUser) {
     })
   );
 
+  const blockedPairs = new Set();
+  for (let i = 0; i < allowed.length; i++) {
+    for (let j = i + 1; j < allowed.length; j++) {
+      if (await isBlocked(allowed[i].id, allowed[j].id)) blockedPairs.add(`${i}:${j}`);
+    }
+  }
+
   const pairs = [];
   for (let i = 0; i < allowed.length; i++) {
     for (let j = i + 1; j < allowed.length; j++) {
+      if (blockedPairs.has(`${i}:${j}`)) continue;
       const a = allowed[i];
       const b = allowed[j];
       const userA = { id: a.id, displayName: a.display_name || a.username, collection: memberCollections[i] };
@@ -1159,9 +1167,18 @@ async function getSquadBestPair(squad, reqUser) {
   if (allowed.length < 2) return null;
 
   const collections = await Promise.all(allowed.map(u => compare.loadServerCompareCollection(u.id)));
+
+  const blockedPairs = new Set();
+  for (let i = 0; i < allowed.length; i++) {
+    for (let j = i + 1; j < allowed.length; j++) {
+      if (await isBlocked(allowed[i].id, allowed[j].id)) blockedPairs.add(`${i}:${j}`);
+    }
+  }
+
   const pairs = [];
   for (let i = 0; i < allowed.length; i++) {
     for (let j = i + 1; j < allowed.length; j++) {
+      if (blockedPairs.has(`${i}:${j}`)) continue;
       const a = allowed[i];
       const b = allowed[j];
       const userA = { id: a.id, displayName: a.display_name || a.username, collection: collections[i] };
@@ -1235,6 +1252,16 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
   }
 
   if (members.length < size) return { teamSize: size, mode: rankingMode, teams: [] };
+
+  const blockedPairs = new Set();
+  for (let i = 0; i < members.length; i++) {
+    for (let j = i + 1; j < members.length; j++) {
+      if (await isBlocked(members[i].id, members[j].id)) {
+        blockedPairs.add(`${i}:${j}`);
+        blockedPairs.add(`${j}:${i}`);
+      }
+    }
+  }
 
   const total = catalogue.length;
   const rarityTotals = {};
@@ -1335,6 +1362,14 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
       return;
     }
     for (let i = start; i < members.length; i++) {
+      let blocked = false;
+      for (const idx of current) {
+        if (blockedPairs.has(`${idx}:${i}`)) {
+          blocked = true;
+          break;
+        }
+      }
+      if (blocked) continue;
       current.push(i);
       generate(i + 1, current);
       current.pop();
@@ -1971,7 +2006,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
   const completionRate = totalVariants ? Math.round((coveredVariants / totalVariants) * 10000) / 100 : 0;
 
   const priorities = compare.getSquadAcquisitionPriority(matrix);
-  const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities);
+  const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities);
 
   const goals = [];
 
@@ -2214,7 +2249,7 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
   const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
   const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
   const priorityIds = new Set(priorities.map(p => p.variantId).filter(Boolean));
-  const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+  const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
     excludedSeasonIds: new Set(),
     activeGoalVariantCounts,
     memberGoalVariantSet,
@@ -2775,7 +2810,7 @@ app.get("/api/squads/:squadId/completion/recommendations", async (req, res) => {
 
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
       excludedSeasonIds,
       activeGoalVariantCounts,
       memberGoalVariantSet,
@@ -3141,7 +3176,7 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
 
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
       excludedSeasonIds,
       activeGoalVariantCounts,
       memberGoalVariantSet,
@@ -3225,7 +3260,7 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
 
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
       excludedSeasonIds,
       activeGoalVariantCounts,
       memberGoalVariantSet,
@@ -3307,7 +3342,7 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
 
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
       excludedSeasonIds,
       activeGoalVariantCounts,
       memberGoalVariantSet,
