@@ -92,7 +92,9 @@ async function ensurePushTables(pool) {
     ADD COLUMN IF NOT EXISTS push_pref_session_summary BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS push_pref_goals BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS push_pref_sync BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS push_pref_news BOOLEAN NOT NULL DEFAULT TRUE;
+    ADD COLUMN IF NOT EXISTS push_pref_news BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS push_pref_friend_collection_updates BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS push_pref_friend_priority_matches BOOLEAN NOT NULL DEFAULT TRUE;
   `);
 }
 
@@ -151,6 +153,7 @@ async function getSquadMemberTokens(pool, squadId, excludeUserId) {
      JOIN users u ON u.id = pt.user_id
      JOIN squad_members sm ON sm.user_id = u.id
      WHERE sm.squad_id = $1
+       AND sm.status = 'active'
        AND pt.enabled = TRUE
        AND u.push_enabled = TRUE
        AND u.push_pref_squad_activity = TRUE
@@ -360,6 +363,11 @@ async function notifyUser(pool, userId, message) {
   return results;
 }
 
+// Alias used by friend/squad routes for per-user notifications.
+async function sendNotificationToUser(pool, userId, message) {
+  return notifyUser(pool, userId, message);
+}
+
 async function notifySquadMembers(pool, squadId, senderUserId, message) {
   const tokens = await getSquadMemberTokens(pool, squadId, senderUserId);
   const payload = buildNotificationPayload(message);
@@ -390,6 +398,96 @@ async function notifyNewsSubscribers(pool, message) {
   return results;
 }
 
+// ── Inbox notifications ──
+// Persists a notification for the recipient and dispatches a push when allowed.
+async function createNotification(pool, { recipientId, actorId, type, entityId, context = {}, message, url = "/" }) {
+  if (!recipientId) return null;
+  if (actorId && String(actorId) === String(recipientId)) return null;
+
+  try {
+    const userRes = await pool.query(
+      `SELECT push_enabled, push_pref_friend_collection_updates, push_pref_friend_priority_matches
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [recipientId]
+    );
+    if (!userRes.rows.length) return null;
+    const user = userRes.rows[0];
+
+    if (type === "friend_collection_updated" && user.push_pref_friend_collection_updates === false) return null;
+    if (type === "friend_priority_match" && user.push_pref_friend_priority_matches === false) return null;
+
+    const cleanContext = context && typeof context === "object" ? context : {};
+    const finalContext = {
+      ...cleanContext,
+      ...(actorId ? { actorId: String(actorId) } : {}),
+      ...(recipientId ? { recipientId: String(recipientId) } : {}),
+      ...(entityId ? { entityId: String(entityId) } : {})
+    };
+
+    const inserted = await pool.query(
+      `INSERT INTO notifications (user_id, type, actor_id, entity_id, context, message)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6)
+       RETURNING id`,
+      [recipientId, type, actorId || null, entityId || null, JSON.stringify(finalContext), message]
+    );
+    const notificationId = inserted.rows[0]?.id;
+
+    if (user.push_enabled) {
+      await sendNotificationToUser(pool, recipientId, { title: "SPRITNEX", body: message, url });
+    }
+
+    return { id: notificationId };
+  } catch (err) {
+    console.error("[createNotification]", err);
+    return null;
+  }
+}
+
+async function getNotifications(pool, userId, { limit = 50, offset = 0, unreadOnly = false } = {}) {
+  const conditions = ["user_id = $1"];
+  const args = [userId];
+  if (unreadOnly) conditions.push("read_at IS NULL");
+  const where = conditions.join(" AND ");
+  const result = await pool.query(
+    `SELECT id, type, actor_id, entity_id, context, message, read_at, created_at
+     FROM notifications
+     WHERE ${where}
+     ORDER BY created_at DESC
+     LIMIT $${args.length + 1} OFFSET $${args.length + 2}`,
+    [...args, Math.max(1, Math.min(100, parseInt(limit) || 50)), Math.max(0, parseInt(offset) || 0)]
+  );
+  return result.rows.map(row => ({
+    ...row,
+    context: row.context || {}
+  }));
+}
+
+async function markNotificationRead(pool, userId, notificationId) {
+  const result = await pool.query(
+    `UPDATE notifications SET read_at = NOW()
+     WHERE id = $1 AND user_id = $2 AND read_at IS NULL
+     RETURNING id`,
+    [notificationId, userId]
+  );
+  return result.rows.length > 0;
+}
+
+async function markAllNotificationsRead(pool, userId) {
+  await pool.query(
+    `UPDATE notifications SET read_at = NOW()
+     WHERE user_id = $1 AND read_at IS NULL`,
+    [userId]
+  );
+}
+
+async function deleteNotification(pool, userId, notificationId) {
+  const result = await pool.query(
+    "DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id",
+    [notificationId, userId]
+  );
+  return result.rows.length > 0;
+}
+
 module.exports = {
   getVapidPublicKey,
   ensurePushTables,
@@ -401,6 +499,12 @@ module.exports = {
   buildNotificationPayload,
   dispatchNotification,
   notifyUser,
+  sendNotificationToUser,
   notifySquadMembers,
-  notifyNewsSubscribers
+  notifyNewsSubscribers,
+  createNotification,
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteNotification
 };

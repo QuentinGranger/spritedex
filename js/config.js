@@ -21,19 +21,41 @@ function resolveApiOrigin() {
     return PROD_API_ORIGIN;
   }
   const host = location.hostname;
-  if ((host === "localhost" || host === "127.0.0.1") && location.port && location.port !== "3000") {
-    return "http://localhost:3000";
+  if (host === "localhost" || host === "127.0.0.1") {
+    if (location.port === "3000") return ""; // served by the Express dev server
+    return "http://localhost:3000"; // Live Server / other local port / native fallback
   }
-  return ""; // same-origin (web prod, or dev served by Express on :3000)
+  return ""; // same-origin (web prod)
 }
 
-const API_ORIGIN = resolveApiOrigin();
-const API_BASE = `${API_ORIGIN}/api`;
-const WS_URL = (() => {
+let API_ORIGIN = resolveApiOrigin();
+
+function webOrigin() {
+  if (isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
+    return PROD_API_ORIGIN;
+  }
+  if ((location.hostname === "localhost" || location.hostname === "127.0.0.1") && !location.port) {
+    return PROD_API_ORIGIN;
+  }
+  return location.origin;
+}
+
+let API_BASE = `${API_ORIGIN}/api`;
+let WS_URL = (() => {
   if (API_ORIGIN) return API_ORIGIN.replace(/^http/, "ws");
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   return `${proto}//${location.host}`;
 })();
+
+// Re-evaluate once Capacitor bridge is fully ready (native builds only).
+function recomputeApiUrls() {
+  API_ORIGIN = resolveApiOrigin();
+  API_BASE = `${API_ORIGIN}/api`;
+  WS_URL = API_ORIGIN ? API_ORIGIN.replace(/^http/, "ws") : (location.protocol === "https:" ? "wss:" : "ws:") + `//${location.host}`;
+}
+if (window.Capacitor) {
+  document.addEventListener("deviceready", recomputeApiUrls);
+}
 
 function authHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

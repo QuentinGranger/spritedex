@@ -58,15 +58,16 @@ function setupAccountPanel() {
     const coll = state.collection || {};
     const entries = Object.values(coll);
     const ownedVariants = entries.filter(e => e.status === "owned").length;
-    const totalVariants = SPRITES.reduce((sum, s) => sum + (s.variants ? s.variants.length : 1), 0);
+    const totalVariants = SPRITES.reduce((sum, s) => sum + (Object.keys(s.variantDetails || {}).length || (Array.isArray(s.variants) ? s.variants.length : 1)), 0);
     const percent = totalVariants ? Math.round((ownedVariants / totalVariants) * 100) : 0;
 
     // Sprites completed = sprites where ALL variants are owned
     const spriteVariantMap = {};
     SPRITES.forEach(s => {
-      const variants = s.variants || ["Base"];
+      const variantTypes = Object.keys(s.variantDetails || {});
+      const variants = variantTypes.length > 0 ? variantTypes : (s.variants || ["Base"]);
       variants.forEach(v => {
-        const key = `${s.id}_${v}`;
+        const key = variantId(s.id, v);
         if (!spriteVariantMap[s.id]) spriteVariantMap[s.id] = { total: 0, owned: 0 };
         spriteVariantMap[s.id].total++;
         if (coll[key] && coll[key].status === "owned") spriteVariantMap[s.id].owned++;
@@ -238,7 +239,7 @@ function setupAccountPanel() {
       toast("Erreur réseau");
       return;
     }
-    const url = `${location.origin}/?share=${token}`;
+    const url = `${webOrigin()}/?share=${token}`;
     if (navigator.share) {
       try { await navigator.share({ title: `Profil de ${state.username}`, url }); } catch {}
     } else if (navigator.clipboard) {

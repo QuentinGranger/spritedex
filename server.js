@@ -15,8 +15,12 @@ require("./server/routes-sprites");
 require("./server/routes-auth");
 require("./server/routes-push");
 require("./server/routes-profile");
+require("./server/routes-friends");
 require("./server/routes-collection");
 require("./server/routes-squad");
+require("./server/routes-squad-invitations");
+require("./server/routes-goals");
+require("./server/recommendations");
 require("./server/news");
 require("./server/routes-spa");
 

@@ -3,6 +3,31 @@ function setupOfflineIndicator() {
   // the status bar. The sync bar already reports offline state when relevant.
 }
 
+function handleInviteLink() {
+  const params = new URLSearchParams(location.search);
+  const token = params.get("invite");
+  if (!token) return;
+  history.replaceState(null, "", location.pathname);
+  const socialTab = document.querySelector('.tab[data-view="social"]');
+  if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("friends"); }
+  if (!state.userId) {
+    toast("Connecte-toi pour accepter l'invitation.");
+    return;
+  }
+  fetch(`${API_BASE}/friends/invite-links/${encodeURIComponent(token)}/use`, {
+    method: "POST",
+    headers: authHeaders()
+  }).then(async r => {
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) {
+      toast("Demande d'ami envoyée !");
+      if (typeof loadFriendsData === "function") loadFriendsData();
+    } else {
+      toast(data.error || "Lien d'invitation invalide.");
+    }
+  }).catch(() => toast("Erreur réseau lors de l'invitation."));
+}
+
 function handleJoinLink() {
   const params = new URLSearchParams(location.search);
   const code = params.get("joinSquad");
@@ -12,8 +37,8 @@ function handleJoinLink() {
     toast("Tu es déjà dans une escouade. Quitte-la d'abord.");
     return;
   }
-  const squadTab = document.querySelector('.tab[data-view="squad"]');
-  if (squadTab) squadTab.click();
+  const socialTab = document.querySelector('.tab[data-view="social"]');
+  if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("squad"); }
   if (typeof setCompareMode === "function") setCompareMode("squad");
   els.squadCodeInput.value = code;
   joinSquad();
@@ -76,6 +101,7 @@ async function applyAuthParams(params) {
       renderAll();
       await restoreSquad();
       handleJoinLink();
+      handleInviteLink();
       setupNotifBell();
       checkNewsNotifications();
       toast(`Bienvenue ${user.username} !`);
@@ -147,8 +173,10 @@ async function init() {
         renderAll();
         await handleCompareParams();
         await handleCompareShareParams();
+        await handleCompareUserParams();
         await restoreSquad();
         handleJoinLink();
+        handleInviteLink();
         setupNotifBell();
         checkNewsNotifications();
         if (window.PushClient) window.PushClient.register();
@@ -169,8 +197,10 @@ async function init() {
       renderAll();
       await handleCompareParams();
       await handleCompareShareParams();
+      await handleCompareUserParams();
       await restoreSquad();
       handleJoinLink();
+      handleInviteLink();
       setupNotifBell();
       checkNewsNotifications();
       if (window.PushClient) window.PushClient.register();

@@ -8,7 +8,18 @@ const path = require("path");
 
 const ROOT_DIR = require("path").join(__dirname, "..");
 
+// ── Friend invite link redirect (legacy /invite/:token → /?invite=:token) ──
+app.get("/invite/:token", (req, res) => {
+  const token = req.params.token;
+  const base = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+  res.redirect(301, `${base}/?invite=${encodeURIComponent(token)}`);
+});
+
 // ── SPA routes for shareable compare links ──
+app.get("/compare/:userA/:userB", async (req, res) => {
+  res.sendFile(path.join(ROOT_DIR, "index.html"));
+});
+
 app.get("/compare/share/:token", async (req, res) => {
   try {
     const token = req.params.token;

@@ -136,6 +136,67 @@ function compareEntry(collection, item) {
   return defaultEntry();
 }
 
+const DEFAULT_COMPLEMENTARITY_RARITY_WEIGHTS = {
+  mythic: 1.5,
+  legendary: 1.2,
+  epic: 1,
+  rare: 0.7,
+  uncommon: 0.4,
+  common: 0.1
+};
+
+function isItemAvailable(item) {
+  if (item.available === false) return false;
+  const status = (item.availabilityStatus || "").toLowerCase();
+  return status !== "unavailable";
+}
+
+function computeComplementarityScore(baseRate, records, options = {}) {
+  const rarityWeights = options.rarityWeights || DEFAULT_COMPLEMENTARITY_RARITY_WEIGHTS;
+  const objectiveVariantIds = options.objectiveVariantIds ? new Set(options.objectiveVariantIds) : null;
+  const activeEventIds = options.activeEventIds ? new Set(options.activeEventIds) : null;
+
+  const isOwned = (entry) => compareClassify(entry) === "owned";
+  const isMissing = (entry) => compareClassify(entry) === "missing";
+  const isPriority = (entry) => compareIsPriority(entry);
+
+  let commonPriorities = 0;
+  let availableComplements = 0;
+  let objectiveMatches = 0;
+  let soughtRarities = 0;
+  let activeEvents = 0;
+
+  for (const rec of records) {
+    const aOwned = isOwned(rec.userA);
+    const bOwned = isOwned(rec.userB);
+    const aPrio = isPriority(rec.userA);
+    const bPrio = isPriority(rec.userB);
+    const aMissing = isMissing(rec.userA);
+    const bMissing = isMissing(rec.userB);
+    const onlyOne = (aOwned && !bOwned) || (bOwned && !aOwned);
+
+    if (aPrio && bPrio) commonPriorities++;
+    if (onlyOne && isItemAvailable(rec)) availableComplements++;
+
+    if (objectiveVariantIds && objectiveVariantIds.has(rec.id) && onlyOne) {
+      if ((aOwned && (bMissing || bPrio)) || (bOwned && (aMissing || aPrio))) objectiveMatches++;
+    }
+
+    if (onlyOne && ((aOwned && bPrio) || (bOwned && aPrio))) {
+      const weight = rarityWeights[(rec.rarity || "").toLowerCase()] || 0;
+      if (weight > 0) soughtRarities += weight;
+    }
+
+    if (rec.eventId && onlyOne) {
+      const isActiveEvent = activeEventIds ? activeEventIds.has(rec.eventId) : isItemAvailable(rec) && (rec.availabilityStatus || "").toLowerCase() === "event";
+      if (isActiveEvent) activeEvents++;
+    }
+  }
+
+  const bonus = (commonPriorities * 0.5) + (availableComplements * 0.3) + (objectiveMatches * 0.7) + (soughtRarities * 0.4) + (activeEvents * 0.5);
+  return Math.min(100, Math.round((baseRate + bonus) * 100) / 100);
+}
+
 function countExplicitCollectionEntries(collection) {
   if (!collection || typeof collection !== "object") return 0;
   let count = 0;
@@ -219,6 +280,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
   const bPossessionRate = toRate(bOwnedCount, total);
   const collectiveCompletionRate = toRate(collectiveOwnedCount, total);
   const complementarityRate = toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount);
+  const complementarityScore = computeComplementarityScore(complementarityRate, records);
 
   const aEnteredCount = countExplicitCollectionEntries(collectionA);
   const bEnteredCount = countExplicitCollectionEntries(collectionB);
@@ -249,6 +311,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
       collectiveOwnedCount,
       collectiveCompletionRate,
       complementarityRate,
+      complementarityScore,
       aEnteredCount,
       bEnteredCount,
       insufficientData
@@ -320,10 +383,11 @@ function renderCompareSummary(result, aName, bName) {
       <p><strong>${s.bothMissingCount}</strong> variante${s.bothMissingCount > 1 ? 's' : ''} vous manquent à tous les deux.</p>
       <p>Ensemble, vous couvrez <strong>${pct(s.collectiveCompletionRate)}</strong> du catalogue.</p>
     </div>
-    <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${pct(s.complementarityRate)}</strong>.</p>
+    <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${pct(s.complementarityRate)}</strong> · Score de complémentarité : <strong>${pct(s.complementarityScore)}</strong>.</p>
     <div class="compare-summary-grid">
       <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">Complétion collective</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityRate)}</span><span class="compare-kpi__label">Complémentarité</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityRate)}</span><span class="compare-kpi__label">Complémentarité de base</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityScore)}</span><span class="compare-kpi__label">Score de complémentarité</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.bothOwnedCount}</span><span class="compare-kpi__label">En commun</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserACount}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserBCount}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
@@ -822,29 +886,98 @@ function renderCompareActions(result) {
   if (resetBtn) resetBtn.addEventListener("click", () => { state.compareCatalogFilters = {}; renderCompare(); });
 }
 
+async function loadCompareSquads() {
+  if (!state.compareTarget || !state.compareTarget.userId || !state.userId) {
+    state.compareCommonSquads = [];
+    renderCompareSquads();
+    return;
+  }
+  try {
+    const res = await fetch(`${API_BASE}/squads/common/${encodeURIComponent(state.userId)}/${encodeURIComponent(state.compareTarget.userId)}`, { headers: authHeadersOnly() });
+    if (!res.ok) throw new Error("common squads failed");
+    const data = await res.json();
+    state.compareCommonSquads = data.squads || [];
+  } catch (e) {
+    console.error("[compare] common squads error", e);
+    state.compareCommonSquads = [];
+  }
+  renderCompareSquads();
+}
+
+function handleCompareSquadAction(e) {
+  const btn = e.target.closest("[data-squad-action]");
+  if (!btn) return;
+  const code = decodeURIComponent(btn.dataset.squadCode);
+  const action = btn.dataset.squadAction;
+  if (!code) return;
+  const socialTab = document.querySelector('.tab[data-view="social"]');
+  if (socialTab) {
+    socialTab.click();
+    if (typeof setSocialTab === "function") setSocialTab("squad");
+  }
+  if (typeof setCompareMode === "function") setCompareMode("squad");
+  if (typeof loadSquad === "function") loadSquad(code);
+  if (action === "hunt" || action === "session") {
+    state.squadView = action;
+    document.querySelectorAll(".squad-view-btn").forEach(b => b.classList.remove("active"));
+    const activeBtn = document.querySelector(`.squad-view-btn[data-squad-view="${action}"]`);
+    if (activeBtn) activeBtn.classList.add("active");
+  }
+}
+
+function renderCompareSquads() {
+  if (!els.compareSquads) return;
+  const squads = state.compareCommonSquads;
+  if (!squads || squads.length === 0) {
+    els.compareSquads.innerHTML = "";
+    return;
+  }
+  const cards = squads.map(s => `
+    <div class="compare-squad-card">
+      <span class="compare-squad-card__name">${escapeHtml(s.name)}</span>
+      <div class="compare-squad-card__actions">
+        <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="view">Voir la squad</button>
+        <button type="button" class="login-btn" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="hunt">Objectif commun</button>
+        <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="session">Recommandations</button>
+      </div>
+    </div>`).join("");
+  els.compareSquads.innerHTML = `
+    <div class="compare-section compare-section--squads">
+      <h3 class="compare-section__title">Squads communes</h3>
+      <p class="compare-squads__intro">Vous êtes tous les deux membres de :</p>
+      <div class="compare-squads__list">${cards}</div>
+    </div>`;
+  els.compareSquads.querySelectorAll("[data-squad-action]").forEach(b => b.addEventListener("click", handleCompareSquadAction));
+}
+
 function renderCompare() {
-  if (!els.compareResults || !els.compareSummary || !els.compareTable || !els.compareRecommendations || !els.compareActions) return;
+  if (!els.compareResults || !els.compareSummary || !els.compareTable || !els.compareRecommendations || !els.compareActions || !els.compareSquads) return;
   if (!state.compareTarget) {
     els.compareResults.style.display = "none";
     if (els.compareStatus) els.compareStatus.textContent = "";
     return;
   }
   els.compareResults.style.display = "block";
-  const aName = state.username || "Moi";
+  const pairA = state.compareAsPair?.userA;
+  const aName = pairA ? pairA.displayName : (state.username || "Moi");
   const bName = state.compareTarget.username || "Ami";
   if (els.comparePlayerAName) els.comparePlayerAName.textContent = aName;
   if (els.comparePlayerBName) els.comparePlayerBName.textContent = bName;
-  const userA = { id: state.userId || "userA", displayName: state.username || "Moi", collection: state.collection };
+  const userA = pairA
+    ? { id: pairA.id || "userA", displayName: pairA.displayName, collection: pairA.collection }
+    : { id: state.userId || "userA", displayName: state.username || "Moi", collection: state.collection };
   const userB = { id: state.compareTarget.userId || state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
   const result = compareCollections(userA, userB, getCompareCatalogItems());
   state.lastCompareResult = result;
   renderCompareSummary(result, aName, bName);
+  renderCompareSquads();
   renderCompareActions(result);
   renderCompareRecommendations(result, aName, bName);
   renderCompareTable(result, aName, bName);
 
   connectCompareWs();
   if (state.compareTarget.userId) sendCompareSubscribe(state.compareTarget.userId);
+  if (state.compareTarget.userId) loadCompareSquads();
 }
 
 // ── Chargement et partage ───────────────────────────────────────────────────
@@ -900,16 +1033,79 @@ async function loadCompareTarget(raw) {
   }
 }
 
-async function shareCompareLink() {
+function setShareResult(url, qrDataUrl = null) {
+  if (els.shareCompareUrl) {
+    els.shareCompareUrl.href = url;
+    els.shareCompareUrl.textContent = url;
+  }
+  if (els.shareCompareQr) {
+    els.shareCompareQr.style.display = qrDataUrl ? "block" : "none";
+    els.shareCompareQr.src = qrDataUrl || "";
+  }
+  if (els.shareCompareCopy) {
+    els.shareCompareCopy.onclick = async () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast("Lien copié !");
+      } else {
+        toast(url);
+      }
+    };
+  }
+  if (els.shareCompareResult) els.shareCompareResult.classList.add("is-visible");
+}
+
+function resetShareDialog() {
+  if (els.shareCompareResult) els.shareCompareResult.classList.remove("is-visible");
+  if (els.shareCompareUrl) els.shareCompareUrl.href = "#";
+  if (els.shareCompareUrl) els.shareCompareUrl.textContent = "";
+  if (els.shareCompareQr) els.shareCompareQr.style.display = "none";
+}
+
+async function openShareDialog(context) {
   if (!state.userId) {
     toast("Connecte-toi d’abord pour obtenir un lien de partage");
     return;
   }
-  if (els.shareCompareDialog && typeof els.shareCompareDialog.showModal === "function") {
-    els.shareCompareDialog.showModal();
-  } else {
-    createCompareShare();
+  if (!els.shareCompareDialog || typeof els.shareCompareDialog.showModal !== "function") return;
+  resetShareDialog();
+
+  const isSquad = context === "squad";
+  if (els.shareCompareTitle) {
+    els.shareCompareTitle.textContent = isSquad ? "Partager l’escouade" : "Partager ma comparaison";
   }
+  if (els.shareCompareIntro) {
+    els.shareCompareIntro.textContent = isSquad
+      ? "Envoie ce lien ou ce QR code pour faire rejoindre l’escouade en un clic."
+      : "Génère un lien et un QR code à envoyer à tes amis.";
+  }
+  if (els.shareCompareOptions) {
+    els.shareCompareOptions.style.display = isSquad ? "none" : "";
+  }
+  if (els.shareCompareGenerate) {
+    els.shareCompareGenerate.style.display = isSquad ? "none" : "";
+    els.shareCompareGenerate.textContent = isSquad ? "" : "Générer le lien";
+  }
+
+  els.shareCompareDialog.showModal();
+
+  if (isSquad) {
+    const code = state.activeSquad;
+    if (!code) return;
+    try {
+      const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/qr`, { headers: authHeadersOnly() });
+      if (!res.ok) throw new Error("squad qr failed");
+      const data = await res.json();
+      setShareResult(data.url, data.qr);
+    } catch (e) {
+      console.error("[squad share]", e);
+      toast("Impossible de charger le lien d’escouade");
+    }
+  }
+}
+
+async function shareCompareLink() {
+  openShareDialog("compare");
 }
 
 async function createCompareShare() {
@@ -934,15 +1130,12 @@ async function createCompareShare() {
     if (!res.ok) throw new Error("create share failed");
     const data = await res.json();
     logCompareAnalytics("compare_invitation_generated", { source: "compare_dialog" });
-    const url = data.url;
-    if (els.shareCompareResult) {
-      els.shareCompareResult.innerHTML = `<p class="share-compare-url"><a href="${escapeHtml(url)}" target="_blank">${escapeHtml(url)}</a></p>`;
-    }
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
+    setShareResult(data.url, data.qr);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(data.url);
       toast("Lien copié !");
     } else {
-      toast(url);
+      toast(data.url);
     }
   } catch (e) {
     toast("Erreur réseau");
@@ -991,28 +1184,23 @@ async function loadCompareShare(token) {
 
 function setCompareMode(mode) {
   state.compareMode = mode === "squad" ? "squad" : "friend";
-  const friendPanel = document.getElementById("compareModeFriend");
-  const squadPanel = document.getElementById("compareModeSquad");
-  document.querySelectorAll(".compare-mode-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.compareMode === state.compareMode);
-  });
-  if (friendPanel) friendPanel.style.display = state.compareMode === "friend" ? "" : "none";
-  if (squadPanel) squadPanel.style.display = state.compareMode === "squad" ? "" : "none";
-  if (state.compareMode === "friend") {
-    renderCompare();
-    if (typeof stopSquadPolling === "function") stopSquadPolling();
-  } else {
+  if (state.compareMode === "squad") {
+    if (typeof setSocialTab === "function") setSocialTab("squad");
     if (state.activeSquad && typeof loadSquad === "function") {
       loadSquad(state.activeSquad);
-      startSquadPolling();
+      if (typeof startSquadPolling === "function") startSquadPolling();
     }
+  } else {
+    if (typeof setSocialTab === "function") setSocialTab("compare");
+    renderCompare();
+    if (typeof stopSquadPolling === "function") stopSquadPolling();
   }
 }
 
 function switchToCompareView() {
-  const tab = document.querySelector('.tab[data-view="squad"]');
-  if (tab) tab.click();
-  setCompareMode("friend");
+  const socialTab = document.querySelector('.tab[data-view="social"]');
+  if (socialTab) socialTab.click();
+  if (typeof setSocialTab === "function") setSocialTab("compare");
 }
 
 async function handleCompareParams() {
@@ -1029,6 +1217,117 @@ async function handleCompareShareParams() {
   const token = pathMatch ? pathMatch[1].toLowerCase() : new URLSearchParams(location.search).get("compareShare");
   if (!token) return false;
   await loadCompareShare(token);
+  return true;
+}
+
+async function compareWithUser(identifier) {
+  if (!state.userId) { toast("Connecte-toi d'abord"); return; }
+  if (!identifier) return;
+  const self = state.username || state.userId;
+  const target = identifier;
+  try {
+    const url = self
+      ? `${API_BASE}/compare/${encodeURIComponent(self)}/${encodeURIComponent(target)}`
+      : `${API_BASE}/compare/${encodeURIComponent(target)}`;
+    const res = await fetch(url, { headers: authHeadersOnly() });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast(data.error || "Impossible de comparer.");
+      return;
+    }
+    const result = await res.json();
+
+    const targetId = result.users?.userB?.id;
+    const targetName = result.users?.userB?.displayName || target;
+    const targetCollection = {};
+    for (const rec of result.records || []) {
+      const entry = rec.userB || {};
+      targetCollection[rec.variantId] = {
+        status: entry.status || "new",
+        priority: entry.priority || "none",
+        note: entry.note || "",
+        obtainedAt: entry.obtainedAt || null
+      };
+    }
+
+    state.compareTarget = {
+      userId: targetId ? Number(targetId) : null,
+      username: targetName,
+      collection: targetCollection
+    };
+    if (self && typeof history !== "undefined") {
+      history.replaceState(null, "", `/compare/${encodeURIComponent(self)}/${encodeURIComponent(target)}`);
+    }
+    renderCompare();
+    switchToCompareView();
+  } catch (e) {
+    console.error("[compare] compare with user", e);
+    toast("Erreur lors de la comparaison.");
+  }
+}
+
+async function comparePair(userAId, userAName, userBId, userBName) {
+  if (!userAId || !userBId) return;
+  try {
+    const res = await fetch(`${API_BASE}/comparisons/users/${encodeURIComponent(userAId)}/${encodeURIComponent(userBId)}`, { headers: authHeadersOnly() });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast(data.error || "Impossible de comparer cette paire.");
+      return;
+    }
+    const result = await res.json();
+    const collectionA = {};
+    const collectionB = {};
+    for (const rec of result.records || []) {
+      const a = rec.userA || {};
+      const b = rec.userB || {};
+      collectionA[rec.variantId] = { status: a.status || "new", priority: a.priority || "none", note: a.note || "", obtainedAt: null };
+      if (rec.id && rec.id !== rec.variantId) collectionA[rec.id] = { status: a.status || "new", priority: a.priority || "none", note: a.note || "", obtainedAt: null };
+      collectionB[rec.variantId] = { status: b.status || "new", priority: b.priority || "none", note: b.note || "", obtainedAt: null };
+      if (rec.id && rec.id !== rec.variantId) collectionB[rec.id] = { status: b.status || "new", priority: b.priority || "none", note: b.note || "", obtainedAt: null };
+    }
+
+    state.compareAsPair = { userA: { id: Number(userAId), displayName: userAName || "Joueur A", collection: collectionA } };
+    state.compareTarget = { userId: Number(userBId), username: userBName || "Joueur B", collection: collectionB };
+    renderCompare();
+    switchToCompareView();
+  } catch (e) {
+    console.error("[compare] comparePair", e);
+    toast("Erreur lors de la comparaison.");
+  }
+}
+
+async function handleCompareUserParams() {
+  const pathMatch = location.pathname.match(/^\/compare\/(?!share\/)([^/]+)\/([^/]+)\/?$/);
+  if (!pathMatch) return false;
+  const [, userA, userB] = pathMatch;
+  const res = await fetch(`${API_BASE}/compare/${encodeURIComponent(userA)}/${encodeURIComponent(userB)}`, { headers: authHeadersOnly() });
+  if (!res.ok) {
+    if (res.status === 401) toast("Connecte-toi pour voir cette comparaison");
+    else toast("Impossible de charger cette comparaison");
+    return false;
+  }
+  const result = await res.json();
+  const target = String(userA) === String(state.username || state.userId) ? userB : userA;
+  const targetId = result.users?.userB?.id;
+  const targetName = result.users?.userB?.displayName || target;
+  const targetCollection = {};
+  for (const rec of result.records || []) {
+    const entry = rec.userB || {};
+    targetCollection[rec.variantId] = {
+      status: entry.status || "new",
+      priority: entry.priority || "none",
+      note: entry.note || "",
+      obtainedAt: entry.obtainedAt || null
+    };
+  }
+  state.compareTarget = {
+    userId: targetId ? Number(targetId) : null,
+    username: targetName,
+    collection: targetCollection
+  };
+  renderCompare();
+  switchToCompareView();
   return true;
 }
 
@@ -1122,9 +1421,6 @@ function showCompareUpdateToast(msg, change) {
 }
 
 function setupCompareEvents() {
-  document.querySelectorAll(".compare-mode-btn").forEach(btn => {
-    btn.addEventListener("click", () => setCompareMode(btn.dataset.compareMode));
-  });
   if (els.compareForm) {
     els.compareForm.addEventListener("submit", (e) => {
       e.preventDefault();

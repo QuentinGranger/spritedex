@@ -13,23 +13,26 @@ const { Resend } = require("resend");
 
 // ── Auth : Email register ──
 app.post("/api/auth/register", security.registerLimiter, security.validateBody(security.schemas.registerSchema), async (req, res) => {
-  const { email, password, username: reqUsername, cguAccepted, cguVersion, ageConfirmed, cookieConsent } = req.validatedBody;
+  const { email, password, username: reqUsername, displayName: reqDisplayName, cguAccepted, cguVersion, ageConfirmed, cookieConsent } = req.validatedBody;
   try {
     const existing = await pool.query("SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
     if (existing.rows.length > 0) {
-      return res.status(409).json({ error: "Cet email est déjà utilisé" });
+      return res.status(409).json({ error: "Impossible de créer le compte" });
     }
     const { salt, hash, iterations } = hashPassword(password);
-    const username = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_\-. ]/g, "").slice(0, 24) || "joueur";
+    const rawUsername = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") || "joueur";
+    const username = rawUsername.length < 3 ? `${rawUsername}_${crypto.randomBytes(3).toString("hex")}` : rawUsername.slice(0, 24);
+    const displayName = reqDisplayName || username;
     const emailToken = crypto.randomBytes(32).toString("hex");
     const consentPayload = cookieConsent && typeof cookieConsent === "object"
       ? { ...cookieConsent, consentedAt: cookieConsent.consentedAt || new Date().toISOString() }
       : { necessary: true, analytics: false, consentedAt: new Date().toISOString() };
     const result = await pool.query(
-      `INSERT INTO users (username, email, password_hash, password_salt, password_iterations, email_verify_token, cgu_accepted, cgu_version, cgu_accepted_at, age_confirmed, cookie_consent)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, username, created_at`,
+      `INSERT INTO users (username, display_name, email, password_hash, password_salt, password_iterations, email_verify_token, cgu_accepted, cgu_version, cgu_accepted_at, age_confirmed, cookie_consent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, username, display_name, created_at`,
       [
         username,
+        displayName,
         email.toLowerCase(),
         hash,
         salt,
@@ -46,15 +49,10 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
     const token = await createSession(user.id);
     sendVerificationEmail(email.toLowerCase(), emailToken);
     secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "register", status: "ok" });
-    res.json({ id: user.id, username: user.username, token, emailVerified: false, created_at: user.created_at });
+    res.json({ id: user.id, username: user.username, displayName: user.display_name, usernameNormalized: user.username.toLowerCase(), token, emailVerified: false, created_at: user.created_at });
   } catch (err) {
     if (err.code === "23505") {
-      if (err.constraint === "users_username_key") {
-        return res.status(409).json({ error: "Ce pseudo est déjà pris" });
-      }
-      if (err.constraint === "users_email_key") {
-        return res.status(409).json({ error: "Cet email est déjà utilisé" });
-      }
+      return res.status(409).json({ error: "Impossible de créer le compte" });
     }
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });

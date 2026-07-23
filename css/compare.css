@@ -102,7 +102,7 @@
 
 .compare-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -771,22 +771,45 @@
 }
 
 .share-compare-result {
-  padding: 10px;
-  border-radius: 10px;
+  padding: 14px;
+  border-radius: 14px;
   background: var(--bg);
   border: 1px solid var(--line);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   word-break: break-all;
   display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
 }
 
-.share-compare-result:not(:empty) {
-  display: block;
+.share-compare-result.is-visible {
+  display: flex;
+}
+
+.share-compare-qr {
+  width: 160px;
+  height: 160px;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px;
+  object-fit: contain;
+}
+
+.share-compare-url {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
 }
 
 .share-compare-url a {
   color: var(--accent);
   text-decoration: none;
+}
+
+.share-compare-copy {
+  align-self: stretch;
 }
 
 /* ── Insufficient collection data warning ── */
@@ -830,4 +853,68 @@
 
 .compare-mode-panel {
   animation: fadeIn 0.2s ease;
+}
+
+/* ── Common squads bridge between individual and squad work ── */
+.compare-section--squads {
+  margin: 0 16px 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.compare-squads__intro {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.compare-squads__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compare-squad-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.compare-squad-card__name {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.compare-squad-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.compare-squad-card__actions .ghost-button,
+.compare-squad-card__actions .login-btn {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+@media (max-width: 480px) {
+  .compare-squad-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .compare-squad-card__actions {
+    width: 100%;
+  }
 }

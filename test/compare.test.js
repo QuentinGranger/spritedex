@@ -284,6 +284,80 @@ async function run() {
     assert.strictEqual(res.status, 403, "cross-user collection write should be rejected");
   });
 
+  // ── Social compare tests ──
+  await test("a friend can be compared when collection visibility is friends-only", async () => {
+    await setPrivacy(lucy, "friends_only");
+
+    const request = await fetch(`${API}/friends/${lucy.id}/request`, { method: "POST", headers: authHeaders(quentin.token) });
+    assert.ok(request.ok, `friend request failed: ${await request.text()}`);
+
+    const accept = await fetch(`${API}/friends/${quentin.id}/accept`, { method: "POST", headers: authHeaders(lucy.token) });
+    assert.ok(accept.ok, `accept friend failed: ${await accept.text()}`);
+
+    const { status } = await compare(quentin.id, lucy.id, quentin.token);
+    assert.strictEqual(status, 200, "accepted friend should be comparable with friends-only visibility");
+
+    await setPrivacy(lucy, "public");
+  });
+
+  await test("a squad member can be compared when visibility is squad-only", async () => {
+    await setPrivacy(lucy, "squad_only");
+
+    const createSquad = await fetch(`${API}/squads`, {
+      method: "POST",
+      headers: authHeaders(quentin.token),
+      body: JSON.stringify({ name: "Compare Squad" })
+    });
+    if (!createSquad.ok) assert.fail(`create squad failed: ${await createSquad.text()}`);
+    const squad = await createSquad.json();
+
+    const join = await fetch(`${API}/squads/join`, {
+      method: "POST",
+      headers: authHeaders(lucy.token),
+      body: JSON.stringify({ code: squad.code })
+    });
+    assert.ok(join.ok, `join squad failed: ${await join.text()}`);
+
+    const { status } = await compare(quentin.id, lucy.id, quentin.token);
+    assert.strictEqual(status, 200, "squad member should be comparable with squad-only visibility");
+
+    await setPrivacy(lucy, "public");
+  });
+
+  await test("a squad member cannot be compared if their collection is private", async () => {
+    const createSquad = await fetch(`${API}/squads`, {
+      method: "POST",
+      headers: authHeaders(quentin.token),
+      body: JSON.stringify({ name: "Private Squad" })
+    });
+    if (!createSquad.ok) assert.fail(`create squad failed: ${await createSquad.text()}`);
+    const squad = await createSquad.json();
+
+    const join = await fetch(`${API}/squads/join`, {
+      method: "POST",
+      headers: authHeaders(lucy.token),
+      body: JSON.stringify({ code: squad.code })
+    });
+    assert.ok(join.ok, `join squad failed: ${await join.text()}`);
+
+    await setPrivacy(lucy, "private");
+    const { status } = await compare(quentin.id, lucy.id, quentin.token);
+    assert.strictEqual(status, 403, "private collection should block comparison even for squad members");
+
+    await setPrivacy(lucy, "public");
+  });
+
+  await test("block prevents comparison", async () => {
+    const block = await fetch(`${API}/users/${quentin.id}/block`, { method: "POST", headers: authHeaders(lucy.token) });
+    assert.ok(block.ok, `block failed: ${await block.text()}`);
+
+    const { status } = await compare(quentin.id, lucy.id, quentin.token);
+    assert.strictEqual(status, 403, "block should prevent comparison");
+
+    const unblock = await fetch(`${API}/users/${quentin.id}/block`, { method: "DELETE", headers: authHeaders(lucy.token) });
+    assert.ok(unblock.ok, `unblock failed: ${await unblock.text()}`);
+  });
+
   // ── Cleanup ──
   await cleanup(quentin);
   await cleanup(lucy);

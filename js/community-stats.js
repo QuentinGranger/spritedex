@@ -175,7 +175,7 @@ function loadCommunityOwnership() {
     ? escapeHtml
     : (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  fetch("/api/community-ownership")
+  fetch(`${API_BASE}/community-ownership`)
     .then((r) => {
       if (!r.ok) throw new Error("network");
       return r.json();

@@ -3,7 +3,7 @@
 const analytics = require("../analytics");
 const security = require("../security");
 const secLog = require("../security-logger");
-const { checkPrivacyAccess, getRequestingUser, requireSameUser } = require("./auth");
+const { canViewCollection, getRequestingUser, getVisibility, isBlocked, requireSameUser } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const crypto = require("crypto");
@@ -11,17 +11,43 @@ const crypto = require("crypto");
 // ── Profile : GET ──
 app.get("/api/profile/:userId", async (req, res) => {
   try {
+    const reqUser = await getRequestingUser(req);
     const result = await pool.query(
-      "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1 AND deleted_at IS NULL",
+      `SELECT id, username, display_name, avatar_url,
+              profile_visibility, collection_visibility, priority_visibility, notes_visibility,
+              visibility, privacy, created_at, last_active_at,
+              suspended_at, suspended_until
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [req.params.userId]
     );
     if (!result.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     const profile = result.rows[0];
-    const access = await checkPrivacyAccess(req, profile.id, profile.privacy);
-    if (access === "blocked") {
-      return res.json({ id: profile.id, username: profile.username, privacy: profile.privacy });
+    const isSelf = String(reqUser) === String(profile.id);
+    const isSuspended = profile.suspended_until && new Date(profile.suspended_until) > new Date();
+    if (isSuspended && !isSelf) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
-    res.json(profile);
+    const visibility = getVisibility(profile);
+    const canViewProfile = await canViewCollection(reqUser, profile.id, { visibilityKey: "profile" });
+    if (!canViewProfile && !isSelf) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+
+    const payload = {
+      id: profile.id,
+      username: profile.username,
+      displayName: profile.display_name,
+      avatarUrl: profile.avatar_url,
+      createdAt: profile.created_at,
+      lastActiveAt: profile.last_active_at,
+      visibility
+    };
+    if (isSelf) {
+      payload.privacy = profile.privacy;
+      if (profile.suspended_at) payload.suspendedAt = profile.suspended_at;
+      if (profile.suspended_until) payload.suspendedUntil = profile.suspended_until;
+    }
+    res.json(payload);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -83,7 +109,7 @@ app.get("/api/export", async (req, res) => {
       `SELECT s.id, s.code, s.name, s.join_open, s.created_at, sm.joined_at
        FROM squads s
        JOIN squad_members sm ON sm.squad_id = s.id
-       WHERE sm.user_id = $1`,
+       WHERE sm.user_id = $1 AND sm.status = 'active'`,
       [reqUser]
     );
 
@@ -215,27 +241,35 @@ app.get("/api/shared/:token", async (req, res) => {
   }
   try {
     const userResult = await pool.query(
-      "SELECT id, username, avatar_url, privacy, created_at FROM users WHERE share_token = $1 AND deleted_at IS NULL",
+      `SELECT id, username, display_name, avatar_url, privacy,
+              profile_visibility, collection_visibility, priority_visibility, notes_visibility,
+              visibility, created_at
+       FROM users WHERE share_token = $1 AND deleted_at IS NULL`,
       [token]
     );
     if (!userResult.rows.length) {
       return res.status(404).json({ error: "Lien de partage invalide ou révoqué" });
     }
     const user = userResult.rows[0];
-    // An opaque share token is itself a deliberate, revocable capability grant:
-    // possessing it authorizes read-only access regardless of the account's
-    // `privacy` discovery setting. Notes are never exposed (not selected below).
-    const entries = await pool.query(
-      "SELECT variant_id, sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
-      [user.id]
-    );
-    const collection = {};
-    for (const row of entries.rows) {
-      collection[row.variant_id] = { spriteId: row.sprite_id, status: row.status, priority: row.priority || "none" };
+    const visitor = await getRequestingUser(req);
+    if (visitor && await isBlocked(visitor, user.id)) {
+      return res.status(403).json({ error: "Accès refusé" });
+    }
+    const visibility = getVisibility(user);
+    let collection = {};
+    if (visibility.collection !== "private") {
+      const entries = await pool.query(
+        "SELECT variant_id, sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
+        [user.id]
+      );
+      for (const row of entries.rows) {
+        collection[row.variant_id] = { spriteId: row.sprite_id, status: row.status, priority: row.priority || "none" };
+      }
     }
     res.json({
       id: user.id,
       username: user.username,
+      displayName: user.display_name || user.username,
       avatarUrl: user.avatar_url || "",
       createdAt: user.created_at,
       privacy: user.privacy || "squad_only",
@@ -251,33 +285,97 @@ app.get("/api/shared/:token", async (req, res) => {
 app.patch("/api/profile/:userId", security.validateBody(security.schemas.profilePatchSchema), async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
-  const { username, avatarUrl, privacy } = req.validatedBody;
+  const { username, displayName, avatarUrl, privacy, visibility: visibilityPatch, profileVisibility, collectionVisibility, priorityVisibility, notesVisibility, friendInvitesFrom, squadInvitesFrom, pushPrefFriendCollectionUpdates, pushPrefFriendPriorityMatches } = req.validatedBody;
   try {
+    // Build the new visibility object from the existing row, then apply patches.
+    const currentRes = await pool.query(
+      `SELECT id, privacy, profile_visibility, collection_visibility, priority_visibility, notes_visibility, visibility
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [userId]
+    );
+    if (!currentRes.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
+    const current = currentRes.rows[0];
+    let visibility = getVisibility(current);
+
+    const legacyToVisibility = { private: "private", friends_only: "friends", squad_only: "squad", public: "public" };
+    if (privacy && legacyToVisibility[privacy]) {
+      const v = legacyToVisibility[privacy];
+      visibility = { ...visibility, profile: v, collection: v, priorities: v, notes: v };
+    }
+    if (visibilityPatch) {
+      visibility = { ...visibility, ...visibilityPatch };
+    }
+    if (profileVisibility) visibility.profile = profileVisibility;
+    if (collectionVisibility) visibility.collection = collectionVisibility;
+    if (priorityVisibility) visibility.priorities = priorityVisibility;
+    if (notesVisibility) visibility.notes = notesVisibility;
+
     const sets = [];
     const vals = [];
     let idx = 1;
-    if (username && username.trim().length >= 2) {
+    if (username && username.trim().length >= 3) {
       sets.push(`username = $${idx++}`);
       vals.push(username.trim());
+    }
+    if (displayName && displayName.trim().length >= 1) {
+      sets.push(`display_name = $${idx++}`);
+      vals.push(displayName.trim());
     }
     if (avatarUrl !== undefined) {
       sets.push(`avatar_url = $${idx++}`);
       vals.push(avatarUrl || "");
     }
-    if (privacy && ["public", "friends_only", "squad_only", "private"].includes(privacy)) {
+    sets.push(`visibility = $${idx++}`);
+    vals.push(JSON.stringify(visibility));
+    // Keep legacy columns synchronised for any code still reading them directly.
+    sets.push(`profile_visibility = $${idx++}`);
+    vals.push(visibility.profile);
+    sets.push(`collection_visibility = $${idx++}`);
+    vals.push(visibility.collection);
+    sets.push(`priority_visibility = $${idx++}`);
+    vals.push(visibility.priorities);
+    sets.push(`notes_visibility = $${idx++}`);
+    vals.push(visibility.notes);
+    if (privacy) {
       sets.push(`privacy = $${idx++}`);
       vals.push(privacy);
+    }
+
+    if (friendInvitesFrom && ["everyone", "mutual_squad_members", "nobody"].includes(friendInvitesFrom)) {
+      sets.push(`friend_invites_from = $${idx++}`);
+      vals.push(friendInvitesFrom);
+    }
+    if (squadInvitesFrom && ["everyone", "mutual_squad_members", "friends", "nobody"].includes(squadInvitesFrom)) {
+      sets.push(`squad_invites_from = $${idx++}`);
+      vals.push(squadInvitesFrom);
+    }
+    if (pushPrefFriendCollectionUpdates !== undefined) {
+      sets.push(`push_pref_friend_collection_updates = $${idx++}`);
+      vals.push(pushPrefFriendCollectionUpdates);
+    }
+    if (pushPrefFriendPriorityMatches !== undefined) {
+      sets.push(`push_pref_friend_priority_matches = $${idx++}`);
+      vals.push(pushPrefFriendPriorityMatches);
     }
     if (sets.length === 0) return res.status(400).json({ error: "Rien à mettre à jour" });
     vals.push(userId);
     await pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = $${idx}`, vals);
     secLog.logSecurityEvent(pool, { req, userId, event: "profile_updated", status: "ok", details: { changed: sets.map(s => s.split(" = ")[0]) } });
     const updated = await pool.query(
-      "SELECT id, username, avatar_url, privacy, created_at, last_active_at FROM users WHERE id = $1 AND deleted_at IS NULL",
+      `SELECT id, username, display_name, avatar_url, privacy,
+              profile_visibility, collection_visibility, priority_visibility, notes_visibility,
+              visibility, created_at, last_active_at FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [userId]
     );
-    res.json(updated.rows[0]);
+    const row = updated.rows[0];
+    res.json({
+      ...row,
+      visibility: getVisibility(row)
+    });
   } catch (err) {
+    if (err.code === "23505" && err.constraint === "idx_users_username_normalized") {
+      return res.status(409).json({ error: "Ce pseudo est déjà pris" });
+    }
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
@@ -289,74 +387,33 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
 app.delete("/api/profile/:userId", async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
-  try {
-    await pool.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
-    await pool.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
-    secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
-    res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
-
-// ── Friends (used by friends_only privacy) ──
-app.get("/api/friends", async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  try {
-    const result = await pool.query(
-      `SELECT u.id, u.username, u.avatar_url, f.status, f.created_at
-       FROM friends f
-       JOIN users u ON (CASE WHEN f.user_id = $1 THEN f.friend_user_id ELSE f.user_id END) = u.id
-       WHERE (f.user_id = $1 OR f.friend_user_id = $1) AND u.deleted_at IS NULL`,
-      [reqUser]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
-
-app.post("/api/friends/:friendId/request", async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const friendId = req.params.friendId;
-  if (String(reqUser) === String(friendId)) return res.status(400).json({ error: "Tu ne peux pas t'ajouter toi-même" });
-  try {
-    const exists = await pool.query("SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL", [friendId]);
-    if (!exists.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
-    await pool.query(
-      `INSERT INTO friends (user_id, friend_user_id, status) VALUES ($1, $2, 'pending')
-       ON CONFLICT (user_id, friend_user_id) DO UPDATE SET status = 'pending', updated_at = NOW()`,
-      [reqUser, friendId]
-    );
-    res.json({ ok: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
-  }
-});
-
-app.post("/api/friends/:friendId/accept", async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const friendId = req.params.friendId;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
+    await client.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
+
+    // Cancel pending friend invitations from or to this account.
     await client.query(
-      `INSERT INTO friends (user_id, friend_user_id, status, updated_at) VALUES ($1, $2, 'accepted', NOW())
-       ON CONFLICT (user_id, friend_user_id) DO UPDATE SET status = 'accepted', updated_at = NOW()`,
-      [reqUser, friendId]
+      `UPDATE friendships
+       SET status = 'declined', responded_at = NOW(), updated_at = NOW()
+       WHERE (requester_id = $1 OR addressee_id = $1) AND status = 'pending'`,
+      [userId]
     );
-    await client.query(
-      `UPDATE friends SET status = 'accepted', updated_at = NOW() WHERE user_id = $1 AND friend_user_id = $2`,
-      [friendId, reqUser]
-    );
+
+    // Revoke/delete shareable links owned by the account.
+    await client.query("DELETE FROM friend_invite_links WHERE owner_id = $1", [userId]);
+    await client.query("UPDATE compare_share_tokens SET revoked_at = NOW() WHERE owner_user_id = $1", [userId]);
+    await client.query("UPDATE users SET share_token = NULL WHERE id = $1", [userId]);
+
+    // Anonymise shared activity history by detaching the user id and remove private history.
+    await client.query("UPDATE squad_activity SET user_id = NULL WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM collection_history WHERE user_id = $1", [userId]);
+
+    await client.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
     await client.query("COMMIT");
-    res.json({ ok: true });
+    secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
+    res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -366,18 +423,38 @@ app.post("/api/friends/:friendId/accept", async (req, res) => {
   }
 });
 
-app.delete("/api/friends/:friendId", async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const friendId = req.params.friendId;
+// ── Profile : suspend / unsuspend (self-service temporary deactivation) ──
+app.post("/api/profile/:userId/suspend", security.validateBody(security.schemas.profileSuspendSchema), async (req, res) => {
+  const { userId } = req.params;
+  if (!(await requireSameUser(req, res, userId))) return;
+  const { durationMinutes } = req.validatedBody || {};
+  const until = new Date(Date.now() + (durationMinutes || 60) * 60 * 1000);
   try {
     await pool.query(
-      `DELETE FROM friends WHERE (user_id = $1 AND friend_user_id = $2) OR (user_id = $2 AND friend_user_id = $1)`,
-      [reqUser, friendId]
+      "UPDATE users SET suspended_at = NOW(), suspended_until = $1 WHERE id = $2 AND deleted_at IS NULL",
+      [until.toISOString(), userId]
     );
-    res.json({ ok: true });
+    secLog.logSecurityEvent(pool, { req, userId, event: "account_suspended", status: "ok", details: { until } });
+    res.json({ ok: true, suspendedUntil: until.toISOString() });
   } catch (err) {
-    console.error(err);
+    console.error("[SUSPEND] error", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
+
+app.post("/api/profile/:userId/unsuspend", async (req, res) => {
+  const { userId } = req.params;
+  if (!(await requireSameUser(req, res, userId))) return;
+  try {
+    await pool.query(
+      "UPDATE users SET suspended_at = NULL, suspended_until = NULL WHERE id = $1 AND deleted_at IS NULL",
+      [userId]
+    );
+    secLog.logSecurityEvent(pool, { req, userId, event: "account_unsuspended", status: "ok" });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[UNSUSPEND] error", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+

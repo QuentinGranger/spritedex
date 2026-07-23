@@ -27,7 +27,9 @@ function openSpriteDetail(spriteId) {
   const sprite = SPRITES.find(s => s.id === spriteId);
   if (!sprite) return;
 
-  const variants = sprite.variants.map(v => ({
+  const variantTypes = Object.keys(sprite.variantDetails || {});
+  const rawVariants = variantTypes.length > 0 ? variantTypes : (sprite.variants || ["Base"]);
+  const variants = rawVariants.map(v => ({
     id: variantId(sprite.id, v),
     name: v,
     entry: getEntry(variantId(sprite.id, v)),

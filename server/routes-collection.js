@@ -2,24 +2,36 @@
 
 const pushService = require("../push-service");
 const security = require("../security");
-const { checkPrivacyAccess, requireSameUser } = require("./auth");
+const { areFriends, canViewCollection, getRequestingUser, getVisibility, requireSameUser } = require("./auth");
 const { normalizeCollection, normalizeVariantId } = require("./catalog");
 const { invalidateCompareCacheForUser } = require("./compare");
 const { app } = require("./core");
 const { pool } = require("./db");
 const { broadcastCompareUpdate, broadcastSquadUpdate } = require("./ws");
+const { logSquadCollectionEvent } = require("./squad-activity");
+const { refreshSquadStats, scheduleSquadStatsRefresh } = require("./routes-squad-invitations");
+const { checkAffectedGoals } = require("./routes-goals");
 
 // ── Collection : GET all entries for user ──
 app.get("/api/collection/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    // Privacy check: only owner, squad mates (if squad_only), or anyone (if public)
-    const userResult = await pool.query("SELECT id, privacy FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
+    const userResult = await pool.query(
+      `SELECT id, privacy, profile_visibility, collection_visibility, priority_visibility, notes_visibility, visibility
+       FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [userId]
+    );
     if (!userResult.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
-    const access = await checkPrivacyAccess(req, userId, userResult.rows[0].privacy);
-    if (access === "blocked") {
+    const user = userResult.rows[0];
+    const visibility = getVisibility(user);
+    const reqUser = await getRequestingUser(req);
+    if (!(await canViewCollection(reqUser, userId))) {
       return res.status(403).json({ error: "Collection non accessible" });
     }
+
+    const canSeePriority = await canViewCollection(reqUser, userId, { visibilityKey: "priorities" });
+    const canSeeNotes = await canViewCollection(reqUser, userId, { visibilityKey: "notes" });
+
     const result = await pool.query(
       "SELECT variant_id, sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
       [userId]
@@ -29,8 +41,8 @@ app.get("/api/collection/:userId", async (req, res) => {
       collection[row.variant_id] = {
         spriteId: row.sprite_id,
         status: row.status,
-        note: row.note || "",
-        priority: row.priority || "none",
+        note: canSeeNotes ? (row.note || "") : "",
+        priority: canSeePriority ? (row.priority || "none") : "none",
         obtainedAt: row.obtained_at || null,
         updatedAt: row.updated_at,
       };
@@ -42,34 +54,71 @@ app.get("/api/collection/:userId", async (req, res) => {
   }
 });
 
-// ── Squad activity logger ──
-async function logSquadActivity(userId, variantId, spriteId, action) {
+// ── Notify friends about collection changes ─────────────────────────────
+// Emits friend_collection_updated once per affected friend, plus a
+// friend_priority_match for each owned variant that a friend is looking for.
+async function notifyCollectionChanges(ownerId, changes) {
+  if (!changes || !changes.length) return;
   try {
-    const squads = await pool.query(
-      `SELECT sm.squad_id FROM squad_members sm WHERE sm.user_id = $1`,
-      [userId]
+    const ownerRes = await pool.query(
+      `SELECT username, visibility FROM users WHERE id = $1::integer AND deleted_at IS NULL`,
+      [ownerId]
     );
-    const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
-    const username = userResult.rows[0]?.username || "Un joueur";
-    const actionLabel = action === "owned" ? "a obtenu" : "a repéré";
-    const spriteResult = await pool.query("SELECT name FROM sprites WHERE id = $1", [spriteId]);
-    const spriteName = spriteResult.rows[0]?.name || spriteId;
+    if (!ownerRes.rows.length) return;
+    const owner = ownerRes.rows[0];
+    const ownerVisibility = getVisibility(owner);
+    const ownerName = owner.username || "Quelqu'un";
 
-    for (const row of squads.rows) {
-      await pool.query(
-        `INSERT INTO squad_activity (squad_id, user_id, sprite_id, action) VALUES ($1, $2, $3, $4)`,
-        [row.squad_id, userId, variantId, action]
-      );
-      // Notify squad members asynchronously; do not block the request.
-      pushService.notifySquadMembers(pool, row.squad_id, userId, {
-        title: "SPRITNEX — Escouade",
-        body: `${username} ${actionLabel} ${spriteName}`,
-        icon: "/icons/icon-192x192.png",
-        url: `/?squad=${row.squad_id}`
-      }).catch(err => console.error("[PUSH] squad notify failed:", err));
+    const friendRows = await pool.query(
+      `SELECT u.id
+       FROM friendships f
+       JOIN users u ON u.id = CASE WHEN f.requester_id = $1::integer THEN f.addressee_id ELSE f.requester_id END
+       WHERE f.status = 'accepted'
+         AND (f.requester_id = $1::integer OR f.addressee_id = $1::integer)
+         AND u.deleted_at IS NULL`,
+      [ownerId]
+    );
+    if (!friendRows.rows.length) return;
+    const friendIds = friendRows.rows.map(r => r.id);
+
+    const variantIds = changes.map(c => c.variantId);
+    const priorityRes = await pool.query(
+      `SELECT user_id, variant_id FROM sprite_entries
+       WHERE user_id = ANY($1) AND variant_id = ANY($2) AND priority <> 'none'`,
+      [friendIds, variantIds]
+    );
+    const prioritySet = new Set(priorityRes.rows.map(r => `${r.user_id}:${r.variant_id}`));
+
+    for (const friend of friendRows.rows) {
+      if (!(await areFriends(friend.id, ownerId))) continue;
+      if (!(await canViewCollection(friend.id, ownerId))) continue;
+
+      pushService.createNotification(pool, {
+        recipientId: friend.id,
+        actorId: ownerId,
+        type: "friend_collection_updated",
+        context: { ownerId },
+        message: `${ownerName} a mis à jour sa collection.`,
+        url: `/collection/${ownerId}`
+      });
+
+      for (const change of changes) {
+        if (change.newStatus !== "owned" || change.oldStatus === "owned") continue;
+        if (prioritySet.has(`${friend.id}:${change.variantId}`)) {
+          pushService.createNotification(pool, {
+            recipientId: friend.id,
+            actorId: ownerId,
+            type: "friend_priority_match",
+            entityId: change.variantId,
+            context: { variantId: change.variantId, ownerId },
+            message: `${ownerName} possède maintenant une variante que vous recherchez.`,
+            url: `/collection/${ownerId}`
+          });
+        }
+      }
     }
   } catch (err) {
-    console.error("Failed to log squad activity:", err);
+    console.error("[notifyCollectionChanges]", err);
   }
 }
 
@@ -109,13 +158,25 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
       ).catch(() => {});
     }
 
+    // Ensure cached collection is refreshed before squad stats/logic that depends on it.
+    invalidateCompareCacheForUser(userId);
+
     if ((status === "owned") && prevStatus !== "owned") {
-      logSquadActivity(userId, variantId, baseSpriteId, "owned");
+      const affectedSquads = await logSquadCollectionEvent(userId, variantId, baseSpriteId, "owned");
+      for (const squadId of affectedSquads || []) {
+        try { await refreshSquadStats(squadId); } catch (err) { console.error("[setEntry] refresh squad stats failed", err); }
+      }
     }
 
+    await checkAffectedGoals(userId, variantId);
     res.json({ ok: true });
     broadcastSquadUpdate(userId);
-    invalidateCompareCacheForUser(userId);
+    notifyCollectionChanges(userId, [{
+      variantId,
+      spriteId: baseSpriteId,
+      oldStatus: prevStatus,
+      newStatus
+    }]);
     broadcastCompareUpdate(userId, {
       changes: [{
         variantId,
@@ -138,6 +199,15 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
   if (!(await requireSameUser(req, res, userId))) return;
   const { collection } = req.validatedBody;
   const normalizedCollection = await normalizeCollection(collection);
+
+  const variantIds = Object.keys(normalizedCollection).filter(v => !v.startsWith("fav_"));
+  const prevRes = await pool.query(
+    `SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries
+     WHERE user_id = $1 AND variant_id = ANY($2)`,
+    [userId, variantIds]
+  );
+  const prevMap = Object.fromEntries(prevRes.rows.map(r => [r.variant_id, r]));
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -164,22 +234,37 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
       );
     }
     await client.query("COMMIT");
-    const changes = [];
+    const compareChanges = [];
+    const notifyChanges = [];
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
-      changes.push({
+      const old = prevMap[variantId];
+      const newStatus = entry.status || "new";
+      const newNote = entry.note || "";
+      const newPriority = entry.priority || "none";
+      const newObtainedAt = entry.obtainedAt || null;
+      const changed = !old
+        || old.status !== newStatus
+        || old.note !== newNote
+        || old.priority !== newPriority
+        || String(old.obtained_at || "") !== String(newObtainedAt);
+      if (changed) {
+        notifyChanges.push({ variantId, spriteId: entry.spriteId || null, oldStatus: old ? old.status : "new", newStatus });
+      }
+      compareChanges.push({
         variantId,
         spriteId: entry.spriteId || null,
-        status: entry.status || "new",
-        priority: entry.priority || "none",
-        note: entry.note || "",
-        obtainedAt: entry.obtainedAt || null
+        status: newStatus,
+        priority: newPriority,
+        note: newNote,
+        obtainedAt: newObtainedAt
       });
     }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     broadcastSquadUpdate(userId);
     invalidateCompareCacheForUser(userId);
-    broadcastCompareUpdate(userId, { changes });
+    notifyCollectionChanges(userId, notifyChanges);
+    broadcastCompareUpdate(userId, { changes: compareChanges });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -199,6 +284,15 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
   if (!(await requireSameUser(req, res, userId))) return;
   const { collection } = req.validatedBody;
   const normalizedCollection = await normalizeCollection(collection);
+
+  const variantIds = Object.keys(normalizedCollection).filter(v => !v.startsWith("fav_"));
+  const prevRes = await pool.query(
+    `SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries
+     WHERE user_id = $1 AND variant_id = ANY($2)`,
+    [userId, variantIds]
+  );
+  const prevMap = Object.fromEntries(prevRes.rows.map(r => [r.variant_id, r]));
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -225,21 +319,36 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
       );
     }
     await client.query("COMMIT");
-    const changes = [];
+    const compareChanges = [];
+    const notifyChanges = [];
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
-      changes.push({
+      const old = prevMap[variantId];
+      const newStatus = entry.status || "new";
+      const newNote = entry.note || "";
+      const newPriority = entry.priority || "none";
+      const newObtainedAt = entry.obtainedAt || null;
+      const changed = !old
+        || old.status !== newStatus
+        || old.note !== newNote
+        || old.priority !== newPriority
+        || String(old.obtained_at || "") !== String(newObtainedAt);
+      if (changed) {
+        notifyChanges.push({ variantId, spriteId: entry.spriteId || null, oldStatus: old ? old.status : "new", newStatus });
+      }
+      compareChanges.push({
         variantId,
         spriteId: entry.spriteId || null,
-        status: entry.status || "new",
-        priority: entry.priority || "none",
-        note: entry.note || "",
-        obtainedAt: entry.obtainedAt || null
+        status: newStatus,
+        priority: newPriority,
+        note: newNote,
+        obtainedAt: newObtainedAt
       });
     }
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     invalidateCompareCacheForUser(userId);
-    broadcastCompareUpdate(userId, { changes });
+    notifyCollectionChanges(userId, notifyChanges);
+    broadcastCompareUpdate(userId, { changes: compareChanges });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -310,5 +419,3 @@ app.get("/api/history/:userId", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
-module.exports = { logSquadActivity };

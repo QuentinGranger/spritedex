@@ -167,10 +167,25 @@ function rateLimit({ windowMs, max, keyPrefix = "rl", message }) {
 
 // Preconfigured limiters for sensitive routes
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: "login", message: "Trop de tentatives de connexion. Réessaie dans 15 minutes." });
-const registerLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "register", message: "Trop de comptes créés depuis cette adresse. Réessaie plus tard." });
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.REGISTER_RATE_LIMIT_MAX ? parseInt(process.env.REGISTER_RATE_LIMIT_MAX, 10) : (process.env.NODE_ENV === "production" ? 5 : 500),
+  keyPrefix: "register",
+  message: "Trop de comptes créés depuis cette adresse. Réessaie plus tard."
+});
 const passwordResetLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "pwreset", message: "Trop de demandes de réinitialisation. Réessaie plus tard." });
-const squadCreateLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10, keyPrefix: "squad-create", message: "Trop d'escouades créées. Réessaie plus tard." });
-const squadJoinLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20, keyPrefix: "squad-join", message: "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard." });
+const squadCreateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.SQUAD_CREATE_RATE_LIMIT_MAX ? parseInt(process.env.SQUAD_CREATE_RATE_LIMIT_MAX, 10) : (process.env.NODE_ENV === "production" ? 10 : 100),
+  keyPrefix: "squad-create",
+  message: "Trop d'escouades créées. Réessaie plus tard."
+});
+const squadJoinLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: process.env.SQUAD_JOIN_RATE_LIMIT_MAX ? parseInt(process.env.SQUAD_JOIN_RATE_LIMIT_MAX, 10) : (process.env.NODE_ENV === "production" ? 20 : 200),
+  keyPrefix: "squad-join",
+  message: "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard."
+});
 const squadCodeLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 15, keyPrefix: "squad-code", message: "Trop de régénérations de code. Réessaie plus tard." });
 const syncLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, keyPrefix: "sync", message: "Trop de synchronisations. Ralentis un peu." });
 const emailVerifLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "email-verif", message: "Trop de renvois d'email. Réessaie plus tard." });
@@ -178,12 +193,31 @@ const emailVerifLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefi
 // ─────────────────────────────────────────────────────────────────
 // Zod validation schemas
 // ─────────────────────────────────────────────────────────────────
-const USERNAME_RE = /^[a-zA-Z0-9_\-. ]{2,24}$/;
+const USERNAME_RE = /^[a-zA-Z0-9_-]{3,24}$/;
+const DISPLAY_NAME_RE = /^[^<>"']{1,50}$/;
+const RESERVED_USERNAMES = ["admin", "administrator", "root", "support", "spritedex", "sprite", "api", "www", "null", "undefined"];
 
-const usernameSchema = z.string().trim().regex(USERNAME_RE, "Pseudo invalide (2-24 caractères : lettres, chiffres, espace, - _ .)");
+function isReservedUsername(name) {
+  const lower = name.toLowerCase();
+  return RESERVED_USERNAMES.includes(lower) || lower.startsWith("admin") || lower.includes("@");
+}
+
+const usernameSchema = z.string().trim()
+  .regex(USERNAME_RE, "Pseudo invalide (3-24 caractères : lettres, chiffres, - _)")
+  .refine((v) => !isReservedUsername(v), { message: "Pseudo réservé ou interdit" });
+
+const displayNameSchema = z.string().trim()
+  .min(1, "Nom affiché requis")
+  .max(50, "Nom affiché trop long (max 50)")
+  .regex(DISPLAY_NAME_RE, "Nom affiché invalide");
+
 const emailSchema = z.string().trim().email("Email invalide").max(254);
 const passwordSchema = z.string().min(6, "Mot de passe trop court (min 6)").max(200);
-const privacySchema = z.enum(["private", "friends_only", "squad_only", "public"]);
+const visibilitySchema = z.enum(["private", "friends", "squad", "public"]);
+const legacyPrivacySchema = z.enum(["private", "friends_only", "squad_only", "public"]);
+const privacySchema = z.enum(["private", "friends_only", "squad_only", "public"]); // kept for backward compatibility
+const friendInvitesFromSchema = z.enum(["everyone", "mutual_squad_members", "nobody"]);
+const squadInvitesFromSchema = z.enum(["everyone", "mutual_squad_members", "friends", "nobody"]);
 const statusSchema = z.enum(["new", "owned", "missing", "priority", "unsure", "unavailable", "spotted"]);
 const prioritySchema = z.enum(["none", "urgent", "important", "medium", "low", "ignored"]);
 const noteSchema = z.string().max(500).optional();
@@ -194,6 +228,7 @@ const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   username: usernameSchema.optional(),
+  displayName: displayNameSchema.optional(),
   cguAccepted: z.boolean().optional(),
   cguVersion: z.string().max(32).optional(),
   ageConfirmed: z.boolean().refine((v) => v === true, { message: "Tu dois avoir au moins 15 ans pour créer un compte." }),
@@ -213,10 +248,29 @@ const avatarUrlSchema = z.string().max(500).refine(
   { message: "URL d'avatar invalide" }
 );
 
+const visibilityObjectSchema = z.object({
+  profile: visibilitySchema.optional(),
+  collection: visibilitySchema.optional(),
+  priorities: visibilitySchema.optional(),
+  statistics: visibilitySchema.optional(),
+  activity: visibilitySchema.optional(),
+  notes: visibilitySchema.optional()
+}).strict().optional();
+
 const profilePatchSchema = z.object({
   username: usernameSchema.optional(),
+  displayName: displayNameSchema.optional(),
   avatarUrl: avatarUrlSchema.optional(),
-  privacy: privacySchema.optional()
+  privacy: legacyPrivacySchema.optional(),
+  visibility: visibilityObjectSchema,
+  profileVisibility: visibilitySchema.optional(),
+  collectionVisibility: visibilitySchema.optional(),
+  priorityVisibility: visibilitySchema.optional(),
+  notesVisibility: visibilitySchema.optional(),
+  friendInvitesFrom: friendInvitesFromSchema.optional(),
+  squadInvitesFrom: squadInvitesFromSchema.optional(),
+  pushPrefFriendCollectionUpdates: z.boolean().optional(),
+  pushPrefFriendPriorityMatches: z.boolean().optional()
 }).strict();
 
 const collectionEntrySchema = z.object({
@@ -247,11 +301,27 @@ const collectionSyncSchema = z.object({
 
 const squadCreateSchema = z.object({
   name: squadNameSchema.optional()
-}).passthrough(); // frontend also sends userId; ignored server-side (derived from session)
+}).strict(); // userId must come from the session, never from the body
 
 const squadJoinSchema = z.object({
   code: squadCodeSchema
+}).strict();
+
+const friendSearchSchema = z.object({
+  q: z.string().trim().min(2).max(50)
 }).passthrough();
+
+const friendRequestSchema = z.object({
+  addresseeId: z.string().trim().min(1).or(z.number())
+}).strict();
+
+const profileSuspendSchema = z.object({
+  durationMinutes: z.number().int().min(1).max(525600).optional()
+}).strict();
+
+const friendInviteLinkCreateSchema = z.object({
+  duration: z.enum(["permanent", "24h", "7d", "single_use"])
+}).strict();
 
 function validateBody(schema) {
   return (req, res, next) => {
@@ -284,12 +354,19 @@ module.exports = {
     registerSchema,
     loginSchema,
     profilePatchSchema,
+    profileSuspendSchema,
     collectionEntrySchema,
     collectionSyncSchema,
     squadCreateSchema,
     squadJoinSchema,
+    friendSearchSchema,
+    friendRequestSchema,
+    friendInviteLinkCreateSchema,
     usernameSchema,
+    displayNameSchema,
     privacySchema,
+    friendInvitesFromSchema,
+    squadInvitesFromSchema,
     statusSchema,
     prioritySchema
   }

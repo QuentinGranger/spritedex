@@ -6,7 +6,7 @@ async function createSquad() {
     const res = await fetch(`${API_BASE}/squads`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ userId: state.userId, name })
+      body: JSON.stringify({ name })
     });
     if (!res.ok) {
       const err = await res.json();
@@ -32,7 +32,7 @@ async function joinSquad() {
     const res = await fetch(`${API_BASE}/squads/join`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ userId: state.userId, code })
+      body: JSON.stringify({ code })
     });
     if (!res.ok) {
       const err = await res.json();
@@ -55,8 +55,7 @@ async function leaveSquad() {
   try {
     await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/leave`, {
       method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ userId: state.userId })
+      headers: authHeaders()
     });
   } catch (e) {
     console.warn("Leave failed", e);
@@ -84,13 +83,15 @@ async function loadSquad(code) {
     state.activeSquad = data.code;
     state.squadCreatedBy = data.createdBy;
     state.squadJoinOpen = data.joinOpen !== false;
-    state.squadMembers = data.members.filter(m => String(m.userId) !== String(state.userId));
+    state.squadMembers = data.members;
 
     els.squadActiveName.textContent = data.name;
     els.squadActiveCode.textContent = data.code;
     showSquadActive();
     renderSquadAdmin();
     renderSquad();
+    renderSquadRecommendedFriends();
+    renderSquadComplementaryPairs();
   } catch (e) {
     toast("Erreur réseau");
   }
@@ -171,14 +172,14 @@ function stopSquadPolling() {
 
 // ── Squad : UI toggles ──
 function showSquadLobby() {
-  els.squadLobby.style.display = "";
+  els.squadLobby.style.display = "block";
   els.squadActive.style.display = "none";
   stopSquadPolling();
 }
 
 function showSquadActive() {
   els.squadLobby.style.display = "none";
-  els.squadActive.style.display = "";
+  els.squadActive.style.display = "block";
   populateSquadVariantOptions();
   startSquadPolling();
 }
@@ -192,7 +193,7 @@ function renderSquadAdmin() {
 
   const joinLabel = state.squadJoinOpen ? "Ouvert" : "Fermé";
   const joinIcon = state.squadJoinOpen ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-  const joinLink = `${location.origin}/squad/join/${state.activeSquad}`;
+  const joinLink = `${webOrigin()}/?joinSquad=${state.activeSquad}`;
 
   wrap.innerHTML = `
     <div class="squad-admin">
@@ -403,23 +404,260 @@ function timeAgo(dateStr) {
   return `il y a ${days}j`;
 }
 
+function membershipSince(joinedAt) {
+  if (!joinedAt) return "Membre récemment";
+  const days = Math.floor((Date.now() - new Date(joinedAt).getTime()) / 86400000);
+  if (days === 0) return "Membre aujourd'hui";
+  if (days === 1) return "Membre depuis 1 jour";
+  return `Membre depuis ${days} jours`;
+}
+
+function relationBadge(m) {
+  const isMe = String(m.userId) === String(state.userId);
+  if (isMe) {
+    return { label: "Moi", class: "squad-chip__badge--me" };
+  }
+  switch (m.friendshipStatus) {
+    case "accepted":
+      return { label: "Ami", class: "squad-chip__badge--friend" };
+    case "pending":
+      return { label: "Invitation en attente", class: "squad-chip__badge--pending" };
+    case "blocked":
+      return { label: "Bloqué", class: "squad-chip__badge--blocked" };
+    default:
+      return { label: "Membre uniquement", class: "squad-chip__badge--member" };
+  }
+}
+
+function renderSquadFriendAction(m) {
+  if (String(m.userId) === String(state.userId)) return "";
+  const status = m.friendshipStatus;
+  const direction = m.friendRequestDirection;
+  if (status === "pending" && direction === "received") {
+    return `<button class="squad-chip__add squad-chip__add--accept" data-accept-friend="${encodeURIComponent(m.userId)}" title="Accepter la demande">Accepter</button>`;
+  }
+  if (status === "none" && m.canReceiveFriendRequest) {
+    return `<button class="squad-chip__add" data-add-friend="${encodeURIComponent(m.userId)}" title="Ajouter comme ami">+</button>`;
+  }
+  return "";
+}
+
+function passesMemberFilter(m) {
+  const filter = state.squadMemberFilter || "all";
+  if (filter === "all") return true;
+  if (filter === "friends") return m.friendshipStatus === "accepted";
+  if (filter === "nonfriends") return m.friendshipStatus !== "accepted";
+  if (filter === "admins") return m.role === "owner" || m.role === "admin";
+  return true;
+}
+
 function renderSquadMembers() {
-  const me = escapeHtml(state.username || "Moi");
   const isCreator = String(state.squadCreatedBy) === String(state.userId);
-  let html = `<span class="squad-chip squad-chip--me">${me}</span>`;
-  state.squadMembers.forEach(m => {
-    // Uses a data-kick attribute + delegated listener (see events.js) instead
-    // of an inline onclick="..." handler, both to avoid re-building a CSP
-    // 'unsafe-inline' script-src exception and to keep the numeric userId out
-    // of directly-interpolated executable markup.
-    const kick = isCreator
+
+  const allMembers = state.squadMembers.map(m => ({
+    ...m,
+    role: m.role || (String(m.userId) === String(state.squadCreatedBy) ? "owner" : "member")
+  }));
+
+  const filtered = allMembers.filter(passesMemberFilter).sort((a, b) => {
+    const aMe = String(a.userId) === String(state.userId) ? -1 : 0;
+    const bMe = String(b.userId) === String(state.userId) ? -1 : 0;
+    if (aMe !== bMe) return aMe - bMe;
+    return (a.username || "").localeCompare(b.username || "");
+  });
+
+  const total = allMembers.length;
+  const friendCount = allMembers.filter(m => m.friendshipStatus === "accepted").length;
+  const nonFriendCount = total - friendCount;
+  const adminCount = allMembers.filter(m => m.role === "owner" || m.role === "admin").length;
+
+  if (els.squadMemberFilter) {
+    els.squadMemberFilter.style.display = total > 0 ? "" : "none";
+    els.squadMemberFilter.querySelectorAll(".squad-member-filter__btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.memberFilter === (state.squadMemberFilter || "all"));
+    });
+  }
+
+  if (els.squadMemberSummary) {
+    const summaryParts = [`${total} membre${total > 1 ? "s" : ""}`];
+    if (state.squadMemberFilter === "all" || state.squadMemberFilter === "friends") {
+      summaryParts.push(`${friendCount} ami${friendCount > 1 ? "s" : ""}`);
+    }
+    if (state.squadMemberFilter === "all" || state.squadMemberFilter === "nonfriends") {
+      summaryParts.push(`${nonFriendCount} autre${nonFriendCount > 1 ? "s" : ""}`);
+    }
+    if (state.squadMemberFilter === "all" || state.squadMemberFilter === "admins") {
+      summaryParts.push(`${adminCount} admin${adminCount > 1 ? "s" : ""}`);
+    }
+    els.squadMemberSummary.textContent = summaryParts.join(" · ");
+  }
+
+  const renderChip = (m) => {
+    const badge = relationBadge(m);
+    const action = renderSquadFriendAction(m);
+    const isMe = String(m.userId) === String(state.userId);
+    const compare = !isMe
+      ? `<button class="squad-chip__compare" data-compare-user="${encodeURIComponent(m.username || m.userId)}" title="Comparer nos collections">⇄</button>`
+      : "";
+    const kick = isCreator && !isMe
       ? `<button class="squad-chip__kick" data-kick="${encodeURIComponent(m.userId)}" title="Retirer">✕</button>`
       : "";
+    const menu = !isMe
+      ? `<button class="squad-chip__menu" data-member-menu="${encodeURIComponent(m.userId)}" data-member-name="${encodeURIComponent(m.username || "Membre")}" title="Actions">⋯</button>`
+      : "";
     const incomplete = (m.entryCount || 0) === 0 ? `<span class="squad-chip__warn" title="Checklist vide">?</span>` : "";
-    const stale = m.lastUpdated ? `<span class="squad-chip__time" title="Dernière MAJ : ${timeAgo(m.lastUpdated)}">${timeAgo(m.lastUpdated)}</span>` : `<span class="squad-chip__time squad-chip__time--stale">jamais sync</span>`;
-    html += `<span class="squad-chip">${escapeHtml(m.username)}${incomplete}${stale}${kick}</span>`;
-  });
-  els.squadMembers.innerHTML = html;
+    const stale = m.lastUpdated
+      ? `<span class="squad-chip__time" title="Dernière MAJ : ${timeAgo(m.lastUpdated)}">${timeAgo(m.lastUpdated)}</span>`
+      : `<span class="squad-chip__time squad-chip__time--stale">jamais sync</span>`;
+
+    return `
+      <div class="squad-chip ${isMe ? 'squad-chip--me' : ''}" data-member-id="${encodeURIComponent(m.userId)}">
+        <div class="squad-chip__info">
+          <div class="squad-chip__name-row">
+            <span class="squad-chip__name">${escapeHtml(m.username || "Membre")}${incomplete}</span>
+          </div>
+          <div class="squad-chip__meta-row">
+            <span class="squad-chip__since">${membershipSince(m.joinedAt)}</span>
+            ${stale}
+          </div>
+        </div>
+        <span class="squad-chip__badge ${badge.class}">${badge.label}</span>
+        ${action}${compare}${kick}${menu}
+      </div>
+    `;
+  };
+
+  if (filtered.length === 0) {
+    els.squadMembers.innerHTML = `<p class="squad-empty">Aucun membre dans cette catégorie.</p>`;
+    return;
+  }
+  els.squadMembers.innerHTML = filtered.map(renderChip).join("");
+}
+
+function openMemberActionsDialog(userId, username) {
+  if (!els.memberActionsDialog || !els.memberActionsList) return;
+  const m = state.squadMembers.find(x => String(x.userId) === String(userId));
+  if (!m) return;
+
+  state.pendingMemberAction = { userId, username: username || m.username };
+  if (els.memberActionsTitle) {
+    els.memberActionsTitle.textContent = `Actions · ${escapeHtml(m.username || "Membre")}`;
+  }
+
+  const items = [];
+  items.push({ action: "compare", label: "Comparer nos collections", icon: "⇄" });
+
+  if (m.friendshipStatus === "none" && m.canReceiveFriendRequest) {
+    items.push({ action: "add-friend", label: "Ajouter comme ami", icon: "+" });
+  }
+
+  if (m.friendshipStatus === "accepted") {
+    items.push({ action: "invite-squad", label: "Inviter dans une autre escouade", icon: "⚑" });
+    items.push({ action: "priorities", label: "Voir ses priorités", icon: "★" });
+  } else if (m.friendshipStatus !== "blocked") {
+    items.push({ action: "priorities", label: "Voir ses priorités", icon: "★" });
+  }
+
+  items.push({ action: "block", label: "Bloquer", icon: "🚫", danger: true });
+  items.push({ action: "report", label: "Signaler", icon: "⚠", danger: true });
+
+  els.memberActionsList.innerHTML = items.map(it => `
+    <button type="button" class="member-action ${it.danger ? 'member-action--danger' : ''}" data-member-action="${it.action}">
+      <span class="member-action__icon">${it.icon}</span>
+      <span class="member-action__label">${escapeHtml(it.label)}</span>
+    </button>
+  `).join("");
+
+  els.memberActionsDialog.showModal();
+}
+
+async function handleMemberAction(action, userId, username) {
+  const m = state.squadMembers.find(x => String(x.userId) === String(userId));
+  const name = username || (m && m.username) || "Membre";
+
+  switch (action) {
+    case "compare":
+      if (typeof compareWithUser === "function") {
+        await compareWithUser(userId);
+      } else {
+        toast("Fonction de comparaison indisponible.");
+      }
+      break;
+    case "add-friend":
+      if (typeof sendFriendRequest === "function") {
+        await sendFriendRequest(userId);
+      }
+      break;
+    case "invite-squad":
+      if (typeof openSquadInviteDialog === "function") {
+        await openSquadInviteDialog(userId, name);
+      }
+      break;
+    case "priorities":
+      await showMemberPriorities(userId, name);
+      break;
+    case "block":
+      if (!confirm(`Bloquer ${escapeHtml(name)} ?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/block`, { method: "POST", headers: authHeaders() });
+        if (res.ok) {
+          toast(`${escapeHtml(name)} a été bloqué.`);
+          if (state.activeSquad) await loadSquad(state.activeSquad);
+        } else {
+          const data = await res.json().catch(() => ({}));
+          toast(data.error || "Impossible de bloquer.");
+        }
+      } catch (e) {
+        toast("Erreur réseau.");
+      }
+      break;
+    case "report":
+      {
+        const reason = prompt(`Signaler ${escapeHtml(name)}. Décris le motif :`);
+        if (!reason || !reason.trim()) return;
+        try {
+          const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/report`, {
+            method: "POST",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: reason.trim() })
+          });
+          if (res.ok) {
+            toast("Signalement envoyé.");
+          } else {
+            const data = await res.json().catch(() => ({}));
+            toast(data.error || "Impossible de signaler.");
+          }
+        } catch (e) {
+          toast("Erreur réseau.");
+        }
+      }
+      break;
+  }
+
+  if (els.memberActionsDialog) els.memberActionsDialog.close();
+}
+
+async function showMemberPriorities(userId, username) {
+  try {
+    const res = await fetch(`${API_BASE}/collection/${encodeURIComponent(userId)}`, { headers: authHeaders() });
+    if (!res.ok) { toast("Collection non accessible."); return; }
+    const collection = await res.json();
+    const priorityIds = Object.entries(collection)
+      .filter(([, entry]) => entry.priority && entry.priority !== "none")
+      .map(([variantId]) => variantId);
+
+    if (priorityIds.length === 0) {
+      toast(`${escapeHtml(username)} n'a défini aucune priorité.`);
+      return;
+    }
+
+    // Open compare with this user so priorities can be seen through existing UI.
+    if (typeof compareWithUser === "function") {
+      await compareWithUser(userId);
+    }
+  } catch (e) {
+    toast("Erreur lors du chargement des priorités.");
+  }
 }
 
 // ── Squad : Populate duel selects ──
@@ -449,6 +687,11 @@ function renderSquad() {
   if (state.squadMembers.length === 0) {
     els.squadCounter.textContent = "";
     els.squadTableWrap.innerHTML = `<p class="squad-empty">En attente d'autres joueurs…<br>Partage le code <strong>${state.activeSquad}</strong> à tes amis !</p>`;
+    return;
+  }
+
+  if (state.squadView === "recommendations") {
+    renderSquadRecommendations();
     return;
   }
 
@@ -823,7 +1066,35 @@ function renderSquadSession(players, items) {
   els.squadTableWrap.innerHTML = parts.join("");
 }
 
-// ── Squad : History view ──
+// ── Squad : unified activity history view ──
+function formatSquadHistoryTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderSquadHistoryEntry(e, itemMap) {
+  const meta = e.metadata || {};
+  const username = escapeHtml(e.username || "Utilisateur anonyme");
+  switch (e.type) {
+    case "member_joined":
+      return `<strong>${username}</strong> a rejoint la squad.`;
+    case "friendship":
+      return `<strong>${escapeHtml(meta.usernameA || "Quelqu'un")}</strong> et <strong>${escapeHtml(meta.usernameB || "Quelqu'un")}</strong> sont devenus amis.`;
+    case "milestone":
+      return `La squad a atteint <strong>${meta.completionRate || meta.threshold || "?"} %</strong> de complétion.`;
+    case "goal_created":
+      return `<strong>${username}</strong> a créé un objectif collectif${meta.goalName ? ` : ${escapeHtml(meta.goalName)}` : ""}.`;
+    case "collection_update":
+    default: {
+      const it = itemMap.get(e.sprite_id);
+      const spriteName = it ? it.spriteName : escapeHtml(meta.spriteName || e.sprite_id);
+      const variant = it ? `<span class="history-list__variant">${it.variant}</span>` : "";
+      const suffix = meta.firstInSquad ? " <em>(absent de la squad)</em>" : "";
+      return `<strong>${username}</strong> a obtenu ${spriteName} ${variant}${suffix}`;
+    }
+  }
+}
+
 async function renderSquadHistory() {
   els.squadCounter.innerHTML = "";
   els.squadTableWrap.innerHTML = `<p class="squad-empty">Chargement de l'historique…</p>`;
@@ -862,37 +1133,222 @@ async function renderSquadHistory() {
 
     for (const [day, dayEntries] of dayMap) {
       parts.push(`<div class="history-day">`);
-      parts.push(`<h3 class="history-day__title">Session du ${day}</h3>`);
+      parts.push(`<h3 class="history-day__title">${day}</h3>`);
+      parts.push(`<ul class="history-list">`);
 
-      const byUser = new Map();
-      for (const e of dayEntries) {
-        if (!byUser.has(e.username)) byUser.set(e.username, []);
-        byUser.get(e.username).push(e);
+      for (const e of dayEntries.slice(0, 100)) {
+        const time = formatSquadHistoryTime(e.created_at);
+        const label = renderSquadHistoryEntry(e, itemMap);
+        parts.push(`<li class="history-list__item"><span class="history-list__time">${time}</span> ${label}</li>`);
       }
 
-      for (const [username, userEntries] of byUser) {
-        parts.push(`<div class="history-user">`);
-        parts.push(`<h4 class="history-user__name">${escapeHtml(username)} <span class="history-user__count">+${userEntries.length}</span></h4>`);
-        parts.push(`<ul class="history-list">`);
-        for (const e of userEntries.slice(0, 30)) {
-          const it = itemMap.get(e.sprite_id);
-          const label = it ? `${it.spriteName} <span class="history-list__variant">${it.variant}</span>` : e.sprite_id;
-          parts.push(`<li class="history-list__item">${label}</li>`);
-        }
-        if (userEntries.length > 30) {
-          parts.push(`<li class="history-list__more">+${userEntries.length - 30} autres</li>`);
-        }
-        parts.push(`</ul></div>`);
+      if (dayEntries.length > 100) {
+        parts.push(`<li class="history-list__more">+${dayEntries.length - 100} autres</li>`);
       }
-
-      parts.push(`<div class="history-day__total">La squad a progressé de <strong>+${dayEntries.length}</strong> variante${dayEntries.length > 1 ? "s" : ""}</div>`);
-      parts.push(`</div>`);
+      parts.push(`</ul></div>`);
     }
 
     parts.push(`</div>`);
     els.squadTableWrap.innerHTML = parts.join("");
   } catch (e) {
     els.squadTableWrap.innerHTML = `<p class="squad-empty">Erreur réseau.</p>`;
+  }
+}
+
+// ── Squad : Recommendations view (complementarity engine) ──
+async function renderSquadRecommendations() {
+  if (!state.activeSquad) return;
+  els.squadCounter.innerHTML = `<span class="squad-counter__text">Recommandations</span>`;
+  els.squadTableWrap.innerHTML = `<p class="squad-empty">Chargement des recommandations…</p>`;
+  try {
+    const res = await fetch(`${API_BASE}/recommendations`, { headers: authHeadersOnly() });
+    if (!res.ok) throw new Error("recommendations failed");
+    const data = await res.json();
+    const parts = [];
+    parts.push(`<div class="recommendations-view">`);
+    parts.push(`<div class="recommendations-header"><h3 class="recommendations-title">Complémentarité</h3><p class="recommendations-subtitle">Tu possèdes ${data.ownedCount}/${data.totalVariants} variantes actifs (${data.ownedRate}%)</p></div>`);
+
+    if (data.mostComplementary) {
+      const m = data.mostComplementary;
+      const rarityParts = Object.entries(m.jointCoverageByRarity || {})
+        .sort((a, b) => (b[1].coverage || 0) - (a[1].coverage || 0))
+        .slice(0, 3)
+        .map(([r, info]) => `<span class="recommendation-rarity">${escapeHtml(r)} : <strong>${info.coverage}%</strong> (${info.owned}/${info.total})</span>`)
+        .join(" · ");
+      parts.push(`<div class="recommendation-card recommendation-card--highlight">`);
+      parts.push(`<div class="recommendation-card__header">`);
+      parts.push(`<span class="recommendation-card__name">${escapeHtml(m.displayName || m.username)}</span>`);
+      parts.push(`<span class="recommendation-card__badge">Plus complémentaire</span>`);
+      parts.push(`</div>`);
+      parts.push(`<div class="recommendation-card__body">`);
+      parts.push(`<p>${escapeHtml(m.displayName || m.username)} possède <strong>${m.missingCount}</strong> variantes qui te manquent, dont <strong>${m.priorityMatchCount}</strong> prioritaires.</p>`);
+      parts.push(`<p>Ensemble, vous couvrez <strong>${m.jointCoverage}%</strong> des variantes actives.</p>`);
+      if (rarityParts) parts.push(`<p class="recommendation-rarities">${rarityParts}</p>`);
+      parts.push(`</div></div>`);
+    }
+
+    if (data.friends && data.friends.length > 0) {
+      parts.push(`<h4 class="recommendations-section-title">Amis et membres de squad</h4>`);
+      parts.push(`<div class="recommendation-list">`);
+      for (const f of data.friends) {
+        parts.push(`<div class="recommendation-card">
+          <div class="recommendation-card__header">
+            <span class="recommendation-card__name">${escapeHtml(f.displayName || f.username)}</span>
+            <span class="recommendation-card__score">score ${f.score}</span>
+          </div>
+          <div class="recommendation-card__body">
+            <p><strong>${f.missingCount}</strong> variantes te manquent chez lui · <strong>${f.priorityMatchCount}</strong> priorités · couverture commune <strong>${f.jointCoverage}%</strong></p>
+          </div>
+        </div>`);
+      }
+      parts.push(`</div>`);
+    }
+
+    if (data.squadAdditions && data.squadAdditions.length > 0) {
+      parts.push(`<h4 class="recommendations-section-title">Renforcer une squad</h4>`);
+      parts.push(`<div class="recommendation-list">`);
+      for (const s of data.squadAdditions) {
+        parts.push(`<div class="recommendation-card">
+          <div class="recommendation-card__header">
+            <span class="recommendation-card__name">${escapeHtml(s.name)}</span>
+            <span class="recommendation-card__gain">+${s.gain}%</span>
+          </div>
+          <div class="recommendation-card__body">
+            <p>Ajouter <strong>${escapeHtml(s.candidate.displayName || s.candidate.username)}</strong> ferait passer la couverture de <strong>${s.currentRate}%</strong> à <strong>${s.newRate}%</strong>.</p>
+          </div>
+        </div>`);
+      }
+      parts.push(`</div>`);
+    }
+
+    parts.push(`</div>`);
+    els.squadTableWrap.innerHTML = parts.join("");
+  } catch (e) {
+    console.error("[renderSquadRecommendations]", e);
+    els.squadTableWrap.innerHTML = `<p class="squad-empty">Impossible de charger les recommandations.</p>`;
+  }
+}
+
+async function handleRecommendedFriendInvite(e) {
+  const btn = e.target.closest("[data-recommended-id]");
+  if (!btn) return;
+  const friendId = btn.dataset.recommendedId;
+  const code = state.activeSquad;
+  if (!code || !friendId) return;
+  try {
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/invite/${encodeURIComponent(friendId)}`, {
+      method: "POST",
+      headers: authHeaders()
+    });
+    if (res.ok) {
+      toast("Invitation envoyée.");
+      btn.disabled = true;
+      btn.textContent = "Invité";
+    } else {
+      const data = await res.json().catch(() => ({}));
+      toast(data.error || "Impossible d'inviter.");
+    }
+  } catch (e) {
+    console.error("[invite recommended]", e);
+    toast("Erreur réseau.");
+  }
+}
+
+async function renderSquadRecommendedFriends() {
+  if (!els.squadRecommendedFriends) return;
+  if (!state.activeSquad) {
+    els.squadRecommendedFriends.innerHTML = "";
+    return;
+  }
+  els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">Chargement…</p>`;
+  try {
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/recommended-friends`, { headers: authHeadersOnly() });
+    if (!res.ok) throw new Error("recommended friends failed");
+    const data = await res.json();
+    const candidates = data.candidates || [];
+    if (candidates.length === 0) {
+      els.squadRecommendedFriends.innerHTML = "";
+      return;
+    }
+    const squadName = escapeHtml(data.squadName || els.squadActiveName?.textContent || "l'escouade");
+    const parts = [];
+    parts.push(`<div class="recommended-friends-section"><h4 class="recommended-friends__title">Amis recommandés</h4><div class="recommended-friends__list">`);
+    for (const c of candidates) {
+      const btn = c.canInvite
+        ? `<button type="button" class="login-btn" data-recommended-id="${encodeURIComponent(c.userId)}" data-action="invite-recommended">Inviter</button>`
+        : `<button type="button" class="ghost-button" disabled>Inviter</button>`;
+      const contrib = c.potentialContribution || c.newVariantsForSquad || 0;
+      const contributionLine = contrib > 0
+        ? `<span class="recommended-friend__stat recommended-friend__stat--contribution">${escapeHtml(c.displayName || c.username)} pourrait apporter ${contrib} nouvelle${contrib > 1 ? 's' : ''} variante${contrib > 1 ? 's' : ''} à ${squadName}.</span>`
+        : "";
+      parts.push(`<div class="recommended-friend">
+        <div class="recommended-friend__info">
+          <span class="recommended-friend__name">${escapeHtml(c.displayName || c.username)}</span>
+          <span class="recommended-friend__meta">
+            <span class="recommended-friend__stat">+${c.newVariantsForSquad} variantes nouvelles</span>
+            <span class="recommended-friend__stat">${c.mythicNewVariants} variantes mythiques manquantes</span>
+            <span class="recommended-friend__stat">Score de complémentarité : ${c.complementarityScore}%</span>
+            ${contributionLine}
+          </span>
+        </div>
+        ${btn}
+      </div>`);
+    }
+    parts.push(`</div></div>`);
+    els.squadRecommendedFriends.innerHTML = parts.join("");
+    els.squadRecommendedFriends.querySelectorAll("[data-action='invite-recommended']").forEach(btn => {
+      btn.addEventListener("click", handleRecommendedFriendInvite);
+    });
+  } catch (e) {
+    console.error("[renderSquadRecommendedFriends]", e);
+    els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">Impossible de charger les amis recommandés.</p>`;
+  }
+}
+
+async function renderSquadComplementaryPairs() {
+  if (!els.squadComplementaryPairs) return;
+  if (!state.activeSquad) {
+    els.squadComplementaryPairs.innerHTML = "";
+    return;
+  }
+  els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">Chargement…</p>`;
+  try {
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/complementary-pairs`, { headers: authHeadersOnly() });
+    if (!res.ok) throw new Error("complementary pairs failed");
+    const data = await res.json();
+    const pairs = data.pairs || [];
+    if (pairs.length === 0) {
+      els.squadComplementaryPairs.innerHTML = "";
+      return;
+    }
+    const parts = [];
+    parts.push(`<div class="complementary-pairs-section"><h4 class="complementary-pairs__title">Membres complémentaires</h4><div class="complementary-pairs__list">`);
+    for (const p of pairs) {
+      parts.push(`<button type="button" class="complementary-pair" data-user-a-id="${encodeURIComponent(p.userAId)}" data-user-a-name="${escapeHtml(p.userAName)}" data-user-b-id="${encodeURIComponent(p.userBId)}" data-user-b-name="${escapeHtml(p.userBName)}">
+        <span class="complementary-pair__names">${escapeHtml(p.userAName)} <span class="complementary-pair__cross">×</span> ${escapeHtml(p.userBName)}</span>
+        <span class="complementary-pair__score">${p.complementarityScore}%</span>
+      </button>`);
+    }
+    parts.push(`</div></div>`);
+    els.squadComplementaryPairs.innerHTML = parts.join("");
+    els.squadComplementaryPairs.querySelectorAll(".complementary-pair").forEach(btn => {
+      btn.addEventListener("click", handleComplementaryPairClick);
+    });
+  } catch (e) {
+    console.error("[renderSquadComplementaryPairs]", e);
+    els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">Impossible de charger les paires complémentaires.</p>`;
+  }
+}
+
+function handleComplementaryPairClick(e) {
+  const btn = e.target.closest(".complementary-pair");
+  if (!btn) return;
+  const userAId = btn.dataset.userAId;
+  const userAName = btn.dataset.userAName;
+  const userBId = btn.dataset.userBId;
+  const userBName = btn.dataset.userBName;
+  if (typeof comparePair === "function") {
+    comparePair(userAId, userAName, userBId, userBName);
   }
 }
 

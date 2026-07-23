@@ -7,26 +7,45 @@ function renderAll() {
   renderCompare();
 }
 
+function setSocialTab(tab, opts = {}) {
+  document.querySelectorAll(".social-tab").forEach(b => b.classList.toggle("active", b.dataset.socialTab === tab));
+  document.querySelectorAll(".social-panel").forEach(p => {
+    p.style.display = p.id === `social-panel-${tab}` ? "block" : "none";
+  });
+  if (opts.silent) return;
+  if (tab === "friends") {
+    renderFriends();
+  } else if (tab === "compare") {
+    renderCompare();
+    stopSquadPolling();
+  } else if (tab === "squad") {
+    if (state.activeSquad) {
+      loadSquad(state.activeSquad);
+      startSquadPolling();
+    } else {
+      if (typeof showSquadLobby === "function") showSquadLobby();
+    }
+  }
+}
+
 function setupEvents() {
+  document.querySelectorAll(".social-tab").forEach(btn => {
+    btn.addEventListener("click", () => setSocialTab(btn.dataset.socialTab));
+  });
+
   els.tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       els.tabs.forEach((button) => button.classList.toggle("active", button === tab));
       els.views.forEach((view) => view.classList.toggle("active", view.id === `view-${tab.dataset.view}`));
-      if (tab.dataset.view === "squad") {
-        if (state.compareMode === "squad") {
-          if (state.activeSquad) {
-            loadSquad(state.activeSquad);
-            startSquadPolling();
-          }
-        } else {
-          renderCompare();
-          stopSquadPolling();
-        }
-      } else {
+      if (tab.dataset.view !== "social") {
         stopSquadPolling();
       }
       if (tab.dataset.view === "history") {
         renderHistory();
+      }
+      if (tab.dataset.view === "social") {
+        const activeSocialTab = document.querySelector(".social-tab.active");
+        setSocialTab(activeSocialTab ? activeSocialTab.dataset.socialTab : "friends");
       }
     });
   });
@@ -90,15 +109,15 @@ function setupEvents() {
         patch.obtainedAt = new Date().toISOString();
       }
       setEntry(statusSelect.dataset.id, patch);
-      const spriteId = statusSelect.dataset.id.split("::")[0];
-      openSpriteDetail(spriteId);
+      const item = getAllItems().find(i => i.id === statusSelect.dataset.id);
+      if (item) openSpriteDetail(item.spriteId);
       return;
     }
     const prioSelect = event.target.closest(".sd-prio-select");
     if (prioSelect) {
       setEntry(prioSelect.dataset.id, { priority: prioSelect.value });
-      const spriteId = prioSelect.dataset.id.split("::")[0];
-      openSpriteDetail(spriteId);
+      const item = getAllItems().find(i => i.id === prioSelect.dataset.id);
+      if (item) openSpriteDetail(item.spriteId);
       return;
     }
   });
@@ -120,8 +139,8 @@ function setupEvents() {
       const input = prompt("Date d'obtention (AAAA-MM-JJ) :", current);
       if (input) {
         setEntry(id, { obtainedAt: new Date(input).toISOString() });
-        const spriteId = id.split("::")[0];
-        openSpriteDetail(spriteId);
+        const item = getAllItems().find(i => i.id === id);
+        if (item) openSpriteDetail(item.spriteId);
       }
       return;
     }
@@ -175,9 +194,46 @@ function setupEvents() {
   });
 
   els.squadMembers.addEventListener("click", (event) => {
+    const menuBtn = event.target.closest("[data-member-menu]");
+    if (menuBtn) {
+      const userId = decodeURIComponent(menuBtn.dataset.memberMenu);
+      const username = decodeURIComponent(menuBtn.dataset.memberName || "");
+      openMemberActionsDialog(userId, username);
+      return;
+    }
+    const addFriendBtn = event.target.closest("[data-add-friend]");
+    if (addFriendBtn) {
+      sendFriendRequest(decodeURIComponent(addFriendBtn.dataset.addFriend));
+      return;
+    }
+    const acceptFriendBtn = event.target.closest("[data-accept-friend]");
+    if (acceptFriendBtn) {
+      acceptFriendRequest(decodeURIComponent(acceptFriendBtn.dataset.acceptFriend));
+      return;
+    }
+    const compareBtn = event.target.closest("[data-compare-user]");
+    if (compareBtn) {
+      compareWithUser(decodeURIComponent(compareBtn.dataset.compareUser));
+      return;
+    }
     const kickBtn = event.target.closest("[data-kick]");
     if (kickBtn) kickSquadMember(decodeURIComponent(kickBtn.dataset.kick));
   });
+
+  if (els.memberActionsList) {
+    els.memberActionsList.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-member-action]");
+      if (!btn) return;
+      const action = btn.dataset.memberAction;
+      const pending = state.pendingMemberAction || {};
+      handleMemberAction(action, pending.userId, pending.username);
+    });
+  }
+  if (els.memberActionsClose) {
+    els.memberActionsClose.addEventListener("click", () => {
+      if (els.memberActionsDialog) els.memberActionsDialog.close();
+    });
+  }
   els.squadCreateBtn.addEventListener("click", createSquad);
   els.squadJoinBtn.addEventListener("click", joinSquad);
   els.squadCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") joinSquad(); });
@@ -190,10 +246,21 @@ function setupEvents() {
       navigator.clipboard.writeText(state.activeSquad).then(() => toast("Code copié !"));
     }
   });
+  if (els.squadShareBtn) {
+    els.squadShareBtn.addEventListener("click", () => openShareDialog("squad"));
+  }
   els.squadFilter.addEventListener("change", () => {
     state.squadFilter = els.squadFilter.value;
     renderSquad();
   });
+  if (els.squadMemberFilter) {
+    els.squadMemberFilter.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-member-filter]");
+      if (!btn) return;
+      state.squadMemberFilter = btn.dataset.memberFilter;
+      renderSquadMembers();
+    });
+  }
   els.squadSearchInput.addEventListener("input", () => {
     state.squadSearch = els.squadSearchInput.value;
     renderSquad();
@@ -218,7 +285,9 @@ function setupEvents() {
     });
   });
 
+  setSocialTab("friends", { silent: true });
   setupCompareEvents();
+  setupFriendsEvents();
   setupSwipeGestures();
 
   // Register the service worker for the web PWA only. In the native (Capacitor)

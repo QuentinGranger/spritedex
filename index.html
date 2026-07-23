@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="css/dialogs.css" />
     <link rel="stylesheet" href="css/squad.css" />
     <link rel="stylesheet" href="css/news.css" />
+    <link rel="stylesheet" href="css/friends.css" />
     <link rel="stylesheet" href="css/history.css" />
     <link rel="stylesheet" href="css/effects.css" />
     <link rel="stylesheet" href="css/account.css" />
@@ -613,7 +614,7 @@
       </section>
 
       <nav class="tabs" aria-label="Navigation principale">
-        <button class="tab active" data-view="squad">Compare</button>
+        <button class="tab active" data-view="social">Social</button>
         <button class="tab" data-view="swipe">Swipe</button>
         <button class="tab" data-view="checklist">Checklist</button>
         <button class="tab" data-view="missing">Manquants</button>
@@ -787,19 +788,90 @@
           </div>
         </section>
 
-        <section class="view active" id="view-squad">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Comparateur</p>
-              <h2>Comparaison</h2>
+        <section class="view active" id="view-social">
+          <nav class="social-tabs" role="tablist" aria-label="Social">
+            <button class="social-tab active" data-social-tab="friends" type="button">Amis</button>
+            <button class="social-tab" data-social-tab="compare" type="button">Comparer</button>
+            <button class="social-tab" data-social-tab="squad" type="button">Escouade</button>
+          </nav>
+
+          <div class="social-panel" id="social-panel-friends">
+          <nav class="friends-tabs" role="tablist" aria-label="Amis">
+            <button class="friends-tab active" data-friends-tab="friends" type="button">Mes amis</button>
+            <button class="friends-tab" data-friends-tab="received" type="button">Demandes reçues</button>
+            <button class="friends-tab" data-friends-tab="sent" type="button">Demandes envoyées</button>
+            <button class="friends-tab" data-friends-tab="add" type="button">Ajouter</button>
+            <button class="friends-tab" data-friends-tab="qr" type="button">Mon QR code</button>
+            <button class="friends-tab" data-friends-tab="blocked" type="button">Bloqués</button>
+          </nav>
+
+          <div class="friends-panels">
+            <div class="friends-panel active" id="friends-panel-friends">
+              <div class="friends-toolbar">
+                <div class="search-box friends-search-box">
+                  <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input id="friendSearch" type="search" placeholder="Rechercher un ami…" />
+                </div>
+                <select id="friendFilter" class="sort-bar__select" aria-label="Filtrer les amis">
+                  <option value="all">Tous</option>
+                  <option value="online">En ligne</option>
+                  <option value="squad">Même squad</option>
+                  <option value="recent">Collection mise à jour récemment</option>
+                  <option value="complementary">Variantes complémentaires</option>
+                  <option value="pending">Demandes en attente</option>
+                </select>
+                <select id="friendSort" class="sort-bar__select" aria-label="Trier les amis">
+                  <option value="name">Nom</option>
+                  <option value="lastActive">Dernière activité</option>
+                  <option value="complementarity">Complémentarité</option>
+                  <option value="progression">Progression</option>
+                  <option value="added">Date d'ajout</option>
+                </select>
+              </div>
+              <div class="friends-list" id="friendsList"><p class="squad-empty">Chargement…</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-received">
+              <div class="friends-list" id="receivedList"><p class="squad-empty">Chargement…</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-sent">
+              <div class="friends-list" id="sentList"><p class="squad-empty">Chargement…</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-add">
+              <div class="friends-toolbar">
+                <div class="search-box friends-search-box">
+                  <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input id="addFriendSearch" type="search" placeholder="Pseudo (min. 3 caractères)" />
+                </div>
+                <button class="ghost-button" id="addFriendSearchBtn" type="button">Rechercher</button>
+              </div>
+              <div class="friends-actions">
+                <button class="ghost-button" id="friendShareLinkBtn" type="button">Copier mon lien d'ami</button>
+                <button class="ghost-button" id="friendShowQrBtn" type="button">Afficher mon QR code</button>
+              </div>
+              <h3 class="friends-subtitle">Résultats</h3>
+              <div class="friends-list" id="addFriendResults"></div>
+              <h3 class="friends-subtitle">Suggestions d'escouade</h3>
+              <div class="friends-list" id="friendSuggestions"><p class="squad-empty">Aucune suggestion</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-qr">
+              <div class="friends-qr-wrap">
+                <p id="friendQrHint" class="squad-empty">Génère un lien permanent pour afficher ton QR code.</p>
+                <img id="friendQrImg" alt="QR code d'ami" style="display:none" />
+                <button class="ghost-button" id="friendGenerateQrBtn" type="button">Générer mon QR code</button>
+              </div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-blocked">
+              <div class="friends-list" id="blockedList"><p class="squad-empty">Chargement…</p></div>
             </div>
           </div>
+          </div><!-- /social-panel-friends -->
 
-          <div class="compare-mode-toggle" role="tablist" aria-label="Mode de comparaison">
-            <button type="button" class="compare-mode-btn active" data-compare-mode="friend">Ami · 1v1</button>
-            <button type="button" class="compare-mode-btn" data-compare-mode="squad">Escouade</button>
-          </div>
-
+          <div class="social-panel" id="social-panel-compare" style="display:none">
           <!-- Friend (1v1) comparison mode -->
           <div class="compare-mode-panel" id="compareModeFriend">
             <div class="compare-hero">
@@ -815,14 +887,18 @@
             <div class="compare-status" id="compareStatus"></div>
             <div class="compare-results" id="compareResults" style="display:none">
               <div class="compare-summary" id="compareSummary"></div>
+              <div class="compare-squads" id="compareSquads"></div>
               <div class="compare-table" id="compareTable"></div>
               <div class="compare-recommendations" id="compareRecommendations"></div>
               <div class="compare-actions" id="compareActions"></div>
             </div>
           </div>
 
+          </div><!-- /social-panel-compare -->
+
+          <div class="social-panel" id="social-panel-squad" style="display:none">
           <!-- Squad (group) comparison mode -->
-          <div class="compare-mode-panel" id="compareModeSquad" style="display:none">
+          <div class="compare-mode-panel" id="compareModeSquad">
           <!-- Squad lobby: create or join -->
           <div class="squad-lobby" id="squadLobby">
             <div class="squad-lobby__card">
@@ -850,10 +926,20 @@
                 <span class="squad-active__code" id="squadActiveCode">SPRITE-0000</span>
                 <button class="squad-copy-code" id="squadCopyCode" title="Copier le code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               </div>
+              <button class="ghost-button" id="squadShareBtn">Partager</button>
               <button class="ghost-button danger-text" id="squadLeaveBtn">Quitter</button>
             </div>
             <div id="squadAdminWrap"></div>
+            <div class="squad-member-filter" id="squadMemberFilter" style="display:none">
+              <button type="button" class="squad-member-filter__btn active" data-member-filter="all">Tous</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="friends">Mes amis</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="nonfriends">Non-amis</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="admins">Administrateurs</button>
+            </div>
+            <div class="squad-member-summary" id="squadMemberSummary"></div>
             <div class="squad-members" id="squadMembers"></div>
+            <div class="squad-recommended-friends" id="squadRecommendedFriends"></div>
+            <div class="squad-complementary-pairs" id="squadComplementaryPairs"></div>
             <div class="squad-controls">
               <div class="squad-search">
                 <input type="text" id="squadSearchInput" class="squad-input" placeholder="Rechercher un sprite…" />
@@ -889,6 +975,7 @@
                 <button class="squad-view-btn" data-squad-view="hunt" title="À farmer">⊘</button>
                 <button class="squad-view-btn" data-squad-view="duel" title="Duel 1v1">⇄</button>
                 <button class="squad-view-btn" data-squad-view="session" title="Session rapide"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="recommendations" title="Recommandations"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
                 <button class="squad-view-btn" data-squad-view="history" title="Historique"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
               </div>
             </div>
@@ -902,7 +989,7 @@
               <p class="squad-empty">Chargement...</p>
             </div>
           </div>
-          </div>
+          </div><!-- /social-panel-squad -->
         </section>
 
         <section class="view" id="view-history">
@@ -914,6 +1001,7 @@
             <p class="squad-empty">Chargement…</p>
           </div>
         </section>
+
 
       </main>
     </div>
@@ -968,23 +1056,50 @@
     <dialog id="shareCompareDialog" class="share-compare-dialog">
       <form method="dialog" class="dialog-card share-compare-form">
         <button class="close-button" value="cancel" aria-label="Fermer">×</button>
-        <h3>Partager ma comparaison</h3>
-        <label class="share-compare-field">
-          Durée
-          <select id="shareCompareDuration">
-            <option value="1h">1 heure</option>
-            <option value="24h" selected>24 heures</option>
-            <option value="7d">7 jours</option>
-            <option value="none">Sans expiration</option>
-          </select>
-        </label>
-        <label class="share-compare-check"><input type="checkbox" id="shareCompareCollection" checked> Collection visible</label>
-        <label class="share-compare-check"><input type="checkbox" id="shareCompareNotes"> Afficher les notes</label>
-        <label class="share-compare-check"><input type="checkbox" id="shareComparePriorities" checked> Afficher les priorités</label>
-        <label class="share-compare-check"><input type="checkbox" id="shareCompareVisitor" checked> Permettre la comparaison avec le visiteur</label>
+        <h3 id="shareCompareTitle">Partager ma comparaison</h3>
+        <p class="share-compare-intro" id="shareCompareIntro">Génère un lien et un QR code à envoyer à tes amis.</p>
+        <div id="shareCompareOptions">
+          <label class="share-compare-field">
+            Durée
+            <select id="shareCompareDuration">
+              <option value="1h">1 heure</option>
+              <option value="24h" selected>24 heures</option>
+              <option value="7d">7 jours</option>
+              <option value="none">Sans expiration</option>
+            </select>
+          </label>
+          <label class="share-compare-check"><input type="checkbox" id="shareCompareCollection" checked> Collection visible</label>
+          <label class="share-compare-check"><input type="checkbox" id="shareCompareNotes"> Afficher les notes</label>
+          <label class="share-compare-check"><input type="checkbox" id="shareComparePriorities" checked> Afficher les priorités</label>
+          <label class="share-compare-check"><input type="checkbox" id="shareCompareVisitor" checked> Permettre la comparaison avec le visiteur</label>
+        </div>
         <button type="submit" class="login-btn" id="shareCompareGenerate">Générer le lien</button>
-        <div id="shareCompareResult" class="share-compare-result"></div>
+        <div id="shareCompareResult" class="share-compare-result">
+          <img id="shareCompareQr" class="share-compare-qr" alt="QR code du lien de partage" />
+          <p class="share-compare-url"><a id="shareCompareUrl" href="#" target="_blank" rel="noopener"></a></p>
+          <button type="button" class="ghost-button" id="shareCompareCopy">Copier le lien</button>
+        </div>
       </form>
+    </dialog>
+
+    <dialog id="squadInviteDialog" class="squad-invite-dialog">
+      <form method="dialog" class="dialog-card squad-invite-form">
+        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <h3 id="squadInviteDialogTitle">Inviter dans une escouade</h3>
+        <div id="squadInviteDialogOptions" class="squad-invite-options"></div>
+        <div class="squad-invite-actions">
+          <button type="button" class="ghost-button" value="cancel">Annuler</button>
+          <button type="submit" class="login-btn" id="squadInviteDialogConfirm" disabled>Inviter</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="memberActionsDialog" class="member-actions-dialog">
+      <div class="dialog-card">
+        <button class="close-button" id="memberActionsClose" aria-label="Fermer">×</button>
+        <h3 id="memberActionsTitle">Actions</h3>
+        <div class="member-actions" id="memberActionsList"></div>
+      </div>
     </dialog>
 
     <dialog id="legalDialog" class="legal-dialog">
@@ -1016,6 +1131,7 @@
     <script src="js/dialogs.js"></script>
     <script src="js/data-io.js"></script>
     <script src="js/swipe.js"></script>
+    <script src="js/friends.js"></script>
     <script src="js/events.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/account.js"></script>

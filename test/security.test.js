@@ -97,6 +97,29 @@ async function run() {
     assert.strictEqual(data.error, "Email ou mot de passe incorrect");
   });
 
+  await test("register duplicate does not reveal whether email or username is taken", async () => {
+    const res = await fetch(`${API}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userA.email, password: "password123", username: userA.username, ageConfirmed: true, cguAccepted: true })
+    });
+    assert.strictEqual(res.status, 409);
+    const data = await res.json();
+    assert.ok(!/email|pseudo|utilis|pris/i.test(data.error || ""), `message leaks info: ${data.error}`);
+  });
+
+  await test("password reset for unknown email returns generic success", async () => {
+    const res = await fetch(`${API}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: `nope_${rnd()}@example.com` })
+    });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.ok(data.ok);
+    assert.ok(!/n'?est pas inscrit|not registered|unknown email/i.test(data.message || ""), `message leaks info: ${data.message}`);
+  });
+
   // ── Authorization / IDOR ──
   await test("user can write to their OWN collection (200)", async () => {
     const res = await fetch(`${API}/collection/${userA.id}/water::Gold`, {
@@ -256,6 +279,93 @@ async function run() {
     assert.ok(res.headers.get("content-security-policy"), "missing CSP");
     assert.strictEqual(res.headers.get("x-frame-options"), "DENY");
     assert.strictEqual(res.headers.get("x-content-type-options"), "nosniff");
+  });
+
+  // ── Private collection stays private ──
+  await test("owner can read their own collection when private", async () => {
+    const setPrivate = await fetch(`${API}/profile/${userA.id}`, {
+      method: "PATCH",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ collectionVisibility: "private" })
+    });
+    assert.strictEqual(setPrivate.status, 200, `set private failed: ${await setPrivate.text()}`);
+
+    const res = await fetch(`${API}/collection/${userA.id}`, { headers: authHeaders(userA.token) });
+    assert.strictEqual(res.status, 200, `owner should read own private collection: ${await res.text()}`);
+  });
+
+  await test("another user cannot read a private collection", async () => {
+    const res = await fetch(`${API}/collection/${userA.id}`, { headers: authHeaders(userB.token) });
+    assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`);
+  });
+
+  await test("compare share cannot be created for a private collection", async () => {
+    const res = await fetch(`${API}/compare/share`, {
+      method: "POST",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ duration: "1h" })
+    });
+    assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`);
+  });
+
+  let shareTokenPublic;
+  await test("shared profile hides collection when it is private", async () => {
+    // flip to public to create a token, then back to private
+    const setPublic = await fetch(`${API}/profile/${userA.id}`, {
+      method: "PATCH",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ collectionVisibility: "public" })
+    });
+    assert.strictEqual(setPublic.status, 200);
+
+    const create = await fetch(`${API}/profile/${userA.id}/share-link`, {
+      method: "POST",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({})
+    });
+    assert.strictEqual(create.status, 200);
+    shareTokenPublic = (await create.json()).token;
+
+    const setPrivate = await fetch(`${API}/profile/${userA.id}`, {
+      method: "PATCH",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ collectionVisibility: "private" })
+    });
+    assert.strictEqual(setPrivate.status, 200);
+
+    const res = await fetch(`${API}/shared/${shareTokenPublic}`);
+    assert.strictEqual(res.status, 200, "shared view should remain reachable");
+    const data = await res.json();
+    assert.ok(data.username, "profile still visible");
+    assert.strictEqual(Object.keys(data.collection || {}).length, 0, "private collection leaked through share link");
+  });
+
+  await test("compare share link cannot expose a private collection", async () => {
+    // set public, create a compare share, then set private
+    const setPublic = await fetch(`${API}/profile/${userA.id}`, {
+      method: "PATCH",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ collectionVisibility: "public" })
+    });
+    assert.strictEqual(setPublic.status, 200);
+
+    const create = await fetch(`${API}/compare/share`, {
+      method: "POST",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ duration: "1h" })
+    });
+    assert.ok(create.ok, "create compare share failed");
+    const { token: cmpShareToken } = await create.json();
+
+    const setPrivate = await fetch(`${API}/profile/${userA.id}`, {
+      method: "PATCH",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({ collectionVisibility: "private" })
+    });
+    assert.strictEqual(setPrivate.status, 200);
+
+    const res = await fetch(`${API}/compare/share/${cmpShareToken}`);
+    assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`);
   });
 
   // ── Cleanup ──

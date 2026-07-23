@@ -1,3 +1,8 @@
+function getVariantList(sprite) {
+  const keys = Object.keys(sprite.variantDetails || {});
+  return keys.length > 0 ? keys : (sprite.variants || ["Base"]);
+}
+
 function buildFilterChips() {
   const bar = els.filterChipsBar;
   if (!bar || bar.dataset.built) return;
@@ -40,31 +45,31 @@ function spriteMatchesFilter(sprite) {
   if (query) {
     const nameMatch = sprite.name.toLowerCase().includes(query);
     const rarityMatch = sprite.rarity.toLowerCase().includes(query);
-    const variantMatch = sprite.variants.some(v => v.toLowerCase().includes(query));
+    const variantMatch = getVariantList(sprite).some(v => v.toLowerCase().includes(query));
     const effectMatch = sprite.effect?.toLowerCase().includes(query);
     if (!nameMatch && !rarityMatch && !variantMatch && !effectMatch) return false;
   }
 
   if (filter === "all") return true;
   if (filter.startsWith("rarity:")) return sprite.rarity === filter.split(":")[1];
-  if (filter.startsWith("variant:")) return sprite.variants.includes(filter.split(":")[1]);
+  if (filter.startsWith("variant:")) return getVariantList(sprite).includes(filter.split(":")[1]);
 
   if (filter.startsWith("prio:")) {
     const prio = filter.split(":")[1];
-    return sprite.variants.some(v => {
+    return getVariantList(sprite).some(v => {
       const entry = getEntry(variantId(sprite.id, v));
       return entry.priority === prio;
     });
   }
 
   if (filter === "complete") {
-    return sprite.variants.every(v => getEntry(variantId(sprite.id, v)).status === "owned");
+    return getVariantList(sprite).every(v => getEntry(variantId(sprite.id, v)).status === "owned");
   }
   if (filter === "incomplete") {
-    return !sprite.variants.every(v => getEntry(variantId(sprite.id, v)).status === "owned");
+    return !getVariantList(sprite).every(v => getEntry(variantId(sprite.id, v)).status === "owned");
   }
 
-  return sprite.variants.some(v => {
+  return getVariantList(sprite).some(v => {
     const entry = getEntry(variantId(sprite.id, v));
     return entry.status === filter;
   });
@@ -77,13 +82,13 @@ function sortSprites(sprites) {
       case "alpha":
         return a.name.localeCompare(b.name);
       case "progress-asc": {
-        const pA = a.variants.filter(v => getEntry(variantId(a.id, v)).status === "owned").length / a.variants.length;
-        const pB = b.variants.filter(v => getEntry(variantId(b.id, v)).status === "owned").length / b.variants.length;
+        const pA = getVariantList(a).filter(v => getEntry(variantId(a.id, v)).status === "owned").length / (getVariantList(a).length || 1);
+        const pB = getVariantList(b).filter(v => getEntry(variantId(b.id, v)).status === "owned").length / (getVariantList(b).length || 1);
         return pA - pB;
       }
       case "progress-desc": {
-        const pA = a.variants.filter(v => getEntry(variantId(a.id, v)).status === "owned").length / a.variants.length;
-        const pB = b.variants.filter(v => getEntry(variantId(b.id, v)).status === "owned").length / b.variants.length;
+        const pA = getVariantList(a).filter(v => getEntry(variantId(a.id, v)).status === "owned").length / (getVariantList(a).length || 1);
+        const pB = getVariantList(b).filter(v => getEntry(variantId(b.id, v)).status === "owned").length / (getVariantList(b).length || 1);
         return pB - pA;
       }
       case "rarity-desc":
@@ -91,11 +96,11 @@ function sortSprites(sprites) {
       case "rarity-asc":
         return (RARITY_ORDER[b.rarity] ?? 9) - (RARITY_ORDER[a.rarity] ?? 9);
       case "priority": {
-        const bestPrio = s => Math.min(...s.variants.map(v => priorityOrder(getEntry(variantId(s.id, v)).priority || "none")));
+        const bestPrio = s => Math.min(...getVariantList(s).map(v => priorityOrder(getEntry(variantId(s.id, v)).priority || "none")));
         return bestPrio(a) - bestPrio(b);
       }
       case "recent": {
-        const latest = s => Math.max(...s.variants.map(v => {
+        const latest = s => Math.max(...getVariantList(s).map(v => {
           const d = getEntry(variantId(s.id, v)).updatedAt;
           return d ? new Date(d).getTime() : 0;
         }));
@@ -116,7 +121,7 @@ function renderChecklist() {
   }
 
   els.checklistList.innerHTML = filtered.map(sprite => {
-    const variants = sprite.variants.map(v => ({
+    const variants = getVariantList(sprite).map(v => ({
       id: variantId(sprite.id, v),
       name: v,
       entry: getEntry(variantId(sprite.id, v)),

@@ -30,14 +30,13 @@ function updateNotifBadge(count) {
 }
 
 async function checkNewsNotifications() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return;
   try {
-    const res = await fetch(`${API_BASE}/news?limit=20`);
+    const res = await fetch(`${API_BASE}/notifications?unread=true&limit=50`, { headers: authHeadersOnly() });
     if (!res.ok) return;
     const data = await res.json();
-    const news = data.news || [];
-    const seen = getSeenNewsIds();
-    const unseen = news.filter(n => !seen.includes(n.id));
-    updateNotifBadge(unseen.length);
+    updateNotifBadge(data.unreadCount || 0);
   } catch { /* silent */ }
 }
 
@@ -61,26 +60,35 @@ function closeNotifDropdown() {
   notifDropdownOpen = false;
 }
 
-function renderNotifItem(item, seen) {
-  const isUnread = !seen.includes(item.id);
-  const date = item.news_date
-    ? new Date(item.news_date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
+function getNotificationUrl(item) {
+  switch (item.type) {
+    case "friend_request_received":
+    case "friend_request_accepted":
+    case "friend_removed":
+      return "/friends";
+    case "squad_invitation_from_friend":
+      return item.entity_id ? `/squad/${encodeURIComponent(item.entity_id)}` : "/squad";
+    case "friend_collection_updated":
+    case "friend_priority_match":
+      return item.actor_id ? `/collection/${encodeURIComponent(item.actor_id)}` : "/";
+    default:
+      return "/";
+  }
+}
+
+function renderNotifItem(item) {
+  const isUnread = !item.read_at;
+  const date = item.created_at
+    ? new Date(item.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })
     : "";
-  const sourceLabel = item.source.includes("fortnite.gg") ? "fortnite.gg" : item.source.includes("en") ? "EN" : "FR";
-  const img = item.image
-    ? `<img class="notif-item__img" src="${item.image}" alt="" loading="lazy"/>`
-    : "";
-  const link = item.link || null;
-  const tag = link ? "a" : "div";
-  const href = link ? ` href="${link}" target="_blank" rel="noopener"` : "";
+  const url = getNotificationUrl(item);
+  const tag = url ? "a" : "div";
+  const href = url ? ` href="${url}"` : "";
   return `
     <${tag} class="notif-item${isUnread ? " notif-item--unread" : ""}"${href}>
-      ${img}
       <div class="notif-item__body">
-        <p class="notif-item__title">${item.title}</p>
-        <p class="notif-item__desc">${(item.description || "").slice(0, 120)}</p>
+        <p class="notif-item__title">${escapeHtml(item.message || "")}</p>
         <div class="notif-item__meta">
-          <span class="notif-item__source">${sourceLabel}</span>
           <span class="notif-item__date">${date}</span>
         </div>
       </div>
@@ -88,7 +96,8 @@ function renderNotifItem(item, seen) {
 }
 
 async function loadMoreNews() {
-  if (notifLoading || !notifHasMore) return;
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token || notifLoading || !notifHasMore) return;
   notifLoading = true;
 
   const list = document.getElementById("notifList");
@@ -102,7 +111,7 @@ async function loadMoreNews() {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/news?limit=15&offset=${notifOffset}`);
+    const res = await fetch(`${API_BASE}/notifications?limit=20&offset=${notifOffset}`, { headers: authHeadersOnly() });
     const loaderEl = document.getElementById("notifLoader");
     if (loaderEl) loaderEl.remove();
 
@@ -113,24 +122,27 @@ async function loadMoreNews() {
     }
 
     const data = await res.json();
-    const news = data.news || [];
-    notifHasMore = data.hasMore;
+    const notifications = data.notifications || [];
+    notifHasMore = notifications.length === 20;
 
-    if (news.length === 0 && notifOffset === 0) {
-      list.innerHTML = `<p class="notif-dropdown__empty">Aucune actu récente.</p>`;
+    if (notifications.length === 0 && notifOffset === 0) {
+      list.innerHTML = `<p class="notif-dropdown__empty">Aucune notification.</p>`;
       notifLoading = false;
       return;
     }
 
-    const seen = getSeenNewsIds();
-    const html = news.map(item => renderNotifItem(item, seen)).join("");
+    const html = notifications.map(item => renderNotifItem(item)).join("");
     list.insertAdjacentHTML("beforeend", html);
 
-    notifOffset += news.length;
-    markNewsSeen(news.map(n => n.id));
+    notifOffset += notifications.length;
 
-    if (!notifHasMore) {
-      list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__end">Fin des actus</p>`);
+    if (notifOffset === notifications.length) {
+      fetch(`${API_BASE}/notifications/read-all`, { method: "POST", headers: authHeadersOnly() }).catch(() => {});
+      updateNotifBadge(0);
+    }
+
+    if (!notifHasMore && notifications.length > 0) {
+      list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__end">Fin</p>`);
     }
   } catch (e) {
     if (notifOffset === 0) list.innerHTML = `<p class="notif-dropdown__empty">Erreur réseau.</p>`;
@@ -141,6 +153,8 @@ async function loadMoreNews() {
 function setupNotifBell() {
   const bell = document.getElementById("notifBell");
   const close = document.getElementById("notifClose");
+  const title = document.querySelector(".notif-dropdown__title");
+  if (title) title.textContent = "Notifications";
 
   if (bell) {
     bell.addEventListener("click", (e) => {
@@ -177,5 +191,5 @@ function setupNotifBell() {
     });
   }
 
-  setInterval(checkNewsNotifications, 5 * 60 * 1000);
+  setInterval(checkNewsNotifications, 30 * 1000);
 }

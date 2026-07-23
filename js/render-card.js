@@ -69,8 +69,9 @@ function renderCard() {
 
   const sprite = SPRITES.find(s => s.id === item.spriteId);
   if (sprite) {
-    const totalVariants = sprite.variants.length;
-    const ownedVariants = sprite.variants.filter(v => getEntry(variantId(sprite.id, v)).status === "owned").length;
+    const vList = (typeof getVariantList === "function") ? getVariantList(sprite) : (Object.keys(sprite.variantDetails || {}).length ? Object.keys(sprite.variantDetails) : (sprite.variants || ["Base"]));
+    const totalVariants = vList.length;
+    const ownedVariants = vList.filter(v => getEntry(variantId(sprite.id, v)).status === "owned").length;
     const pct = totalVariants ? Math.round((ownedVariants / totalVariants) * 100) : 0;
     els.cardProgressText.textContent = `${ownedVariants} / ${totalVariants}`;
     els.cardProgressFill.style.width = `${pct}%`;

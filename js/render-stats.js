@@ -24,12 +24,14 @@ function renderStats() {
   els.statsHeroPct.textContent = `${pct}%`;
   els.statsHeroDetail.textContent = `${ownedVariants} / ${totalVariants} variantes collectées`;
 
-  const spritesCompleted = SPRITES.filter(s =>
-    s.variants.every(v => getEntry(variantId(s.id, v)).status === "owned")
-  ).length;
-  const spritesPartial = SPRITES.filter(s =>
-    s.variants.some(v => getEntry(variantId(s.id, v)).status === "owned")
-  ).length;
+  const spritesCompleted = SPRITES.filter(s => {
+    const vl = Object.keys(s.variantDetails || {}).length ? Object.keys(s.variantDetails) : (s.variants || ["Base"]);
+    return vl.every(v => getEntry(variantId(s.id, v)).status === "owned");
+  }).length;
+  const spritesPartial = SPRITES.filter(s => {
+    const vl = Object.keys(s.variantDetails || {}).length ? Object.keys(s.variantDetails) : (s.variants || ["Base"]);
+    return vl.some(v => getEntry(variantId(s.id, v)).status === "owned");
+  }).length;
   els.kpiSprites.textContent = `${spritesPartial} / ${SPRITES.length}`;
   els.kpiVariants.textContent = `${ownedVariants} / ${totalVariants}`;
 
@@ -56,17 +58,19 @@ function renderStats() {
   renderBars(els.rarityBars, rarities);
   renderBars(els.variantBars, variants);
 
-  const bestRarity = rarities.reduce((a, b) => a.percent >= b.percent ? a : b);
-  const worstRarity = rarities.reduce((a, b) => a.percent <= b.percent ? a : b);
+  const bestRarity = rarities.length ? rarities.reduce((a, b) => a.percent >= b.percent ? a : b) : null;
+  const worstRarity = rarities.length ? rarities.reduce((a, b) => a.percent <= b.percent ? a : b) : null;
   const worstVariant = variants.length ? variants.reduce((a, b) => a.percent <= b.percent ? a : b) : null;
 
   const topRarity = Object.entries(RARITY_ORDER).sort((a, b) => a[1] - b[1])[0]?.[0] || "";
-  const mythCompleted = SPRITES.filter(s =>
-    s.rarity === topRarity && s.variants.every(v => getEntry(variantId(s.id, v)).status === "owned")
-  ).length;
+  const mythCompleted = SPRITES.filter(s => {
+    const vl = Object.keys(s.variantDetails || {}).length ? Object.keys(s.variantDetails) : (s.variants || ["Base"]);
+    return s.rarity === topRarity && vl.every(v => getEntry(variantId(s.id, v)).status === "owned");
+  }).length;
   const mythTotal = SPRITES.filter(s => s.rarity === topRarity).length;
 
-  let insights = `
+  let insights = ``;
+  if (bestRarity) insights += `
     <div class="insight-card insight-card--best">
       <span class="insight-card__label">Collection la plus avancée</span>
       <strong class="insight-card__value">${bestRarity.label} — ${bestRarity.percent}%</strong>

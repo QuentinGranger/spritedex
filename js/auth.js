@@ -161,6 +161,7 @@ function setupLogin() {
     }
     showApp();
     setupEvents();
+    setupAccountPanel();
     buildDeck();
     renderAll();
     setupNotifBell();

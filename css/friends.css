@@ -1,0 +1,238 @@
+/* ── Social top-level tabs (Amis / Comparer / Escouade) ── */
+.social-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 1.25rem;
+}
+
+.social-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 0.75rem 0.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.social-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.social-tab:hover:not(.active) {
+  color: var(--text);
+}
+
+.social-panel { display: none; }
+
+/* ── Friends sub-tabs ── */
+.friends-tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.5rem 0 0.75rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.75rem;
+  scrollbar-width: none;
+}
+.friends-tabs::-webkit-scrollbar { display: none; }
+
+.friends-tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.friends-tab.active {
+  color: var(--accent-2);
+  border-bottom-color: var(--accent-2);
+}
+
+.friends-panels { padding: 0.25rem 0; }
+.friends-panel { display: none; }
+.friends-panel.active { display: block; }
+
+.friends-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.friends-search-box {
+  flex: 1;
+  min-width: 160px;
+  position: relative;
+}
+
+.friends-search-box input {
+  width: 100%;
+  padding: 0.5rem 0.6rem 0.5rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.friends-search-box .search-box__icon {
+  position: absolute;
+  left: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.friends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.friend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.friend-item:hover {
+  border-color: var(--line-glow);
+  background: var(--surface-strong);
+}
+
+.friend-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-2);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  overflow: hidden;
+}
+
+.friend-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.friend-name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-heading);
+}
+
+.friend-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.friend-actions button {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  border-radius: 0.35rem;
+}
+
+.friends-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.friends-subtitle {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 1rem 0 0.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.friends-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.friends-qr-wrap img {
+  max-width: 260px;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.5rem;
+}
+
+.friend-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 1rem;
+}
+
+@media (max-width: 480px) {
+  .friends-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .friends-search-box,
+  .friends-toolbar select {
+    width: 100%;
+  }
+  .friend-item {
+    flex-wrap: wrap;
+  }
+  .friend-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0.25rem;
+  }
+}

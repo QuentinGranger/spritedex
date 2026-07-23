@@ -407,12 +407,11 @@
   background: transparent;
   border: none;
   border-radius: 0;
-  margin-bottom: 22px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .tabs::-webkit-scrollbar {

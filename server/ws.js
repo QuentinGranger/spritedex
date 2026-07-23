@@ -64,14 +64,14 @@ async function broadcastSquadUpdate(userId) {
     const squadsResult = await pool.query(
       `SELECT s.code FROM squads s
        JOIN squad_members sm ON sm.squad_id = s.id
-       WHERE sm.user_id = $1`,
+       WHERE sm.user_id = $1 AND sm.status = 'active'`,
       [userId]
     );
     for (const row of squadsResult.rows) {
       const membersResult = await pool.query(
         `SELECT sm.user_id FROM squad_members sm
          JOIN squads s ON s.id = sm.squad_id
-         WHERE s.code = $1`,
+         WHERE s.code = $1 AND sm.status = 'active'`,
         [row.code]
       );
       const payload = JSON.stringify({ type: "squad_update", code: row.code });
