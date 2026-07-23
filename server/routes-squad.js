@@ -1743,6 +1743,208 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
   };
 }
 
+async function getSquadWhatIfImpact(squad, reqUser, change) {
+  const catalogueAll = await compare.getServerCompareCatalogItemsCached();
+  const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const validIds = new Set(activeCatalogue.map(i => i.id));
+
+  const membersResult = await pool.query(
+    `SELECT sm.user_id, u.username, u.display_name
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+    [squad.id]
+  );
+
+  const members = [];
+  const memberIds = [];
+  for (const r of membersResult.rows) {
+    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    if (!visible) continue;
+    const collection = await compare.loadServerCompareCollection(r.user_id);
+    const owned = new Set();
+    for (const [variantId, entry] of Object.entries(collection)) {
+      if (compare.compareServerIsOwned(entry.status) && validIds.has(variantId)) owned.add(variantId);
+    }
+    members.push({ userId: r.user_id, username: r.username, displayName: r.display_name || r.username, owned });
+    memberIds.push(r.user_id);
+  }
+
+  const memberSet = new Set(members.map(m => String(m.userId)));
+  const activeGoals = await pool.query(
+    `SELECT id, user_id, squad_id, title, variant_id
+     FROM collection_goals
+     WHERE status = 'active'
+       AND (squad_id = $1 OR user_id = ANY($2))`,
+    [squad.id, memberIds]
+  );
+
+  function computeSnapshot(memberList, idSet) {
+    const variantOwnerCount = new Map();
+    for (const m of memberList) {
+      for (const vid of m.owned) {
+        if (!idSet.has(vid)) continue;
+        variantOwnerCount.set(vid, (variantOwnerCount.get(vid) || 0) + 1);
+      }
+    }
+
+    let coveredCount = 0;
+    let uniqueVariantCount = 0;
+    let sharedVariantCount = 0;
+    let duplicatePossessionCount = 0;
+    for (const count of variantOwnerCount.values()) {
+      coveredCount++;
+      if (count === 1) uniqueVariantCount++;
+      else sharedVariantCount++;
+      duplicatePossessionCount += count - 1;
+    }
+
+    const total = idSet.size;
+    const completionRate = total ? Math.round((coveredCount / total) * 10000) / 100 : 0;
+
+    let mostComplementary = null;
+    const uniqueByMember = new Map();
+    for (const m of memberList) {
+      let unique = 0;
+      for (const vid of m.owned) {
+        if (idSet.has(vid) && variantOwnerCount.get(vid) === 1) unique++;
+      }
+      if (!mostComplementary || unique > mostComplementary.uniqueVariantCount) {
+        mostComplementary = { userId: m.userId, username: m.username, displayName: m.displayName, uniqueVariantCount: unique };
+      }
+    }
+
+    let bestPair = null;
+    let bestCoverage = -1;
+    for (let i = 0; i < memberList.length; i++) {
+      for (let j = i + 1; j < memberList.length; j++) {
+        const union = new Set(memberList[i].owned);
+        for (const vid of memberList[j].owned) union.add(vid);
+        let covered = 0;
+        for (const vid of union) if (idSet.has(vid)) covered++;
+        if (covered > bestCoverage) {
+          bestCoverage = covered;
+          bestPair = {
+            members: [
+              { userId: memberList[i].userId, username: memberList[i].username, displayName: memberList[i].displayName },
+              { userId: memberList[j].userId, username: memberList[j].username, displayName: memberList[j].displayName }
+            ],
+            coveredVariantCount: covered,
+            coverageRate: total ? Math.round((covered / total) * 10000) / 100 : 0
+          };
+        }
+      }
+    }
+
+    function isGoalCompleted(goal, list) {
+      if (goal.squad_id) {
+        return list.some(m => m.owned.has(goal.variant_id));
+      }
+      const m = list.find(x => String(x.userId) === String(goal.user_id));
+      return m ? m.owned.has(goal.variant_id) : false;
+    }
+
+    const goals = activeGoals.rows.map(goal => ({
+      goalId: goal.id,
+      title: goal.title,
+      variantId: goal.variant_id,
+      completed: isGoalCompleted(goal, memberList)
+    }));
+
+    return {
+      coveredCount,
+      totalVariantCount: total,
+      completionRate,
+      uniqueVariantCount,
+      sharedVariantCount,
+      duplicatePossessionCount,
+      mostComplementaryMember: mostComplementary,
+      bestPair,
+      goals
+    };
+  }
+
+  let activeIds = new Set(validIds);
+  const simulatedMembers = members.map(m => ({ ...m, owned: new Set(m.owned) }));
+
+  if (change && change.type) {
+    switch (change.type) {
+      case "acquire": {
+        const targetId = String(change.memberId);
+        const variantIds = toVariantIdList(change.variantIds);
+        const m = simulatedMembers.find(x => String(x.userId) === targetId);
+        if (m) {
+          for (const vid of variantIds) if (activeIds.has(vid)) m.owned.add(vid);
+        }
+        break;
+      }
+      case "join": {
+        const variantIds = toVariantIdList(change.ownedVariantIds);
+        const owned = new Set();
+        for (const vid of variantIds) if (activeIds.has(vid)) owned.add(vid);
+        const userId = change.memberId || `sim_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        simulatedMembers.push({
+          userId,
+          username: change.username || "Nouveau membre",
+          displayName: change.displayName || change.username || "Nouveau membre",
+          owned
+        });
+        break;
+      }
+      case "leave": {
+        const leaveId = String(change.memberId);
+        const idx = simulatedMembers.findIndex(x => String(x.userId) === leaveId);
+        if (idx >= 0) simulatedMembers.splice(idx, 1);
+        break;
+      }
+      case "unavailable": {
+        const variantIds = toVariantIdList(change.variantIds);
+        for (const vid of variantIds) activeIds.delete(vid);
+        break;
+      }
+      case "add_event": {
+        const variantIds = toVariantIdList(change.variantIds);
+        for (const vid of variantIds) activeIds.add(vid);
+        break;
+      }
+    }
+  }
+
+  const before = computeSnapshot(members, activeIds);
+  const after = computeSnapshot(simulatedMembers, activeIds);
+
+  const affectedGoals = after.goals
+    .map((g, i) => ({ ...g, beforeCompleted: before.goals[i].completed }))
+    .filter(g => g.completed !== g.beforeCompleted);
+
+  function diff(key) {
+    return Math.round((after[key] - before[key]) * 100) / 100;
+  }
+
+  return {
+    change,
+    before,
+    after,
+    difference: {
+      coveredCount: after.coveredCount - before.coveredCount,
+      completionRate: Math.round((after.completionRate - before.completionRate) * 100) / 100,
+      totalVariantCount: after.totalVariantCount - before.totalVariantCount,
+      uniqueVariantCount: after.uniqueVariantCount - before.uniqueVariantCount,
+      sharedVariantCount: after.sharedVariantCount - before.sharedVariantCount,
+      duplicatePossessionCount: after.duplicatePossessionCount - before.duplicatePossessionCount
+    },
+    affectedGoals,
+    mostComplementaryMember: {
+      before: before.mostComplementaryMember,
+      after: after.mostComplementaryMember
+    },
+    bestPair: {
+      before: before.bestPair,
+      after: after.bestPair
+    }
+  };
+}
+
 async function getSquadCompletionScope(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
@@ -2020,6 +2222,33 @@ app.post("/api/squads/:code/simulate", async (req, res) => {
     });
   } catch (err) {
     console.error("[/api/squads/:code/simulate]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : what-if impact for a single change ──
+app.post("/api/squads/:code/what-if", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const change = req.body.change || req.body;
+    if (!change || !change.type) {
+      return res.status(400).json({ error: "change.type requis" });
+    }
+
+    const result = await getSquadWhatIfImpact(squad, reqUser, change);
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      ...result
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/what-if]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
