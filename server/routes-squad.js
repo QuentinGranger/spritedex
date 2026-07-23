@@ -11,6 +11,82 @@ const { getVisibleSquadMemberIds, refreshSquadStats } = require("./routes-squad-
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 
+// ── Squad analysis cache ──
+const squadAnalysisCache = new Map();
+const SQUAD_ANALYSIS_CACHE_TTL_MS = 5 * 60 * 1000;
+const SQUAD_ANALYSIS_CACHE_MAX_ENTRIES = 300;
+
+function pruneSquadAnalysisCache() {
+  const now = Date.now();
+  for (const [key, entry] of squadAnalysisCache) {
+    if (entry.expiresAt <= now) squadAnalysisCache.delete(key);
+  }
+  if (squadAnalysisCache.size > SQUAD_ANALYSIS_CACHE_MAX_ENTRIES) {
+    const sorted = [...squadAnalysisCache.entries()].sort((a, b) => a[1].expiresAt - b[1].expiresAt);
+    const toDelete = sorted.slice(0, squadAnalysisCache.size - SQUAD_ANALYSIS_CACHE_MAX_ENTRIES);
+    for (const [key] of toDelete) squadAnalysisCache.delete(key);
+  }
+}
+
+function getSquadAnalysisCache(key) {
+  pruneSquadAnalysisCache();
+  const entry = squadAnalysisCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    squadAnalysisCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setSquadAnalysisCache(key, data) {
+  pruneSquadAnalysisCache();
+  squadAnalysisCache.set(key, { data, expiresAt: Date.now() + SQUAD_ANALYSIS_CACHE_TTL_MS });
+}
+
+async function getSquadCollectionVersion(squad) {
+  const result = await pool.query(
+    `SELECT
+      (SELECT string_agg(user_id::text, ',' ORDER BY user_id) FROM squad_members WHERE squad_id = $1 AND status = 'active') AS user_ids,
+      (SELECT MAX(updated_at)::text FROM squad_members WHERE squad_id = $1 AND status = 'active') AS members_max,
+      (SELECT MAX(se.updated_at)::text FROM sprite_entries se JOIN squad_members sm ON sm.user_id = se.user_id WHERE sm.squad_id = $1 AND sm.status = 'active') AS entries_max,
+      (SELECT COUNT(*)::text FROM sprite_entries se JOIN squad_members sm ON sm.user_id = se.user_id WHERE sm.squad_id = $1 AND sm.status = 'active') AS entries_count,
+      (SELECT MAX(u.updated_at)::text FROM users u JOIN squad_members sm ON sm.user_id = u.id WHERE sm.squad_id = $1 AND sm.status = 'active') AS users_max,
+      (SELECT MAX(updated_at)::text FROM collection_goals WHERE squad_id = $1) AS goals_max,
+      (SELECT MAX(f.updated_at)::text FROM friendships f JOIN squad_members sm ON sm.user_id = f.requester_id OR sm.user_id = f.addressee_id WHERE sm.squad_id = $1 AND sm.status = 'active') AS friends_max,
+      (SELECT MAX(b.updated_at)::text FROM user_blocks b JOIN squad_members sm ON sm.user_id = b.blocker_id OR sm.user_id = b.blocked_id WHERE sm.squad_id = $1 AND sm.status = 'active') AS blocks_max,
+      (SELECT updated_at::text FROM squads WHERE id = $1) AS squad_updated`,
+    [squad.id]
+  );
+  const r = result.rows[0];
+  const payload = `${r.user_ids || ''}:${r.members_max || ''}:${r.entries_max || ''}:${r.entries_count || '0'}:${r.users_max || ''}:${r.goals_max || ''}:${r.friends_max || ''}:${r.blocks_max || ''}:${r.squad_updated || ''}`;
+  return crypto.createHash("sha256").update(payload).digest("hex").slice(0, 12);
+}
+
+function getSquadFilterHash(req, endpoint) {
+  const sorted = Object.keys(req.query).sort();
+  const params = { _endpoint: endpoint };
+  for (const k of sorted) params[k] = req.query[k];
+  return crypto.createHash("sha256").update(JSON.stringify(params)).digest("hex").slice(0, 12);
+}
+
+async function getCachedOrComputeSquadAnalysis(req, squad, viewerId, endpoint, computeFn) {
+  const [catalogueAll, collectionVersion] = await Promise.all([
+    compare.getServerCompareCatalogItemsCached(),
+    getSquadCollectionVersion(squad)
+  ]);
+  const catalogueVersion = computeCatalogueVersion(catalogueAll);
+  const filterHash = getSquadFilterHash(req, endpoint);
+  const key = `squad:${squad.id}:viewer:${viewerId}:cat:${catalogueVersion}:col:${collectionVersion}:filters:${filterHash}`;
+  const cached = getSquadAnalysisCache(key);
+  if (cached) {
+    return cached;
+  }
+  const data = await computeFn();
+  setSquadAnalysisCache(key, data);
+  return data;
+}
+
 // ── Squad : secure code generation ──
 function generateSquadCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -861,38 +937,41 @@ app.get("/api/squads/:squadId/recommendations", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const [friendsToInvite, memberComparisons] = await Promise.all([
-      getSquadRecommendedFriends(squad, reqUser),
-      getSquadComplementaryPairs(squad, reqUser)
-    ]);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "standardized-recommendations", async () => {
+      const [friendsToInvite, memberComparisons] = await Promise.all([
+        getSquadRecommendedFriends(squad, reqUser),
+        getSquadComplementaryPairs(squad, reqUser)
+      ]);
 
-    analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "squad_recommendation_viewed", details: { friendsToInviteCount: friendsToInvite.length, memberComparisonsCount: memberComparisons.length } });
+      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "squad_recommendation_viewed", details: { friendsToInviteCount: friendsToInvite.length, memberComparisonsCount: memberComparisons.length } });
 
-    res.json({
-      squadId: squad.code,
-      recommendations: {
-        friendsToInvite: friendsToInvite.map(c => ({
-          userId: c.userId,
-          username: c.username,
-          displayName: c.displayName,
-          avatarUrl: c.avatarUrl,
-          newVariantsForSquad: c.newVariantsForSquad,
-          potentialContribution: c.potentialContribution,
-          projectedCompletionRate: c.projectedCompletionRate,
-          currentCompletionRate: c.currentCompletionRate,
-          complementarityScore: c.complementarityScore
-        })),
-        memberComparisons: memberComparisons.map(p => ({
-          userAId: p.userAId,
-          userAName: p.userAName,
-          userAAvatar: p.userAAvatar,
-          userBId: p.userBId,
-          userBName: p.userBName,
-          userBAvatar: p.userBAvatar,
-          complementarityScore: p.complementarityScore
-        }))
-      }
+      return {
+        squadId: squad.code,
+        recommendations: {
+          friendsToInvite: friendsToInvite.map(c => ({
+            userId: c.userId,
+            username: c.username,
+            displayName: c.displayName,
+            avatarUrl: c.avatarUrl,
+            newVariantsForSquad: c.newVariantsForSquad,
+            potentialContribution: c.potentialContribution,
+            projectedCompletionRate: c.projectedCompletionRate,
+            currentCompletionRate: c.currentCompletionRate,
+            complementarityScore: c.complementarityScore
+          })),
+          memberComparisons: memberComparisons.map(p => ({
+            userAId: p.userAId,
+            userAName: p.userAName,
+            userAAvatar: p.userAAvatar,
+            userBId: p.userBId,
+            userBName: p.userBName,
+            userBAvatar: p.userBAvatar,
+            complementarityScore: p.complementarityScore
+          }))
+        }
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/recommendations]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -1065,8 +1144,11 @@ app.get("/api/squads/:code/recommended-friends", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const candidates = await getSquadRecommendedFriends(squad, reqUser);
-    res.json({ squadCode: squad.code, squadName: squad.name, candidates });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "recommended-friends", async () => {
+      const candidates = await getSquadRecommendedFriends(squad, reqUser);
+      return { squadCode: squad.code, squadName: squad.name, candidates };
+    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/recommended-friends]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2342,8 +2424,11 @@ app.get("/api/squads/:code/complementary-pairs", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const pairs = await getSquadComplementaryPairs(squad, reqUser);
-    res.json({ squadCode: squad.code, squadName: squad.name, pairs });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-complementary-pairs", async () => {
+      const pairs = await getSquadComplementaryPairs(squad, reqUser);
+      return { squadCode: squad.code, squadName: squad.name, pairs };
+    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/complementary-pairs]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2360,9 +2445,12 @@ app.get("/api/squads/:code/most-complementary-pair", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const pairs = await getSquadComplementaryPairs(squad, reqUser);
-    const mostComplementaryPair = pairs[0] || null;
-    res.json({ squadCode: squad.code, squadName: squad.name, mostComplementaryPair });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-most-complementary-pair", async () => {
+      const pairs = await getSquadComplementaryPairs(squad, reqUser);
+      const mostComplementaryPair = pairs[0] || null;
+      return { squadCode: squad.code, squadName: squad.name, mostComplementaryPair };
+    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/most-complementary-pair]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2379,17 +2467,20 @@ app.get("/api/squads/:code/best-pair", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const bestPair = await getSquadBestPair(squad, reqUser);
-    if (!bestPair) {
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-best-pair", async () => {
+      const bestPair = await getSquadBestPair(squad, reqUser);
+      if (!bestPair) return null;
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        bestPair,
+        display: `${bestPair.userAName} et ${bestPair.userBName} forment la meilleure paire avec ${bestPair.coverageRate}% du catalogue couvert.`
+      };
+    });
+    if (!response) {
       return res.status(404).json({ error: "Pas assez de membres visibles pour former une paire" });
     }
-
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      bestPair,
-      display: `${bestPair.userAName} et ${bestPair.userBName} forment la meilleure paire avec ${bestPair.coverageRate}% du catalogue couvert.`
-    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/best-pair]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2417,21 +2508,23 @@ app.get("/api/squads/:code/best-teams", async (req, res) => {
       return res.status(400).json({ error: "eventId requis pour le mode event" });
     }
 
-    const result = await getSquadBestTeams(squad, reqUser, teamSize, mode, filterValue);
-    const bestTeam = result.teams[0] || null;
-
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      teamSize,
-      mode: result.mode,
-      filterValue: result.filterValue,
-      bestTeam,
-      teams: result.teams,
-      display: bestTeam
-        ? `La meilleure équipe de ${teamSize} couvre ${bestTeam.coverageRate}% du catalogue avec ${bestTeam.coveredVariantCount} variantes.`
-        : "Aucune équipe trouvée."
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-best-teams", async () => {
+      const result = await getSquadBestTeams(squad, reqUser, teamSize, mode, filterValue);
+      const bestTeam = result.teams[0] || null;
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        teamSize,
+        mode: result.mode,
+        filterValue: result.filterValue,
+        bestTeam,
+        teams: result.teams,
+        display: bestTeam
+          ? `La meilleure équipe de ${teamSize} couvre ${bestTeam.coverageRate}% du catalogue avec ${bestTeam.coveredVariantCount} variantes.`
+          : "Aucune équipe trouvée."
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/best-teams]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2469,17 +2562,20 @@ app.get("/api/squads/:code/minimum-team", async (req, res) => {
       return res.status(400).json({ error: "method invalide (auto, greedy, exhaustive)" });
     }
 
-    const result = await getSquadMinimumTeam(squad, reqUser, targetType, options, method);
-    if (!result) {
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-minimum-team", async () => {
+      const result = await getSquadMinimumTeam(squad, reqUser, targetType, options, method);
+      if (!result) return null;
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...result,
+        display: `${result.minPlayers} joueur${result.minPlayers > 1 ? 's' : ''} suffisent pour couvrir ${result.targetLabel} (${result.coveredTargetCount}/${result.targetTotal}).`
+      };
+    });
+    if (!response) {
       return res.status(404).json({ error: "Aucune équipe ne peut couvrir l'objectif" });
     }
-
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...result,
-      display: `${result.minPlayers} joueur${result.minPlayers > 1 ? 's' : ''} suffisent pour couvrir ${result.targetLabel} (${result.coveredTargetCount}/${result.targetTotal}).`
-    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/minimum-team]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2602,10 +2698,12 @@ app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
       visible: true
     }));
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
-
-    res.json({ squadCode: squad.code, squadName: squad.name, mostComplementaryMember });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-most-complementary-member", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
+      return { squadCode: squad.code, squadName: squad.name, mostComplementaryMember };
+    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/most-complementary-member]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2625,8 +2723,11 @@ app.get("/api/squads/:code/recommended-goals", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const result = await getSquadRecommendedGoals(squad, reqUser);
-    res.json({ squadCode: squad.code, squadName: squad.name, ...result });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-recommended-goals", async () => {
+      const result = await getSquadRecommendedGoals(squad, reqUser);
+      return { squadCode: squad.code, squadName: squad.name, ...result };
+    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/recommended-goals]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2657,13 +2758,16 @@ app.get("/api/squads/:code/analysis", async (req, res) => {
       visible: true
     }));
 
-    const [matrix, pairs] = await Promise.all([
-      compare.buildSquadCollectionMatrix(matrixMembers),
-      getSquadComplementaryPairs(squad, reqUser)
-    ]);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-analysis", async () => {
+      const [matrix, pairs] = await Promise.all([
+        compare.buildSquadCollectionMatrix(matrixMembers),
+        getSquadComplementaryPairs(squad, reqUser)
+      ]);
 
-    const analysis = compare.getSquadLevel1Analysis(matrix, squad.name, pairs);
-    res.json({ squadCode: squad.code, squadName: squad.name, ...analysis });
+      const analysis = compare.getSquadLevel1Analysis(matrix, squad.name, pairs);
+      return { squadCode: squad.code, squadName: squad.name, ...analysis };
+    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/analysis]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2680,32 +2784,35 @@ app.get("/api/squads/:squadId/completion", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const members = await buildSquadCompletionMembers(squad, reqUser);
-    const matrix = await compare.buildSquadCollectionMatrix(members);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "completion", async () => {
+      const members = await buildSquadCompletionMembers(squad, reqUser);
+      const matrix = await compare.buildSquadCollectionMatrix(members);
 
-    const scope = await getSquadCompletionScope(squad, reqUser);
-    const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
-    const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
-    const missing = compare.getSquadMissingVariants(matrix, squad.name);
-    const uniqueOwners = compare.getSquadUniqueOwners(matrix);
-    const shared = compare.getSquadSharedVariants(matrix);
-    const mostComplementary = compare.getSquadMostComplementaryMember(matrix, squad.name);
-    const pairs = await getSquadComplementaryPairs(squad, reqUser);
-    const bestPair = pairs[0] || null;
+      const scope = await getSquadCompletionScope(squad, reqUser);
+      const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
+      const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
+      const missing = compare.getSquadMissingVariants(matrix, squad.name);
+      const uniqueOwners = compare.getSquadUniqueOwners(matrix);
+      const shared = compare.getSquadSharedVariants(matrix);
+      const mostComplementary = compare.getSquadMostComplementaryMember(matrix, squad.name);
+      const pairs = await getSquadComplementaryPairs(squad, reqUser);
+      const bestPair = pairs[0] || null;
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...scope,
-      scope,
-      completion,
-      averageOwnership,
-      missing,
-      uniqueOwners,
-      shared,
-      mostComplementary,
-      bestPair
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...scope,
+        scope,
+        completion,
+        averageOwnership,
+        missing,
+        uniqueOwners,
+        shared,
+        mostComplementary,
+        bestPair
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2722,25 +2829,28 @@ app.get("/api/squads/:squadId/completion/missing", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const members = await buildSquadCompletionMembers(squad, reqUser);
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const result = compare.getSquadMissingVariants(matrix, squad.name);
-    const missingFromEntireSquad = matrix.filter(r => r.ownerCount === 0 && r.unknownCount === 0).map(r => ({
-      variantId: r.variantId,
-      spriteId: r.spriteId,
-      spriteName: r.spriteName,
-      variantName: r.variantName,
-      rarity: r.rarity,
-      availabilityStatus: r.availabilityStatus,
-      eventId: r.eventId
-    }));
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "missing", async () => {
+      const members = await buildSquadCompletionMembers(squad, reqUser);
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const result = compare.getSquadMissingVariants(matrix, squad.name);
+      const missingFromEntireSquad = matrix.filter(r => r.ownerCount === 0 && r.unknownCount === 0).map(r => ({
+        variantId: r.variantId,
+        spriteId: r.spriteId,
+        spriteName: r.spriteName,
+        variantName: r.variantName,
+        rarity: r.rarity,
+        availabilityStatus: r.availabilityStatus,
+        eventId: r.eventId
+      }));
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...result,
-      missingFromEntireSquad
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...result,
+        missingFromEntireSquad
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion/missing]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2757,18 +2867,21 @@ app.get("/api/squads/:squadId/completion/complementarity", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const members = await buildSquadCompletionMembers(squad, reqUser);
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const pairs = await getSquadComplementaryPairs(squad, reqUser);
-    const bestPair = pairs[0] || null;
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "complementarity", async () => {
+      const members = await buildSquadCompletionMembers(squad, reqUser);
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const pairs = await getSquadComplementaryPairs(squad, reqUser);
+      const bestPair = pairs[0] || null;
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      mostComplementaryMember: compare.getSquadMostComplementaryMember(matrix, squad.name),
-      uniqueOwners: compare.getSquadUniqueOwners(matrix),
-      bestPair
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        mostComplementaryMember: compare.getSquadMostComplementaryMember(matrix, squad.name),
+        uniqueOwners: compare.getSquadUniqueOwners(matrix),
+        bestPair
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion/complementarity]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2785,45 +2898,48 @@ app.get("/api/squads/:squadId/completion/recommendations", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const members = await buildSquadCompletionMembers(squad, reqUser);
-    const memberIds = members.map(m => m.userId);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "recommendations", async () => {
+      const members = await buildSquadCompletionMembers(squad, reqUser);
+      const memberIds = members.map(m => m.userId);
 
-    const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
-      pool.query("SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL", [squad.id]),
-      pool.query("SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id", [memberIds]),
-      pool.query("SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id", [memberIds])
-    ]);
+      const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
+        pool.query("SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL", [squad.id]),
+        pool.query("SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id", [memberIds]),
+        pool.query("SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id", [memberIds])
+      ]);
 
-    const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
-    const activeGoalVariantCounts = new Map();
-    const memberGoalVariantSet = new Set();
-    for (const r of goalsResult.rows) {
-      if (!r.variant_id) continue;
-      const key = `${r.user_id}:${r.variant_id}`;
-      memberGoalVariantSet.add(key);
-      activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
-    }
+      const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+      const activeGoalVariantCounts = new Map();
+      const memberGoalVariantSet = new Set();
+      for (const r of goalsResult.rows) {
+        if (!r.variant_id) continue;
+        const key = `${r.user_id}:${r.variant_id}`;
+        memberGoalVariantSet.add(key);
+        activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
+      }
 
-    const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
-    const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
-    const excludedSeasonIds = new Set(String(req.query.excludeSeason || "").split(",").map(s => s.trim()).filter(Boolean));
+      const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
+      const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+      const excludedSeasonIds = new Set(String(req.query.excludeSeason || "").split(",").map(s => s.trim()).filter(Boolean));
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-      excludedSeasonIds,
-      activeGoalVariantCounts,
-      memberGoalVariantSet,
-      maxGoalAssignments: 2
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+        excludedSeasonIds,
+        activeGoalVariantCounts,
+        memberGoalVariantSet,
+        maxGoalAssignments: 2
+      });
+
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        activeGoalCount: activeGoalVariantIds.size,
+        priorities,
+        assignments
+      };
     });
-
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      activeGoalCount: activeGoalVariantIds.size,
-      priorities,
-      assignments
-    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion/recommendations]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2840,25 +2956,28 @@ app.get("/api/squads/:squadId/completion/combinations", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const size = Math.max(2, Math.min(4, parseInt(req.query.size, 10) || 3));
-    const target = String(req.query.target || "all").toLowerCase();
-    const eventId = req.query.eventId || null;
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "combinations", async () => {
+      const size = Math.max(2, Math.min(4, parseInt(req.query.size, 10) || 3));
+      const target = String(req.query.target || "all").toLowerCase();
+      const eventId = req.query.eventId || null;
 
-    let mode = "global";
-    let filterValue = null;
-    if (target === "mythic") {
-      mode = "mythic";
-    } else if (eventId) {
-      mode = "event";
-      filterValue = eventId;
-    }
+      let mode = "global";
+      let filterValue = null;
+      if (target === "mythic") {
+        mode = "mythic";
+      } else if (eventId) {
+        mode = "event";
+        filterValue = eventId;
+      }
 
-    const result = await getSquadBestTeams(squad, reqUser, size, mode, filterValue);
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...result
+      const result = await getSquadBestTeams(squad, reqUser, size, mode, filterValue);
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...result
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion/combinations]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2902,7 +3021,7 @@ app.get("/api/squads/:squadId/completion/report", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const report = await getSquadVersionedCompletionReport(squad, reqUser);
+    const report = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "report", async () => getSquadVersionedCompletionReport(squad, reqUser));
     res.json(report);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion/report]", err);
@@ -2941,17 +3060,20 @@ app.get("/api/squads/:code/matrix", async (req, res) => {
       });
     }
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const publicMatrix = matrix.map(row => {
-      const { members, ...rest } = row;
-      return rest;
-    });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-matrix", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const publicMatrix = matrix.map(row => {
+        const { members, ...rest } = row;
+        return rest;
+      });
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      matrix: publicMatrix
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        matrix: publicMatrix
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/matrix]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -2989,13 +3111,16 @@ app.get("/api/squads/:code/missing-variants", async (req, res) => {
       });
     }
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const result = compare.getSquadMissingVariants(matrix, squad.name);
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...result
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-missing-variants", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const result = compare.getSquadMissingVariants(matrix, squad.name);
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...result
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/missing-variants]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3029,14 +3154,17 @@ app.get("/api/squads/:code/unique-owners", async (req, res) => {
       visible: true
     }));
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const result = compare.getSquadUniqueOwners(matrix);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-unique-owners", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const result = compare.getSquadUniqueOwners(matrix);
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...result
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...result
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/unique-owners]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3070,14 +3198,17 @@ app.get("/api/squads/:code/shared-variants", async (req, res) => {
       visible: true
     }));
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const result = compare.getSquadSharedVariants(matrix);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-shared-variants", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const result = compare.getSquadSharedVariants(matrix);
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      ...result
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        ...result
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/shared-variants]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3174,21 +3305,24 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
         .filter(Boolean)
     );
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-      excludedSeasonIds,
-      activeGoalVariantCounts,
-      memberGoalVariantSet,
-      maxGoalAssignments: 2
-    });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "acquisition-priority", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+        excludedSeasonIds,
+        activeGoalVariantCounts,
+        memberGoalVariantSet,
+        maxGoalAssignments: 2
+      });
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      activeGoalCount: activeGoalVariantIds.size,
-      priorities: assignments
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        activeGoalCount: activeGoalVariantIds.size,
+        priorities: assignments
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/acquisition-priority]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3217,64 +3351,67 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
       return res.status(404).json({ error: "Membre introuvable dans l'escouade" });
     }
 
-    const members = [];
-    for (const r of membersResult.rows) {
-      const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-      members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
-    }
-    const memberIds = members.map(m => m.userId);
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "member-recommendations", async () => {
+      const members = [];
+      for (const r of membersResult.rows) {
+        const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+        members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
+      }
+      const memberIds = members.map(m => m.userId);
 
-    const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
-      pool.query(
-        "SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
-        [squad.id]
-      ),
-      pool.query(
-        "SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id",
-        [memberIds]
-      ),
-      pool.query(
-        "SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id",
-        [memberIds]
-      )
-    ]);
+      const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
+        pool.query(
+          "SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
+          [squad.id]
+        ),
+        pool.query(
+          "SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id",
+          [memberIds]
+        ),
+        pool.query(
+          "SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id",
+          [memberIds]
+        )
+      ]);
 
-    const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
-    const activeGoalVariantCounts = new Map();
-    const memberGoalVariantSet = new Set();
-    for (const r of goalsResult.rows) {
-      if (!r.variant_id) continue;
-      memberGoalVariantSet.add(`${r.user_id}:${r.variant_id}`);
-      activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
-    }
+      const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+      const activeGoalVariantCounts = new Map();
+      const memberGoalVariantSet = new Set();
+      for (const r of goalsResult.rows) {
+        if (!r.variant_id) continue;
+        memberGoalVariantSet.add(`${r.user_id}:${r.variant_id}`);
+        activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
+      }
 
-    const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
-    const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+      const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
+      const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
 
-    const excludedSeasonIds = new Set(
-      String(req.query.excludeSeason || "")
-        .split(",")
-        .map(s => s.trim())
-        .filter(Boolean)
-    );
+      const excludedSeasonIds = new Set(
+        String(req.query.excludeSeason || "")
+          .split(",")
+          .map(s => s.trim())
+          .filter(Boolean)
+      );
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-      excludedSeasonIds,
-      activeGoalVariantCounts,
-      memberGoalVariantSet,
-      maxGoalAssignments: 2
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+        excludedSeasonIds,
+        activeGoalVariantCounts,
+        memberGoalVariantSet,
+        maxGoalAssignments: 2
+      });
+
+      const recommendations = compare.getSquadMemberRecommendations(matrix, assignments, targetUserId);
+      const targetRow = membersResult.rows.find(r => String(r.user_id) === String(targetUserId));
+
+      return {
+        userId: targetUserId,
+        username: targetRow?.username || String(targetUserId),
+        recommendations
+      };
     });
-
-    const recommendations = compare.getSquadMemberRecommendations(matrix, assignments, targetUserId);
-    const targetRow = membersResult.rows.find(r => String(r.user_id) === String(targetUserId));
-
-    res.json({
-      userId: targetUserId,
-      username: targetRow?.username || String(targetUserId),
-      recommendations
-    });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/recommendations/:memberId]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3340,24 +3477,27 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
         .filter(Boolean)
     );
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-    const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-      excludedSeasonIds,
-      activeGoalVariantCounts,
-      memberGoalVariantSet,
-      maxGoalAssignments: 2
-    });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "collective-plan", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+        excludedSeasonIds,
+        activeGoalVariantCounts,
+        memberGoalVariantSet,
+        maxGoalAssignments: 2
+      });
 
-    const plan = compare.getSquadCollectivePlan(matrix, assignments);
+      const plan = compare.getSquadCollectivePlan(matrix, assignments);
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      totalCollectiveGain: plan.totalCollectiveGain,
-      summary: `Ce plan permettrait d'ajouter jusqu'à ${plan.totalCollectiveGain} variante${plan.totalCollectiveGain > 1 ? 's' : ''} unique${plan.totalCollectiveGain > 1 ? 's' : ''} à la couverture collective.`,
-      members: plan.members
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        totalCollectiveGain: plan.totalCollectiveGain,
+        summary: `Ce plan permettrait d'ajouter jusqu'à ${plan.totalCollectiveGain} variante${plan.totalCollectiveGain > 1 ? 's' : ''} unique${plan.totalCollectiveGain > 1 ? 's' : ''} à la couverture collective.`,
+        members: plan.members
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/collective-plan]", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -3392,22 +3532,25 @@ app.get("/api/squads/:code/helpful/:memberId", async (req, res) => {
       members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
     }
 
-    const matrix = await compare.buildSquadCollectionMatrix(members);
-    const helpers = compare.getSquadHelpScores(matrix, targetUserId, {
-      priorityWeight: 3,
-      normalWeight: 1
-    });
+    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "helpful-member", async () => {
+      const matrix = await compare.buildSquadCollectionMatrix(members);
+      const helpers = compare.getSquadHelpScores(matrix, targetUserId, {
+        priorityWeight: 3,
+        normalWeight: 1
+      });
 
-    const topHelper = helpers[0] || null;
+      const topHelper = helpers[0] || null;
 
-    res.json({
-      squadCode: squad.code,
-      squadName: squad.name,
-      targetUserId,
-      targetUsername: targetRow.username || String(targetRow.user_id),
-      topHelper,
-      helpers
+      return {
+        squadCode: squad.code,
+        squadName: squad.name,
+        targetUserId,
+        targetUsername: targetRow.username || String(targetRow.user_id),
+        topHelper,
+        helpers
+      };
     });
+    res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/helpful/:memberId]", err);
     res.status(500).json({ error: "Erreur serveur" });
