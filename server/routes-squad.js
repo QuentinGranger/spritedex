@@ -1197,6 +1197,138 @@ async function getSquadBestPair(squad, reqUser) {
   return pairs[0] || null;
 }
 
+async function getSquadBestTeams(squad, reqUser, teamSize) {
+  const size = Math.max(2, Math.min(4, parseInt(teamSize, 10) || 3));
+  const [catalogueAll, membersRes] = await Promise.all([
+    compare.getServerCompareCatalogItemsCached(),
+    pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
+  ]);
+  const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const memberIds = membersRes.rows.map(r => r.user_id);
+
+  const usersRes = await pool.query(
+    `SELECT id, username, display_name, avatar_url
+     FROM users
+     WHERE id = ANY($1) AND deleted_at IS NULL AND (suspended_until IS NULL OR suspended_until < NOW())`,
+    [memberIds]
+  );
+
+  const members = [];
+  for (const u of usersRes.rows) {
+    if (await canViewCollection(reqUser, u.id)) {
+      const collection = await compare.loadServerCompareCollection(u.id);
+      const owned = new Set();
+      for (const [variantId, entry] of Object.entries(collection)) {
+        if (compare.compareServerIsOwned(entry.status)) owned.add(variantId);
+      }
+      members.push({
+        id: u.id,
+        username: u.username,
+        displayName: u.display_name || u.username,
+        avatarUrl: u.avatar_url || "",
+        owned
+      });
+    }
+  }
+
+  if (members.length < size) return { teamSize: size, teams: [] };
+
+  const total = catalogue.length;
+  const teams = [];
+
+  function evaluate(indices) {
+    const union = new Set();
+    let totalOwned = 0;
+    const variantOwnerCount = new Map();
+
+    for (const idx of indices) {
+      const owned = members[idx].owned;
+      totalOwned += owned.size;
+      for (const vid of owned) {
+        union.add(vid);
+        variantOwnerCount.set(vid, (variantOwnerCount.get(vid) || 0) + 1);
+      }
+    }
+
+    let uniqueVariantCount = 0;
+    let sharedVariantCount = 0;
+    for (const count of variantOwnerCount.values()) {
+      if (count === 1) uniqueVariantCount++;
+      else sharedVariantCount++;
+    }
+
+    const coveredVariantCount = union.size;
+    const coverageRate = total ? Math.round((coveredVariantCount / total) * 10000) / 100 : 0;
+    const duplicatePossessionCount = totalOwned - coveredVariantCount;
+
+    const coverageByRarity = {};
+    const coverageByEvent = {};
+    for (const item of catalogue) {
+      if (!union.has(item.id)) continue;
+      const rarity = item.rarity || "_none";
+      const eventId = item.eventId || "_none";
+      coverageByRarity[rarity] = (coverageByRarity[rarity] || 0) + 1;
+      coverageByEvent[eventId] = (coverageByEvent[eventId] || 0) + 1;
+    }
+
+    let pairCompSum = 0;
+    let pairCount = 0;
+    for (let i = 0; i < indices.length; i++) {
+      for (let j = i + 1; j < indices.length; j++) {
+        const a = members[indices[i]].owned;
+        const b = members[indices[j]].owned;
+        const inter = new Set([...a].filter(x => b.has(x))).size;
+        const pairUnionSize = new Set([...a, ...b]).size;
+        const uniqueInPair = pairUnionSize - inter;
+        const rate = pairUnionSize ? Math.round((uniqueInPair / pairUnionSize) * 10000) / 100 : 0;
+        pairCompSum += rate;
+        pairCount++;
+      }
+    }
+    const averageComplementarityRate = pairCount ? Math.round((pairCompSum / pairCount) * 100) / 100 : 0;
+
+    teams.push({
+      members: indices.map(idx => ({
+        userId: members[idx].id,
+        username: members[idx].username,
+        displayName: members[idx].displayName,
+        avatarUrl: members[idx].avatarUrl
+      })),
+      coveredVariantCount,
+      totalVariantCount: total,
+      coverageRate,
+      uniqueVariantCount,
+      sharedVariantCount,
+      duplicatePossessionCount,
+      averageComplementarityRate,
+      coverageByRarity,
+      coverageByEvent
+    });
+  }
+
+  function generate(start, current) {
+    if (current.length === size) {
+      evaluate(current);
+      return;
+    }
+    for (let i = start; i < members.length; i++) {
+      current.push(i);
+      generate(i + 1, current);
+      current.pop();
+    }
+  }
+
+  generate(0, []);
+
+  teams.sort((a, b) =>
+    b.coverageRate - a.coverageRate ||
+    b.averageComplementarityRate - a.averageComplementarityRate ||
+    b.uniqueVariantCount - a.uniqueVariantCount
+  );
+
+  return { teamSize: size, teams: teams.slice(0, 5) };
+}
+
 async function getSquadCompletionScope(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
     compare.getServerCompareCatalogItemsCached(),
@@ -1322,6 +1454,40 @@ app.get("/api/squads/:code/best-pair", async (req, res) => {
     });
   } catch (err) {
     console.error("[/api/squads/:code/best-pair]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : best team by coverage (2-4 players) ──
+app.get("/api/squads/:code/best-teams", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const teamSize = parseInt(req.query.size, 10) || 3;
+    if (teamSize < 2 || teamSize > 4) {
+      return res.status(400).json({ error: "La taille d'équipe doit être entre 2 et 4" });
+    }
+
+    const result = await getSquadBestTeams(squad, reqUser, teamSize);
+    const bestTeam = result.teams[0] || null;
+
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      teamSize,
+      bestTeam,
+      teams: result.teams,
+      display: bestTeam
+        ? `La meilleure équipe de ${teamSize} couvre ${bestTeam.coverageRate}% du catalogue avec ${bestTeam.coveredVariantCount} variantes.`
+        : "Aucune équipe trouvée."
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/best-teams]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
