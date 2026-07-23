@@ -2158,6 +2158,110 @@ async function getSquadCompletionScope(squad, reqUser) {
   };
 }
 
+function computeCatalogueVersion(catalogue) {
+  const active = catalogue.filter(compare.isVariantReleasedAndActiveServer);
+  const payload = active
+    .map(i => `${i.id}|${i.availabilityStatus || ''}|${i.endDate || ''}|${i.acquisitionMethod || ''}|${i.rarity || ''}|${i.eventId || ''}`)
+    .sort()
+    .join("\n");
+  const hash = crypto.createHash("sha256").update(payload).digest("hex").slice(0, 8);
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, ".");
+  return `${today}-${hash}`;
+}
+
+async function getSquadVersionedCompletionReport(squad, reqUser) {
+  const [catalogueAll, members] = await Promise.all([
+    compare.getServerCompareCatalogItemsCached(),
+    buildSquadCompletionMembers(squad, reqUser)
+  ]);
+  const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const matrix = await compare.buildSquadCollectionMatrix(members, activeCatalogue);
+
+  const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
+  const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
+  const missing = compare.getSquadMissingVariants(matrix, squad.name);
+  const uniqueOwners = compare.getSquadUniqueOwners(matrix);
+  const shared = compare.getSquadSharedVariants(matrix);
+  const mostComplementary = compare.getSquadMostComplementaryMember(matrix, squad.name);
+  const pairs = await getSquadComplementaryPairs(squad, reqUser);
+  const bestPair = pairs[0] || null;
+
+  const recommendedGoals = await getSquadRecommendedGoals(squad, reqUser);
+  const bestTeam = await getSquadBestTeams(squad, reqUser, 3, "global");
+
+  const memberIds = members.map(m => m.userId);
+  const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
+    pool.query("SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL", [squad.id]),
+    pool.query("SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id", [memberIds]),
+    pool.query("SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id", [memberIds])
+  ]);
+  const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+  const activeGoalVariantCounts = new Map();
+  const memberGoalVariantSet = new Set();
+  for (const r of goalsResult.rows) {
+    if (!r.variant_id) continue;
+    const key = `${r.user_id}:${r.variant_id}`;
+    memberGoalVariantSet.add(key);
+    activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
+  }
+  const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
+  const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+  const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+  const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
+    excludedSeasonIds: new Set(),
+    activeGoalVariantCounts,
+    memberGoalVariantSet,
+    maxGoalAssignments: 2
+  });
+
+  const unknownCount = matrix.reduce((sum, r) => sum + r.unknownCount, 0);
+  const warnings = [];
+  if (members.length === 0) warnings.push("Aucun membre actif dans l'escouade.");
+  if (activeCatalogue.length === 0) warnings.push("Aucune variante active dans le catalogue.");
+  if (unknownCount > activeCatalogue.length * 0.25) warnings.push("Plus de 25 % des collections sont inconnues, les statistiques peuvent être sous-estimées.");
+
+  return {
+    engineVersion: "2.0.0",
+    generatedAt: new Date().toISOString(),
+    squadId: squad.code,
+    catalogueVersion: computeCatalogueVersion(catalogueAll),
+    summary: {
+      squadCode: squad.code,
+      squadName: squad.name,
+      catalogueVariantCount: activeCatalogue.length,
+      totalActiveMembers: members.length,
+      collectiveCompletionRate: completion.collectiveCompletionRate,
+      coveredVariantCount: completion.coveredVariantCount,
+      averageOwnershipRate: averageOwnership.averageOwnershipRate,
+      totalMissing: missing.totalMissing,
+      totalUnique: uniqueOwners.totalUnique,
+      totalShared: shared.totalShared
+    },
+    analysis: {
+      completion,
+      averageOwnership,
+      missing,
+      uniqueOwners,
+      shared,
+      mostComplementaryMember: mostComplementary,
+      bestPair
+    },
+    recommendations: {
+      activeGoalCount: activeGoalVariantIds.size,
+      priorities,
+      assignments,
+      recommendedGoals: recommendedGoals.goals
+    },
+    optimization: {
+      bestTeam,
+      bestTeamSummary: bestTeam.teams.length
+        ? `Meilleure équipe de ${bestTeam.teamSize} : ${bestTeam.teams[0].coverageRate}% de couverture.`
+        : "Aucune équipe trouvée."
+    },
+    warnings
+  };
+}
+
 // ── Squad : complementary member pairs ──
 app.get("/api/squads/:code/complementary-pairs", async (req, res) => {
   const reqUser = await getRequestingUser(req);
@@ -2714,6 +2818,24 @@ app.post("/api/squads/:squadId/completion/simulate", async (req, res) => {
     if (err.message === "Membre introuvable dans l'escouade") {
       return res.status(404).json({ error: err.message });
     }
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad Completion Engine : versioned report ──
+app.get("/api/squads/:squadId/completion/report", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await getSquadByIdOrCode(req.params.squadId);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const report = await getSquadVersionedCompletionReport(squad, reqUser);
+    res.json(report);
+  } catch (err) {
+    console.error("[/api/squads/:squadId/completion/report]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
