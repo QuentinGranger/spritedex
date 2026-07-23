@@ -1,8 +1,7 @@
 function renderMissing() {
   const allItems = getAllItems();
   const notOwned = allItems.filter(item => {
-    const status = getEntry(item.id).status;
-    return status !== "owned" && status !== "unavailable";
+    return isCollectibleMissingStatus(getEntry(item.id).status);
   });
 
   if (!notOwned.length) {

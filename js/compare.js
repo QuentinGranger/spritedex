@@ -509,9 +509,9 @@ function compareRarityValue(rarity) {
 function compareDifferenceScore(r) {
   const sa = compareClassify(r.userA);
   const sb = compareClassify(r.userB);
-  if ((sa === "owned" && sb !== "owned") || (sb === "owned" && sa !== "owned")) return 3;
-  if (sa !== "unknown" && sb !== "unknown" && sa !== sb) return 2;
   if (sa === "unknown" || sb === "unknown") return 1;
+  if ((sa === "owned" && sb !== "owned") || (sb === "owned" && sa !== "owned")) return 3;
+  if (sa !== sb) return 2;
   return 0;
 }
 
@@ -680,7 +680,7 @@ function openCompareSprite(spriteId) {
 
   const dialog = document.getElementById("compareSpriteDialog");
   if (dialog && typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
-  const hasMissing = records.some(r => r.userA.status !== "owned" || r.userB.status !== "owned");
+  const hasMissing = records.some(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status));
   logCompareAnalytics("missing_match_opened", { spriteId, hasMissing });
   state.compareSpriteId = spriteId;
 }
@@ -779,16 +779,17 @@ function generateCompareRecommendations(result, aName, bName) {
   for (const records of Object.values(bySprite)) {
     const total = records.length;
     if (total < 2) continue;
-    const covered = records.filter(r => r.userA.status === "owned" || r.userB.status === "owned").length;
+    const covered = records.filter(r => isOwnedStatus(r.userA.status) || isOwnedStatus(r.userB.status)).length;
     if (covered === total) {
-      const missingA = records.filter(r => r.userA.status !== "owned").length;
-      const missingB = records.filter(r => r.userB.status !== "owned").length;
+      const missingA = records.filter(r => isCollectibleMissingStatus(r.userA.status)).length;
+      const missingB = records.filter(r => isCollectibleMissingStatus(r.userB.status)).length;
+      if (!missingA && !missingB) continue;
       const spriteName = records[0].spriteName;
       let detail = "";
       if (missingA && missingB) detail = ` (${safeA} en manque ${missingA}, ${safeB} en manque ${missingB})`;
       else if (missingA) detail = ` (${safeA} en manque ${missingA})`;
       else if (missingB) detail = ` (${safeB} en manque ${missingB})`;
-      recs.push({ type: "completeTogether", title: `Vous possédez ensemble toutes les variantes du ${escapeHtml(spriteName)}${detail}`, items: records.filter(r => r.userA.status !== "owned" || r.userB.status !== "owned") });
+      recs.push({ type: "completeTogether", title: `Vous possédez ensemble toutes les variantes du ${escapeHtml(spriteName)}${detail}`, items: records.filter(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status)) });
     }
   }
 
@@ -797,9 +798,12 @@ function generateCompareRecommendations(result, aName, bName) {
   for (const [eventId, records] of Object.entries(byEvent)) {
     const total = records.length;
     if (total < 2) continue;
-    const covered = records.filter(r => r.userA.status === "owned" || r.userB.status === "owned").length;
+    const covered = records.filter(r => isOwnedStatus(r.userA.status) || isOwnedStatus(r.userB.status)).length;
     if (total - covered === 1) {
-      recs.push({ type: "eventClose", title: `Il ne vous manque qu’une variante pour compléter l’événement ${escapeHtml(compareEventLabel(eventId))}`, items: records.filter(r => r.userA.status !== "owned" && r.userB.status !== "owned") });
+      const missingRecord = records.find(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status));
+      if (missingRecord) {
+        recs.push({ type: "eventClose", title: `Il ne vous manque qu’une variante pour compléter l’événement ${escapeHtml(compareEventLabel(eventId))}`, items: [missingRecord] });
+      }
     }
   }
 

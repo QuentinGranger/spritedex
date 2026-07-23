@@ -37,7 +37,7 @@ function renderStats() {
 
   const prioritiesLeft = items.filter(i => {
     const e = getEntry(i.id);
-    return e.priority && e.priority !== "none" && e.priority !== "ignored" && e.status !== "owned";
+    return e.priority && e.priority !== "none" && e.priority !== "ignored" && isCollectibleMissingStatus(e.status);
   }).length;
   els.kpiPriorities.textContent = prioritiesLeft;
 

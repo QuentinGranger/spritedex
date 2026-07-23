@@ -94,12 +94,29 @@ function setEntry(itemId, patch) {
   renderAll();
 }
 
+const STATUS_CATEGORIES = {
+  owned: ["owned"],
+  missing: ["missing", "priority", "spotted", "unavailable"],
+  unknown: ["new", "unknown", "unsure"]
+};
+
+function isOwnedStatus(status) { return STATUS_CATEGORIES.owned.includes(status); }
+function isMissingStatus(status) { return STATUS_CATEGORIES.missing.includes(status); }
+function isUnknownStatus(status) { return !status || STATUS_CATEGORIES.unknown.includes(status); }
+function isCollectibleMissingStatus(status) { return ["missing", "priority", "spotted"].includes(status); }
+function classifyStatus(status) {
+  if (isOwnedStatus(status)) return "owned";
+  if (isMissingStatus(status)) return "missing";
+  return "unknown";
+}
+
 function statusLabel(status) {
   const labels = {
     owned: "Possédé",
     missing: "Manquant",
     priority: "Prioritaire",
     unsure: "À vérifier",
+    unknown: "Inconnu",
     unavailable: "Non disponible",
     spotted: "Rare trouvé",
     new: "Non classé"
@@ -113,6 +130,7 @@ function statusEmoji(status) {
     missing: '<svg class="status-icon status-icon--danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
     priority: '<svg class="status-icon status-icon--star" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
     unsure: '<svg class="status-icon status-icon--neutral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
+    unknown: '<svg class="status-icon status-icon--neutral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
     unavailable: '<svg class="status-icon status-icon--locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
     spotted: '<svg class="status-icon status-icon--spotted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
     new: '<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'

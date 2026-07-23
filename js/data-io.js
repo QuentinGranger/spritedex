@@ -38,8 +38,7 @@ function importData(file) {
 function copyMissingList() {
   const allItems = getAllItems();
   const notOwned = allItems.filter(item => {
-    const s = getEntry(item.id).status;
-    return s !== "owned" && s !== "unavailable";
+    return isCollectibleMissingStatus(getEntry(item.id).status);
   });
 
   const priority = notOwned.filter(item => getEntry(item.id).status === "priority");

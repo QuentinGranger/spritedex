@@ -215,6 +215,7 @@ function openSpriteDetail(spriteId) {
                 <option value="missing" ${v.entry.status === "missing" ? "selected" : ""}>Manquant</option>
                 <option value="priority" ${v.entry.status === "priority" ? "selected" : ""}>Prioritaire</option>
                 <option value="unsure" ${v.entry.status === "unsure" ? "selected" : ""}>À vérifier</option>
+                <option value="unknown" ${v.entry.status === "unknown" ? "selected" : ""}>Inconnu</option>
                 <option value="spotted" ${v.entry.status === "spotted" ? "selected" : ""}>Rare vu</option>
                 <option value="unavailable" ${v.entry.status === "unavailable" ? "selected" : ""}>Indispo</option>
               </select>
