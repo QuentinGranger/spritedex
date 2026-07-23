@@ -543,6 +543,136 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
   return results.slice(0, 50);
 }
 
+function computeSquadMemberStats(matrix) {
+  const stats = {};
+  if (!matrix || matrix.length === 0) return stats;
+
+  const firstRow = matrix[0];
+  const totalVariants = matrix.length;
+
+  for (const member of firstRow.members || []) {
+    stats[String(member.userId)] = {
+      userId: member.userId,
+      username: member.username,
+      ownedBySprite: {},
+      ownedByRarity: {},
+      ownedByVariantType: {},
+      ownedTotal: 0,
+      knownTotal: 0
+    };
+  }
+
+  for (const row of matrix) {
+    for (const m of row.members || []) {
+      const s = stats[String(m.userId)];
+      if (!s) continue;
+
+      if (m.classification === "owned") {
+        s.ownedTotal++;
+        s.ownedBySprite[row.spriteId] = (s.ownedBySprite[row.spriteId] || 0) + 1;
+        s.ownedByRarity[row.rarity || "_none"] = (s.ownedByRarity[row.rarity || "_none"] || 0) + 1;
+        s.ownedByVariantType[row.variantType || "Base"] = (s.ownedByVariantType[row.variantType || "Base"] || 0) + 1;
+      }
+
+      if (m.classification !== "unknown") {
+        s.knownTotal++;
+      }
+    }
+  }
+
+  for (const s of Object.values(stats)) {
+    s.reliabilityRate = totalVariants ? Math.round((s.knownTotal / totalVariants) * 10000) / 100 : 0;
+  }
+
+  return stats;
+}
+
+function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {}, lastActiveByUser = {}) {
+  const stats = computeSquadMemberStats(matrix);
+  const assignments = [];
+  const assignedCounts = {};
+  const now = Date.now();
+
+  for (const variant of priorities) {
+    const row = matrix.find(r => r.variantId === variant.variantId);
+    if (!row) continue;
+
+    let bestCandidate = null;
+    let bestScore = -Infinity;
+    let bestReasons = [];
+
+    for (const m of row.members || []) {
+      if (m.classification === "owned") continue;
+
+      const s = stats[String(m.userId)];
+      if (!s) continue;
+
+      const isPriority = compareServerIsPriority({ status: m.status, priority: m.priority });
+      const spriteOwned = s.ownedBySprite[variant.spriteId] || 0;
+      const rarityOwned = s.ownedByRarity[variant.rarity || "_none"] || 0;
+      const typeOwned = s.ownedByVariantType[variant.variantType || "Base"] || 0;
+      const activeGoals = activeGoalCounts[String(m.userId)] || 0;
+      const lastActive = lastActiveByUser[String(m.userId)];
+      const daysSince = lastActive ? Math.floor((now - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24)) : 999;
+      const assignedCount = assignedCounts[String(m.userId)] || 0;
+
+      let score = 0;
+      const reasons = [];
+
+      if (isPriority) {
+        score += 100;
+        reasons.push("a marqué cette variante en priorité");
+      }
+
+      score -= spriteOwned * 8;
+      if (spriteOwned > 1) {
+        score += 8;
+        reasons.push("complète une série personnelle");
+      } else if (spriteOwned === 1) {
+        score += 4;
+      }
+
+      score -= rarityOwned * 2;
+      score -= typeOwned * 2;
+
+      score += s.reliabilityRate * 0.3;
+      if (s.reliabilityRate < 25) {
+        score -= 20;
+      }
+
+      if (daysSince < 7) {
+        score += 10;
+        reasons.push("actif récemment");
+      } else if (daysSince < 30) {
+        score += 5;
+      }
+
+      score -= activeGoals * 5;
+      score -= assignedCount * 15;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestCandidate = { userId: m.userId, username: m.username };
+        bestReasons = reasons.length ? reasons : ["meilleur candidat"];
+      }
+    }
+
+    if (bestCandidate) {
+      assignedCounts[String(bestCandidate.userId)] = (assignedCounts[String(bestCandidate.userId)] || 0) + 1;
+      assignments.push({
+        ...variant,
+        recommendedMember: bestCandidate,
+        assignmentScore: Math.round(bestScore),
+        assignmentReason: bestReasons.join(", ")
+      });
+    } else {
+      assignments.push({ ...variant });
+    }
+  }
+
+  return assignments;
+}
+
 function classifySquadMissing(row) {
   if (row.ownerCount !== 0) return null;
   if (row.missingCount === 0) return null;
@@ -1481,4 +1611,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };

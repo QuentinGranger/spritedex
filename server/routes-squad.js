@@ -1511,35 +1511,49 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const [membersResult, goalsResult] = await Promise.all([
-      pool.query(
-        `SELECT sm.user_id, u.username
-         FROM squad_members sm
-         JOIN users u ON u.id = sm.user_id
-         WHERE sm.squad_id = $1 AND sm.status = 'active'`,
-        [squad.id]
-      ),
-      pool.query(
-        "SELECT variant_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
-        [squad.id]
-      )
-    ]);
+    const membersResult = await pool.query(
+      `SELECT sm.user_id, u.username
+       FROM squad_members sm
+       JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+      [squad.id]
+    );
 
     const members = membersResult.rows.map(r => ({
       userId: r.user_id,
       username: r.username || String(r.user_id),
       visible: true
     }));
+    const memberIds = members.map(m => m.userId);
+
+    const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
+      pool.query(
+        "SELECT variant_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
+        [squad.id]
+      ),
+      pool.query(
+        "SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id",
+        [memberIds]
+      ),
+      pool.query(
+        "SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id",
+        [memberIds]
+      )
+    ]);
 
     const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+    const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
+    const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+
     const matrix = await compare.buildSquadCollectionMatrix(members);
     const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
+    const assignments = compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser);
 
     res.json({
       squadCode: squad.code,
       squadName: squad.name,
       activeGoalCount: activeGoalVariantIds.size,
-      priorities
+      priorities: assignments
     });
   } catch (err) {
     console.error("[/api/squads/:code/acquisition-priority]", err);
