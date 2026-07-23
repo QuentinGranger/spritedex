@@ -926,6 +926,7 @@
                 <span class="squad-active__code" id="squadActiveCode">SPRITE-0000</span>
                 <button class="squad-copy-code" id="squadCopyCode" title="Copier le code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               </div>
+              <button class="ghost-button" id="squadEngineBtn">Moteur</button>
               <button class="ghost-button" id="squadShareBtn">Partager</button>
               <button class="ghost-button danger-text" id="squadLeaveBtn">Quitter</button>
             </div>
@@ -987,6 +988,27 @@
             <div class="squad-counter" id="squadCounter"></div>
             <div class="squad-table-wrap" id="squadTableWrap">
               <p class="squad-empty">Chargement...</p>
+            </div>
+
+            <!-- Squad completion engine -->
+            <div class="squad-engine" id="squadEngine" style="display:none">
+              <div class="squad-engine__header">
+                <h3 class="squad-engine__title">Moteur de complétion</h3>
+                <span class="squad-engine__version" id="squadEngineVersion"></span>
+                <button class="ghost-button" id="squadEngineCloseBtn">Retour</button>
+              </div>
+              <nav class="squad-engine__tabs" role="tablist" aria-label="Moteur de complétion">
+                <button class="squad-engine__tab active" data-engine-tab="overview" type="button">Vue d'ensemble</button>
+                <button class="squad-engine__tab" data-engine-tab="missing" type="button">Manquants</button>
+                <button class="squad-engine__tab" data-engine-tab="recommendations" type="button">Recommandations</button>
+                <button class="squad-engine__tab" data-engine-tab="optimization" type="button">Optimisation</button>
+              </nav>
+              <div class="squad-engine__panels">
+                <div class="squad-engine__panel active" id="squadEnginePanel-overview"></div>
+                <div class="squad-engine__panel" id="squadEnginePanel-missing"></div>
+                <div class="squad-engine__panel" id="squadEnginePanel-recommendations"></div>
+                <div class="squad-engine__panel" id="squadEnginePanel-optimization"></div>
+              </div>
             </div>
           </div>
           </div><!-- /social-panel-squad -->
@@ -1124,6 +1146,7 @@
     <script src="js/community-stats.js"></script>
     <script src="js/render-stats.js"></script>
     <script src="js/render-squad.js"></script>
+    <script src="js/squad-engine.js"></script>
     <script src="js/render-news.js"></script>
     <script src="js/render-history.js"></script>
     <script src="js/render-shared.js"></script>
