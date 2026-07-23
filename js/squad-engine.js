@@ -2,6 +2,29 @@
 let squadEngineReport = null;
 let squadEngineTab = "overview";
 
+const engineDefinitions = {
+  collectiveCompletionRate: "Pourcentage des variantes sorties possédées par au moins un membre actif de la squad.",
+  coveredVariantCount: "Nombre de variantes sorties et actives déjà présentes dans au moins une collection d'un membre.",
+  totalMissing: "Nombre de variantes sorties et actives qu'aucun membre de la squad ne possède.",
+  totalUnique: "Nombre de variantes possédées par exactement un membre de la squad.",
+  totalShared: "Nombre de variantes possédées par au moins deux membres de la squad.",
+  averageOwnershipRate: "Moyenne du taux de possession individuel des membres actifs de la squad.",
+  mostComplementaryMember: "Membre apportant le plus grand nombre de variantes que les autres membres de la squad ne possèdent pas.",
+  missingAll: "Variantes que personne dans la squad ne possède.",
+  uniqueOwner: "Variantes possédées par un seul membre de la squad.",
+  duplicates: "Variantes possédées par au moins deux membres de la squad.",
+  availableNow: "Variantes actuellement disponibles dans le jeu.",
+  priorities: "Variantes jugées prioritaires par le moteur d'acquisition collectif.",
+  bestPair: "Paire de membres couvrant ensemble le plus grand nombre de variantes.",
+  bestTeam: "Groupe de 3 membres couvrant ensemble le plus grand nombre de variantes."
+};
+
+function explain(text, key) {
+  const def = engineDefinitions[key];
+  if (!def) return escapeHtml(text);
+  return `<span class="engine-stat" data-definition="${escapeHtml(def)}">${escapeHtml(text)} <span class="engine-stat__icon" aria-hidden="true">?</span><span class="engine-stat__tip">${escapeHtml(def)}</span></span>`;
+}
+
 function showSquadEngine() {
   if (!state.activeSquad) return;
   els.squadActive.classList.add("squad-active--engine");
@@ -65,23 +88,23 @@ function renderEngineOverview(r) {
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
         <div class="engine-card__value">${formatPct(s.collectiveCompletionRate)}</div>
-        <div class="engine-card__label">Taux collectif</div>
+        <div class="engine-card__label">${explain("Taux collectif", "collectiveCompletionRate")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${s.coveredVariantCount || 0}</div>
-        <div class="engine-card__label">Variantes couvertes</div>
+        <div class="engine-card__label">${explain("Variantes couvertes", "coveredVariantCount")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${s.totalMissing || 0}</div>
-        <div class="engine-card__label">Variantes manquantes</div>
+        <div class="engine-card__label">${explain("Variantes manquantes", "totalMissing")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${s.totalUnique || 0}</div>
-        <div class="engine-card__label">Variantes uniques</div>
+        <div class="engine-card__label">${explain("Variantes uniques", "totalUnique")}</div>
       </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">Membre le plus complémentaire</h4>
+      <h4 class="engine-section__title">${explain("Membre le plus complémentaire", "mostComplementaryMember")}</h4>
       ${mc.username ? `
         <div class="engine-card engine-card--member">
           <div class="engine-card__value">${escapeHtml(mc.username)}</div>
@@ -140,11 +163,11 @@ function engineFilterControl() {
   return `
     <div class="engine-filter-bar" id="squadEngineFilterBar">
       <div class="engine-filter-group">
-        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="missingAll" ${engineFilters.missingAll ? "checked" : ""}> Manque à toute la squad</label>
-        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="uniqueOwner" ${engineFilters.uniqueOwner ? "checked" : ""}> Propriétaire unique</label>
-        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="duplicates" ${engineFilters.duplicates ? "checked" : ""}> Doublons</label>
-        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="availableNow" ${engineFilters.availableNow ? "checked" : ""}> Disponibles actuellement</label>
-        <label class="engine-filter-toggle"><input type="checkbox" data-engine-filter="priorities" ${engineFilters.priorities ? "checked" : ""}> Priorités</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.missingAll)}"><input type="checkbox" data-engine-filter="missingAll" ${engineFilters.missingAll ? "checked" : ""}> Manque à toute la squad</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.uniqueOwner)}"><input type="checkbox" data-engine-filter="uniqueOwner" ${engineFilters.uniqueOwner ? "checked" : ""}> Propriétaire unique</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.duplicates)}"><input type="checkbox" data-engine-filter="duplicates" ${engineFilters.duplicates ? "checked" : ""}> Doublons</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.availableNow)}"><input type="checkbox" data-engine-filter="availableNow" ${engineFilters.availableNow ? "checked" : ""}> Disponibles actuellement</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.priorities)}"><input type="checkbox" data-engine-filter="priorities" ${engineFilters.priorities ? "checked" : ""}> Priorités</label>
       </div>
       <div class="engine-filter-group engine-filter-group--selects">
         <select class="engine-select" data-engine-filter="rarity"><option value="">Toutes raretés</option>${rarityOptions}</select>
@@ -192,11 +215,11 @@ function renderEngineMissing(r) {
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
         <div class="engine-card__value">${confirmed.length}</div>
-        <div class="engine-card__label">Totalement absents</div>
+        <div class="engine-card__label">${explain("Totalement absents", "missingAll")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${maybe.length}</div>
-        <div class="engine-card__label">Peut-être absents</div>
+        <div class="engine-card__label">${explain("Peut-être absents", "totalMissing")}</div>
       </div>
     </div>
     <div class="engine-columns">
@@ -277,12 +300,12 @@ function renderEngineOptimization(r) {
     <div class="engine-grid engine-grid--2">
       <div class="engine-card">
         <div class="engine-card__value">${bp.coverageRate != null ? formatPct(bp.coverageRate) : "—"}</div>
-        <div class="engine-card__label">Meilleure paire</div>
+        <div class="engine-card__label">${explain("Meilleure paire", "bestPair")}</div>
         <div class="engine-card__sub">${bp.userAName && bp.userBName ? `${escapeHtml(bp.userAName)} + ${escapeHtml(bp.userBName)}` : "Aucune"}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${teams.length ? `${teams[0].coverageRate != null ? formatPct(teams[0].coverageRate) : "—"}` : "—"}</div>
-        <div class="engine-card__label">Meilleur groupe de ${bt.teamSize || 3}</div>
+        <div class="engine-card__label">${explain(`Meilleur groupe de ${bt.teamSize || 3}`, "bestTeam")}</div>
         <div class="engine-card__sub">${teams.length ? (teams[0].members || []).map(m => escapeHtml(m.username || m.userId)).join(", ") : "Aucun"}</div>
       </div>
     </div>
@@ -344,6 +367,15 @@ function setupSquadEngine() {
     });
     missingPanel.addEventListener("click", (e) => {
       if (e.target.closest("#squadEngineResetFilters")) resetEngineFilters();
+    });
+  }
+  if (els.squadEngine) {
+    els.squadEngine.addEventListener("click", (e) => {
+      const stat = e.target.closest(".engine-stat");
+      if (!stat) return;
+      const isActive = stat.classList.contains("active");
+      document.querySelectorAll(".engine-stat").forEach(s => s.classList.remove("active"));
+      if (!isActive) stat.classList.add("active");
     });
   }
 }
