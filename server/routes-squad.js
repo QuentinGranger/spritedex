@@ -1585,7 +1585,7 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
     const collection = await compare.loadServerCompareCollection(r.user_id);
     const owned = new Set();
     for (const [variantId, entry] of Object.entries(collection)) {
-      if (compare.compareServerIsOwned(entry.status)) owned.add(variantId);
+      if (compare.compareServerIsOwned(entry.status) && validIds.has(variantId)) owned.add(variantId);
     }
     members.push({ userId: r.user_id, username: r.username, owned });
   }
@@ -1605,7 +1605,7 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
     }
     const coveredCount = union.size;
     const completionRate = total ? Math.round((coveredCount / total) * 10000) / 100 : 0;
-    return { coveredCount, completionRate };
+    return { coveredCount, completionRate, totalVariantCount: total };
   }
 
   const before = computeCoverage();
@@ -1618,8 +1618,128 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
     after,
     difference: {
       coveredCount: after.coveredCount - before.coveredCount,
-      completionRate: Math.round((after.completionRate - before.completionRate) * 100) / 100
+      completionRate: Math.round((after.completionRate - before.completionRate) * 100) / 100,
+      totalVariantCount: 0
     }
+  };
+}
+
+function toVariantIdList(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  return String(value || "").split(",").map(s => s.trim()).filter(Boolean);
+}
+
+async function simulateSquadChanges(squad, reqUser, changes = []) {
+  const catalogueAll = await compare.getServerCompareCatalogItemsCached();
+  const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
+  const catalogueById = new Map(activeCatalogue.map(i => [i.id, i]));
+  const validIds = new Set(activeCatalogue.map(i => i.id));
+
+  const membersResult = await pool.query(
+    `SELECT sm.user_id, u.username, u.display_name
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1 AND sm.status = 'active'`,
+    [squad.id]
+  );
+
+  const members = [];
+  for (const r of membersResult.rows) {
+    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    if (!visible) continue;
+    const collection = await compare.loadServerCompareCollection(r.user_id);
+    const owned = new Set();
+    for (const [variantId, entry] of Object.entries(collection)) {
+      if (compare.compareServerIsOwned(entry.status) && validIds.has(variantId)) owned.add(variantId);
+    }
+    members.push({
+      userId: r.user_id,
+      username: r.username,
+      displayName: r.display_name || r.username,
+      owned
+    });
+  }
+
+  let activeIds = new Set(validIds);
+
+  function computeCoverage(memberList, idSet) {
+    const union = new Set();
+    for (const m of memberList) {
+      for (const vid of m.owned) {
+        if (idSet.has(vid)) union.add(vid);
+      }
+    }
+    const coveredCount = union.size;
+    const total = idSet.size;
+    const completionRate = total ? Math.round((coveredCount / total) * 10000) / 100 : 0;
+    return { coveredCount, completionRate, totalVariantCount: total };
+  }
+
+  const before = computeCoverage(members, activeIds);
+
+  const simulatedMembers = members.map(m => ({ ...m, owned: new Set(m.owned) }));
+
+  for (const change of changes) {
+    if (!change || !change.type) continue;
+    switch (change.type) {
+      case "acquire": {
+        const targetId = String(change.memberId);
+        const variantIds = toVariantIdList(change.variantIds);
+        const m = simulatedMembers.find(x => String(x.userId) === targetId);
+        if (m) {
+          for (const vid of variantIds) {
+            if (activeIds.has(vid)) m.owned.add(vid);
+          }
+        }
+        break;
+      }
+      case "join": {
+        const variantIds = toVariantIdList(change.ownedVariantIds);
+        const owned = new Set();
+        for (const vid of variantIds) {
+          if (activeIds.has(vid)) owned.add(vid);
+        }
+        const userId = change.memberId || `sim_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        simulatedMembers.push({
+          userId,
+          username: change.username || "Nouveau membre",
+          displayName: change.displayName || change.username || "Nouveau membre",
+          owned
+        });
+        break;
+      }
+      case "leave": {
+        const leaveId = String(change.memberId);
+        const idx = simulatedMembers.findIndex(x => String(x.userId) === leaveId);
+        if (idx >= 0) simulatedMembers.splice(idx, 1);
+        break;
+      }
+      case "unavailable": {
+        const variantIds = toVariantIdList(change.variantIds);
+        for (const vid of variantIds) activeIds.delete(vid);
+        break;
+      }
+      case "add_event": {
+        const variantIds = toVariantIdList(change.variantIds);
+        for (const vid of variantIds) activeIds.add(vid);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  const after = computeCoverage(simulatedMembers, activeIds);
+
+  return {
+    before,
+    after,
+    difference: {
+      coveredCount: after.coveredCount - before.coveredCount,
+      completionRate: Math.round((after.completionRate - before.completionRate) * 100) / 100,
+      totalVariantCount: after.totalVariantCount - before.totalVariantCount
+    },
+    appliedChanges: changes.length
   };
 }
 
@@ -1876,6 +1996,30 @@ app.post("/api/squads/:code/simulate-acquisition", async (req, res) => {
     if (err.message === "La collection de ce membre n'est pas visible") {
       return res.status(403).json({ error: err.message });
     }
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Squad : multi-scenario simulation ──
+app.post("/api/squads/:code/simulate", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
+    const squad = squadResult.rows[0];
+    if (!(await requireSquadMember(req, res, squad.id))) return;
+
+    const changes = Array.isArray(req.body.changes) ? req.body.changes : [];
+    const result = await simulateSquadChanges(squad, reqUser, changes);
+
+    res.json({
+      squadCode: squad.code,
+      squadName: squad.name,
+      ...result
+    });
+  } catch (err) {
+    console.error("[/api/squads/:code/simulate]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
