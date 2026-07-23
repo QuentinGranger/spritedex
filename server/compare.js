@@ -751,6 +751,47 @@ function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {
   return assignments;
 }
 
+function formatSquadMemberRecommendation(assignment, memberEntry = null) {
+  const codes = [];
+
+  if (assignment.ownerCount === 0) codes.push("missing_from_entire_squad");
+  else codes.push("partially_missing");
+
+  if (assignment.availability === "available_now") codes.push("available_now");
+  else if (assignment.availability === "upcoming") codes.push("upcoming");
+
+  if (assignment.deadlineScore > 0) codes.push("event_ending_soon");
+  if (assignment.isObjectiveTarget) codes.push("active_goal_target");
+  if (assignment.priorityCount > 0) codes.push("priority_by_members");
+  if (memberEntry && compareServerIsPriority(memberEntry)) codes.push("member_marked_priority");
+  if (assignment.rarityScore >= 7) codes.push("rare_variant");
+
+  return {
+    variantId: assignment.variantId,
+    spriteId: assignment.spriteId,
+    spriteName: assignment.spriteName,
+    variantName: assignment.variantName,
+    img: assignment.img,
+    rarity: assignment.rarity,
+    priorityScore: assignment.score,
+    collectiveGain: assignment.collectiveCoverageGain,
+    projectedCompletionGain: assignment.collectiveCoverageDelta,
+    impactType: assignment.impactType,
+    reasonCodes: codes
+  };
+}
+
+function getSquadMemberRecommendations(matrix, assignments, memberId) {
+  const result = [];
+  for (const assignment of assignments) {
+    if (!assignment.responsible || String(assignment.responsible.userId) !== String(memberId)) continue;
+    const row = matrix.find(r => r.variantId === assignment.variantId);
+    const memberEntry = row ? (row.members || []).find(m => String(m.userId) === String(memberId)) : null;
+    result.push(formatSquadMemberRecommendation(assignment, memberEntry));
+  }
+  return result;
+}
+
 function getSquadHelpScores(matrix, targetUserId, options = {}) {
   const priorityWeight = options.priorityWeight || 3;
   const normalWeight = options.normalWeight || 1;
@@ -1741,4 +1782,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadHelpScores, getSquadLevel1Analysis, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
