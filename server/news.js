@@ -51,26 +51,112 @@ function addDays(date, days) {
   return addHours(date, days * 24);
 }
 
-function estimateEventEndDate(eventInfo, startDate, text) {
-  const start = startDate ? new Date(startDate) : new Date();
+const MONTH_NAMES = {
+  en: "january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec",
+  fr: "janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre|janv|févr|fevr|mars|avr|mai|juin|juil|août|aout|sept|oct|nov|déc|dec"
+};
+const MONTHS_REGEX = new RegExp(`(${MONTH_NAMES.en}|${MONTH_NAMES.fr})`, "i");
+
+function parseMonth(monthStr) {
+  const m = String(monthStr).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  for (let i = 0; i < months.length; i++) {
+    if (months[i].startsWith(m) || months[i].slice(0, 3) === m.slice(0, 3)) return i;
+  }
+  return -1;
+}
+
+function normalizeYearDate(day, month, year, now) {
+  let y = year ? parseInt(year, 10) : now.getFullYear();
+  const candidate = new Date(y, month, day);
+  if (!year && candidate < now) {
+    candidate.setFullYear(y + 1);
+  }
+  return candidate;
+}
+
+function parseAbsoluteDate(text, now) {
+  const normalized = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // "July 23" or "23 July" or "Jul 23, 2025" or "23 juillet 2025"
+  let m = normalized.match(/(\d{1,2})\s+([a-z]{3,9})\s*(?:,\s*(\d{4}))?/i);
+  if (m) {
+    const month = parseMonth(m[2]);
+    if (month >= 0) return normalizeYearDate(parseInt(m[1], 10), month, m[3], now);
+  }
+  m = normalized.match(/([a-z]{3,9})\s+(\d{1,2})\s*(?:,\s*(\d{4}))?/i);
+  if (m) {
+    const month = parseMonth(m[1]);
+    if (month >= 0) return normalizeYearDate(parseInt(m[2], 10), month, m[3], now);
+  }
+
+  // ISO / numeric: 2025-07-23, 23/07/2025, 23.07.2025, 07/23/2025 (if year at end)
+  m = normalized.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+  m = normalized.match(/(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})/);
+  if (m) return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+
+  return null;
+}
+
+function parseRelativeDurationHours(text) {
   const normalized = (text || "").toLowerCase();
 
-  // Try to find an explicit end date phrase
-  const untilMatch = normalized.match(/(?:until|through|ends? on|jusqu'au|jusqu'à|se termine)\s+([a-z]{3,9}\s+\d{1,2}(?:,\s+\d{4})?|\d{1,2}\s+[a-z]{3,9}(?:\s+\d{4})?)/i);
+  const dayMatch = normalized.match(/(?:in|for|lasts?|during)\s+(\d+(?:\.\d+)?)\s*(?:j|jours?|d|days?|jour)/);
+  if (dayMatch) return Math.round(parseFloat(dayMatch[1]) * 24);
+
+  const hourMatch = normalized.match(/(?:in|for|lasts?|during)\s+(\d+(?:\.\d+)?)\s*(?:h|heures?|hours?|hr?)/);
+  if (hourMatch) return Math.round(parseFloat(hourMatch[1]));
+
+  const weekMatch = normalized.match(/(?:in|for|lasts?|during)\s+(\d+(?:\.\d+)?)\s*(?:semaines?|weeks?|sem\.?)/);
+  if (weekMatch) return Math.round(parseFloat(weekMatch[1]) * 7 * 24);
+
+  return null;
+}
+
+function parseEndDateFromText(text, start, now) {
+  const normalized = (text || "").toLowerCase();
+
+  // Relative duration near "lasts" / "for" / "during" / "in"
+  const relHours = parseRelativeDurationHours(text);
+  if (relHours !== null) return addHours(start, relHours);
+
+  // Phrase "until ..." or "through ..."
+  const untilRegex = /(?:until|through|till|jusqu'au|jusqu'à|jusque|se termine(?:\s+le)?|ends?(?:\s+on)?|fin(?:\s+le)?)\s*[:\-]?\s*(.+?)(?:\.|,|;|$|and\s|with\s)/i;
+  const untilMatch = normalized.match(untilRegex);
   if (untilMatch) {
-    const parsed = new Date(untilMatch[1]);
-    if (!isNaN(parsed.getTime())) {
-      // Default to end of that day if no time provided
-      const end = new Date(parsed);
-      if (!/\d{4}/.test(untilMatch[1])) end.setFullYear(new Date().getFullYear());
-      end.setHours(23, 59, 59, 999);
-      return end.toISOString();
+    const parsed = parseAbsoluteDate(untilMatch[1], now);
+    if (parsed) {
+      parsed.setHours(23, 59, 59, 999);
+      return parsed.toISOString();
     }
   }
+
+  // Any standalone date in the text as a last resort
+  const dateMatch = normalized.match(/(?:\d{1,2}\s+[a-z]{3,9}|[a-z]{3,9}\s+\d{1,2}|\d{4}[-/](?:0?\d|1[0-2])[-/]\d{1,2})/i);
+  if (dateMatch) {
+    const parsed = parseAbsoluteDate(dateMatch[0], now);
+    if (parsed && parsed > start) {
+      parsed.setHours(23, 59, 59, 999);
+      return parsed.toISOString();
+    }
+  }
+
+  return null;
+}
+
+function estimateEventEndDate(eventInfo, startDate, text) {
+  const start = startDate ? new Date(startDate) : new Date();
+  const now = new Date();
+
+  // First try to extract an explicit end date from the text
+  const parsedEnd = parseEndDateFromText(text, start, now);
+  if (parsedEnd) return parsedEnd;
 
   // Fallback by event type
   switch (eventInfo.type) {
     case "weekly_event":
+      return addHours(start, 24);
     case "catch_up_event":
       return addHours(start, 24);
     case "seasonal_event":
@@ -259,7 +345,7 @@ async function extractEventsFromNews(newsItems) {
         `INSERT INTO events (id, name, type, season_id, start_date, end_date, data_status, sources)
          VALUES ($1, $2, $3, $4, $5::timestamptz, $6, $7, $8)
          ON CONFLICT (id) DO UPDATE SET
-           name = $2, type = $3, season_id = $4, start_date = $5::timestamptz, end_date = $6, data_status = $7, sources = $8`,
+           name = $2, type = $3, season_id = $4, start_date = COALESCE($5::timestamptz, events.start_date), end_date = COALESCE($6, events.end_date), data_status = $7, sources = $8`,
         [
           eventId,
           eventInfo.name,
