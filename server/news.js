@@ -41,6 +41,47 @@ function detectEventInfo(text) {
   return null;
 }
 
+function addHours(date, hours) {
+  const d = new Date(date);
+  d.setTime(d.getTime() + hours * 60 * 60 * 1000);
+  return d.toISOString();
+}
+
+function addDays(date, days) {
+  return addHours(date, days * 24);
+}
+
+function estimateEventEndDate(eventInfo, startDate, text) {
+  const start = startDate ? new Date(startDate) : new Date();
+  const normalized = (text || "").toLowerCase();
+
+  // Try to find an explicit end date phrase
+  const untilMatch = normalized.match(/(?:until|through|ends? on|jusqu'au|jusqu'à|se termine)\s+([a-z]{3,9}\s+\d{1,2}(?:,\s+\d{4})?|\d{1,2}\s+[a-z]{3,9}(?:\s+\d{4})?)/i);
+  if (untilMatch) {
+    const parsed = new Date(untilMatch[1]);
+    if (!isNaN(parsed.getTime())) {
+      // Default to end of that day if no time provided
+      const end = new Date(parsed);
+      if (!/\d{4}/.test(untilMatch[1])) end.setFullYear(new Date().getFullYear());
+      end.setHours(23, 59, 59, 999);
+      return end.toISOString();
+    }
+  }
+
+  // Fallback by event type
+  switch (eventInfo.type) {
+    case "weekly_event":
+    case "catch_up_event":
+      return addHours(start, 24);
+    case "seasonal_event":
+      return addDays(start, 14);
+    case "content_update":
+      return addDays(start, 7);
+    default:
+      return null;
+  }
+}
+
 function matchesSpriteKeywords(text) {
   const lower = text.toLowerCase();
   return SPRITE_KEYWORDS.some(kw => lower.includes(kw));
@@ -210,6 +251,9 @@ async function extractEventsFromNews(newsItems) {
     if (insertedEventIds.has(eventId)) continue;
     insertedEventIds.add(eventId);
 
+    const startDate = item.date || new Date().toISOString();
+    const endDate = estimateEventEndDate(eventInfo, startDate, text);
+
     try {
       await pool.query(
         `INSERT INTO events (id, name, type, season_id, start_date, end_date, data_status, sources)
@@ -221,8 +265,8 @@ async function extractEventsFromNews(newsItems) {
           eventInfo.name,
           eventInfo.type,
           fallbackSeasonId,
-          item.date || null,
-          null,
+          startDate,
+          endDate,
           "observed",
           JSON.stringify([item.source]),
         ]

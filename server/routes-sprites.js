@@ -338,7 +338,7 @@ app.get("/api/community-ownership", async (req, res) => {
 app.get("/api/events/urgency", async (req, res) => {
   try {
     const eventsResult = await pool.query(
-      `SELECT id, name, type, start_date, end_date, season_id
+      `SELECT id, name, type, start_date, end_date, season_id, data_status, sources
        FROM events
        ORDER BY end_date NULLS LAST, start_date NULLS LAST, name`
     );
@@ -351,6 +351,8 @@ app.get("/api/events/urgency", async (req, res) => {
 
     const events = eventsResult.rows.map(row => {
       const urgency = classifyEventUrgency(row.end_date, options);
+      const sources = Array.isArray(row.sources) ? row.sources : [];
+      const fromNews = sources.some(s => s && (String(s).includes("fortnite") || String(s).includes("news")));
       return {
         eventId: row.id,
         name: row.name,
@@ -358,6 +360,9 @@ app.get("/api/events/urgency", async (req, res) => {
         seasonId: row.season_id,
         startDate: row.start_date,
         endDate: row.end_date,
+        dataStatus: row.data_status,
+        sources,
+        fromNews,
         level: urgency.level,
         daysRemaining: urgency.daysRemaining,
         hoursRemaining: urgency.hoursRemaining
