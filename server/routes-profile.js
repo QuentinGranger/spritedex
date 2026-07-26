@@ -59,11 +59,197 @@ app.get("/api/profile/:userId", async (req, res) => {
       payload.privacy = profile.privacy;
       if (profile.suspended_at) payload.suspendedAt = profile.suspended_at;
       if (profile.suspended_until) payload.suspendedUntil = profile.suspended_until;
+      try {
+        const participation = await require("./sprite-graph-governance")
+          .getCommunityStatsOptIn(pool, profile.id);
+        payload.communityStatsOptIn = participation?.communityStatsOptIn ?? null;
+        payload.communityStatsParticipation = participation?.participates ?? false;
+        payload.essentialFeaturesRequireCommunityConsent = false;
+      } catch (_) {
+        payload.communityStatsOptIn = null;
+        payload.essentialFeaturesRequireCommunityConsent = false;
+      }
     }
     res.json(payload);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// ── Collector passport ────────────────────────────────────────────────────
+const passportService = require("./passport");
+const { ensureCollectorPassport } = passportService;
+
+app.get("/api/profile/:userId/passport", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  try {
+    const result = await passportService.getCollectorPassport(reqUser, req.params.userId);
+    if (result.status !== 200) return res.status(result.status).json({ error: result.error });
+    const { logPassportOpened } = require("./routes-passport");
+    logPassportOpened(reqUser, result.passport.user && result.passport.user.id, "profile_passport");
+    // Étape 70 — optional normalized envelope.
+    if (String(req.query.format || "").toLowerCase() === "normalized") {
+      const { normalizePassportResponse } = require("./passport-normalize");
+      return res.json(normalizePassportResponse(result.passport, {
+        relationship: result.passport.relationship,
+        actions: result.passport.actions,
+        publicUrl: result.passport.publicUrl
+      }));
+    }
+    res.json(result.passport);
+  } catch (err) {
+    console.error("[/api/profile/:userId/passport]", err);
+    res.status(500).json({ error: "Impossible de calculer le passeport" });
+  }
+});
+
+// Étape 67/70 — public stable username passport.
+app.get("/api/u/:username/passport", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  try {
+    const { resolveUsernameSlug } = require("./username-history");
+    const resolved = await resolveUsernameSlug(req.params.username);
+    if (resolved.status === "redirect") {
+      return res.redirect(302, `/api/u/${encodeURIComponent(resolved.to)}/passport${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`);
+    }
+    if (resolved.status !== "ok") {
+      return res.status(404).json({ error: "Passeport non trouvé" });
+    }
+    const result = await passportService.getCollectorPassport(reqUser || null, resolved.user.id);
+    if (result.status !== 200) return res.status(result.status).json({ error: result.error });
+    const { logPassportOpened } = require("./routes-passport");
+    logPassportOpened(reqUser || null, resolved.user.id, "public_username");
+    const { normalizePassportResponse } = require("./passport-normalize");
+    res.json(normalizePassportResponse(result.passport, {
+      relationship: result.passport.relationship,
+      actions: result.passport.actions,
+      publicUrl: `/u/${encodeURIComponent(resolved.user.username)}`
+    }));
+  } catch (err) {
+    console.error("[/api/u/:username/passport]", err);
+    res.status(500).json({ error: "Impossible de charger le passeport" });
+  }
+});
+
+// Share-card safe payload (Étapes 68–69) — only public-safe fields.
+app.get("/api/u/:username/passport/card", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  try {
+    const { resolveUsernameSlug } = require("./username-history");
+    const resolved = await resolveUsernameSlug(req.params.username);
+    if (resolved.status === "redirect") {
+      return res.redirect(302, `/api/u/${encodeURIComponent(resolved.to)}/passport/card`);
+    }
+    if (resolved.status !== "ok") return res.status(404).json({ error: "Passeport non trouvé" });
+    // Card requires the viewer to be the owner (preview before share) OR passport public.
+    const result = await passportService.getCollectorPassport(reqUser || null, resolved.user.id);
+    if (result.status !== 200) return res.status(result.status).json({ error: result.error });
+    const p = result.passport;
+    const isOwner = reqUser && String(reqUser) === String(resolved.user.id);
+    if (!isOwner && !(p.permissions && p.permissions.passport)) {
+      return res.status(403).json({ error: "Carte non disponible" });
+    }
+    const c = p.collection || {};
+    const cat = p.catalogue || {};
+    const squad = p.primarySquad && !p.primarySquad.private ? p.primarySquad : null;
+    const featured = p.featuredBadge;
+    const completedEventCount = p.eventsCompleted != null
+      ? p.eventsCompleted
+      : (p.events && p.events.completedCount != null ? p.events.completedCount : null);
+    // Étapes 68–69 — never email, notes, friends list, private fields, or hidden activity.
+    res.json({
+      username: p.user.username,
+      displayName: p.user.displayName || p.user.username,
+      avatarUrl: p.user.avatarUrl || "",
+      completionRateDisplay: c.completionRateDisplay != null ? c.completionRateDisplay : null,
+      ownedVariantCount: c.ownedVariantCount != null ? c.ownedVariantCount : null,
+      releasedVariantCount: c.releasedVariantCount != null ? c.releasedVariantCount : (cat.releasedVariantCount || null),
+      completedEventCount,
+      featuredBadgeLabel: featured ? featured.label : null,
+      primarySquadName: squad ? squad.name : null,
+      joinedAt: p.user.createdAt || null,
+      publicUrl: `/u/${encodeURIComponent(p.user.username)}`,
+      availableFields: {
+        squad: !!squad,
+        badges: !!featured,
+        joinedAt: !!p.user.createdAt,
+        completion: c.completionRateDisplay != null || c.ownedVariantCount != null,
+        events: completedEventCount != null
+      }
+    });
+  } catch (err) {
+    console.error("[/api/u/:username/passport/card]", err);
+    res.status(500).json({ error: "Impossible de préparer la carte" });
+  }
+});
+
+const PASSPORT_VISIBILITY_VALUES = new Set(["private", "friends", "squad", "public"]);
+const PASSPORT_SETTING_KEYS = new Set([
+  "primarySquadId",
+  "featuredBadgeId",
+  "passportVisibility",
+  "statisticsVisibility",
+  "badgesVisibility",
+  "activityVisibility",
+  "comparisonsVisibility",
+  "showJoinDate",
+  "showLastActivity"
+]);
+
+app.get("/api/profile/:userId/passport/settings", async (req, res) => {
+  if (!(await requireSameUser(req, res, req.params.userId))) return;
+  try {
+    const [settings, squads, unlockedBadges] = await Promise.all([
+      ensureCollectorPassport(req.params.userId),
+      pool.query(`SELECT s.id, s.name FROM squads s JOIN squad_members sm ON sm.squad_id = s.id
+                  WHERE sm.user_id = $1 AND sm.status = 'active' ORDER BY sm.joined_at ASC`, [req.params.userId]),
+      require("./passport-badges").listUserBadges(req.params.userId)
+    ]);
+    // Deduplicate family badges by badgeId for the pin picker.
+    const seen = new Set();
+    const availableFeaturedBadges = [];
+    for (const b of unlockedBadges) {
+      const id = b.badgeId;
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      availableFeaturedBadges.push({ id, code: b.code, label: b.label });
+    }
+    res.json({
+      primarySquadId: settings.primary_squad_id,
+      featuredBadgeId: settings.featured_badge_id || null,
+      passportVisibility: settings.passport_visibility,
+      statisticsVisibility: settings.statistics_visibility,
+      badgesVisibility: settings.badges_visibility,
+      activityVisibility: settings.activity_visibility,
+      comparisonsVisibility: settings.comparisons_visibility,
+      showJoinDate: settings.show_join_date,
+      showLastActivity: settings.show_last_activity,
+      availableSquads: squads.rows.map(s => ({ id: s.id, name: s.name })),
+      availableFeaturedBadges
+    });
+  } catch (err) {
+    console.error("[/passport/settings GET]", err);
+    res.status(500).json({ error: "Impossible de charger les réglages du passeport" });
+  }
+});
+
+app.patch("/api/profile/:userId/passport/settings", requireNotSuspended, async (req, res) => {
+  if (!(await requireSameUser(req, res, req.params.userId))) return;
+  const body = req.body && typeof req.body === "object" && !Array.isArray(req.body) ? req.body : null;
+  if (!body || Object.keys(body).some(key => !PASSPORT_SETTING_KEYS.has(key))) return res.status(400).json({ error: "Réglages invalides" });
+  const visibilityKeys = ["passportVisibility", "statisticsVisibility", "badgesVisibility", "activityVisibility", "comparisonsVisibility"];
+  if (visibilityKeys.some(key => key in body && !PASSPORT_VISIBILITY_VALUES.has(body[key]))) return res.status(400).json({ error: "Visibilité invalide" });
+  if (["showJoinDate", "showLastActivity"].some(key => key in body && typeof body[key] !== "boolean")) return res.status(400).json({ error: "Option invalide" });
+  try {
+    const { patchPassportSettings } = require("./routes-passport");
+    const result = await patchPassportSettings(req.params.userId, body);
+    if (result.status !== 200) return res.status(result.status).json({ error: result.error });
+    res.json(result.values);
+  } catch (err) {
+    console.error("[/passport/settings PATCH]", err);
+    res.status(500).json({ error: "Impossible d'enregistrer les réglages du passeport" });
   }
 });
 
@@ -74,15 +260,46 @@ app.patch("/api/consent", consentLimiter, requireNotSuspended, async (req, res) 
   const body = req.body == null ? {} : req.body;
   const isPlainBody = body && typeof body === "object" && !Array.isArray(body) &&
     (Object.getPrototypeOf(body) === Object.prototype || Object.getPrototypeOf(body) === null);
-  if (!isPlainBody || Object.keys(body).some(key => key !== "cookieConsent")) {
+  const allowedKeys = new Set(["cookieConsent", "communityStatsOptIn"]);
+  if (!isPlainBody || Object.keys(body).some((key) => !allowedKeys.has(key))) {
     return res.status(400).json({ error: "Consentement invalide" });
   }
-  const payload = normalizeCookieConsent(body.cookieConsent);
-  if (!payload) return res.status(400).json({ error: "Consentement invalide" });
+  if (!("cookieConsent" in body) && !("communityStatsOptIn" in body)) {
+    return res.status(400).json({ error: "Consentement invalide" });
+  }
   try {
-    await pool.query("UPDATE users SET cookie_consent = $1 WHERE id = $2 AND deleted_at IS NULL", [JSON.stringify(payload), reqUser]);
-    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "consent_updated", status: "ok", details: { payload } });
-    res.json({ ok: true });
+    let cookiePayload = null;
+    if ("cookieConsent" in body) {
+      cookiePayload = normalizeCookieConsent(body.cookieConsent);
+      if (!cookiePayload) return res.status(400).json({ error: "Consentement invalide" });
+      await pool.query(
+        "UPDATE users SET cookie_consent = $1 WHERE id = $2 AND deleted_at IS NULL",
+        [JSON.stringify(cookiePayload), reqUser]
+      );
+    }
+    // Étape 68 — community stats opt-in is separate; never required for essentials.
+    let communityStatsOptIn = undefined;
+    if ("communityStatsOptIn" in body) {
+      if (typeof body.communityStatsOptIn !== "boolean") {
+        return res.status(400).json({ error: "Consentement invalide" });
+      }
+      const gov = require("./sprite-graph-governance");
+      const row = await gov.setCommunityStatsOptIn(pool, reqUser, body.communityStatsOptIn);
+      communityStatsOptIn = row ? row.community_stats_opt_in : body.communityStatsOptIn;
+    }
+    secLog.logSecurityEvent(pool, {
+      req,
+      userId: reqUser,
+      event: "consent_updated",
+      status: "ok",
+      details: { payload: cookiePayload, communityStatsOptIn }
+    });
+    const participation = await require("./sprite-graph-governance").getCommunityStatsOptIn(pool, reqUser);
+    res.json({
+      ok: true,
+      communityStatsOptIn: participation?.communityStatsOptIn ?? null,
+      essentialFeaturesRequireCommunityConsent: false
+    });
   } catch (err) {
     console.error("[CONSENT] update error", err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -182,7 +399,11 @@ app.get("/api/export", async (req, res) => {
         cguVersion: user.cgu_version,
         cguAcceptedAt: user.cgu_accepted_at,
         ageConfirmed: user.age_confirmed,
-        cookieConsent: user.cookie_consent
+        cookieConsent: user.cookie_consent,
+        communityStatsOptIn: (
+          await require("./sprite-graph-governance").getCommunityStatsOptIn(pool, reqUser)
+        )?.communityStatsOptIn ?? null,
+        essentialFeaturesRequireCommunityConsent: false
       },
       // The stored value is a digest of a bearer link, never expose it even
       // to an export consumer.
@@ -319,7 +540,7 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
   try {
     // Build the new visibility object from the existing row, then apply patches.
     const currentRes = await pool.query(
-      `SELECT id, privacy, profile_visibility, collection_visibility, priority_visibility, notes_visibility, visibility
+      `SELECT id, username, privacy, profile_visibility, collection_visibility, priority_visibility, notes_visibility, visibility
        FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [userId]
     );
@@ -344,8 +565,16 @@ app.patch("/api/profile/:userId", security.validateBody(security.schemas.profile
     const vals = [];
     let idx = 1;
     if (username && username.trim().length >= 3) {
+      const nextUsername = username.trim();
+      const usernameHistory = require("./username-history");
+      if (await usernameHistory.isUsernameReserved(nextUsername, { exceptUserId: Number(userId) })) {
+        return res.status(409).json({ error: "Ce pseudo est déjà pris ou temporairement réservé" });
+      }
+      if (usernameHistory.normalizeUsername(current.username) !== usernameHistory.normalizeUsername(nextUsername)) {
+        await usernameHistory.recordUsernameChange(userId, current.username);
+      }
       sets.push(`username = $${idx++}`);
-      vals.push(username.trim());
+      vals.push(nextUsername);
     }
     if (displayName && displayName.trim().length >= 1) {
       sets.push(`display_name = $${idx++}`);
@@ -445,6 +674,14 @@ app.delete("/api/profile/:userId", async (req, res) => {
     await client.query("COMMIT");
     revokeUserSockets(userId, "Account deleted");
     invalidateSquadAnalysisCacheForUser(userId);
+    // Étape 67 — anonymize graph events (async; must not block deletion response).
+    setImmediate(() => {
+      require("./sprite-graph-governance").anonymizeUserGraphData(pool, userId, {
+        recalculateSensitive: process.env.GRAPH_RECALC_ON_DELETE === "1"
+      }).catch((err) =>
+        console.error("[sprite-graph] account deletion anonymization failed:", err.message)
+      );
+    });
     secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
     res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
   } catch (err) {

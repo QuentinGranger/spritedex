@@ -7,6 +7,7 @@ const { areFriends, canViewCollection, checkPrivacyAccess, getCollectionAccessRe
 const { buildAcquisitionMethod, buildAvailability, buildRecurrence } = require("./catalog");
 const { APP_URL, app } = require("./core");
 const { pool } = require("./db");
+const comparisonSessions = require("./comparison-sessions");
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 
@@ -76,6 +77,7 @@ async function resolveCompareUser(identifier) {
 }
 
 async function buildCompareResult(reqUser, targetUser, source, queryParams = {}) {
+  const sessionSource = comparisonSessions.resolveCompareSource(queryParams.source, source);
   const targetVisibility = getVisibility(targetUser);
   const accessReason = await getCollectionAccessReason(reqUser, targetUser.id, targetVisibility);
   if (accessReason === "blocked") {
@@ -101,20 +103,26 @@ async function buildCompareResult(reqUser, targetUser, source, queryParams = {})
   };
 
   let result = getCachedCompareResult(reqUser, targetUser.id);
+  let catalogueForVersion = null;
   if (!result) {
     const [catalogue, collectionA, collectionB] = await Promise.all([
       getServerCompareCatalogItemsCached(),
       loadServerCompareCollection(reqUser),
       loadServerCompareCollection(targetUser.id)
     ]);
+    catalogueForVersion = catalogue;
 
     const userA = { id: reqUser, displayName: reqUserRow.display_name || reqUserRow.username || reqUser, collection: collectionA };
     const userB = { id: targetUser.id, displayName: targetUser.display_name || targetUser.username || targetUser.id, collection: collectionB };
 
     result = compareCollectionsServer(userA, userB, catalogue);
     setCachedCompareResult(reqUser, targetUser.id, result);
-    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId: reqUser, userBId: targetUser.id, source } });
+    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId: reqUser, userBId: targetUser.id, source: sessionSource } });
+  } else {
+    catalogueForVersion = await getServerCompareCatalogItemsCached();
   }
+  const catalogueVersion = comparisonSessions.catalogueVersionFromItems(catalogueForVersion);
+  const engineResult = result;
 
   // Redact before applying query filters or calculating any presentation
   // metrics.  Filtering the raw cached result first made `status=priorities`
@@ -122,7 +130,29 @@ async function buildCompareResult(reqUser, targetUser, source, queryParams = {})
   result = await applyCollectionVisibilityFilters(result, reqUser, userMap);
   result = applyServerCompareFilters(result, queryParams);
   result.accessReason = accessReason;
-  analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId: reqUser, userBId: targetUser.id, source } });
+  analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId: reqUser, userBId: targetUser.id, source: sessionSource } });
+
+  // Étapes 27–29 — count unique comparison sessions (not every page reload).
+  try {
+    await comparisonSessions.recordParticipantComparisonSession({
+      requesterId: reqUser,
+      userAId: reqUser,
+      userBId: targetUser.id,
+      source: sessionSource,
+      catalogueVersion,
+      result: engineResult
+    });
+  } catch (err) {
+    console.error("[comparison-sessions] buildCompareResult", err.message);
+  }
+
+  // Étapes 44–45 — complementary collection badge (friends / shared squad only).
+  try {
+    const { evaluateAndAwardComplementaryBadge } = require("./passport-badges");
+    await evaluateAndAwardComplementaryBadge(reqUser, targetUser.id, engineResult, { catalogueVersion });
+  } catch (err) {
+    console.error("[passport-badges] complementary", err.message);
+  }
 
   return result;
 }
@@ -1604,6 +1634,7 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
       return res.status(403).json({ error: "Collection non accessible" });
     }
 
+    let catalogueForVersion = null;
     let result = getCachedCompareResult(userAId, userBId);
     if (!result) {
       const [catalogue, collectionA, collectionB] = await Promise.all([
@@ -1611,6 +1642,7 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
         loadServerCompareCollection(userAId),
         loadServerCompareCollection(userBId)
       ]);
+      catalogueForVersion = catalogue;
 
       const userA = { id: userAId, displayName: userMap[userAId].display_name || userMap[userAId].username || userAId, collection: collectionA };
       const userB = { id: userBId, displayName: userMap[userBId].display_name || userMap[userBId].username || userBId, collection: collectionB };
@@ -1618,17 +1650,46 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
       result = compareCollectionsServer(userA, userB, catalogue);
       setCachedCompareResult(userAId, userBId, result);
       analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId, userBId, source: "api" } });
+    } else {
+      catalogueForVersion = await getServerCompareCatalogItemsCached();
     }
 
     // See buildCompareResult: filters and derived scores must operate on the
     // viewer-redacted representation, never on the raw cache entry.
+    const engineResult = result;
+    const catalogueVersion = comparisonSessions.catalogueVersionFromItems(catalogueForVersion);
     result = await applyCollectionVisibilityFilters(result, reqUser, userMap);
     result = applyServerCompareFilters(result, req.query);
 
-    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId, userBId, source: "api" } });
+    const sharesSquad = await shareSquad(userAId, userBId);
+    const pairSource = comparisonSessions.resolveCompareSource(
+      req.query.source,
+      sharesSquad ? "squad" : "direct"
+    );
+    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId, userBId, source: pairSource } });
 
-    if (await shareSquad(userAId, userBId)) {
+    if (sharesSquad) {
       analytics.logProductAnalyticsEvent(pool, { userId: reqUser, event: "squad_member_comparison_opened", details: { userAId, userBId } });
+    }
+
+    try {
+      await comparisonSessions.recordParticipantComparisonSession({
+        requesterId: reqUser,
+        userAId,
+        userBId,
+        source: pairSource,
+        catalogueVersion,
+        result: engineResult
+      });
+    } catch (sessionErr) {
+      console.error("[comparison-sessions] /api/comparisons/users", sessionErr.message);
+    }
+
+    try {
+      const { evaluateAndAwardComplementaryBadge } = require("./passport-badges");
+      await evaluateAndAwardComplementaryBadge(userAId, userBId, engineResult, { catalogueVersion });
+    } catch (badgeErr) {
+      console.error("[passport-badges] complementary /api/comparisons/users", badgeErr.message);
     }
 
     for (const [key, value] of Object.entries(req.query)) {
@@ -1872,6 +1933,20 @@ app.get("/api/compare/share/:token", async (req, res) => {
 
     analytics.logCompareAnalyticsEvent(pool, { userId: visitor, event: "comparison_viewed", details: { source: "share", ownerId: share.owner_user_id } });
 
+    if (visitor && String(visitor) !== String(share.owner_user_id) && share.allow_visitor_compare) {
+      try {
+        await comparisonSessions.recordComparisonSession({
+          initiatorId: visitor,
+          comparedUserId: share.owner_user_id,
+          source: "shared_link",
+          catalogueVersion: comparisonSessions.catalogueVersionFromItems(catalogue),
+          result
+        });
+      } catch (sessionErr) {
+        console.error("[comparison-sessions] /api/compare/share", sessionErr.message);
+      }
+    }
+
     res.json({
       accessReason: "shared_link",
       options: {
@@ -2045,6 +2120,31 @@ app.post("/api/analytics/compare", security.analyticsLimiter, requireNotSuspende
     res.json({ ok: true });
   } catch (err) {
     console.error("[/api/analytics/compare]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+app.post("/api/analytics/product", security.analyticsLimiter, requireNotSuspended, async (req, res) => {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const { event, details, squadId } = req.body || {};
+    if (!event || !analytics.PASSPORT_CLIENT_ANALYTICS_EVENTS.has(event)) {
+      return res.status(400).json({ error: "Événement inconnu" });
+    }
+    const cleanDetails = sanitizeAnalyticsDetails(details);
+    const cleanSquadId = Number.isSafeInteger(Number(squadId)) && Number(squadId) > 0
+      ? Number(squadId)
+      : null;
+    analytics.logProductAnalyticsEvent(pool, {
+      userId: reqUser,
+      squadId: cleanSquadId,
+      event,
+      details: cleanDetails
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[/api/analytics/product POST]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });

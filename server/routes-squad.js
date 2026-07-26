@@ -243,6 +243,26 @@ app.post("/api/squads", security.squadCreateLimiter, requireNotSuspended, securi
        VALUES ($1, $2, 'owner', 'active')`,
       [squad.id, userId]
     );
+    try {
+      const { writeActivity } = require("./passport-activity");
+      await writeActivity({
+        userId,
+        activityType: "squad_created",
+        entityType: "squad",
+        entityId: String(squad.id),
+        data: { squadId: squad.id, squadName: squad.name, squadCode: squad.code },
+        visibility: "friends"
+      });
+      // Étape 43 — squad_founder is NOT awarded on create alone.
+      require("./passport-summary").schedulePassportRecalc(userId, {
+        mode: "queue",
+        reason: "squad.created",
+        triggerEvent: "squad.created",
+        notify: false
+      }).catch(() => {});
+    } catch (err) {
+      console.error("[squads] passport activity failed", err);
+    }
     res.json(squad);
   } catch (err) {
     if (err.code === "23505") {
@@ -336,6 +356,69 @@ app.post("/api/squads/join", security.squadJoinLimiter, requireNotSuspended, sec
     );
     await client.query("COMMIT");
     invalidateSquadAnalysisCache(squad.id);
+    try {
+      const {
+        recordGraphEventSafe,
+        GRAPH_EVENT_TYPES,
+        computeSquadJoinImpact,
+        buildSquadJoinedContext
+      } = require("./sprite-graph");
+      const impact = await computeSquadJoinImpact(squad.id, userId);
+      recordGraphEventSafe({
+        eventType: GRAPH_EVENT_TYPES.SQUAD_JOINED,
+        actorUserId: userId,
+        squadId: squad.id,
+        source: "api",
+        origin: "squad.join_code",
+        context: buildSquadJoinedContext({
+          inviterId: createdBy || null,
+          memberRole: role,
+          memberCountAfterJoin: impact.memberCountAfterJoin,
+          collectiveCompletionBefore: impact.collectiveCompletionBefore,
+          collectiveCompletionAfter: impact.collectiveCompletionAfter,
+          newVariantsAddedToSquad: impact.newVariantsAddedToSquad,
+          sharedVariantsAdded: impact.sharedVariantsAdded,
+          joinSource: "join_code",
+          squadName: squad.name,
+          squadCode: squad.code
+        }),
+        deduplicationKey: `${GRAPH_EVENT_TYPES.SQUAD_JOINED}:${squad.id}:${userId}:join_code:${new Date().toISOString().slice(0, 19)}`
+      });
+    } catch (_) { /* optional */ }
+    try {
+      const { writeActivity } = require("./passport-activity");
+      await writeActivity({
+        userId,
+        activityType: "squad_joined",
+        entityType: "squad",
+        entityId: String(squad.id),
+        data: { squadId: squad.id, squadName: squad.name, squadCode: squad.code },
+        visibility: "friends"
+      });
+      if (createdBy) {
+        const { evaluateUserBadges } = require("./badge-engine");
+        await evaluateUserBadges(createdBy, "squad.member_joined", { batchNotify: false });
+      }
+      await require("./badge-engine").evaluateUserBadges(userId, "squad.member_joined", {
+        batchNotify: false
+      });
+      require("./passport-summary").schedulePassportRecalc(userId, {
+        mode: "queue",
+        reason: "squad.member_joined",
+        triggerEvent: "squad.member_joined",
+        notify: false
+      }).catch(() => {});
+      if (createdBy) {
+        require("./passport-summary").schedulePassportRecalc(createdBy, {
+          mode: "queue",
+          reason: "squad.member_joined",
+          triggerEvent: "squad.member_joined",
+          notify: false
+        }).catch(() => {});
+      }
+    } catch (err) {
+      console.error("[squads/join] passport activity failed", err);
+    }
     res.json(squad);
   } catch (err) {
     if (client) await client.query("ROLLBACK").catch(() => {});
@@ -580,6 +663,13 @@ app.post("/api/squads/:code/leave", requireNotSuspended, async (req, res) => {
     } catch (err) {
       console.error("[leave] refresh stats failed", err);
     }
+
+    require("./passport-summary").schedulePassportRecalc(userId, {
+      mode: "queue",
+      reason: "squad.left",
+      triggerEvent: "squad.member_joined",
+      notify: false
+    }).catch(() => {});
 
     const remaining = await pool.query(
       "SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'",

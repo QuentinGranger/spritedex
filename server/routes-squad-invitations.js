@@ -463,7 +463,66 @@ async function acceptInvitation(invitationId, reqUser) {
     logSquadMemberJoined(invitation.squad_id, reqUser)
   ]);
 
+  try {
+    const { writeActivity } = require("./passport-activity");
+    await writeActivity({
+      userId: reqUser,
+      activityType: "squad_joined",
+      entityType: "squad",
+      entityId: String(invitation.squad_id),
+      data: {
+        squadId: invitation.squad_id,
+        squadName: invitation.name,
+        squadCode: invitation.code
+      },
+      visibility: "friends"
+    });
+    const founderRes = await pool.query("SELECT created_by FROM squads WHERE id = $1", [invitation.squad_id]);
+    const founderId = founderRes.rows[0]?.created_by;
+    if (founderId) {
+      const { maybeAwardSquadFounder } = require("./passport-badges");
+      await maybeAwardSquadFounder(founderId);
+    }
+  } catch (err) {
+    console.error("[invitations] passport activity failed", err);
+  }
+
   analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: invitation.squad_id, event: "friend_joined_squad", details: { invitationId, completionRateDelta, beforeRate, afterRate } });
+
+  try {
+    const {
+      recordGraphEventSafe,
+      GRAPH_EVENT_TYPES,
+      computeSquadJoinImpact,
+      buildSquadJoinedContext
+    } = require("./sprite-graph");
+    const impact = await computeSquadJoinImpact(invitation.squad_id, reqUser);
+    recordGraphEventSafe({
+      eventType: GRAPH_EVENT_TYPES.SQUAD_JOINED,
+      actorUserId: reqUser,
+      squadId: invitation.squad_id,
+      source: "api",
+      origin: "squad.invitation_accept",
+      context: buildSquadJoinedContext({
+        inviterId: invitation.inviter_id || null,
+        memberRole: "member",
+        memberCountAfterJoin: impact.memberCountAfterJoin,
+        collectiveCompletionBefore: impact.collectiveCompletionBefore != null
+          ? impact.collectiveCompletionBefore
+          : beforeRate,
+        collectiveCompletionAfter: impact.collectiveCompletionAfter != null
+          ? impact.collectiveCompletionAfter
+          : afterRate,
+        newVariantsAddedToSquad: impact.newVariantsAddedToSquad,
+        sharedVariantsAdded: impact.sharedVariantsAdded,
+        joinSource: "friend_invitation",
+        squadName: invitation.name,
+        squadCode: invitation.code,
+        invitationId
+      }),
+      deduplicationKey: `${GRAPH_EVENT_TYPES.SQUAD_JOINED}:${invitation.squad_id}:${reqUser}:invite:${invitationId}`
+    });
+  } catch (_) { /* optional */ }
 
   return { ok: true, squadCode: invitation.code };
 }

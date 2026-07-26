@@ -607,6 +607,13 @@ async function refreshNews() {
   await extractAvailabilityFromNews(existingNews.rows);
   await extractRecurrenceFromNews(existingNews.rows);
 
+  // Étape 75 — catalogue growth → bump totals + queue passport recalcs.
+  try {
+    await require("./passport-summary").syncCatalogueMetaAndFanout();
+  } catch (err) {
+    console.error("[NEWS] passport catalogue fanout failed:", err.message);
+  }
+
   broadcastNewsUpdate({
     newItems: insertedItems.map(i => ({ source: i.source, title: i.title, link: i.link, image: i.image, date: i.date })).slice(0, 5),
     newCount: insertedItems.length,

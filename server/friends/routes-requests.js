@@ -12,6 +12,31 @@ const { resolveUsers, resolveAddressee, getActiveFriendship } = require("./helpe
 const { applyFriendAction } = require("./state-machine");
 const { emitDomainEvent, DOMAIN_EVENTS } = require("../event-bus");
 
+async function resolveFriendInvitationOptions(reqUser, friendId, body = {}) {
+  const { normalizeInvitationMethod } = require("../sprite-graph");
+  const rawMethod = body.invitationMethod || body.method || null;
+  const mutualSquad = await shareSquad(reqUser, friendId);
+  let invitationMethod;
+  if (rawMethod) {
+    invitationMethod = normalizeInvitationMethod(rawMethod);
+  } else if (mutualSquad) {
+    invitationMethod = "squad_member";
+  } else {
+    invitationMethod = "username";
+  }
+  const invitationSource = body.invitationSource
+    || body.source
+    || (invitationMethod === "squad_member" ? "squad_member"
+      : invitationMethod === "passport" ? "passport"
+        : "username_search");
+  return {
+    invitationMethod,
+    invitationSource: String(invitationSource).slice(0, 80),
+    origin: "friends.request",
+    source: "api"
+  };
+}
+
 // ── Send a friend request ────────────────────────────────────────────────────
 app.post("/api/friends/:friendId/request", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
@@ -21,7 +46,8 @@ app.post("/api/friends/:friendId/request", requireNotSuspended, async (req, res)
   const blocked = await isBlocked(reqUser, friendId);
   if (blocked) return res.status(403).json({ error: "Vous ne pouvez pas interagir avec cet utilisateur" });
 
-  const outcome = await applyFriendAction(reqUser, friendId, "request");
+  const inviteOpts = await resolveFriendInvitationOptions(reqUser, friendId, req.body || {});
+  const outcome = await applyFriendAction(reqUser, friendId, "request", inviteOpts);
   if (outcome.error) return res.status(outcome.error).json({ error: outcome.message });
 
   const reqUserRecord = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
@@ -34,7 +60,7 @@ app.post("/api/friends/:friendId/request", requireNotSuspended, async (req, res)
     url: "/friends"
   });
 
-  if (await shareSquad(reqUser, friendId)) {
+  if (inviteOpts.invitationMethod === "squad_member" || await shareSquad(reqUser, friendId)) {
     analytics.logProductAnalyticsEvent(pool, { userId: reqUser, event: "squad_member_friend_request_sent", details: { friendId } });
   }
 
@@ -46,12 +72,17 @@ app.post("/api/friends/requests", requireNotSuspended, security.validateBody(sec
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
-  const { addresseeId } = req.validatedBody;
+  const { addresseeId, invitationMethod, invitationSource, source } = req.validatedBody;
   const resolved = await resolveAddressee(reqUser, addresseeId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { friendId } = resolved;
 
-  const outcome = await applyFriendAction(reqUser, friendId, "request");
+  const inviteOpts = await resolveFriendInvitationOptions(reqUser, friendId, {
+    invitationMethod,
+    invitationSource,
+    source
+  });
+  const outcome = await applyFriendAction(reqUser, friendId, "request", inviteOpts);
   if (outcome.error) return res.status(outcome.error).json({ error: outcome.message });
 
   const row = await getActiveFriendship(reqUser, friendId);
@@ -66,7 +97,7 @@ app.post("/api/friends/requests", requireNotSuspended, security.validateBody(sec
     url: "/friends"
   });
 
-  if (await shareSquad(reqUser, friendId)) {
+  if (inviteOpts.invitationMethod === "squad_member" || await shareSquad(reqUser, friendId)) {
     analytics.logProductAnalyticsEvent(pool, { userId: reqUser, event: "squad_member_friend_request_sent", details: { friendId } });
   }
 
