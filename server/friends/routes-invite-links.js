@@ -237,6 +237,34 @@ app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req
     await client.query("COMMIT");
 
     const row = insert.rows[0];
+    try {
+      const {
+        recordGraphEventSafe,
+        GRAPH_EVENT_TYPES,
+        buildFriendInvitationSentContext,
+        normalizeInvitationMethod
+      } = require("../sprite-graph");
+      const via = String(req.query.via || req.body?.via || "").trim().toLowerCase();
+      const invitationMethod = normalizeInvitationMethod(
+        via === "qr" || via === "qr_code" ? "qr_code" : "invite_link"
+      );
+      recordGraphEventSafe({
+        eventType: GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT,
+        actorUserId: reqUser,
+        targetUserId: link.owner_id,
+        friendshipId: row.id,
+        source: "api",
+        origin: invitationMethod === "qr_code"
+          ? "friends.invite_link.qr"
+          : "friends.invite_link.use",
+        context: buildFriendInvitationSentContext({
+          invitationMethod,
+          invitationSource: invitationMethod,
+          status: "pending"
+        }),
+        deduplicationKey: `${GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT}:${row.id}`
+      });
+    } catch (_) { /* optional */ }
     res.status(201).json({ requestId: row.id, status: row.status, createdAt: row.created_at });
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});

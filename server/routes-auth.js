@@ -40,6 +40,10 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
     const { salt, hash, iterations } = await hashPassword(password);
     const rawUsername = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") || "joueur";
     const username = rawUsername.length < 3 ? `${rawUsername}_${crypto.randomBytes(3).toString("hex")}` : rawUsername.slice(0, 24);
+    const { isUsernameReserved } = require("./username-history");
+    if (await isUsernameReserved(username)) {
+      return res.status(409).json({ error: "Ce pseudo est déjà pris ou temporairement réservé" });
+    }
     const displayName = reqDisplayName || username;
     const emailToken = crypto.randomBytes(32).toString("hex");
     const emailTokenHash = hashOpaqueToken(emailToken);
@@ -448,6 +452,11 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
       let inserted = null;
       for (let attempt = 0; attempt < 5 && !inserted; attempt++) {
         try {
+          const { isUsernameReserved } = require("./username-history");
+          if (await isUsernameReserved(finalUsername)) {
+            finalUsername = `${baseUsername.slice(0, 40)}_${crypto.randomBytes(3).toString("hex")}`;
+            continue;
+          }
           inserted = await pool.query(
             `INSERT INTO users (username, email, email_verified, avatar_url, oauth_provider, age_confirmed)
              VALUES ($1, $2, TRUE, $3, $4, TRUE) RETURNING id, username, avatar_url`,

@@ -785,8 +785,61 @@ async function checkAffectedGoals(userId, variantId) {
         goal.updated_at = new Date().toISOString();
         broadcastGoalUpdate(goal, "completed").catch(err => console.error("[goals] broadcast failed", err));
         analytics.logProductAnalyticsEvent(pool, { userId, squadId: goal.squad_id || null, event: "shared_goal_completed", details: { goalId: goal.id, variantIds: targetIds } });
+        try {
+          const {
+            recordGraphEventSafe,
+            GRAPH_EVENT_TYPES,
+            buildGoalCompletedContext
+          } = require("./sprite-graph");
+          let participantCount = 1;
+          if (goal.squad_id) {
+            const pc = await pool.query(
+              "SELECT COUNT(*)::int AS n FROM squad_members WHERE squad_id = $1 AND status = 'active'",
+              [goal.squad_id]
+            );
+            participantCount = pc.rows[0]?.n || 1;
+          }
+          const goalCtx = buildGoalCompletedContext({
+            goal,
+            actorUserId: userId,
+            targetVariantIds: targetIds,
+            participantCount,
+            completedAt: goal.updated_at || new Date().toISOString()
+          });
+          recordGraphEventSafe({
+            eventType: GRAPH_EVENT_TYPES.GOAL_COMPLETED,
+            actorUserId: userId,
+            squadId: goal.squad_id || null,
+            goalId: goal.id,
+            source: "system",
+            origin: "goals.checkAffected",
+            context: {
+              ...goalCtx,
+              variantIds: targetIds
+            },
+            deduplicationKey: `${GRAPH_EVENT_TYPES.GOAL_COMPLETED}:${goal.id}`
+          });
+        } catch (_) { /* optional */ }
         if (goal.squad_id) {
           logSquadGoalCompleted(goal.squad_id, userId, goal.title || null, targetIds.join(", ")).catch(err => console.error("[goals] squad goal completed log failed", err));
+          try {
+            const { writeActivity } = require("./passport-activity");
+            await writeActivity({
+              userId,
+              activityType: "collective_goal_completed",
+              entityType: "goal",
+              entityId: String(goal.id),
+              data: {
+                goalId: goal.id,
+                goalTitle: goal.title || null,
+                squadId: goal.squad_id,
+                variantIds: targetIds
+              },
+              visibility: "friends"
+            });
+          } catch (err) {
+            console.error("[goals] passport activity failed", err);
+          }
         }
         const userResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
         const actorName = userResult.rows[0]?.username || "Quelqu'un";

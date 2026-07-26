@@ -170,10 +170,21 @@ async function ensureSquadTables() {
       )
       WHERE sprite_id IS NULL;
 
-      -- Ensure the unique constraint on (user_id, variant_id) is present
+      -- Ensure a single active entry per (user, variant). Deduplicate first,
+      -- then enforce UNIQUE (user_id, variant_id) if missing.
+      DELETE FROM sprite_entries a
+      USING sprite_entries b
+      WHERE a.user_id = b.user_id
+        AND a.variant_id = b.variant_id
+        AND a.id < b.id;
+
       DO $$
       BEGIN
         IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'unique_user_variant'
+            AND conrelid = 'sprite_entries'::regclass
+        ) AND NOT EXISTS (
           SELECT 1 FROM pg_indexes
           WHERE tablename = 'sprite_entries' AND indexdef LIKE '%(user_id, variant_id)%'
         ) THEN
@@ -305,6 +316,81 @@ async function ensureSquadTables() {
       -- Lookups by user_id (common-squad checks, profile list) need a dedicated index.
       CREATE INDEX IF NOT EXISTS idx_squad_members_user ON squad_members (user_id);
 
+      -- Collector passport preferences use the application's INTEGER user and
+      -- squad identifiers (the UUID identifiers in this database belong to
+      -- memberships/invitations, not to users or squads themselves).
+      CREATE TABLE IF NOT EXISTS collector_passports (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        primary_squad_id INTEGER REFERENCES squads(id) ON DELETE SET NULL,
+        passport_visibility VARCHAR(30) NOT NULL DEFAULT 'friends',
+        statistics_visibility VARCHAR(30) NOT NULL DEFAULT 'friends',
+        badges_visibility VARCHAR(30) NOT NULL DEFAULT 'friends',
+        activity_visibility VARCHAR(30) NOT NULL DEFAULT 'friends',
+        comparisons_visibility VARCHAR(30) NOT NULL DEFAULT 'private',
+        show_join_date BOOLEAN NOT NULL DEFAULT TRUE,
+        show_last_activity BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CHECK (passport_visibility IN ('private', 'friends', 'squad', 'public')),
+        CHECK (statistics_visibility IN ('private', 'friends', 'squad', 'public')),
+        CHECK (badges_visibility IN ('private', 'friends', 'squad', 'public')),
+        CHECK (activity_visibility IN ('private', 'friends', 'squad', 'public')),
+        CHECK (comparisons_visibility IN ('private', 'friends', 'squad', 'public'))
+      );
+      CREATE INDEX IF NOT EXISTS idx_collector_passports_primary_squad ON collector_passports(primary_squad_id);
+
+      -- Étape 16 — persistent passport achievements (never revoked when rate drops)
+      CREATE TABLE IF NOT EXISTS user_passport_achievements (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        achievement_id VARCHAR(80) NOT NULL,
+        unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        catalogue_version VARCHAR(80) NOT NULL,
+        meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+        UNIQUE (user_id, achievement_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_passport_achievements_user
+        ON user_passport_achievements (user_id, unlocked_at DESC);
+
+      -- Étape 16 — historical peak completion for the passport record line
+      CREATE TABLE IF NOT EXISTS user_collection_peaks (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        peak_completion_rate NUMERIC(10, 4) NOT NULL DEFAULT 0,
+        peak_completion_display NUMERIC(6, 1) NOT NULL DEFAULT 0,
+        peak_owned_variant_count INTEGER NOT NULL DEFAULT 0,
+        peak_released_variant_count INTEGER NOT NULL DEFAULT 0,
+        peak_catalogue_version VARCHAR(80),
+        achieved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      -- Étape 18 — versioned event collection requirements
+      CREATE TABLE IF NOT EXISTS event_collection_versions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        event_id VARCHAR(100) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        version INTEGER NOT NULL,
+        required_variant_ids JSONB NOT NULL,
+        published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        ended_at TIMESTAMPTZ,
+        UNIQUE (event_id, version)
+      );
+      CREATE INDEX IF NOT EXISTS idx_event_collection_versions_active
+        ON event_collection_versions (event_id, published_at DESC);
+
+      -- Étape 19 — recorded event completions against a specific requirements version
+      CREATE TABLE IF NOT EXISTS user_event_completions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        event_id VARCHAR(100) NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        event_version_id UUID NOT NULL REFERENCES event_collection_versions(id) ON DELETE CASCADE,
+        completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        catalogue_version VARCHAR(80) NOT NULL,
+        verification_status VARCHAR(30) NOT NULL DEFAULT 'declared',
+        UNIQUE (user_id, event_version_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_user_event_completions_user
+        ON user_event_completions (user_id, completed_at DESC);
+
       CREATE TABLE IF NOT EXISTS squad_invitations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         squad_id INTEGER NOT NULL REFERENCES squads(id) ON DELETE CASCADE,
@@ -374,6 +460,19 @@ async function ensureSquadTables() {
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS join_open BOOLEAN NOT NULL DEFAULT TRUE`);
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS logo_url TEXT`);
     await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS max_active_goals_per_member INTEGER NOT NULL DEFAULT 3`);
+    await pool.query(`ALTER TABLE squads ADD COLUMN IF NOT EXISTS visibility VARCHAR(30) NOT NULL DEFAULT 'members'`);
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'squads_visibility_check'
+        ) THEN
+          ALTER TABLE squads
+            ADD CONSTRAINT squads_visibility_check
+            CHECK (visibility IN ('private', 'members', 'public'));
+        END IF;
+      END $$;
+    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS sprite_variants (
         id VARCHAR(100) PRIMARY KEY,
@@ -708,6 +807,21 @@ async function ensureSquadTables() {
     await secLog.ensureSecurityLogTable(pool);
     await analytics.ensureCompareAnalyticsTable(pool);
     await analytics.ensureProductAnalyticsTable(pool);
+    await require("./comparison-sessions").ensureComparisonSessionsTable(pool);
+    await require("./passport-activity").ensurePassportActivityTable(pool);
+    await require("./passport-badges").ensurePassportBadgeTables(pool);
+    await require("./passport-snapshots").ensurePassportStatSnapshots(pool);
+    await require("./username-history").ensureUsernameHistoryTable(pool);
+    await require("./passport-summary").ensurePassportSummaryTables(pool);
+    await require("./passport-integrity").ensurePassportIntegrityTables(pool);
+    await require("./sprite-graph").ensureGraphEventsTable(pool);
+
+    // Étape 59 — featured (pinned) badge on the collector passport.
+    await pool.query(`
+      ALTER TABLE collector_passports
+        ADD COLUMN IF NOT EXISTS featured_badge_id UUID
+    `);
+    // Soft FK: badge_definitions may be created later in the same boot; enforce via app logic.
 
     // ── Migration: unifying relationship model ──
     // The legacy `friends` table is no longer used by the application.

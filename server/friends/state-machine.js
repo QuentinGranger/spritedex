@@ -7,7 +7,7 @@ const { getActiveFriendship, canReceiveFriendRequestFrom, recentRequestCooldown 
 
 // Enforce a clean state machine for friend relationships.
 // Only one active row exists per unordered pair (guaranteed by the partial unique index).
-async function applyFriendAction(reqUser, friendId, action) {
+async function applyFriendAction(reqUser, friendId, action, options = {}) {
   const active = await getActiveFriendship(reqUser, friendId);
   const isRequester = active && Number(active.requester_id) === Number(reqUser);
   const isAddressee = active && Number(active.addressee_id) === Number(reqUser);
@@ -38,12 +38,42 @@ async function applyFriendAction(reqUser, friendId, action) {
       if (await recentRequestCooldown(reqUser, friendId)) {
         return { error: 429, message: "Tu as récemment envoyé une demande. Réessaie dans 7 jours." };
       }
-      await pool.query(
+      const inserted = await pool.query(
         `INSERT INTO friendships (requester_id, addressee_id, status, created_at, updated_at)
-         VALUES ($1, $2, 'pending', NOW(), NOW())`,
+         VALUES ($1, $2, 'pending', NOW(), NOW())
+         RETURNING id`,
         [reqUser, friendId]
       );
-      return { ok: true };
+      const friendshipId = inserted.rows[0]?.id || null;
+      try {
+        const {
+          recordGraphEventSafe,
+          GRAPH_EVENT_TYPES,
+          buildFriendInvitationSentContext,
+          normalizeInvitationMethod
+        } = require("../sprite-graph");
+        const invitationMethod = normalizeInvitationMethod(
+          options.invitationMethod,
+          { fallback: options.fallbackInvitationMethod || "username" }
+        );
+        recordGraphEventSafe({
+          eventType: GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT,
+          actorUserId: reqUser,
+          targetUserId: friendId,
+          friendshipId,
+          source: options.source || "api",
+          origin: options.origin || "friends.request",
+          context: buildFriendInvitationSentContext({
+            invitationMethod,
+            invitationSource: options.invitationSource || null,
+            status: "pending"
+          }),
+          deduplicationKey: friendshipId
+            ? `${GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT}:${friendshipId}`
+            : null
+        });
+      } catch (_) { /* optional */ }
+      return { ok: true, friendshipId };
     }
 
     case "accept": {

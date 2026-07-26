@@ -151,14 +151,21 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
   if (!variantId) return res.status(400).json({ error: "spriteId invalide" });
   const { status, note, priority, obtainedAt } = req.validatedBody;
   const hasObtainedAt = Object.prototype.hasOwnProperty.call(req.validatedBody, "obtainedAt");
+  const client = await pool.connect();
   try {
-    const prev = await pool.query(
-      `SELECT status FROM sprite_entries WHERE user_id = $1 AND variant_id = $2`,
+    // Étape 30 — collection write + graph event in one transaction.
+    await client.query("BEGIN");
+    const prev = await client.query(
+      `SELECT id, status, priority FROM sprite_entries
+       WHERE user_id = $1 AND variant_id = $2
+       FOR UPDATE`,
       [userId, variantId]
     );
-    const prevStatus = prev.rows.length ? prev.rows[0].status : "new";
+    const isNewEntry = prev.rows.length === 0;
+    const prevStatus = isNewEntry ? "new" : prev.rows[0].status;
+    const prevPriority = isNewEntry ? "none" : (prev.rows[0].priority || "none");
 
-    const saved = await pool.query(
+    const saved = await client.query(
       `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
        VALUES ($1, $2, $3, COALESCE($4, 'new'), COALESCE($5, ''), COALESCE($6, 'none'), $7::timestamptz, NOW())
        ON CONFLICT (user_id, variant_id)
@@ -168,7 +175,7 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
                      priority = COALESCE($6, sprite_entries.priority),
                      obtained_at = CASE WHEN $8 THEN $7::timestamptz ELSE sprite_entries.obtained_at END,
                      updated_at = NOW()
-       RETURNING status, note, priority, obtained_at`,
+       RETURNING id, status, note, priority, obtained_at`,
       [
         userId,
         variantId,
@@ -183,11 +190,49 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
 
     const savedEntry = saved.rows[0];
     const newStatus = savedEntry.status;
-    if (newStatus !== prevStatus) {
-      pool.query(
-        `INSERT INTO collection_history (user_id, sprite_id, old_status, new_status) VALUES ($1, $2, $3, $4)`,
-        [userId, variantId, prevStatus, newStatus]
-      ).catch(() => {});
+    let historyId = null;
+    if (!isNewEntry && newStatus !== prevStatus) {
+      try {
+        const hist = await client.query(
+          `INSERT INTO collection_history (user_id, sprite_id, old_status, new_status)
+           VALUES ($1, $2, $3, $4) RETURNING id`,
+          [userId, variantId, prevStatus, newStatus]
+        );
+        historyId = hist.rows[0]?.id || null;
+      } catch (_) {}
+    }
+
+    const graphChange = {
+      variantId,
+      spriteId: baseSpriteId,
+      isNewEntry,
+      entryId: savedEntry.id,
+      changeId: isNewEntry ? `entry_${savedEntry.id}` : (historyId != null ? `history_${historyId}` : `entry_${savedEntry.id}`),
+      historyId,
+      previousStatus: isNewEntry ? null : prevStatus,
+      newStatus,
+      previousPriority: isNewEntry ? null : prevPriority,
+      newPriority: savedEntry.priority || "none"
+    };
+    await require("./sprite-graph").recordCollectionGraphEvents(userId, [graphChange], {
+      source: "api",
+      origin: "collection.setEntry",
+      updateMethod: "manual_update",
+      db: client,
+      throwOnError: true
+    });
+    await client.query("COMMIT");
+
+    if (!isNewEntry && newStatus !== prevStatus) {
+      const change = { variantId, oldStatus: prevStatus, newStatus };
+      // Étape 77 — soft flip signal (log only, never block fast edits).
+      if (require("./passport-integrity").isOwnedMissingFlip(prevStatus, newStatus)) {
+        require("./passport-integrity").logCollectionIntegrityEvent(userId, {
+          source: "setEntry",
+          changes: [change],
+          details: { variantId }
+        }).catch(() => {});
+      }
     }
 
     // Ensure cached collection is refreshed before squad stats/logic that depends on it.
@@ -207,6 +252,12 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
           console.error("[setEntry] refresh squad stats failed", err);
         }
       }
+      try {
+        const { recordOwnedVariants } = require("./passport-activity");
+        await recordOwnedVariants(userId, [variantId], { spriteId: baseSpriteId });
+      } catch (err) {
+        console.error("[setEntry] passport activity failed", err);
+      }
     }
 
     // A demotion (owned → missing), an import-like edit, or a priority change
@@ -222,11 +273,26 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
     res.json({ ok: true });
     broadcastSquadUpdate(userId);
     broadcastSquadCompletionUpdate(userId);
+    if (newStatus === "owned" || prevStatus === "owned") {
+      // Étape 73/74 — non-blocking recalc (immediate for single entry).
+      require("./passport-summary").schedulePassportRecalc(userId, {
+        mode: "immediate",
+        reason: "variant_status_changed",
+        triggerEvent: "collection.variant_acquired",
+        collectionChanged: true,
+        notify: true,
+        batchNotify: true
+      }).catch((err) =>
+        console.error("[setEntry] passport recalc schedule failed", err)
+      );
+    }
     const change = {
       variantId,
       spriteId: baseSpriteId,
       oldStatus: prevStatus,
-      newStatus
+      newStatus,
+      oldPriority: prevPriority,
+      newPriority: savedEntry.priority || "none"
     };
     notifyCollectionChanges(userId, [change]);
     emitVariantAcquiredEvents(userId, [change]).catch(err =>
@@ -243,8 +309,11 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
       }]
     });
   } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
+  } finally {
+    client.release();
   }
 });
 
@@ -257,18 +326,22 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
 
   const variantIds = Object.keys(normalizedCollection).filter(v => !v.startsWith("fav_"));
   const prevRes = await pool.query(
-    `SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries
+    `SELECT id, variant_id, status, note, priority, obtained_at FROM sprite_entries
      WHERE user_id = $1 AND variant_id = ANY($2)`,
     [userId, variantIds]
   );
   const prevMap = Object.fromEntries(prevRes.rows.map(r => [r.variant_id, r]));
 
   const client = await pool.connect();
+  const upsertedIds = Object.create(null);
+  const compareChanges = [];
+  const notifyChanges = [];
+  const graphChanges = [];
   try {
     await client.query("BEGIN");
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
-      await client.query(
+      const upsert = await client.query(
         `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, COALESCE($8::timestamptz, NOW()))
          ON CONFLICT (user_id, variant_id)
@@ -277,7 +350,8 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
                        note = $5,
                        priority = $6,
                        obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
-                       updated_at = COALESCE($8::timestamptz, NOW())`,
+                       updated_at = COALESCE($8::timestamptz, NOW())
+         RETURNING id`,
         [
           userId, variantId, entry.spriteId || null,
           entry.status || "new",
@@ -287,13 +361,12 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
           entry.updatedAt || null
         ]
       );
+      upsertedIds[variantId] = upsert.rows[0]?.id;
     }
-    await client.query("COMMIT");
-    const compareChanges = [];
-    const notifyChanges = [];
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
       const old = prevMap[variantId];
+      const isNewEntry = !old;
       const newStatus = entry.status || "new";
       const newNote = entry.note || "";
       const newPriority = entry.priority || "none";
@@ -304,7 +377,27 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
         || old.priority !== newPriority
         || String(old.obtained_at || "") !== String(newObtainedAt);
       if (changed) {
-        notifyChanges.push({ variantId, spriteId: entry.spriteId || null, oldStatus: old ? old.status : "new", newStatus });
+        notifyChanges.push({
+          variantId,
+          spriteId: entry.spriteId || null,
+          oldStatus: old ? old.status : "new",
+          newStatus,
+          oldPriority: old ? (old.priority || "none") : "none",
+          newPriority
+        });
+        graphChanges.push({
+          variantId,
+          spriteId: entry.spriteId || null,
+          isNewEntry,
+          entryId: upsertedIds[variantId] || (old && old.id) || null,
+          changeId: isNewEntry
+            ? `entry_${upsertedIds[variantId] || variantId}`
+            : `sync_${upsertedIds[variantId] || variantId}_${old.status}->${newStatus}_${old.priority || "none"}->${newPriority}`,
+          previousStatus: isNewEntry ? null : old.status,
+          newStatus,
+          previousPriority: isNewEntry ? null : (old.priority || "none"),
+          newPriority
+        });
       }
       compareChanges.push({
         variantId,
@@ -315,6 +408,18 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
         obtainedAt: newObtainedAt
       });
     }
+    // Étape 30 — persist graph events before COMMIT.
+    if (graphChanges.length) {
+      await require("./sprite-graph").recordCollectionGraphEvents(userId, graphChanges, {
+        source: "api",
+        origin: "collection.sync",
+        updateMethod: graphChanges.length > 10 ? "sync_batch" : "manual_update",
+        previousCollectionCount: variantIds.length,
+        db: client,
+        throwOnError: true
+      });
+    }
+    await client.query("COMMIT");
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     broadcastSquadUpdate(userId);
     broadcastSquadCompletionUpdate(userId);
@@ -327,12 +432,49 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
     emitVariantAcquiredEvents(userId, notifyChanges).catch(err =>
       console.error("[sync] variant_acquired emit failed", err)
     );
+    // Étape 77 — history + soft integrity journal (does not slow the response path).
+    if (notifyChanges.length) {
+      setImmediate(() => {
+        const integrity = require("./passport-integrity");
+        integrity.recordStatusHistory(userId, notifyChanges).catch((err) =>
+          console.error("[sync] collection_history failed", err)
+        );
+        integrity.logCollectionIntegrityEvent(userId, {
+          source: "sync",
+          changes: notifyChanges,
+          details: { payloadSize: variantIds.length }
+        }).catch((err) => console.error("[sync] integrity log failed", err));
+      });
+    }
     // Étape 22 — refresh squad coverage for newly owned variants.
     const ownedGains = notifyChanges
       .filter(c => c.newStatus === "owned" && c.oldStatus !== "owned")
       .map(c => c.variantId);
     if (ownedGains.length) {
       (async () => {
+        try {
+          const { recordOwnedVariants } = require("./passport-activity");
+          await recordOwnedVariants(userId, ownedGains);
+        } catch (err) {
+          console.error("[sync] passport activity failed", err);
+        }
+        // Étape 74 — durable queue: don't await full passport recalc on the request path.
+        try {
+          const { emitDomainEvent, DOMAIN_EVENTS } = require("./event-bus");
+          await emitDomainEvent(DOMAIN_EVENTS.COLLECTION_UPDATED, {
+            actorId: userId,
+            entityType: "user",
+            entityId: String(userId),
+            context: { source: "sync", ownedGainCount: ownedGains.length }
+          });
+        } catch (_) { /* optional */ }
+        require("./passport-summary").schedulePassportRecalc(userId, {
+          mode: "queue",
+          reason: "collection.updated",
+          triggerEvent: "collection.updated",
+          collectionChanged: true,
+          notify: true
+        }).catch((err) => console.error("[sync] passport recalc enqueue failed", err));
         for (const variantId of ownedGains) {
           const squads = await logSquadCollectionEvent(userId, variantId, null, "owned");
           for (const squadId of squads || []) {
@@ -367,26 +509,42 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
 
   const variantIds = Object.keys(normalizedCollection).filter(v => !v.startsWith("fav_"));
   const prevRes = await pool.query(
-    `SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries
+    `SELECT id, variant_id, status, note, priority, obtained_at FROM sprite_entries
      WHERE user_id = $1 AND variant_id = ANY($2)`,
     [userId, variantIds]
   );
   const prevMap = Object.fromEntries(prevRes.rows.map(r => [r.variant_id, r]));
+  const prevTotalRes = await pool.query(
+    "SELECT COUNT(*)::int AS c FROM sprite_entries WHERE user_id = $1",
+    [userId]
+  );
+  const previousCount = prevTotalRes.rows[0]?.c || 0;
 
   const client = await pool.connect();
+  const upsertedIds = Object.create(null);
+  const compareChanges = [];
+  const notifyChanges = [];
+  const graphChanges = [];
+  let deletedCount = 0;
   try {
     await client.query("BEGIN");
     // Import is a REPLACE, not a merge: the payload is the user's complete
     // collection (e.g. a restored JSON export), so server entries absent from
     // it are deletions and must be removed. This is what propagates deletions
     // across devices — /sync stays a merge to avoid wiping data on login.
+    const deletedRes = await client.query(
+      `SELECT id, variant_id, status, priority FROM sprite_entries
+       WHERE user_id = $1 AND NOT (variant_id = ANY($2))`,
+      [userId, variantIds]
+    );
+    deletedCount = deletedRes.rows.length;
     await client.query(
       "DELETE FROM sprite_entries WHERE user_id = $1 AND NOT (variant_id = ANY($2))",
       [userId, variantIds]
     );
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
-      await client.query(
+      const upsert = await client.query(
         `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, COALESCE($8::timestamptz, NOW()))
          ON CONFLICT (user_id, variant_id)
@@ -395,7 +553,8 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
                        note = $5,
                        priority = $6,
                        obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
-                       updated_at = COALESCE($8::timestamptz, NOW())`,
+                       updated_at = COALESCE($8::timestamptz, NOW())
+         RETURNING id`,
         [
           userId, variantId, entry.spriteId || null,
           entry.status || "new",
@@ -405,13 +564,12 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
           entry.updatedAt || null
         ]
       );
+      upsertedIds[variantId] = upsert.rows[0]?.id;
     }
-    await client.query("COMMIT");
-    const compareChanges = [];
-    const notifyChanges = [];
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
       const old = prevMap[variantId];
+      const isNewEntry = !old;
       const newStatus = entry.status || "new";
       const newNote = entry.note || "";
       const newPriority = entry.priority || "none";
@@ -422,7 +580,27 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
         || old.priority !== newPriority
         || String(old.obtained_at || "") !== String(newObtainedAt);
       if (changed) {
-        notifyChanges.push({ variantId, spriteId: entry.spriteId || null, oldStatus: old ? old.status : "new", newStatus });
+        notifyChanges.push({
+          variantId,
+          spriteId: entry.spriteId || null,
+          oldStatus: old ? old.status : "new",
+          newStatus,
+          oldPriority: old ? (old.priority || "none") : "none",
+          newPriority
+        });
+        graphChanges.push({
+          variantId,
+          spriteId: entry.spriteId || null,
+          isNewEntry,
+          entryId: upsertedIds[variantId] || (old && old.id) || null,
+          changeId: isNewEntry
+            ? `entry_${upsertedIds[variantId] || variantId}`
+            : `import_${upsertedIds[variantId] || variantId}_${old.status}->${newStatus}`,
+          previousStatus: isNewEntry ? null : old.status,
+          newStatus,
+          previousPriority: isNewEntry ? null : (old.priority || "none"),
+          newPriority
+        });
       }
       compareChanges.push({
         variantId,
@@ -433,7 +611,61 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
         obtainedAt: newObtainedAt
       });
     }
-    res.json({ ok: true, count: Object.keys(normalizedCollection).length });
+    // Treat removed rows as status transitions for history (possession audit trail).
+    for (const row of deletedRes.rows) {
+      notifyChanges.push({
+        variantId: row.variant_id,
+        spriteId: null,
+        oldStatus: row.status || "new",
+        newStatus: "removed",
+        oldPriority: row.priority || "none",
+        newPriority: "none"
+      });
+      graphChanges.push({
+        variantId: row.variant_id,
+        spriteId: null,
+        isNewEntry: false,
+        entryId: row.id,
+        changeId: `import_removed_${row.id}`,
+        previousStatus: row.status || "new",
+        newStatus: "removed",
+        previousPriority: row.priority || "none",
+        newPriority: "none"
+      });
+    }
+    // Étape 30 — persist graph events before COMMIT.
+    if (graphChanges.length) {
+      await require("./sprite-graph").recordCollectionGraphEvents(userId, graphChanges, {
+        source: "import",
+        origin: "collection.import",
+        // Étape 70 — distinguish initial import vs later bulk replace.
+        updateMethod: previousCount <= 5 ? "initial_import" : "bulk_import",
+        previousCollectionCount: previousCount,
+        db: client,
+        throwOnError: true
+      });
+    }
+    await client.query("COMMIT");
+
+    // After import the live count is the payload size.
+    const nextCount = variantIds.length;
+    const ownedInPayload = Object.values(normalizedCollection).filter(
+      (e) => e && String(e.status || "").toLowerCase() === "owned"
+    ).length;
+    const ownedRatio = nextCount ? ownedInPayload / nextCount : 0;
+
+    res.json({
+      ok: true,
+      count: Object.keys(normalizedCollection).length,
+      // Soft signal only — clients may ignore (Étape 77).
+      integrity: require("./passport-integrity").detectImportIncoherence({
+        previousCount,
+        nextCount,
+        deletedCount,
+        changes: notifyChanges,
+        ownedRatio
+      })
+    });
     invalidateCompareCacheForUser(userId);
     invalidateSquadAnalysisCacheForUser(userId);
     scheduleSquadStatsForUser(userId).catch(err =>
@@ -441,11 +673,63 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
     );
     broadcastSquadUpdate(userId);
     broadcastSquadCompletionUpdate(userId);
-    notifyCollectionChanges(userId, notifyChanges);
-    emitVariantAcquiredEvents(userId, notifyChanges).catch(err =>
+    notifyCollectionChanges(userId, notifyChanges.filter((c) => c.newStatus !== "removed"));
+    emitVariantAcquiredEvents(userId, notifyChanges.filter((c) => c.newStatus !== "removed")).catch(err =>
       console.error("[import] variant_acquired emit failed", err)
     );
     broadcastCompareUpdate(userId, { changes: compareChanges });
+
+    setImmediate(() => {
+      const integrity = require("./passport-integrity");
+      const incoherence = integrity.detectImportIncoherence({
+        previousCount,
+        nextCount,
+        deletedCount,
+        changes: notifyChanges,
+        ownedRatio
+      });
+      integrity.recordStatusHistory(userId, notifyChanges).catch((err) =>
+        console.error("[import] collection_history failed", err)
+      );
+      integrity.logCollectionIntegrityEvent(userId, {
+        source: "import",
+        changes: notifyChanges,
+        deletedCount,
+        extraFlags: incoherence.flags,
+        details: { previousCount, nextCount, ownedRatio }
+      }).catch((err) => console.error("[import] integrity log failed", err));
+    });
+
+    const ownedGains = notifyChanges
+      .filter(c => c.newStatus === "owned" && c.oldStatus !== "owned")
+      .map(c => c.variantId);
+    if (ownedGains.length) {
+      setImmediate(() => {
+        const { recordOwnedVariants } = require("./passport-activity");
+        recordOwnedVariants(userId, ownedGains).catch((err) =>
+          console.error("[import] passport activity failed", err)
+        );
+        try {
+          const { emitDomainEvent, DOMAIN_EVENTS } = require("./event-bus");
+          emitDomainEvent(DOMAIN_EVENTS.COLLECTION_UPDATED, {
+            actorId: userId,
+            entityType: "user",
+            entityId: String(userId),
+            context: { source: "import", ownedGainCount: ownedGains.length }
+          }).catch(() => {});
+        } catch (_) { /* optional */ }
+        // Étape 74 — import → queue → recalc → badges (not on request thread).
+        require("./passport-summary").schedulePassportRecalc(userId, {
+          mode: "queue",
+          reason: "collection.import",
+          triggerEvent: "collection.updated",
+          collectionChanged: true,
+          notify: true
+        }).catch((err) =>
+          console.error("[import] passport recalc enqueue failed", err)
+        );
+      });
+    }
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);

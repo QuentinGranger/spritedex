@@ -103,6 +103,76 @@ async function shareActiveSquad(userA, userB) {
   return shareSquad(userA, userB);
 }
 
+const PASSPORT_VISIBILITY_FIELDS = {
+  passport: "passport_visibility",
+  statistics: "statistics_visibility",
+  badges: "badges_visibility",
+  activity: "activity_visibility",
+  comparisons: "comparisons_visibility"
+};
+
+// Centralizes all passport authorization. Routes must ask this service before
+// serializing each sensitive section; the UI is never the security boundary.
+async function canViewPassportSection(viewerId, ownerId, section) {
+  if (!ownerId || !PASSPORT_VISIBILITY_FIELDS[section]) return false;
+  if (viewerId != null && String(viewerId) === String(ownerId)) return true;
+
+  const passportResult = await pool.query(
+    `SELECT primary_squad_id, ${PASSPORT_VISIBILITY_FIELDS[section]} AS visibility
+     FROM collector_passports WHERE user_id = $1`,
+    [ownerId]
+  );
+  const settings = passportResult.rows[0] || {
+    primary_squad_id: null,
+    visibility: section === "comparisons" ? "private" : "friends"
+  };
+
+  // Étape 67 — anonymous visitors may only see sections marked public.
+  if (viewerId == null || viewerId === "") {
+    const ownerOk = await pool.query(
+      `SELECT 1 FROM users
+       WHERE id = $1 AND deleted_at IS NULL
+         AND (suspended_until IS NULL OR suspended_until <= NOW())
+       LIMIT 1`,
+      [ownerId]
+    );
+    return ownerOk.rows.length > 0 && settings.visibility === "public";
+  }
+
+  if (await isBlocked(viewerId, ownerId)) return false;
+
+  const accounts = await pool.query(
+    `SELECT id, deleted_at, suspended_until FROM users WHERE id = ANY($1::integer[])`,
+    [[Number(viewerId), Number(ownerId)]]
+  );
+  if (
+    accounts.rows.length !== 2
+    || accounts.rows.some((row) => row.deleted_at || (row.suspended_until && new Date(row.suspended_until) > new Date()))
+  ) {
+    return false;
+  }
+
+  switch (settings.visibility) {
+    case "public":
+      return true;
+    case "friends":
+      return await areFriends(viewerId, ownerId);
+    case "squad": {
+      if (!settings.primary_squad_id) return await shareActiveSquad(viewerId, ownerId);
+      const sharedPrimary = await pool.query(
+        `SELECT 1 FROM squad_members viewer JOIN squad_members owner ON owner.squad_id = viewer.squad_id
+         WHERE viewer.squad_id = $1 AND viewer.user_id = $2 AND owner.user_id = $3
+           AND viewer.status = 'active' AND owner.status = 'active' LIMIT 1`,
+        [settings.primary_squad_id, viewerId, ownerId]
+      );
+      return sharedPrimary.rows.length > 0;
+    }
+    case "private":
+    default:
+      return false;
+  }
+}
+
 const DEFAULT_VISIBILITY = {
   profile: "public",
   collection: "friends",
@@ -343,4 +413,4 @@ async function burnPasswordWork(password, iterations = PBKDF2_ITERATIONS) {
 // a valid session for that account with zero credentials. It was unused by the
 // current UI (no button called it), so removing it does not affect any feature.
 
-module.exports = { DEFAULT_VISIBILITY, LEGACY_PBKDF2_ITERATIONS, PBKDF2_ITERATIONS, areFriends, burnPasswordWork, canViewCollection, checkPrivacyAccess, createSession, generateToken, getCollectionAccessReason, getRelationship, getRequestingUser, getVisibility, hashCapabilityToken, hashPassword, hashSessionToken, isAccountSuspended, isBlocked, requireNotSuspended, requireSameUser, requireSquadMember, shareActiveSquad, shareSquad, validateSession, verifyPassword };
+module.exports = { DEFAULT_VISIBILITY, LEGACY_PBKDF2_ITERATIONS, PASSPORT_VISIBILITY_FIELDS, PBKDF2_ITERATIONS, areFriends, burnPasswordWork, canViewCollection, canViewPassportSection, checkPrivacyAccess, createSession, generateToken, getCollectionAccessReason, getRelationship, getRequestingUser, getVisibility, hashCapabilityToken, hashPassword, hashSessionToken, isAccountSuspended, isBlocked, requireNotSuspended, requireSameUser, requireSquadMember, shareActiveSquad, shareSquad, validateSession, verifyPassword };

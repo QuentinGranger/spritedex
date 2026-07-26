@@ -16,9 +16,14 @@ const crypto = require("crypto");
 const DOMAIN_EVENTS = Object.freeze({
   FRIENDSHIP_ACCEPTED: "friendship.accepted",
   COLLECTION_VARIANT_ACQUIRED: "collection.variant_acquired",
+  COLLECTION_UPDATED: "collection.updated",
   SQUAD_COMPLETION_CHANGED: "squad.completion_changed",
   CATALOGUE_VARIANT_AVAILABLE: "catalogue.variant_available",
-  CATALOGUE_EVENT_ENDING_SOON: "catalogue.event_ending_soon"
+  CATALOGUE_EVENT_ENDING_SOON: "catalogue.event_ending_soon",
+  CATALOGUE_PUBLISHED: "catalogue.published",
+  COMPARISON_GENERATED: "comparison.generated",
+  SQUAD_MEMBER_JOINED: "squad.member_joined",
+  SQUAD_CREATED: "squad.created"
 });
 
 // ── Canonical domain-event envelope (Étape 9) ──
