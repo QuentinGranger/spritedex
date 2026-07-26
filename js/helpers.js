@@ -151,7 +151,7 @@ function safeAppPath(value, fallback = "#") {
     const parsed = new URL(value.trim(), window.location.href);
     const current = new URL(window.location.href);
     // `origin` is "null" for custom-scheme desktop URLs, so compare the
-    // protocol and host too. This rejects e.g. spritedex://untrusted/path.
+    // protocol and host too. This rejects e.g. sprite-index://untrusted/path.
     if (
       parsed.protocol !== current.protocol ||
       parsed.host !== current.host ||
@@ -181,6 +181,12 @@ function sanitizeCollectionEntry(value) {
   const allowedPriorities = new Set(["urgent", "important", "medium", "low", "ignored", "none"]);
   const status = allowedStatuses.has(source.status) ? source.status : "new";
   const priority = allowedPriorities.has(source.priority) ? source.priority : "none";
+  // A collector receives level 1 as soon as a variant becomes owned. Levels
+  // 2–5 represent the progression in Fortnite; level 5 is Master.
+  const rawMastery = Number(source.masteryLevel);
+  const masteryLevel = status === "owned"
+    ? (Number.isInteger(rawMastery) && rawMastery >= 1 && rawMastery <= 5 ? rawMastery : 1)
+    : 0;
   const dateOrNull = (value) => {
     if (typeof value !== "string" || value.length > 64 || Number.isNaN(Date.parse(value))) return null;
     return value;
@@ -188,6 +194,7 @@ function sanitizeCollectionEntry(value) {
   return {
     status,
     priority,
+    masteryLevel,
     note: typeof source.note === "string" ? source.note.slice(0, 4000) : "",
     obtainedAt: dateOrNull(source.obtainedAt),
     updatedAt: dateOrNull(source.updatedAt)
@@ -257,6 +264,7 @@ function defaultEntry() {
   return {
     status: "new",
     priority: "none",
+    masteryLevel: 0,
     note: "",
     obtainedAt: null,
     updatedAt: null
@@ -278,7 +286,15 @@ function priorityOrder(p) {
 
 function getEntry(itemId) {
   if (!isSafeRecordKey(String(itemId))) return defaultEntry();
-  return state.collection[itemId] ?? defaultEntry();
+  return sanitizeCollectionEntry(state.collection[itemId] ?? defaultEntry());
+}
+
+function masteryLevelFor(entry) {
+  return entry?.status === "owned" ? Math.min(5, Math.max(1, Number(entry.masteryLevel) || 1)) : 0;
+}
+
+function masteryLabel(level) {
+  return level >= 5 ? "Master" : `Niveau ${Math.max(1, Number(level) || 1)}`;
 }
 
 function setEntry(itemId, patch) {

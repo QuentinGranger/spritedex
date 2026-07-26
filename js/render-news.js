@@ -1,5 +1,5 @@
 // ── Notification center (panel) ──
-const NOTIF_SEEN_KEY = "spritedex_news_seen";
+const NOTIF_SEEN_KEY = "sprite-index_news_seen";
 let notifDropdownOpen = false;
 let notifOffset = 0;
 let notifLoading = false;

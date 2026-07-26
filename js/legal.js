@@ -48,8 +48,8 @@ document.addEventListener("click", (event) => {
 });
 
 // ── Cookie / tracker consent ───────────────────────────────────────────────
-const CONSENT_KEY = "spritedex_consent_v1";
-const CONSENT_DATE_KEY = "spritedex_consent_date";
+const CONSENT_KEY = "sprite-index_consent_v1";
+const CONSENT_DATE_KEY = "sprite-index_consent_date";
 const CONSENT_VALIDITY_MS = 6 * 30 * 24 * 60 * 60 * 1000; // 6 months approximate
 
 function getConsent() {
@@ -101,7 +101,7 @@ function showCookieBanner() {
   banner.innerHTML = `
     <div class="cookie-banner__text">
       <strong>Confidentialité et traceurs</strong>
-      <p>SPRITNEX utilise uniquement des traceurs strictement nécessaires au fonctionnement (session, authentification, préférences). Aucun traceur de mesure d'audience n'est chargé.</p>
+      <p>SPRITE-INDEX utilise uniquement des traceurs strictement nécessaires au fonctionnement (session, authentification, préférences). Aucun traceur de mesure d'audience n'est chargé.</p>
     </div>
     <div class="cookie-banner__actions">
       <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieDetails">Voir les détails</button>
@@ -137,7 +137,7 @@ function openCookiePreferences() {
         </div>
         <label class="toggle"><input type="checkbox" checked disabled /><span class="toggle__slider"></span></label>
       </div>
-      <p class="cookie-dialog__notice">Aucun traceur de mesure d'audience, de publicité ou de profilage n'est chargé dans cette version de SPRITNEX.</p>
+      <p class="cookie-dialog__notice">Aucun traceur de mesure d'audience, de publicité ou de profilage n'est chargé dans cette version de SPRITE-INDEX.</p>
       <div class="cookie-dialog__actions">
         <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookiePrefOk">J'ai compris</button>
       </div>
@@ -158,8 +158,8 @@ function openCookiePreferences() {
 }
 
 // ── CGU acceptance helpers ──────────────────────────────────────────────────
-const CGU_ACCEPTED_KEY = "spritedex_cgu_accepted";
-const CGU_VERSION_KEY = "spritedex_cgu_version";
+const CGU_ACCEPTED_KEY = "sprite-index_cgu_accepted";
+const CGU_VERSION_KEY = "sprite-index_cgu_version";
 
 function hasAcceptedCgu(version) {
   return localStorage.getItem(CGU_VERSION_KEY) === (version || LEGAL_VERSION) &&

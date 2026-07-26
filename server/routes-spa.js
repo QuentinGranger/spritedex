@@ -30,8 +30,8 @@ app.get("/u/:username", async (req, res) => {
     const file = path.join(ROOT_DIR, "index.html");
     const username = resolved.user.username;
     const display = resolved.user.display_name || username;
-    const title = `${escapeHtml(display)} — Passeport SpriteDex`;
-    const description = `Voir le passeport collectionneur de ${escapeHtml(display)} sur SpriteDex.`;
+    const title = `${escapeHtml(display)} — Passeport sprite-index`;
+    const description = `Voir le passeport collectionneur de ${escapeHtml(display)} sur sprite-index.`;
     const image = `${APP_URL}/icon-512.png`;
     const url = `${APP_URL}/u/${encodeURIComponent(username)}`;
     const html = fs.readFileSync(file, "utf8");
@@ -44,7 +44,7 @@ app.get("/u/:username", async (req, res) => {
 <meta name="twitter:title" content="${title.replace(/"/g, "&quot;")}">
 <meta name="twitter:description" content="${description.replace(/"/g, "&quot;")}">
 <meta name="twitter:image" content="${image}">
-<script>window.__SPRITEDEX_PASSPORT_USER__=${JSON.stringify({
+<script>window.__SPRITE_INDEX_PASSPORT_USER__=${JSON.stringify({
   id: resolved.user.id,
   username: resolved.user.username,
   displayName: resolved.user.display_name || resolved.user.username
@@ -93,8 +93,8 @@ app.get("/compare/share/:token", async (req, res) => {
       catalogue
     );
 
-    const title = `Compare ta collection avec ${escapeHtml(share.owner_username)} — SpriteDex`;
-    const description = `Complétion collective : ${result.summary.collectiveCompletionRate}%. Découvre qui manque de quelles variantes sur SpriteDex.`;
+    const title = `Compare ta collection avec ${escapeHtml(share.owner_username)} — sprite-index`;
+    const description = `Complétion collective : ${result.summary.collectiveCompletionRate}%. Découvre qui manque de quelles variantes sur sprite-index.`;
     const image = `${APP_URL}/icon-512.png`;
     const url = `${APP_URL}/compare/share/${token}`;
 

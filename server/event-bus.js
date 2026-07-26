@@ -1,4 +1,4 @@
-// ── SPRITNEX domain event bus (Étape 8) ───────────────────────────────────
+// ── SPRITE-INDEX domain event bus (Étape 8) ───────────────────────────────────
 // Central engine so controllers never create notifications directly. They emit
 // a domain event describing *what happened*; downstream services (e.g. the
 // notification service) subscribe and decide *what to do* (recipients, type,

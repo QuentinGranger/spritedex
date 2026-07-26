@@ -4,6 +4,15 @@ function renderSummary() {
   els.totalCount.textContent = stats.total;
   els.percentCount.textContent = `${stats.percent}%`;
   els.ring.style.setProperty("--progress", `${stats.percent * 3.6}deg`);
+
+  const desktopOwned = document.getElementById("desktopOwnedCount");
+  const desktopTotal = document.getElementById("desktopTotalCount");
+  const desktopRemaining = document.getElementById("desktopRemainingCount");
+  const desktopProgress = document.getElementById("desktopCollectionProgress");
+  if (desktopOwned) desktopOwned.textContent = stats.owned;
+  if (desktopTotal) desktopTotal.textContent = stats.total;
+  if (desktopRemaining) desktopRemaining.textContent = Math.max(0, stats.total - stats.owned);
+  if (desktopProgress) desktopProgress.style.width = `${stats.percent}%`;
 }
 
 function buildDeck() {
@@ -51,6 +60,7 @@ function renderCard() {
     els.cardStatus.textContent = "Statut : —";
     els.cardIndex.textContent = "0/0";
     els.cardProgress.style.display = "none";
+    if (els.cardMastery) els.cardMastery.hidden = true;
     els.card.style.setProperty("--card-color", "rgba(141, 124, 255, 0.42)");
     return;
   }
@@ -67,6 +77,22 @@ function renderCard() {
   els.cardStatus.innerHTML = `${statusEmoji(entry.status)} ${statusLabel(entry.status)}`;
   els.cardIndex.textContent = `${state.currentIndex + 1}/${state.currentDeck.length}`;
   els.card.style.setProperty("--card-color", safeCssColor(item.color));
+
+  if (els.cardMastery && els.cardMasteryLabel && els.cardMasteryLevels) {
+    const level = masteryLevelFor(entry);
+    els.cardMastery.hidden = level === 0;
+    if (level > 0) {
+      const isMaster = level === 5;
+      els.cardMastery.classList.toggle("card-mastery--master", isMaster);
+      els.cardMasteryLabel.textContent = isMaster ? "♛ Master · niv. 5" : `Niveau ${level} / 5`;
+      els.cardMasteryLevels.innerHTML = Array.from({ length: 5 }, (_, index) => {
+        const currentLevel = index + 1;
+        const active = currentLevel <= level;
+        const master = currentLevel === 5;
+        return `<button type="button" class="card-mastery__level ${active ? "is-active" : ""} ${master ? "is-master" : ""}" data-card-mastery="${currentLevel}" aria-label="Niveau ${currentLevel}${master ? ', Master' : ''}" aria-pressed="${currentLevel === level}">${master ? "♛" : currentLevel}</button>`;
+      }).join("");
+    }
+  }
 
   const sprite = SPRITES.find(s => s.id === item.spriteId);
   if (sprite) {

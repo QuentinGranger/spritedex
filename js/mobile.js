@@ -1,7 +1,7 @@
 // ── Native (Capacitor) integration ──────────────────────────────────────────
 // Loaded on every page but only does anything inside the native app shell.
 // Responsibilities:
-//   1. Capture the OAuth deep link (spritedex://auth?authToken=…) that the
+//   1. Capture the OAuth deep link (sprite-index://auth?authToken=…) that the
 //      backend redirects to after a system-browser OAuth flow, and complete
 //      the login using the same applyAuthParams() path as the web flow.
 //   2. Close the in-app system browser once auth returns.
@@ -45,10 +45,10 @@
     }
     // Match our custom scheme deep link. It carries only a short-lived OAuth
     // code; redemption additionally requires the verifier held in this app.
-    const isAuthLink = url.protocol.replace(":", "") === "spritedex" &&
+    const isAuthLink = url.protocol.replace(":", "") === "sprite-index" &&
       (url.host === "auth" || url.pathname.replace(/\//g, "") === "auth");
     if (!isAuthLink) return;
-    const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "spritedex_oauth_exchange_verifier";
+    const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "sprite-index_oauth_exchange_verifier";
     if (!sessionStorage.getItem(verifierKey)) return;
     if (!url.searchParams.get("authCode") && !url.searchParams.get("authError")) return;
 

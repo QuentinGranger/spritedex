@@ -8,7 +8,7 @@ const pool = process.env.DATABASE_URL
       connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 5000,
     })
-  : new Pool({ database: "spritedex", host: "localhost", port: 5432, connectionTimeoutMillis: 5000, idleTimeoutMillis: 5000 });
+  : new Pool({ database: "sprite-index", host: "localhost", port: 5432, connectionTimeoutMillis: 5000, idleTimeoutMillis: 5000 });
 
 (async () => {
   try {

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Squad / friend invitation & recommendations tests
+// SPRITE-INDEX — Squad / friend invitation & recommendations tests
 // Run against a live server: node server.js, then node test/squads.test.js
 // ─────────────────────────────────────────────────────────────────
 const assert = require("node:assert");
@@ -210,7 +210,7 @@ async function friendshipStatus(token, otherId) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX squads tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX squads tests against ${BASE}\n`);
 
   const alice = await register(`SqAlice${rnd()}`);
   const bob = await register(`SqBob${rnd()}`);

@@ -1,4 +1,4 @@
-// ── SPRITNEX : Security helpers (rate limiting, headers, validation, env checks) ──
+// ── SPRITE-INDEX : Security helpers (rate limiting, headers, validation, env checks) ──
 const { z } = require("zod");
 const path = require("path");
 
@@ -200,7 +200,7 @@ const NATIVE_CORS_ORIGINS = new Set([
   "ionic://localhost",
   "http://localhost",
   "https://localhost",
-  "spritedex://app"
+  "sprite-index://app"
 ]);
 
 function normalizeCorsOrigin(value) {
@@ -332,7 +332,7 @@ const analyticsLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 60, keyPrefi
 // ─────────────────────────────────────────────────────────────────
 const USERNAME_RE = /^[a-zA-Z0-9_-]{3,24}$/;
 const DISPLAY_NAME_RE = /^[^<>"']{1,50}$/;
-const RESERVED_USERNAMES = ["admin", "administrator", "root", "support", "spritedex", "sprite", "api", "www", "null", "undefined"];
+const RESERVED_USERNAMES = ["admin", "administrator", "root", "support", "sprite-index", "sprite", "api", "www", "null", "undefined"];
 
 function isReservedUsername(name) {
   const lower = name.toLowerCase();
@@ -486,6 +486,7 @@ const collectionEntrySchema = z.object({
   status: statusSchema.optional(),
   note: noteSchema,
   priority: prioritySchema.optional(),
+  masteryLevel: z.number().int().min(0).max(5).optional(),
   obtainedAt: z.string().datetime().nullable().optional().or(z.literal(""))
 }).strict();
 
@@ -493,6 +494,7 @@ const collectionSyncEntrySchema = z.object({
   status: statusSchema.optional(),
   note: z.string().max(500).optional(),
   priority: prioritySchema.optional(),
+  masteryLevel: z.number().int().min(0).max(5).optional(),
   obtainedAt: z.string().nullable().optional(),
   updatedAt: z.string().nullable().optional()
 });

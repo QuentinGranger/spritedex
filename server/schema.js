@@ -145,6 +145,7 @@ async function ensureSquadTables() {
         note TEXT DEFAULT '',
         priority TEXT DEFAULT 'none',
         obtained_at TIMESTAMPTZ,
+        mastery_level SMALLINT NOT NULL DEFAULT 0,
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         UNIQUE (user_id, variant_id)
       );
@@ -160,6 +161,33 @@ async function ensureSquadTables() {
       END $$;
 
       ALTER TABLE sprite_entries ADD COLUMN IF NOT EXISTS sprite_id VARCHAR(50);
+      ALTER TABLE sprite_entries ADD COLUMN IF NOT EXISTS mastery_level SMALLINT NOT NULL DEFAULT 0;
+
+      -- A mastery level is meaningful only for a variant the collector owns.
+      -- Existing owned rows predate mastery, so they start at level 1.
+      UPDATE sprite_entries
+      SET mastery_level = CASE WHEN status = 'owned' THEN 1 ELSE 0 END
+      WHERE mastery_level IS NULL
+         OR mastery_level < 0
+         OR mastery_level > 5
+         OR (status = 'owned' AND mastery_level = 0)
+         OR (status <> 'owned' AND mastery_level <> 0);
+
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'sprite_entries_mastery_level_check'
+            AND conrelid = 'sprite_entries'::regclass
+        ) THEN
+          ALTER TABLE sprite_entries
+            ADD CONSTRAINT sprite_entries_mastery_level_check
+            CHECK (
+              (status = 'owned' AND mastery_level BETWEEN 1 AND 5)
+              OR (status <> 'owned' AND mastery_level = 0)
+            );
+        END IF;
+      END $$;
 
       -- Backfill base sprite_id from variant_id using the catalog mapping
       UPDATE sprite_entries se
@@ -703,7 +731,7 @@ async function ensureSquadTables() {
     // ── Notifications (contextual notifications feature) ──
     // Every notification is persisted here before any push/email dispatch, so it
     // also acts as the in-app inbox and an outbox for delivery workers.
-    // NOTE: the reference spec uses UUID ids, but SPRITNEX users.id is an INTEGER
+    // NOTE: the reference spec uses UUID ids, but SPRITE-INDEX users.id is an INTEGER
     // SERIAL and variant ids are strings, so we keep SERIAL/INTEGER keys and a
     // VARCHAR entity_id (a variant/squad/event/invitation id) rather than UUID.
     await pool.query(`
@@ -713,7 +741,7 @@ async function ensureSquadTables() {
         actor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
         type VARCHAR(80) NOT NULL,
         category VARCHAR(30) NOT NULL DEFAULT 'general',
-        title TEXT NOT NULL DEFAULT 'SPRITNEX',
+        title TEXT NOT NULL DEFAULT 'SPRITE-INDEX',
         body TEXT NOT NULL DEFAULT '',
         entity_type VARCHAR(50),
         entity_id VARCHAR(100),
@@ -751,7 +779,7 @@ async function ensureSquadTables() {
     await pool.query(`
       ALTER TABLE notifications
         ADD COLUMN IF NOT EXISTS category VARCHAR(30) NOT NULL DEFAULT 'general',
-        ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'SPRITNEX',
+        ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'SPRITE-INDEX',
         ADD COLUMN IF NOT EXISTS body TEXT NOT NULL DEFAULT '',
         ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50),
         ADD COLUMN IF NOT EXISTS entity_id VARCHAR(100),

@@ -15,7 +15,7 @@ async function createSquad() {
     }
     const squad = await res.json();
     state.activeSquad = squad.code;
-    localStorage.setItem("spritedex_squad", squad.code);
+    localStorage.setItem("sprite-index_squad", squad.code);
     toast(`Escouade créée ! Code : ${squad.code}`);
     await loadSquad(squad.code);
   } catch (e) {
@@ -41,7 +41,7 @@ async function joinSquad() {
     }
     const squad = await res.json();
     state.activeSquad = squad.code;
-    localStorage.setItem("spritedex_squad", squad.code);
+    localStorage.setItem("sprite-index_squad", squad.code);
     toast(`Rejoint : ${squad.name}`);
     await loadSquad(squad.code);
   } catch (e) {
@@ -62,7 +62,7 @@ async function leaveSquad() {
   }
   state.activeSquad = null;
   state.squadMembers = [];
-  localStorage.removeItem("spritedex_squad");
+  localStorage.removeItem("sprite-index_squad");
   showSquadLobby();
   toast("Tu as quitté l'escouade");
 }
@@ -75,7 +75,7 @@ async function loadSquad(code) {
     if (!res.ok) {
       toast("Escouade introuvable");
       state.activeSquad = null;
-      localStorage.removeItem("spritedex_squad");
+      localStorage.removeItem("sprite-index_squad");
       showSquadLobby();
       return;
     }
@@ -105,7 +105,7 @@ async function loadSquad(code) {
 // ── Squad : restore on init ──
 async function restoreSquad() {
   connectSquadWs();
-  const code = localStorage.getItem("spritedex_squad");
+  const code = localStorage.getItem("sprite-index_squad");
   if (code && state.userId) {
     state.activeSquad = code;
     await loadSquad(code);
@@ -260,7 +260,7 @@ async function regenerateSquadCode() {
     const data = await res.json();
     if (res.ok) {
       state.activeSquad = data.code;
-      localStorage.setItem("spritedex_squad", data.code);
+      localStorage.setItem("sprite-index_squad", data.code);
       els.squadActiveCode.textContent = data.code;
       renderSquadAdmin();
       toast(`Nouveau code : ${data.code}`);
@@ -277,7 +277,7 @@ async function deleteSquad() {
     if (res.ok) {
       state.activeSquad = null;
       state.squadMembers = [];
-      localStorage.removeItem("spritedex_squad");
+      localStorage.removeItem("sprite-index_squad");
       showSquadLobby();
       toast("Escouade supprimée");
     } else {

@@ -1,6 +1,6 @@
 {
-  "name": "SPRITNEX",
-  "short_name": "SPRITNEX",
+  "name": "SPRITE-INDEX",
+  "short_name": "SPRITE-INDEX",
   "description": "Ta collection de sprites — checklist, farm list, statistiques.",
   "start_url": "/",
   "display": "standalone",

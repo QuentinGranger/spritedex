@@ -1,14 +1,28 @@
-const STORAGE_KEY = "spritedex_state_v1";
-const THEME_KEY = "spritedex_theme_v1";
-const USER_KEY = "spritedex_user";
-const TOKEN_KEY = "spritedex_token";
+const STORAGE_KEY = "sprite-index_state_v1";
+const THEME_KEY = "sprite-index_theme_v1";
+const USER_KEY = "sprite-index_user";
+const TOKEN_KEY = "sprite-index_token";
+const LEGACY_STORAGE_KEYS = Object.freeze({
+  [STORAGE_KEY]: "spritedex_state_v1",
+  [THEME_KEY]: "spritedex_theme_v1",
+  [USER_KEY]: "spritedex_user",
+  [TOKEN_KEY]: "spritedex_token"
+});
+
+// Preserve existing sessions, themes and offline collections during the brand
+// rename. New writes use only the sprite-index namespace.
+for (const [nextKey, legacyKey] of Object.entries(LEGACY_STORAGE_KEYS)) {
+  if (localStorage.getItem(nextKey) == null && localStorage.getItem(legacyKey) != null) {
+    localStorage.setItem(nextKey, localStorage.getItem(legacyKey));
+  }
+}
 
 // ── Backend origin resolution ──────────────────────────────────────────────
 // Web (served by our own Express server): same-origin ("").
 // Local dev opened on another port (e.g. Live Server): target :3000.
 // Native app (Capacitor iOS/Android): the webview runs from capacitor://localhost
 // or http://localhost, so it must target the remote production backend.
-// Override with window.SPRITEDEX_API_ORIGIN if needed (staging, custom domain).
+// Override with window.SPRITE_INDEX_API_ORIGIN if needed (staging, custom domain).
 const PROD_API_ORIGIN = "https://spritedex.onrender.com";
 
 function isNativePlatform() {
@@ -16,11 +30,11 @@ function isNativePlatform() {
 }
 
 function isDesktopPlatform() {
-  return window.SPRITEDEX_DESKTOP === true;
+  return window.SPRITE_INDEX_DESKTOP === true;
 }
 
 function resolveApiOrigin() {
-  if (window.SPRITEDEX_API_ORIGIN) return window.SPRITEDEX_API_ORIGIN;
+  if (window.SPRITE_INDEX_API_ORIGIN) return window.SPRITE_INDEX_API_ORIGIN;
   if (isDesktopPlatform() || isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
     return PROD_API_ORIGIN;
   }

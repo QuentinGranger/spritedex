@@ -1,4 +1,4 @@
-# Checklist de validation — Comparaison SpriteDex
+# Checklist de validation — Comparaison sprite-index
 
 Cette liste définit quand la fonctionnalité de comparaison est considérée comme prête.
 

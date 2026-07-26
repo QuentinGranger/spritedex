@@ -35,7 +35,7 @@ const BADGE_COPY = Object.freeze({
   "badge.archivist.name": "Archiviste",
   "badge.archivist.description": "Vous avez maintenu une collection complète et à jour pendant trois mises à jour du catalogue.",
   "badge.early_collector.name": "Early Collector",
-  "badge.early_collector.description": "Vous faites partie des collectionneurs présents dès le début de SpriteDex.",
+  "badge.early_collector.description": "Vous faites partie des collectionneurs présents dès le début de sprite-index.",
   "badge.all_rarities.name": "Une variante de chaque rareté",
   "badge.all_rarities.description": "Vous possédez au moins une variante de chaque rareté officielle du catalogue.",
   "badge.event_completed.name": "Événement complété",

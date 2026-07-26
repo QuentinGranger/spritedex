@@ -1,4 +1,4 @@
-const OAUTH_EXCHANGE_VERIFIER_KEY = "spritedex_oauth_exchange_verifier";
+const OAUTH_EXCHANGE_VERIFIER_KEY = "sprite-index_oauth_exchange_verifier";
 window.OAUTH_EXCHANGE_VERIFIER_KEY = OAUTH_EXCHANGE_VERIFIER_KEY;
 
 function showApp() {
@@ -46,11 +46,11 @@ function setupLogin() {
     state.username = user.username;
     if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
     localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
-    if (user.avatar_url) localStorage.setItem("spritedex_avatar", user.avatar_url);
-    if (user.privacy) localStorage.setItem("spritedex_privacy", user.privacy);
-    localStorage.setItem("spritedex_email_verified", user.emailVerified ? "true" : "false");
+    if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
+    if (user.privacy) localStorage.setItem("sprite-index_privacy", user.privacy);
+    localStorage.setItem("sprite-index_email_verified", user.emailVerified ? "true" : "false");
     await load();
-    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     showApp();
     setupEvents();
     setupAccountPanel();
@@ -222,8 +222,8 @@ function setupLogin() {
         });
       } catch {}
       pendingUser.username = username;
-      if (selectedAvatar) localStorage.setItem("spritedex_avatar", selectedAvatar);
-      localStorage.setItem("spritedex_privacy", privacy);
+      if (selectedAvatar) localStorage.setItem("sprite-index_avatar", selectedAvatar);
+      localStorage.setItem("sprite-index_privacy", privacy);
 
       // Check if local collection exists → show transfer step
       const localCount = getLocalCollectionCount();

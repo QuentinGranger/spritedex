@@ -1,4 +1,4 @@
-# Render Blueprint — Infrastructure as Code for SPRITNEX.
+# Render Blueprint — Infrastructure as Code for SPRITE-INDEX.
 # Deploy: push to GitHub, then in Render → New → Blueprint → select this repo.
 # Docs: https://render.com/docs/blueprint-spec
 #
@@ -10,8 +10,8 @@
 # Render dashboard (or when prompted during the Blueprint launch).
 
 databases:
-  - name: spritedex-db
-    databaseName: spritedex
+  - name: sprite-index-db
+    databaseName: sprite-index
     plan: free
     # MUST match the web service region below, otherwise the internal DB
     # hostname (dpg-xxxx-a) cannot be resolved by the service (ENOTFOUND).
@@ -19,7 +19,7 @@ databases:
 
 services:
   - type: web
-    name: spritedex
+    name: sprite-index
     runtime: node
     plan: free
     region: frankfurt
@@ -42,7 +42,7 @@ services:
       # Connection string wired automatically from the database above.
       - key: DATABASE_URL
         fromDatabase:
-          name: spritedex-db
+          name: sprite-index-db
           property: connectionString
       # ── Secrets: set these in the Render dashboard ──
       - key: GOOGLE_CLIENT_ID

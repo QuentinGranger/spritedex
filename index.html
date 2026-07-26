@@ -6,13 +6,13 @@
     <meta name="theme-color" content="#00e1ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="SPRITNEX" />
+    <meta name="apple-mobile-web-app-title" content="SPRITE-INDEX" />
     <meta name="description" content="Ta collection de sprites — checklist, farm list, statistiques. Fonctionne hors ligne." />
     <link rel="icon" type="image/x-icon" href="/Favicon/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/Favicon/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/Favicon/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/Favicon/apple-touch-icon.png" />
-    <title>SPRITNEX — Checklist Fortnite</title>
+    <title>SPRITE-INDEX — Checklist Fortnite</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -41,8 +41,8 @@
   <body>
     <div class="login-screen" id="loginScreen">
       <div class="login-card">
-        <img src="LogoApp.png" alt="SPRITNEX" class="login-logo" />
-        <h1 class="login-title">SPRITNEX</h1>
+        <img src="LogoApp.png" alt="SPRITE-INDEX" class="login-logo" />
+        <h1 class="login-title">SPRITE-INDEX</h1>
 
         <!-- Step 1: Inscription -->
         <div class="onboarding-step active" id="onboardingStep1">
@@ -142,7 +142,7 @@
 
         <!-- Step 4: Profile setup (after registration) -->
         <div class="onboarding-step" id="onboardingStepProfile">
-          <h2 class="onboarding-heading">Bienvenue dans SPRITNEX</h2>
+          <h2 class="onboarding-heading">Bienvenue dans SPRITE-INDEX</h2>
           <p class="login-sub">Personnalise ton profil</p>
 
           <label class="onboarding-label">Choisis ton pseudo :</label>
@@ -230,15 +230,43 @@
           <button class="onboarding-link" type="button" data-legal-doc="mentionsLegales">Mentions légales</button>
         </div>
 
-        <p class="legal-disclaimer">SPRITNEX est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
+        <p class="legal-disclaimer">SPRITE-INDEX est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
       </div>
     </div>
 
     <div class="app-shell" id="appShell" style="display:none">
-      <header class="topbar">
-        <div>
-          <img src="LogoApp.png" alt="Fortnite Runner SPRITNEX" class="topbar-logo" />
+      <aside class="desktop-rail" aria-label="Espace collectionneur">
+        <div class="desktop-rail__brand">
+          <img src="Favicon/android-chrome-512x512.png" alt="SPRITE-INDEX" />
+          <div>
+            <strong>Sprite Collection</strong>
+            <span>Édition Ultime</span>
+          </div>
         </div>
+        <div class="desktop-rail__section-label">Navigation</div>
+        <div class="desktop-rail__collection" aria-label="Progression de votre collection">
+          <span>Votre collection</span>
+          <strong><b id="desktopOwnedCount">0</b> <i>/</i> <b id="desktopTotalCount">0</b></strong>
+          <small>variantes obtenues</small>
+          <div><span id="desktopCollectionProgress"></span></div>
+        </div>
+      </aside>
+
+      <header class="topbar">
+        <div class="topbar-brand">
+          <img src="LogoApp.png" alt="Fortnite Runner SPRITE-INDEX" class="topbar-logo" />
+        </div>
+        <div class="desktop-page-heading">
+          <span class="desktop-page-heading__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
+          </span>
+          <div><h1 id="desktopViewTitle">Swipe</h1><p id="desktopViewSubtitle">Explorez, classez et complétez votre collection de sprites.</p></div>
+        </div>
+        <label class="desktop-command-search" for="desktopSearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
+          <input id="desktopSearch" type="search" placeholder="Rechercher un sprite…" autocomplete="off" />
+          <kbd id="desktopSearchShortcut">⌘ K</kbd>
+        </label>
         <div class="topbar-actions">
           <div class="notif-wrap" id="notifWrap">
             <button class="notif-bell" id="notifBell" aria-label="Notifications">
@@ -327,7 +355,7 @@
         <section class="collector-passport" id="collectorPassport" aria-labelledby="collectorPassportTitle">
           <div class="collector-passport__header">
             <div>
-              <p class="collector-passport__eyebrow">SpriteDex</p>
+              <p class="collector-passport__eyebrow">sprite-index</p>
               <h3 class="collector-passport__title" id="collectorPassportTitle">Passeport du collectionneur</h3>
             </div>
             <span class="collector-passport__status" id="passportReliability" role="status">—</span>
@@ -552,7 +580,7 @@
                     <option value="20">20</option>
                     <option value="0">Illimité</option>
                   </select>
-                  <p class="notif-settings__hint">Limite de sécurité pour les notifications SpriteDex ordinaires. Les alertes critiques (sécurité, juridique, service) ne sont pas plafonnées.</p>
+                  <p class="notif-settings__hint">Limite de sécurité pour les notifications sprite-index ordinaires. Les alertes critiques (sécurité, juridique, service) ne sont pas plafonnées.</p>
                 </div>
               </div>
 
@@ -682,7 +710,11 @@
       </div>
 
       <section class="hero-card">
-        <div>
+        <div class="hero-card__overview">
+          <span class="hero-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
+          </span>
+          <div>
           <p class="muted">Progression collection</p>
           <div class="progress-line">
             <strong id="ownedCount">0</strong>
@@ -690,10 +722,13 @@
             <span id="totalCount">0</span>
             <span>variantes</span>
           </div>
+          <p class="hero-card__caption">Déjà en votre possession</p>
+          </div>
         </div>
         <div class="ring" aria-label="Pourcentage de progression">
           <span id="percentCount">0%</span>
         </div>
+        <p class="hero-card__remaining"><strong id="desktopRemainingCount">0</strong> variantes<br />à découvrir !</p>
       </section>
 
       <nav class="tabs" aria-label="Navigation principale" id="mainTabs">
@@ -751,6 +786,13 @@
                 <div class="card-progress__label">Progression : <strong id="cardProgressText">0 / 6</strong></div>
                 <div class="card-progress__track"><div class="card-progress__fill" id="cardProgressFill"></div></div>
               </div>
+              <div class="card-mastery" id="cardMastery" hidden aria-label="Niveau de maîtrise de la variante">
+                <div class="card-mastery__top">
+                  <span class="card-mastery__title">Maîtrise</span>
+                  <span class="card-mastery__label" id="cardMasteryLabel">Niveau 1</span>
+                </div>
+                <div class="card-mastery__levels" id="cardMasteryLevels" role="group" aria-label="Choisir un niveau de maîtrise"></div>
+              </div>
               <div class="status-row">
                 <span id="cardStatus">Statut : Non classé</span>
                 <span id="cardIndex">1/1</span>
@@ -762,44 +804,50 @@
             <button class="action danger" id="markMissing">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               <span>Pas encore</span>
+              <small class="action__hint">Je ne l’ai pas</small>
             </button>
             <button class="action neutral" id="markUnsure">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
-              <span>A verifier</span>
+              <span>À vérifier</span>
+              <small class="action__hint">Je dois vérifier</small>
             </button>
             <button class="action star" id="markPriority">
               <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              <span>Priorite</span>
+              <span>Priorité</span>
+              <small class="action__hint">À obtenir en priorité</small>
             </button>
             <button class="action success" id="markOwned">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               <span>Je l’ai</span>
+              <small class="action__hint">Déjà en ma possession</small>
             </button>
           </div>
 
           <p class="hint">Carte : → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note<br>Écran : glisse depuis le bord pour changer d’onglet</p>
         </section>
 
-        <section class="view" id="view-checklist">
-          <div class="checklist-toolbar">
+        <section class="view" id="view-checklist" aria-label="Checklist de collection">
+          <div class="checklist-controls">
+            <div class="checklist-toolbar">
             <div class="search-box">
               <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="searchInput" type="search" placeholder="Rechercher sprite, variante, rareté..." />
+              <input id="searchInput" type="search" placeholder="Rechercher sprite, variante, rareté..." aria-label="Rechercher dans la checklist" aria-controls="checklistList" aria-describedby="checklistSearchHint" autocomplete="off" />
+              <span class="sr-only" id="checklistSearchHint">Appuyez sur Échap pour effacer la recherche.</span>
             </div>
-            <div class="filter-chips-bar" id="filterChipsBar">
-              <button class="filter-chip active" data-filter="all">Tous</button>
-              <button class="filter-chip" data-filter="owned">Possédés</button>
-              <button class="filter-chip" data-filter="missing">Manquants</button>
-              <button class="filter-chip" data-filter="priority">Prioritaires</button>
-              <button class="filter-chip" data-filter="unsure">À vérifier</button>
-              <button class="filter-chip" data-filter="spotted">Rares vus</button>
-              <button class="filter-chip" data-filter="unavailable">Indispos</button>
-              <button class="filter-chip" data-filter="complete">100%</button>
-              <button class="filter-chip" data-filter="incomplete">Incomplets</button>
+            <div class="filter-chips-bar" id="filterChipsBar" role="group" aria-label="Filtrer la checklist">
+              <button type="button" class="filter-chip active" data-filter="all" aria-pressed="true">Tous</button>
+              <button type="button" class="filter-chip" data-filter="owned" aria-pressed="false">Possédés</button>
+              <button type="button" class="filter-chip" data-filter="missing" aria-pressed="false">Manquants</button>
+              <button type="button" class="filter-chip" data-filter="priority" aria-pressed="false">Prioritaires</button>
+              <button type="button" class="filter-chip" data-filter="unsure" aria-pressed="false">À vérifier</button>
+              <button type="button" class="filter-chip" data-filter="spotted" aria-pressed="false">Rares vus</button>
+              <button type="button" class="filter-chip" data-filter="unavailable" aria-pressed="false">Indispos</button>
+              <button type="button" class="filter-chip" data-filter="complete" aria-pressed="false">100%</button>
+              <button type="button" class="filter-chip" data-filter="incomplete" aria-pressed="false">Incomplets</button>
             </div>
             <div class="sort-bar">
-              <label class="sort-bar__label">Tri :</label>
-              <select id="checklistSort" class="sort-bar__select">
+              <label class="sort-bar__label" for="checklistSort">Tri :</label>
+              <select id="checklistSort" class="sort-bar__select" aria-controls="checklistList">
                 <option value="alpha">Alphabétique</option>
                 <option value="progress-asc">Moins complété</option>
                 <option value="progress-desc">Plus complété</option>
@@ -809,9 +857,9 @@
                 <option value="recent">Par nouveauté</option>
               </select>
             </div>
-          </div>
-          <div class="bulk-actions">
-            <button class="ghost-button" id="exportData">
+            </div>
+            <div class="bulk-actions">
+            <button type="button" class="ghost-button" id="exportData" aria-label="Exporter la checklist">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Exporter
             </button>
@@ -820,96 +868,116 @@
               Importer
               <input id="importData" type="file" accept="application/json" hidden />
             </label>
-            <button class="ghost-button danger-text" id="resetData">
+            <button type="button" class="ghost-button danger-text" id="resetData" aria-label="Réinitialiser toutes les données de la checklist">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               Reset
             </button>
+            </div>
           </div>
-          <div class="checklist-list" id="checklistList"></div>
+          <p class="sr-only" id="checklistResultsStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div class="checklist-list" id="checklistList" aria-describedby="checklistResultsStatus"></div>
         </section>
 
-        <section class="view" id="view-missing">
+        <section class="view" id="view-missing" aria-labelledby="missingTitle">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Farm list</p>
-              <h2>Ce qu’il te manque</h2>
+              <h2 id="missingTitle">Ce qu’il te manque</h2>
+              <p class="section-heading__description">Prépare ta prochaine session : priorise, retrouve une variante et marque-la dès qu’elle est obtenue.</p>
             </div>
-            <button class="ghost-button" id="copyMissing">Copier la liste</button>
+            <button class="ghost-button" id="copyMissing" type="button">Copier la liste visible</button>
           </div>
-          <div class="missing-list" id="missingList"></div>
+          <div class="missing-controls" aria-label="Outils de la liste des manquants">
+            <div class="search-box missing-controls__search">
+              <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="missingSearch" type="search" placeholder="Rechercher un sprite ou une variante…" aria-label="Rechercher dans les manquants" aria-controls="missingList" aria-describedby="missingSearchHint" autocomplete="off" />
+              <span class="sr-only" id="missingSearchHint">Appuyez sur Échap pour effacer la recherche.</span>
+            </div>
+            <div class="missing-filter-chips" id="missingFilterChips" role="group" aria-label="Filtrer les manquants">
+              <button class="filter-chip active" type="button" data-missing-filter="all" aria-pressed="true">Tous</button>
+              <button class="filter-chip" type="button" data-missing-filter="priority" aria-pressed="false">Prioritaires</button>
+              <button class="filter-chip" type="button" data-missing-filter="spotted" aria-pressed="false">Rares vus</button>
+              <button class="filter-chip" type="button" data-missing-filter="missing" aria-pressed="false">À planifier</button>
+            </div>
+            <label class="sort-bar missing-controls__sort" for="missingSort">
+              <span class="sort-bar__label">Trier :</span>
+              <select id="missingSort" class="sort-bar__select" aria-controls="missingList">
+                <option value="priority">Par priorité</option>
+                <option value="alpha">Alphabétique</option>
+                <option value="rarity">Par rareté</option>
+                <option value="variant">Par variante</option>
+              </select>
+            </label>
+            <button class="ghost-button missing-controls__reset" id="clearMissingFilters" type="button" hidden>Réinitialiser</button>
+          </div>
+          <p class="sr-only" id="missingResultsStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div class="missing-list" id="missingList" aria-describedby="missingResultsStatus"></div>
         </section>
 
         <section class="view" id="view-stats">
-          <div class="stats-page">
+          <div class="stats-page" aria-label="Statistiques de collection">
 
-            <div class="stats-hero" id="statsHero">
-              <div class="stats-hero__ring">
-                <svg class="stats-hero__svg" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="url(#statGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="327" stroke-dashoffset="327" id="statsRingCircle"/>
-                  <defs><linearGradient id="statGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00e1ff"/><stop offset="100%" stop-color="#00ff87"/></linearGradient></defs>
-                </svg>
-                <span class="stats-hero__pct" id="statsHeroPct">0%</span>
-              </div>
-              <div class="stats-hero__text">
-                <h2>Progression totale</h2>
-                <p id="statsHeroDetail">0 / 0 variantes collectées</p>
-              </div>
-            </div>
-
-            <div class="stats-kpis">
-              <div class="stats-kpi">
+            <section class="stats-kpis" aria-label="Indicateurs clés de collection">
+              <article class="stats-kpi stats-kpi--sprites">
+                <span class="stats-kpi__icon" aria-hidden="true">◈</span>
                 <span class="stats-kpi__value" id="kpiSprites">0 / 0</span>
                 <span class="stats-kpi__label">Sprites possédés</span>
-              </div>
-              <div class="stats-kpi">
+                <span class="stats-kpi__hint" id="kpiSpritesHint">Familles découvertes</span>
+              </article>
+              <article class="stats-kpi stats-kpi--variants">
+                <span class="stats-kpi__icon" aria-hidden="true">▣</span>
                 <span class="stats-kpi__value" id="kpiVariants">0 / 0</span>
                 <span class="stats-kpi__label">Variantes possédées</span>
-              </div>
-              <div class="stats-kpi">
+                <span class="stats-kpi__hint" id="kpiVariantsHint">Progression du catalogue</span>
+              </article>
+              <article class="stats-kpi stats-kpi--priorities">
+                <span class="stats-kpi__icon" aria-hidden="true">◎</span>
                 <span class="stats-kpi__value" id="kpiPriorities">0</span>
                 <span class="stats-kpi__label">Priorités restantes</span>
-              </div>
-            </div>
+                <span class="stats-kpi__hint" id="kpiPrioritiesHint">Aucune recherche prioritaire</span>
+              </article>
+            </section>
 
-            <div class="stats-module">
-              <h3 class="stats-module__title">Par rareté</h3>
+            <section class="stats-module stats-module--rarity" aria-labelledby="statsRarityTitle">
+              <h3 class="stats-module__title" id="statsRarityTitle"><span aria-hidden="true">◇</span> Par rareté</h3>
+              <p class="stats-module__description">Votre progression dans chaque niveau de rareté.</p>
               <div id="rarityBars"></div>
-            </div>
+            </section>
 
-            <div class="stats-module">
-              <h3 class="stats-module__title">Par variante</h3>
+            <section class="stats-module stats-module--variant" aria-labelledby="statsVariantTitle">
+              <h3 class="stats-module__title" id="statsVariantTitle"><span aria-hidden="true">▱</span> Par variante</h3>
+              <p class="stats-module__description">Les styles de Sprite les plus proches de votre objectif.</p>
               <div id="variantBars"></div>
-            </div>
+            </section>
 
-            <div class="stats-insights" id="statsInsights"></div>
+            <section class="stats-insights" id="statsInsights" aria-label="Points clés de votre collection"></section>
 
-            <div id="spritedexTrends"></div>
+            <section id="sprite-indexTrends" aria-label="Tendances sprite-index"></section>
 
-            <div id="communityStats"></div>
+            <section id="communityStats" aria-label="Statistiques communautaires"></section>
 
           </div>
         </section>
 
         <section class="view" id="view-social">
-          <nav class="social-tabs" role="tablist" aria-label="Social">
-            <button class="social-tab active" data-social-tab="friends" type="button">Amis</button>
-            <button class="social-tab" data-social-tab="compare" type="button">Comparer</button>
-            <button class="social-tab" data-social-tab="squad" type="button">Escouade</button>
+          <nav class="social-tabs" role="tablist" aria-label="Espace social">
+            <button class="social-tab active" id="social-tab-friends" data-social-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="social-panel-friends">Amis</button>
+            <button class="social-tab" id="social-tab-compare" data-social-tab="compare" type="button" role="tab" aria-selected="false" aria-controls="social-panel-compare">Comparer</button>
+            <button class="social-tab" id="social-tab-squad" data-social-tab="squad" type="button" role="tab" aria-selected="false" aria-controls="social-panel-squad">Escouade</button>
           </nav>
 
-          <div class="social-panel" id="social-panel-friends">
+          <div class="social-panel" id="social-panel-friends" role="tabpanel" aria-labelledby="social-tab-friends">
           <nav class="friends-tabs" role="tablist" aria-label="Amis">
-            <button class="friends-tab active" data-friends-tab="friends" type="button">Mes amis</button>
-            <button class="friends-tab" data-friends-tab="received" type="button">Demandes reçues</button>
-            <button class="friends-tab" data-friends-tab="sent" type="button">Demandes envoyées</button>
-            <button class="friends-tab" data-friends-tab="add" type="button">Ajouter</button>
-            <button class="friends-tab" data-friends-tab="qr" type="button">Mon QR code</button>
-            <button class="friends-tab" data-friends-tab="blocked" type="button">Bloqués</button>
+            <button class="friends-tab active" id="friends-tab-friends" data-friends-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="friends-panel-friends">Mes amis</button>
+            <button class="friends-tab" id="friends-tab-received" data-friends-tab="received" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-received">Demandes reçues</button>
+            <button class="friends-tab" id="friends-tab-sent" data-friends-tab="sent" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-sent">Demandes envoyées</button>
+            <button class="friends-tab" id="friends-tab-add" data-friends-tab="add" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-add">Ajouter</button>
+            <button class="friends-tab" id="friends-tab-qr" data-friends-tab="qr" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-qr">Mon QR code</button>
+            <button class="friends-tab" id="friends-tab-blocked" data-friends-tab="blocked" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-blocked">Bloqués</button>
           </nav>
 
           <div class="friends-panels">
-            <div class="friends-panel active" id="friends-panel-friends">
+            <div class="friends-panel active" id="friends-panel-friends" role="tabpanel" aria-labelledby="friends-tab-friends">
               <div class="friends-toolbar">
                 <div class="search-box friends-search-box">
                   <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -934,15 +1002,15 @@
               <div class="friends-list" id="friendsList"><p class="squad-empty">Chargement…</p></div>
             </div>
 
-            <div class="friends-panel" id="friends-panel-received">
+            <div class="friends-panel" id="friends-panel-received" role="tabpanel" aria-labelledby="friends-tab-received">
               <div class="friends-list" id="receivedList"><p class="squad-empty">Chargement…</p></div>
             </div>
 
-            <div class="friends-panel" id="friends-panel-sent">
+            <div class="friends-panel" id="friends-panel-sent" role="tabpanel" aria-labelledby="friends-tab-sent">
               <div class="friends-list" id="sentList"><p class="squad-empty">Chargement…</p></div>
             </div>
 
-            <div class="friends-panel" id="friends-panel-add">
+            <div class="friends-panel" id="friends-panel-add" role="tabpanel" aria-labelledby="friends-tab-add">
               <div class="friends-toolbar">
                 <div class="search-box friends-search-box">
                   <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -960,7 +1028,7 @@
               <div class="friends-list" id="friendSuggestions"><p class="squad-empty">Aucune suggestion</p></div>
             </div>
 
-            <div class="friends-panel" id="friends-panel-qr">
+            <div class="friends-panel" id="friends-panel-qr" role="tabpanel" aria-labelledby="friends-tab-qr">
               <div class="friends-qr-wrap">
                 <p id="friendQrHint" class="squad-empty">Génère un lien permanent pour afficher ton QR code.</p>
                 <img id="friendQrImg" alt="QR code d'ami" style="display:none" />
@@ -968,13 +1036,13 @@
               </div>
             </div>
 
-            <div class="friends-panel" id="friends-panel-blocked">
+            <div class="friends-panel" id="friends-panel-blocked" role="tabpanel" aria-labelledby="friends-tab-blocked">
               <div class="friends-list" id="blockedList"><p class="squad-empty">Chargement…</p></div>
             </div>
           </div>
           </div><!-- /social-panel-friends -->
 
-          <div class="social-panel" id="social-panel-compare" style="display:none">
+          <div class="social-panel" id="social-panel-compare" role="tabpanel" aria-labelledby="social-tab-compare" style="display:none">
           <!-- Friend (1v1) comparison mode -->
           <div class="compare-mode-panel" id="compareModeFriend">
             <div class="compare-hero">
@@ -999,7 +1067,7 @@
 
           </div><!-- /social-panel-compare -->
 
-          <div class="social-panel" id="social-panel-squad" style="display:none">
+          <div class="social-panel" id="social-panel-squad" role="tabpanel" aria-labelledby="social-tab-squad" style="display:none">
           <!-- Squad (group) comparison mode -->
           <div class="compare-mode-panel" id="compareModeSquad">
           <!-- Squad lobby: create or join -->
@@ -1117,13 +1185,43 @@
           </div><!-- /social-panel-squad -->
         </section>
 
-        <section class="view" id="view-history">
-          <h2 class="section-title">Historique de collection</h2>
-          <div class="history-stats" id="historyStats"></div>
-          <div class="history-weekly" id="historyWeekly"></div>
-          <h3 class="history-subtitle">Derniers changements</h3>
-          <div class="history-list" id="historyList">
-            <p class="squad-empty">Chargement…</p>
+        <section class="view" id="view-history" aria-labelledby="historyPageTitle">
+          <div class="history-dashboard">
+            <header class="history-dashboard__heading">
+              <div>
+                <p class="history-dashboard__eyebrow">Journal de collection</p>
+                <h2 class="section-title" id="historyPageTitle">Historique</h2>
+                <p class="history-dashboard__intro">Retrouvez les évolutions de votre collection.</p>
+              </div>
+            </header>
+
+            <section class="history-kpis" id="historyStats" aria-label="Résumé de l'activité de collection"></section>
+
+            <section class="history-panel history-panel--trend" id="historyWeekly" aria-labelledby="historyTrendTitle" aria-busy="true"></section>
+
+            <section class="history-panel history-activity" aria-labelledby="historyActivityTitle">
+              <header class="history-panel__header history-activity__header">
+                <div>
+                  <p class="history-panel__eyebrow">Journal personnel</p>
+                  <h3 id="historyActivityTitle">Activité récente</h3>
+                </div>
+                <div class="history-filter" role="group" aria-label="Filtrer l'activité récente">
+                  <button class="history-filter__button active" type="button" data-history-filter="all" aria-pressed="true">Tout</button>
+                  <button class="history-filter__button" type="button" data-history-filter="acquisition" aria-pressed="false">Acquisitions</button>
+                  <button class="history-filter__button" type="button" data-history-filter="change" aria-pressed="false">Changements</button>
+                </div>
+              </header>
+              <p class="history-activity__count" id="historyActivityCount" aria-live="polite"></p>
+              <div class="history-list" id="historyList" role="feed" aria-busy="true" aria-label="Événements récents de votre collection">
+                <p class="squad-empty">Chargement…</p>
+              </div>
+            </section>
+
+            <aside class="history-sidebar" aria-label="Résumé de l'historique">
+              <section class="history-panel history-panel--recent" id="historyRecent" aria-labelledby="historyRecentTitle" aria-busy="true"></section>
+              <section class="history-panel history-panel--summary" id="historyActionSummary" aria-labelledby="historyActionSummaryTitle" aria-busy="true"></section>
+              <section class="history-panel history-panel--active" id="historyActiveSprites" aria-labelledby="historyActiveSpritesTitle" aria-busy="true"></section>
+            </aside>
           </div>
         </section>
 
@@ -1226,7 +1324,7 @@
         <div class="collector-passport collector-passport--dialog">
           <div class="collector-passport__header">
             <div>
-              <p class="collector-passport__eyebrow">SpriteDex</p>
+              <p class="collector-passport__eyebrow">sprite-index</p>
               <h3 class="collector-passport__title" id="passportDialogTitle">Passeport</h3>
             </div>
             <span class="collector-passport__status" id="passportDialogReliability" role="status">—</span>
@@ -1314,5 +1412,6 @@
     <script src="js/push-client.js"></script>
     <script src="js/init.js"></script>
     <script src="js/mobile.js"></script>
+    <script src="js/dev-live-reload.js"></script>
   </body>
 </html>

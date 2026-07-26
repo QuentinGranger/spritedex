@@ -50,7 +50,7 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
     limits: [
       "Les statuts unknown ne diluent pas le taux",
       "Pas d’affichage public sous le seuil d’anonymisation",
-      "Ne confond pas rareté officielle et possession SpriteDex"
+      "Ne confond pas rareté officielle et possession sprite-index"
     ],
     lastModified: METRIC_CATALOG_LAST_REVIEW,
     surface: "public"
@@ -98,7 +98,7 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
   }),
   Object.freeze({
     id: "interest_trend",
-    name: "Tendance SpriteDex",
+    name: "Tendance sprite-index",
     description:
       "Direction d’évolution de l’indice d’intérêt (forte hausse → forte baisse).",
     formula:

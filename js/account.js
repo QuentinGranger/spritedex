@@ -35,7 +35,7 @@ function setupAccountPanel() {
   const resendBtn = document.getElementById("resendVerification");
 
   function checkEmailVerified() {
-    const emailVerified = localStorage.getItem("spritedex_email_verified");
+    const emailVerified = localStorage.getItem("sprite-index_email_verified");
     emailBanner.style.display = (emailVerified === "true" || !state.userId) ? "none" : "";
   }
 
@@ -64,7 +64,7 @@ function setupAccountPanel() {
     document.getElementById("accountEditUsername").value = state.username || "";
 
     const avatarDisplay = document.getElementById("accountAvatarDisplay");
-    const avatarUrl = localStorage.getItem("spritedex_avatar") || "";
+    const avatarUrl = localStorage.getItem("sprite-index_avatar") || "";
     renderAvatar(avatarDisplay, avatarUrl);
 
     // Stats
@@ -99,13 +99,13 @@ function setupAccountPanel() {
 
     // Privacy
     const privacyEl = document.getElementById("accountPrivacy");
-    privacyEl.value = localStorage.getItem("spritedex_privacy") || "squad_only";
+    privacyEl.value = localStorage.getItem("sprite-index_privacy") || "squad_only";
 
     // Étape 68 — community stats opt-in (optional; never required for essentials).
     loadCommunityStatsOptIn();
 
     // Last sync
-    const lastSync = localStorage.getItem("spritedex_last_sync");
+    const lastSync = localStorage.getItem("sprite-index_last_sync");
     document.getElementById("accountLastSync").textContent = lastSync
       ? new Date(lastSync).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
       : "Jamais";
@@ -258,7 +258,7 @@ function setupAccountPanel() {
             ? `${data.squadName} a progressé collectivement.`
             : "Objectif collectif complété.");
       case "account_created":
-        return "Inscription à SpriteDex.";
+        return "Inscription à sprite-index.";
       default:
         return type || "Activité";
     }
@@ -986,7 +986,7 @@ function setupAccountPanel() {
 
     ctx.fillStyle = "#9ec5ff";
     ctx.font = `600 ${Math.round(bodySize * 0.85)}px system-ui, sans-serif`;
-    ctx.fillText("SpriteDex · Passeport", padX, y - bodySize * 1.6);
+    ctx.fillText("sprite-index · Passeport", padX, y - bodySize * 1.6);
 
     for (const line of lines) {
       if (line.kind === "title") {
@@ -1014,13 +1014,13 @@ function setupAccountPanel() {
 
     ctx.fillStyle = "rgba(255,255,255,0.45)";
     ctx.font = `500 ${Math.round(bodySize * 0.7)}px system-ui, sans-serif`;
-    const url = card.publicUrl ? `${location.host}${card.publicUrl}` : "spritedex";
+    const url = card.publicUrl ? `${location.host}${card.publicUrl}` : "sprite-index";
     ctx.fillText(url, padX, h * 0.9);
 
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Export image échoué"))), "image/png");
     });
-    const fileName = `spritedex-passeport-${card.username || "carte"}-${w}x${h}.png`;
+    const fileName = `sprite-index-passeport-${card.username || "carte"}-${w}x${h}.png`;
     const file = new File([blob], fileName, { type: "image/png" });
     const shareUrl = card.publicUrl ? `${webOrigin()}${card.publicUrl}` : webOrigin();
 
@@ -1028,7 +1028,7 @@ function setupAccountPanel() {
       try {
         await navigator.share({
           title: `Passeport ${card.displayName || card.username}`,
-          text: "Mon passeport collectionneur SpriteDex",
+          text: "Mon passeport collectionneur sprite-index",
           url: shareUrl,
           files: [file]
         });
@@ -1418,7 +1418,7 @@ function setupAccountPanel() {
         state.username = data.username;
         const existingUser = JSON.parse(localStorage.getItem(USER_KEY) || "{}");
         localStorage.setItem(USER_KEY, JSON.stringify({ ...existingUser, username: data.username }));
-        localStorage.setItem("spritedex_privacy", privacy);
+        localStorage.setItem("sprite-index_privacy", privacy);
         document.getElementById("accountUsername").textContent = data.username;
         document.getElementById("accountEditSection").style.display = "none";
         toast("Profil mis à jour !");
@@ -1448,7 +1448,7 @@ function setupAccountPanel() {
           body: JSON.stringify({ avatarUrl })
         });
         if (res.ok) {
-          localStorage.setItem("spritedex_avatar", avatarUrl);
+          localStorage.setItem("sprite-index_avatar", avatarUrl);
           const avatarDisplay = document.getElementById("accountAvatarDisplay");
           renderAvatar(avatarDisplay, avatarUrl);
           updateTopbarAvatar();
@@ -1512,7 +1512,7 @@ function setupAccountPanel() {
   document.getElementById("accountForceSync").addEventListener("click", async () => {
     if (!state.userId) { toast("Connecte-toi d'abord"); return; }
     await fullSync();
-    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     document.getElementById("accountLastSync").textContent =
       new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
     toast("Synchronisation terminée !");
@@ -1562,7 +1562,7 @@ function setupAccountPanel() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `spritedex_export_${data.profile?.username || state.username || "user"}.json`;
+      a.download = `sprite-index_export_${data.profile?.username || state.username || "user"}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast("Export téléchargé !");
@@ -1585,10 +1585,10 @@ function setupAccountPanel() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem("spritedex_notifications");
-    localStorage.removeItem("spritedex_avatar");
-    localStorage.removeItem("spritedex_privacy");
-    localStorage.removeItem("spritedex_last_sync");
+    localStorage.removeItem("sprite-index_notifications");
+    localStorage.removeItem("sprite-index_avatar");
+    localStorage.removeItem("sprite-index_privacy");
+    localStorage.removeItem("sprite-index_last_sync");
     localStorage.removeItem(SYNC_QUEUE_KEY);
     state.userId = null;
     state.username = null;
@@ -1830,7 +1830,7 @@ function setupAccountPanel() {
 
   // ── Topbar avatar ──
   function updateTopbarAvatar() {
-    const avatarUrl = localStorage.getItem("spritedex_avatar") || "";
+    const avatarUrl = localStorage.getItem("sprite-index_avatar") || "";
     const img = document.getElementById("topbarAvatarImg");
     if (!img) return;
     const safeUrl = typeof safeImageUrl === "function" ? safeImageUrl(avatarUrl) : "";
@@ -1889,7 +1889,7 @@ function renderPublicPassportOverlay(normalized) {
     <div class="shared-view__card">
       <div class="shared-view__header">
         <div class="shared-view__id">
-          <p class="collector-passport__eyebrow">SpriteDex</p>
+          <p class="collector-passport__eyebrow">sprite-index</p>
           <h1 class="shared-view__name">${escapeHtml(u.displayName || u.username || "Joueur")}</h1>
           <p class="shared-view__sub">@${escapeHtml(u.username || "")} · Passeport public</p>
           <p class="collector-passport__disclaimer">Collection déclarée par l’utilisateur</p>
@@ -1915,7 +1915,7 @@ function renderPublicPassportOverlay(normalized) {
           `<button type="button" class="ghost-button" data-public-passport-action="${escapeHtml(a)}">${actionLabels[a]}</button>`
         ).join("")}
       </div>
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SpriteDex</a>
+      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir sprite-index</a>
     </div>`;
   document.body.appendChild(overlay);
   overlay.querySelectorAll("[data-public-passport-action]").forEach((btn) => {
@@ -1945,7 +1945,7 @@ function renderPublicPassportError(message) {
     <div class="shared-view__card shared-view__card--error">
       <h1 class="shared-view__name">Passeport indisponible</h1>
       <p class="shared-view__sub">${escapeHtml(message || "Ce passeport n’est pas accessible.")}</p>
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SpriteDex</a>
+      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir sprite-index</a>
     </div>`;
   document.body.appendChild(overlay);
 }

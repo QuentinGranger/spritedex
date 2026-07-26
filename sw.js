@@ -1,6 +1,6 @@
 // Bump whenever security-sensitive client code changes so an old cached
 // renderer cannot keep serving a vulnerable version after deployment.
-const CACHE_NAME = "spritedex-v15";
+const CACHE_NAME = "sprite-index-v16";
 const TRUSTED_NOTIFICATION_ORIGINS = new Set([
   "https://fortnite.com",
   "https://www.fortnite.com",
@@ -107,17 +107,17 @@ self.addEventListener("push", (event) => {
   try {
     payload = event.data.json();
   } catch {
-    payload = { notification: { title: "SPRITNEX", body: "" } };
+    payload = { notification: { title: "SPRITE-INDEX", body: "" } };
   }
   const notif = payload.notification || {};
-  const title = notif.title || "SPRITNEX";
+  const title = notif.title || "SPRITE-INDEX";
   const options = {
     body: notif.body || "",
     // Keep notification assets local; remote URLs in a push payload would make
     // the device contact an attacker-controlled host on receipt.
     icon: "/Favicon/android-chrome-192x192.png",
     badge: "/Favicon/android-chrome-192x192.png",
-    tag: notif.tag || "spritedex",
+    tag: notif.tag || "sprite-index",
     data: { url: safeNotificationUrl(notif.data?.url) },
     requireInteraction: false
   };

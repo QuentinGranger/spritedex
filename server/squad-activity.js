@@ -48,7 +48,7 @@ async function logSquadEvent({ squadId, userId, type, action, spriteId, metadata
 
     if (message) {
       const payload = {
-        title: "SPRITNEX — Escouade",
+        title: "SPRITE-INDEX — Escouade",
         body: message,
         icon: "/icons/icon-192x192.png",
         url: url || `/?squad=${squadId}`

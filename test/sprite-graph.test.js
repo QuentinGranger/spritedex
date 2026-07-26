@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Sprite Graph (Étapes 1–101)
+// SPRITE-INDEX — Sprite Graph (Étapes 1–101)
 // Append-only graph_events + corrections + sources + versions
 // Needs live server for API cases: npm start, then npm run test:sprite-graph
 // ─────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ async function run(name, fn) {
 }
 
 async function main() {
-  console.log(`\nRunning SPRITNEX Sprite Graph étapes 1–101 against ${API}\n`);
+  console.log(`\nRunning SPRITE-INDEX Sprite Graph étapes 1–101 against ${API}\n`);
   stopGraphOutboxWorker();
   stopCommunityStatsDailyJob();
   let passed = 0;
@@ -1381,7 +1381,7 @@ async function main() {
       metricDate: day,
       level: "aggregated_internal"
     });
-    assert.strictEqual(pop.label, "Tendance SpriteDex");
+    assert.strictEqual(pop.label, "Tendance sprite-index");
     assert.strictEqual(pop.indexLabel, "Indice d'intérêt communautaire");
     assert.ok(pop.formulaDocumentation.includes("percentile") || pop.formulaDocumentation.includes("0.40"));
     assert.ok(Array.isArray(pop.items));
@@ -1404,7 +1404,7 @@ async function main() {
       getVariantInterestSeries
     } = require("../server/sprite-graph-trends");
 
-    assert.strictEqual(INTEREST_TREND_LABEL, "Tendance SpriteDex");
+    assert.strictEqual(INTEREST_TREND_LABEL, "Tendance sprite-index");
 
     // Étape 51 — percentiles 0–100.
     const scores = percentileScores(new Map([["a", 1], ["b", 10], ["c", 100]]));
@@ -1467,7 +1467,7 @@ async function main() {
       level: "aggregated_internal"
     });
     assert.ok(series);
-    assert.strictEqual(series.label, "Tendance SpriteDex");
+    assert.strictEqual(series.label, "Tendance sprite-index");
     assert.ok(series.latest.interestScore != null);
     assert.ok(series.latest.peakInterestScore >= series.latest.interestScore);
     assert.ok(series.latest.change7d != null || series.latest.change7d === null);
@@ -1509,7 +1509,7 @@ async function main() {
     // Percentile path still used by interest score calc.
     const pop = await calculateSpritePopularityScores(pool, { metricDate: day, windowDays: 7 });
     assert.ok(pop.formula.includes("percentile"));
-    assert.strictEqual(pop.label, "Tendance SpriteDex");
+    assert.strictEqual(pop.label, "Tendance sprite-index");
   });
   if (ok) passed++; else failed++;
 
@@ -2011,7 +2011,7 @@ async function main() {
     } = require("../server/sprite-graph-public");
 
     assert.strictEqual(formatRateFr(5.63, { digits: 1 }), "5,6");
-    assert.ok(COMMUNITY_SOURCE_DISCLAIMER.includes("SpriteDex"));
+    assert.ok(COMMUNITY_SOURCE_DISCLAIMER.includes("sprite-index"));
 
     const variantRes = await pool.query(
       `SELECT v.id, v.sprite_id, COALESCE(v.rarity, s.rarity) AS rarity
@@ -2084,8 +2084,8 @@ async function main() {
     assert.strictEqual(std.dataQuality.minimumSampleReached, true);
     assert.ok(std.publicDisplay.ownership.includes("5,6"));
     assert.ok(std.publicDisplay.priority.includes("45"));
-    assert.ok(std.raritySeparation.ownershipLabel.includes("SpriteDex"));
-    assert.ok(std.disclaimer.includes("SpriteDex"));
+    assert.ok(std.raritySeparation.ownershipLabel.includes("sprite-index"));
+    assert.ok(std.disclaimer.includes("sprite-index"));
 
     // Étape 79 — official vs community separated.
     assert.ok("official" in std);
@@ -2105,9 +2105,9 @@ async function main() {
       limit: 5,
       level: "aggregated_internal"
     });
-    assert.ok(board.disclaimer.includes("SpriteDex"));
+    assert.ok(board.disclaimer.includes("sprite-index"));
     assert.ok(board.sections.mostOwned);
-    assert.ok(board.sections.rarestInSpritedex);
+    assert.ok(board.sections.rarestInSpriteIndex);
     assert.ok(board.sections.mostSought);
     assert.ok(board.sections.mostPriorityAdds);
     assert.ok(board.sections.strongestRisers);
@@ -2124,7 +2124,7 @@ async function main() {
     if (trendsRes.ok) {
       const body = await trendsRes.json();
       assert.ok(body.sections);
-      assert.ok(body.disclaimer.includes("SpriteDex"));
+      assert.ok(body.disclaimer.includes("sprite-index"));
     }
     const spriteRes = await fetch(`${API}/sprite-graph/sprites/${encodeURIComponent(spriteId)}/community`);
     if (spriteRes.ok) {

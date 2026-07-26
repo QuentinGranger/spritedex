@@ -1,10 +1,11 @@
 {
-  "name": "spritedex_app",
+  "name": "sprite-index",
   "version": "1.0.0",
   "description": "Application web statique pour suivre les Sprites Fortnite et leurs variantes.",
   "main": "desktop/main.cjs",
   "scripts": {
     "start": "node server.js",
+    "dev": "NODE_ENV=development APP_LIVE_RELOAD=1 node --watch server.js",
     "seed": "node seed.js",
     "test:security": "node test/security.test.js",
     "test:compare": "node test/compare.test.js",
@@ -18,8 +19,9 @@
     "test:notifications": "node test/notifications.test.js",
     "test:passport": "node test/passport.test.js && node test/passport-steps-81-85.test.js && node test/passport-steps-86-88.test.js",
     "test:sprite-graph": "node test/sprite-graph.test.js",
+    "test:mastery": "node test/mastery.test.js",
     "sprite-graph:status": "node scripts/sprite-graph-status.js",
-    "test": "npm run test:notifications && npm run test:security && npm run test:compare && npm run test:friends && npm run test:squads && npm run test:goals && npm run test:suspension-sync && npm run test:priority-availability && npm run test:event-ending && npm run test:notification-load && npm run test:passport && npm run test:sprite-graph",
+    "test": "npm run test:notifications && npm run test:security && npm run test:compare && npm run test:friends && npm run test:squads && npm run test:goals && npm run test:suspension-sync && npm run test:priority-availability && npm run test:event-ending && npm run test:notification-load && npm run test:passport && npm run test:sprite-graph && npm run test:mastery",
     "build:www": "node scripts/build-www.js",
     "cap:sync": "npm run build:www && npx cap sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
@@ -64,8 +66,9 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "appId": "com.spritedex.desktop",
-    "productName": "SPRITNEX",
+    "appId": "com.spriteindex.desktop",
+    "productName": "SPRITE-INDEX",
+    "icon": "desktop/logoImg/icon.png",
     "directories": {
       "output": "release"
     },
@@ -81,9 +84,11 @@
       ]
     },
     "win": {
+      "icon": "desktop/logoImg/Favicon/favicon.ico",
       "target": "nsis"
     },
     "linux": {
+      "icon": "desktop/logoImg/Favicon/android-chrome-512x512.png",
       "target": "AppImage",
       "category": "Utility"
     }

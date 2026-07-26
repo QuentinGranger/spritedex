@@ -1,4 +1,4 @@
-// Étape 21 — Statistiques communautaires (Fortnite.GG / SPRITNEX)
+// Étape 21 — Statistiques communautaires (Fortnite.GG / SPRITE-INDEX)
 // Données statiques du catalogue : taux observés, légende, non sortis,
 // classement des Sprites de base, et taux de possession communautaire.
 
@@ -158,15 +158,15 @@ function renderCommunityStats() {
     </div>
 
     <div class="stats-module community-module community-ownership">
-      <h3 class="stats-module__title">Taux de possession SPRITNEX</h3>
+      <h3 class="stats-module__title">Taux de possession SPRITE-INDEX</h3>
       <div id="communityOwnershipDetail">
-        <p class="community-ownership__note">Chargement des statistiques SPRITNEX…</p>
+        <p class="community-ownership__note">Chargement des statistiques SPRITE-INDEX…</p>
       </div>
     </div>
   `;
   loadCommunityOwnership();
-  if (typeof renderSpritedexTrends === "function") {
-    renderSpritedexTrends();
+  if (typeof renderSpriteIndexTrends === "function") {
+    renderSpriteIndexTrends();
   }
 }
 
@@ -195,7 +195,7 @@ function loadCommunityOwnership() {
           </tr>
         `).join("");
       detail.innerHTML = `
-        <p class="community-ownership__note">Collections SPRITNEX actives : ${total}</p>
+        <p class="community-ownership__note">Collections SPRITE-INDEX actives : ${total}</p>
         <div class="community-table-wrapper">
           <table class="community-table">
             <thead>
@@ -208,11 +208,11 @@ function loadCommunityOwnership() {
             <tbody>${rows}</tbody>
           </table>
         </div>
-        <p class="community-ownership__note">SPRITNEX ne dispose pas des données de l’ensemble des joueurs Fortnite.</p>
+        <p class="community-ownership__note">SPRITE-INDEX ne dispose pas des données de l’ensemble des joueurs Fortnite.</p>
       `;
     })
     .catch((err) => {
-      detail.innerHTML = `<p class="community-ownership__note">Impossible de charger les statistiques SPRITNEX.</p>`;
+      detail.innerHTML = `<p class="community-ownership__note">Impossible de charger les statistiques SPRITE-INDEX.</p>`;
       console.error("[community-ownership]", err);
     });
 }

@@ -289,7 +289,7 @@ app.get("/api/catalog-history", async (req, res) => {
   }
 });
 
-// ── Community ownership : taux réel de possession par les collections actives SPRITNEX ──
+// ── Community ownership : taux réel de possession par les collections actives SPRITE-INDEX ──
 app.get("/api/community-ownership", async (req, res) => {
   try {
     const totalResult = await pool.query(

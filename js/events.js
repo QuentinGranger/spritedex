@@ -1,4 +1,12 @@
 const MAIN_VIEWS = ["swipe", "checklist", "missing", "stats", "history", "social"];
+const DESKTOP_VIEW_COPY = {
+  swipe: ["Swipe", "Explorez, classez et complétez votre collection de sprites."],
+  checklist: ["Checklist", "Affinez votre collection, variante par variante."],
+  missing: ["Manquants", "Organisez les sprites et variantes à trouver."],
+  stats: ["Statistiques", "Suivez votre progression et vos collections."],
+  history: ["Historique", "Retrouvez les évolutions de votre collection."],
+  social: ["Social", "Comparez, partagez et jouez avec votre squad."]
+};
 
 function renderAll() {
   renderSummary();
@@ -23,6 +31,14 @@ function scrollActiveTabIntoView() {
   if (tabRect.left < navRect.left + 8 || tabRect.right > navRect.right - 8) {
     tab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }
+}
+
+function renderDesktopViewHeading(view) {
+  const copy = DESKTOP_VIEW_COPY[view] || DESKTOP_VIEW_COPY.swipe;
+  const title = document.getElementById("desktopViewTitle");
+  const subtitle = document.getElementById("desktopViewSubtitle");
+  if (title) title.textContent = copy[0];
+  if (subtitle) subtitle.textContent = copy[1];
 }
 
 function activateMainView(view, opts = {}) {
@@ -50,14 +66,22 @@ function activateMainView(view, opts = {}) {
     setSocialTab(activeSocialTab ? activeSocialTab.dataset.socialTab : "friends");
   }
 
+  renderDesktopViewHeading(view);
   scrollActiveTabIntoView();
   return true;
 }
 
 function setSocialTab(tab, opts = {}) {
-  document.querySelectorAll(".social-tab").forEach(b => b.classList.toggle("active", b.dataset.socialTab === tab));
+  document.querySelectorAll(".social-tab").forEach((button) => {
+    const active = button.dataset.socialTab === tab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
   document.querySelectorAll(".social-panel").forEach(p => {
-    p.style.display = p.id === `social-panel-${tab}` ? "block" : "none";
+    const active = p.id === `social-panel-${tab}`;
+    p.style.display = active ? "block" : "none";
+    p.hidden = !active;
   });
   if (opts.silent) return;
   if (tab === "friends") {
@@ -73,6 +97,25 @@ function setSocialTab(tab, opts = {}) {
       if (typeof showSquadLobby === "function") showSquadLobby();
     }
   }
+}
+
+function setupRovingTabList(selector) {
+  const tabs = [...document.querySelectorAll(selector)];
+  if (!tabs.length) return;
+  tabs.forEach((tab) => {
+    tab.tabIndex = tab.classList.contains("active") ? 0 : -1;
+    tab.addEventListener("keydown", (event) => {
+      const keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+      if (!keys.includes(event.key)) return;
+      event.preventDefault();
+      const current = tabs.indexOf(tab);
+      const nextIndex = event.key === "Home" ? 0
+        : event.key === "End" ? tabs.length - 1
+          : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[nextIndex].focus();
+      tabs[nextIndex].click();
+    });
+  });
 }
 
 function isViewSwipeBlockedTarget(target, clientX = 0) {
@@ -178,6 +221,8 @@ function setupEvents() {
   document.querySelectorAll(".social-tab").forEach(btn => {
     btn.addEventListener("click", () => setSocialTab(btn.dataset.socialTab));
   });
+  setupRovingTabList(".social-tab");
+  setupRovingTabList(".friends-tab");
 
   els.tabs.forEach((tab) => {
     tab.addEventListener("click", () => activateMainView(tab.dataset.view, { force: true }));
@@ -187,6 +232,17 @@ function setupEvents() {
   $("#markMissing").addEventListener("click", () => animateAndMark("missing"));
   $("#markPriority").addEventListener("click", () => animateAndMark("priority"));
   $("#markUnsure").addEventListener("click", () => animateAndMark("unsure"));
+  if (els.cardMasteryLevels) {
+    els.cardMasteryLevels.addEventListener("click", (event) => {
+      const control = event.target.closest("[data-card-mastery]");
+      const item = currentItem();
+      if (!control || !item || getEntry(item.id).status !== "owned") return;
+      const masteryLevel = Number(control.dataset.cardMastery);
+      if (!Number.isInteger(masteryLevel) || masteryLevel < 1 || masteryLevel > 5) return;
+      setEntry(item.id, { masteryLevel });
+      toast(masteryLevel === 5 ? "♛ Niveau Master atteint" : `Niveau de maîtrise ${masteryLevel} enregistré`);
+    });
+  }
   els.deckFilter.addEventListener("change", () => {
     state.currentIndex = 0;
     buildDeck();
@@ -195,8 +251,49 @@ function setupEvents() {
 
   els.searchInput.addEventListener("input", (event) => {
     state.checklistSearch = event.target.value;
+    if (desktopSearch) desktopSearch.value = event.target.value;
     renderChecklist();
   });
+
+  els.searchInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !event.currentTarget.value) return;
+    event.preventDefault();
+    event.currentTarget.value = "";
+    state.checklistSearch = "";
+    const desktopSearch = document.getElementById("desktopSearch");
+    if (desktopSearch) desktopSearch.value = "";
+    renderChecklist();
+  });
+
+  const desktopSearch = document.getElementById("desktopSearch");
+  if (desktopSearch) {
+    const shortcutLabel = document.getElementById("desktopSearchShortcut");
+    const platform = String(navigator.userAgentData?.platform || navigator.platform || "");
+    const isMac = /mac|iphone|ipad|ipod/i.test(platform);
+    if (shortcutLabel) shortcutLabel.textContent = isMac ? "⌘ K" : "Ctrl K";
+
+    desktopSearch.addEventListener("input", (event) => {
+      const value = event.target.value;
+      els.searchInput.value = value;
+      state.checklistSearch = value;
+      if (getActiveMainView() !== "checklist") activateMainView("checklist");
+      renderChecklist();
+    });
+    desktopSearch.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !event.currentTarget.value) return;
+      event.preventDefault();
+      event.currentTarget.value = "";
+      els.searchInput.value = "";
+      state.checklistSearch = "";
+      renderChecklist();
+    });
+    document.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        desktopSearch.focus();
+      }
+    });
+  }
 
   els.checklistSort.addEventListener("change", (event) => {
     state.checklistSort = event.target.value;
@@ -206,25 +303,57 @@ function setupEvents() {
   els.filterChipsBar.addEventListener("click", (event) => {
     const chip = event.target.closest("[data-filter]");
     if (!chip) return;
-    els.filterChipsBar.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
-    chip.classList.add("active");
     state.checklistFilter = chip.dataset.filter;
     state.passportMissingVariantIds = null;
     state.expandedSprite = null;
     renderChecklist();
   });
 
-  els.checklistList.addEventListener("click", (event) => {
+  els.checklistList.addEventListener("keydown", (event) => {
     const toggle = event.target.closest("[data-toggle]");
-    if (toggle) {
-      const id = toggle.dataset.toggle;
-      state.expandedSprite = state.expandedSprite === id ? null : id;
-      renderChecklist();
+    if (!toggle || (event.key !== "Enter" && event.key !== " ")) return;
+    if (event.target.closest("button, a, input, select, textarea")) return;
+    event.preventDefault();
+    const id = toggle.dataset.toggle;
+    state.expandedSprite = state.expandedSprite === id ? null : id;
+    renderChecklist();
+    focusChecklistSprite(id);
+  });
+
+  els.checklistList.addEventListener("click", (event) => {
+    const masteryButton = event.target.closest("[data-mastery-level]");
+    if (masteryButton) {
+      const id = masteryButton.dataset.id;
+      const masteryLevel = Number(masteryButton.dataset.masteryLevel);
+      if (id && getEntry(id).status === "owned" && Number.isInteger(masteryLevel) && masteryLevel >= 1 && masteryLevel <= 5) {
+        setEntry(id, { masteryLevel });
+        toast(masteryLevel === 5 ? "♛ Niveau Master atteint" : `Niveau de maîtrise ${masteryLevel} enregistré`);
+      }
+      return;
+    }
+    const quickStatus = event.target.closest("[data-quick-status]");
+    if (quickStatus) {
+      const status = quickStatus.dataset.quickStatus;
+      const id = quickStatus.dataset.id;
+      if (id && ["owned", "priority"].includes(status)) {
+        const patch = { status };
+        if (status === "owned" && !getEntry(id).obtainedAt) patch.obtainedAt = new Date().toISOString();
+        setEntry(id, patch);
+        toast(status === "owned" ? "Variante marquée possédée" : "Variante ajoutée aux priorités");
+      }
       return;
     }
     const detailBtn = event.target.closest("[data-sprite-detail]");
     if (detailBtn) {
       openSpriteDetail(detailBtn.dataset.spriteDetail);
+      return;
+    }
+    const toggle = event.target.closest("[data-toggle]");
+    if (toggle) {
+      const id = toggle.dataset.toggle;
+      state.expandedSprite = state.expandedSprite === id ? null : id;
+      renderChecklist();
+      focusChecklistSprite(id);
       return;
     }
     const statusButton = event.target.closest("[data-status]");
@@ -257,6 +386,18 @@ function setupEvents() {
   });
 
   els.spriteDetailContent.addEventListener("click", (event) => {
+    const masteryButton = event.target.closest("[data-detail-mastery-level]");
+    if (masteryButton) {
+      const id = masteryButton.dataset.id;
+      const masteryLevel = Number(masteryButton.dataset.detailMasteryLevel);
+      if (id && getEntry(id).status === "owned" && Number.isInteger(masteryLevel) && masteryLevel >= 1 && masteryLevel <= 5) {
+        setEntry(id, { masteryLevel });
+        const item = getAllItems().find(i => i.id === id);
+        if (item) openSpriteDetail(item.spriteId);
+        toast(masteryLevel === 5 ? "♛ Niveau Master atteint" : `Niveau de maîtrise ${masteryLevel} enregistré`);
+      }
+      return;
+    }
     const favBtn = event.target.closest("[data-fav]");
     if (favBtn) {
       const key = `fav_${favBtn.dataset.fav}`;
@@ -305,7 +446,7 @@ function setupEvents() {
   els.exportData.addEventListener("click", exportData);
   els.importData.addEventListener("change", (event) => importData(event.target.files[0]));
   els.resetData.addEventListener("click", async () => {
-    const ok = confirm("Réinitialiser toute ta checklist SPRITNEX ?");
+    const ok = confirm("Réinitialiser toute ta checklist SPRITE-INDEX ?");
     if (!ok) return;
     state.collection = createSafeRecord();
     localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
@@ -316,13 +457,74 @@ function setupEvents() {
     renderAll();
     toast("Checklist réinitialisée");
   });
-  els.copyMissing.addEventListener("click", copyMissingList);
+  els.copyMissing.addEventListener("click", () => {
+    if (typeof copyCurrentMissingList === "function") copyCurrentMissingList();
+    else copyMissingList();
+  });
   els.themeToggle.addEventListener("click", toggleTheme);
 
+  const missingSearch = document.getElementById("missingSearch");
+  const missingSort = document.getElementById("missingSort");
+  const missingFilterChips = document.getElementById("missingFilterChips");
+  const clearMissingFilters = document.getElementById("clearMissingFilters");
+  if (missingSearch) {
+    missingSearch.addEventListener("input", (event) => {
+      state.missingSearch = event.target.value;
+      renderMissing();
+    });
+    missingSearch.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || !event.currentTarget.value) return;
+      event.preventDefault();
+      state.missingSearch = "";
+      renderMissing();
+    });
+  }
+  if (missingSort) missingSort.addEventListener("change", (event) => {
+    state.missingSort = event.target.value;
+    renderMissing();
+  });
+  if (missingFilterChips) missingFilterChips.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-missing-filter]");
+    if (!chip) return;
+    state.missingFilter = chip.dataset.missingFilter || "all";
+    renderMissing();
+  });
+  if (clearMissingFilters) clearMissingFilters.addEventListener("click", () => resetMissingControls());
+
   els.missingList.addEventListener("click", (event) => {
+    const action = event.target.closest("[data-missing-action]");
+    if (action) {
+      if (action.dataset.missingAction === "clear-event") state.missingEventFilter = null;
+      if (action.dataset.missingAction === "checklist") activateMainView("checklist");
+      if (action.dataset.missingAction !== "checklist") resetMissingControls();
+      return;
+    }
+    const section = event.target.closest("[data-missing-section]");
+    if (section) {
+      const key = `missing-section-${section.dataset.missingSection}`;
+      state.missingCollapsedSections[key] = !state.missingCollapsedSections[key];
+      renderMissing();
+      return;
+    }
+    const detail = event.target.closest("[data-missing-detail]");
+    if (detail) {
+      openDetail(detail.dataset.missingDetail);
+      return;
+    }
+    const priority = event.target.closest("[data-missing-priority]");
+    if (priority) {
+      const id = priority.dataset.missingPriority;
+      const entry = getEntry(id);
+      const isPriority = typeof isMissingPriority === "function" && isMissingPriority(entry);
+      setEntry(id, isPriority ? { status: "missing", priority: "none" } : { status: "priority", priority: "medium" });
+      toast(isPriority ? "Retiré des priorités" : "Ajouté aux priorités");
+      return;
+    }
     const btn = event.target.closest("[data-status]");
     if (btn) {
-      setEntry(btn.dataset.id, { status: btn.dataset.status });
+      const patch = { status: btn.dataset.status };
+      if (btn.dataset.status === "owned" && !getEntry(btn.dataset.id).obtainedAt) patch.obtainedAt = new Date().toISOString();
+      setEntry(btn.dataset.id, patch);
       toast(statusLabel(btn.dataset.status));
     }
   });

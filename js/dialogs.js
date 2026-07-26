@@ -207,6 +207,7 @@ function openSpriteDetail(spriteId) {
       <h3 class="sd-section-title">Variantes</h3>
       ${variants.map(v => {
         const prio = v.entry.priority || "none";
+        const masteryLevel = masteryLevelFor(v.entry);
         const prioBadge = prio !== "none" && prio !== "ignored"
           ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(prio)}">${priorityLabel(prio)}</span>`
           : "";
@@ -214,7 +215,7 @@ function openSpriteDetail(spriteId) {
           ? `<span class="sd-variant__date">${new Date(v.entry.obtainedAt).toLocaleDateString("fr-FR")}</span>`
           : "";
         return `
-          <div class="sd-variant ${v.entry.status === "owned" ? "sd-variant--owned" : ""}">
+          <div class="sd-variant ${v.entry.status === "owned" ? "sd-variant--owned" : ""} ${masteryLevel === 5 ? "sd-variant--master" : ""}">
             <div class="sd-variant__thumb">${v.img ? `<img src="${escapeHtml(safeImageUrl(v.img))}" class="sd-variant__img" />` : `<span>?</span>`}</div>
             <div class="sd-variant__info">
               <span class="sd-variant__name">${escapeHtml(v.name)} ${prioBadge}</span>
@@ -223,6 +224,18 @@ function openSpriteDetail(spriteId) {
                 ${dateObt}
               </div>
             </div>
+            ${masteryLevel > 0 ? `
+              <div class="sd-variant__mastery ${masteryLevel === 5 ? "sd-variant__mastery--master" : ""}" aria-label="${escapeHtml(masteryLabel(masteryLevel))}">
+                <span class="sd-variant__mastery-label">${masteryLevel === 5 ? "♛ Master" : `Niv. ${masteryLevel}/5`}</span>
+                <div class="sd-variant__mastery-levels" role="group" aria-label="Choisir un niveau de maîtrise">
+                  ${Array.from({ length: 5 }, (_, index) => {
+                    const level = index + 1;
+                    const isMaster = level === 5;
+                    return `<button type="button" class="sd-mastery-btn ${level <= masteryLevel ? "is-active" : ""} ${isMaster ? "is-master" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-detail-mastery-level="${level}" title="${isMaster ? "Niveau Master" : `Niveau ${level}`}" aria-label="${isMaster ? "Niveau Master" : `Niveau ${level}`}" aria-pressed="${level === masteryLevel}">${isMaster ? "♛" : level}</button>`;
+                  }).join("")}
+                </div>
+              </div>
+            ` : ""}
             <div class="sd-variant__actions">
               <select class="sd-status-select" data-id="${escapeHtml(String(v.id || ""))}">
                 <option value="new" ${v.entry.status === "new" ? "selected" : ""}>Non classé</option>
@@ -271,7 +284,7 @@ function openSpriteDetail(spriteId) {
     </div>
   `;
 
-  els.spriteDetailDialog.showModal();
+  if (!els.spriteDetailDialog.open) els.spriteDetailDialog.showModal();
   // Étape 77–80 — community block after modal open.
   if (typeof loadSpriteDetailCommunity === "function") {
     loadSpriteDetailCommunity(spriteId);

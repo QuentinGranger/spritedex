@@ -1,6 +1,6 @@
 function exportData() {
   const payload = {
-    app: "SPRITNEX",
+    app: "SPRITE-INDEX",
     version: 1,
     exportedAt: new Date().toISOString(),
     collection: state.collection
@@ -9,7 +9,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `spritedex-export-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `sprite-index-export-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
   toast("Export JSON téléchargé");

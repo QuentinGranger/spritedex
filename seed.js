@@ -8,7 +8,7 @@ const { databasePoolConfig } = require("./server/db");
 
 const pool = process.env.DATABASE_URL
   ? new Pool(databasePoolConfig(process.env.DATABASE_URL))
-  : new Pool({ database: "spritedex", host: "localhost", port: 5432 });
+  : new Pool({ database: "sprite-index", host: "localhost", port: 5432 });
 
 async function seed() {
   const client = await pool.connect();

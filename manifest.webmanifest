@@ -1,6 +1,6 @@
 {
-  "name": "SPRITNEX — Checklist Fortnite",
-  "short_name": "SPRITNEX",
+  "name": "SPRITE-INDEX — Checklist Fortnite",
+  "short_name": "SPRITE-INDEX",
   "description": "Checklist type Tinder pour suivre les Sprites Fortnite et leurs variantes.",
   "start_url": "./index.html",
   "display": "standalone",

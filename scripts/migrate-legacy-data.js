@@ -10,7 +10,7 @@ const pool = process.env.DATABASE_URL
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 10000,
     })
-  : new Pool({ database: "spritedex", host: "localhost", port: 5432, connectionTimeoutMillis: 10000, idleTimeoutMillis: 10000 });
+  : new Pool({ database: "sprite-index", host: "localhost", port: 5432, connectionTimeoutMillis: 10000, idleTimeoutMillis: 10000 });
 
 const MIGRATION_MAP = {
   "Water Sprite": "sprite_water",

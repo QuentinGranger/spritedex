@@ -101,7 +101,7 @@ async function recordInAppDelivery(pool, notificationId) {
     `INSERT INTO notification_deliveries
        (id, notification_id, channel, provider, status, attempt_count,
         scheduled_at, sent_at, delivered_at)
-     VALUES ($1, $2, 'in_app', 'spritedex', 'delivered', 1, NOW(), NOW(), NOW())
+     VALUES ($1, $2, 'in_app', 'sprite-index', 'delivered', 1, NOW(), NOW(), NOW())
      ON CONFLICT (notification_id, channel) DO UPDATE SET
        status = 'delivered',
        delivered_at = COALESCE(notification_deliveries.delivered_at, NOW()),

@@ -14,7 +14,7 @@ const {
  * Étape 52 — public labels (never "popularité officielle" / Fortnite-wide).
  */
 const INTEREST_INDEX_LABEL = "Indice d'intérêt communautaire";
-const INTEREST_TREND_LABEL = "Tendance SpriteDex";
+const INTEREST_TREND_LABEL = "Tendance sprite-index";
 
 /**
  * Étape 50–51 — documented, env-overridable weights (must sum ~1).
@@ -367,7 +367,7 @@ function normalizeSignalMap(map) {
 }
 
 /**
- * Étape 50–52 — composite interest index (Tendance SpriteDex).
+ * Étape 50–52 — composite interest index (Tendance sprite-index).
  * Components are percentile scores 0–100, then weighted.
  */
 async function calculateSpritePopularityScores(db = pool, {
@@ -685,7 +685,7 @@ async function getTopPopularSprites(db = pool, {
   }
   return {
     metricDate: day,
-    // Étape 52 — product labels for SpriteDex users only (not Fortnite-wide).
+    // Étape 52 — product labels for sprite-index users only (not Fortnite-wide).
     label: INTEREST_TREND_LABEL,
     indexLabel: INTEREST_INDEX_LABEL,
     weights: INTEREST_SCORE_WEIGHTS,

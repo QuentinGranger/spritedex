@@ -72,7 +72,7 @@ async function applyAuthParams(params) {
   const authError = params.get("authError");
 
   if (authError) {
-    sessionStorage.removeItem(window.OAUTH_EXCHANGE_VERIFIER_KEY || "spritedex_oauth_exchange_verifier");
+    sessionStorage.removeItem(window.OAUTH_EXCHANGE_VERIFIER_KEY || "sprite-index_oauth_exchange_verifier");
     const messages = {
       invalid_state: "Session expirée (cookie bloqué). Réessaie.",
       token_failed: "Clé/secret OAuth invalide côté serveur.",
@@ -86,7 +86,7 @@ async function applyAuthParams(params) {
   }
 
   if (authCode) {
-    const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "spritedex_oauth_exchange_verifier";
+    const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "sprite-index_oauth_exchange_verifier";
     const verifier = sessionStorage.getItem(verifierKey);
     if (!verifier) {
       toast("Connexion sécurisée expirée. Réessaie.");
@@ -105,12 +105,12 @@ async function applyAuthParams(params) {
       sessionStorage.removeItem(verifierKey);
       localStorage.setItem(TOKEN_KEY, user.token);
       localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
-      if (user.avatar_url) localStorage.setItem("spritedex_avatar", user.avatar_url);
-      localStorage.setItem("spritedex_email_verified", "true");
+      if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
+      localStorage.setItem("sprite-index_email_verified", "true");
       state.userId = user.id;
       state.username = user.username;
       await load();
-      localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+      localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
       showApp();
       setupEvents();
       setupAccountPanel();
@@ -140,7 +140,7 @@ async function handleOAuthReturn() {
   if (emailVerified) {
     history.replaceState(null, "", location.pathname);
     if (emailVerified === "true") {
-      localStorage.setItem("spritedex_email_verified", "true");
+      localStorage.setItem("sprite-index_email_verified", "true");
       setTimeout(() => toast("Email vérifié avec succès !"), 500);
     } else {
       setTimeout(() => toast("Lien de vérification invalide ou expiré."), 500);
@@ -157,7 +157,7 @@ async function handleOAuthReturn() {
 // Étape 67 — public passport URL /u/:username
 async function handlePassportPublicUrl() {
   const match = location.pathname.match(/^\/u\/([^/]+)\/?$/i);
-  const boot = window.__SPRITEDEX_PASSPORT_USER__;
+  const boot = window.__SPRITE_INDEX_PASSPORT_USER__;
   const username = match
     ? decodeURIComponent(match[1])
     : (boot && boot.username ? boot.username : null);
@@ -223,9 +223,9 @@ async function init() {
         state.userId = user.id;
         state.username = user.username;
         localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
-        if (user.avatar_url) localStorage.setItem("spritedex_avatar", user.avatar_url);
-        if (user.privacy) localStorage.setItem("spritedex_privacy", user.privacy);
-        localStorage.setItem("spritedex_email_verified", user.email_verified ? "true" : "false");
+        if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
+        if (user.privacy) localStorage.setItem("sprite-index_privacy", user.privacy);
+        localStorage.setItem("sprite-index_email_verified", user.email_verified ? "true" : "false");
         await load();
         showApp();
         setupEvents();

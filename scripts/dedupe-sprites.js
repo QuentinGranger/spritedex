@@ -26,7 +26,7 @@ const DRY_RUN = process.argv.includes("--dry-run");
 
 const pool = process.env.DATABASE_URL
   ? new Pool(databasePoolConfig(process.env.DATABASE_URL))
-  : new Pool({ database: "spritedex", host: "localhost", port: 5432 });
+  : new Pool({ database: "sprite-index", host: "localhost", port: 5432 });
 
 const isUnknown = (v) => v === null || v === undefined || v === "" || v === "unknown";
 

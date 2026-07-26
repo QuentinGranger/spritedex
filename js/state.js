@@ -30,7 +30,13 @@ const state = {
   compareMode: "friend",
   // Étape 48 — contextual notification destinations
   compareFocusVariantIds: null,
-  missingEventFilter: null
+  missingEventFilter: null,
+  // Farm list controls are intentionally view-local: they must not alter the
+  // checklist filters or the collection data itself.
+  missingSearch: "",
+  missingFilter: "all",
+  missingSort: "priority",
+  missingCollapsedSections: Object.create(null)
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -54,6 +60,9 @@ const els = {
   cardProgress: $("#cardProgress"),
   cardProgressText: $("#cardProgressText"),
   cardProgressFill: $("#cardProgressFill"),
+  cardMastery: $("#cardMastery"),
+  cardMasteryLabel: $("#cardMasteryLabel"),
+  cardMasteryLevels: $("#cardMasteryLevels"),
   swipeBadge: $("#swipeBadge"),
   deckFilter: $("#deckFilter"),
   shuffleDeck: $("#shuffleDeck"),
@@ -71,9 +80,14 @@ const els = {
   statsRingCircle: $("#statsRingCircle"),
   statsHeroPct: $("#statsHeroPct"),
   statsHeroDetail: $("#statsHeroDetail"),
+  statsHeroSupport: $("#statsHeroSupport"),
+  statsHeroRemaining: $("#statsHeroRemaining"),
   kpiSprites: $("#kpiSprites"),
+  kpiSpritesHint: $("#kpiSpritesHint"),
   kpiVariants: $("#kpiVariants"),
+  kpiVariantsHint: $("#kpiVariantsHint"),
   kpiPriorities: $("#kpiPriorities"),
+  kpiPrioritiesHint: $("#kpiPrioritiesHint"),
   rarityBars: $("#rarityBars"),
   variantBars: $("#variantBars"),
   statsInsights: $("#statsInsights"),

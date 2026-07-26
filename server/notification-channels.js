@@ -1,4 +1,4 @@
-// ── SPRITNEX notification channels ────────────────────────────────────────
+// ── SPRITE-INDEX notification channels ────────────────────────────────────────
 // Étape 7: three delivery channels (in_app, push, email). Resolution combines:
 //   • the type's default target channels (catalog.getTypeChannels)
 //   • the étape 6 subject gates (category + type enabled)
@@ -6,7 +6,7 @@
 //   • channel-specific runtime constraints (push: consent, quiet hours,
 //     frequency limits, token state)
 //
-// in_app is the SpriteDex notification center — it maps to the stored row and is
+// in_app is the sprite-index notification center — it maps to the stored row and is
 // therefore always "delivered" locally when permitted. push and email are the
 // external channels handled by the caller (push dispatch / mailer).
 

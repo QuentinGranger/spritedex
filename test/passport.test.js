@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Collector Passport (Étapes 1–10)
+// SPRITE-INDEX — Collector Passport (Étapes 1–10)
 // Run against a live server: node server.js, then npm run test:passport
 // ─────────────────────────────────────────────────────────────────
 process.env.APP_URL ||= "http://localhost:3000";
@@ -119,7 +119,7 @@ async function getActiveVariants(token) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX passport tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX passport tests against ${BASE}\n`);
 
   await test("fiabilité : niveaux complete / usable / insufficient", () => {
     assert.strictEqual(passportReliability(90, 100).level, "complete");

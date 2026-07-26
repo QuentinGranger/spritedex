@@ -11,7 +11,7 @@ const {
 } = require("./sprite-graph-privacy");
 
 // Labels duplicated (Étape 52) to avoid circular requires with comparison-stats.
-const INTEREST_TREND_LABEL = "Tendance SpriteDex";
+const INTEREST_TREND_LABEL = "Tendance sprite-index";
 const INTEREST_INDEX_LABEL = "Indice d'intérêt communautaire";
 
 /** Étape 54 — min sample before showing a trend (env: GRAPH_TREND_MIN_VOLUME). */

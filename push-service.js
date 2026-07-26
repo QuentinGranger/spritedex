@@ -1,4 +1,4 @@
-// ── SPRITNEX push notification service ─────────────────────────────────────
+// ── SPRITE-INDEX push notification service ─────────────────────────────────────
 // Handles registration, storage and dispatch of push tokens for Web Push
 // (VAPID) and native Capacitor/FCM/APNS tokens.
 //
@@ -265,7 +265,7 @@ async function getSquadMemberTokens(pool, squadId, excludeUserId) {
 // Treat every field as potentially persisted/legacy/untrusted input: a remote
 // news feed or stale database row must not make a subscriber's service worker
 // fetch a private-network image or open an external URL on notification click.
-const PUSH_LOCAL_ORIGIN = "https://spritedex.invalid";
+const PUSH_LOCAL_ORIGIN = "https://sprite-index.invalid";
 const PUSH_ASSET_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".ico"]);
 
 function normalizePushPath(value, fallback = "/") {
@@ -298,11 +298,11 @@ function normalizePushText(value, fallback, maxLength) {
 function buildNotificationPayload({ title, body, icon, url, badge } = {}) {
   return {
     notification: {
-      title: normalizePushText(title, "SPRITNEX", 200) || "SPRITNEX",
+      title: normalizePushText(title, "SPRITE-INDEX", 200) || "SPRITE-INDEX",
       body: normalizePushText(body, "", 1000),
       icon: normalizePushAsset(icon, "/icons/icon-192x192.png"),
       badge: normalizePushAsset(badge, "/icons/icon-72x72.png"),
-      tag: "spritedex",
+      tag: "sprite-index",
       requireInteraction: false,
       data: {
         url: normalizePushPath(url, "/")
@@ -669,7 +669,7 @@ async function createNotification(pool, {
     const rendered = notificationCatalog.isKnownType(type)
       ? await notificationCatalog.renderNotificationLocalized(pool, type, baseContext, lang)
       : null;
-    const finalTitle = title || (rendered && rendered.title) || "SPRITNEX";
+    const finalTitle = title || (rendered && rendered.title) || "SPRITE-INDEX";
     const finalBody = body || message || (rendered && rendered.body) || "";
     const finalUrl = url || (rendered ? rendered.url : "/");
 

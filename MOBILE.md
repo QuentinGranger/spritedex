@@ -1,4 +1,4 @@
-# SPRITNEX — Native mobile app (Capacitor)
+# SPRITE-INDEX — Native mobile app (Capacitor)
 
 The native iOS/Android apps reuse the exact same web frontend, bundled into a
 native shell with [Capacitor](https://capacitorjs.com). Data still comes from the
@@ -27,10 +27,10 @@ npx cap add android
 regenerated from the web bundle + `capacitor.config.json`, so you rarely edit
 them directly — except the two deep-link tweaks below (needed once per project).
 
-## Required: register the `spritedex://` deep link
+## Required: register the `sprite-index://` deep link
 
 OAuth (Google/Discord) runs in the system browser and returns to the app via a
-custom URL scheme (`spritedex://auth?...`). Register it once in each native
+custom URL scheme (`sprite-index://auth?...`). Register it once in each native
 project:
 
 ### iOS — `ios/App/App/Info.plist`
@@ -42,10 +42,10 @@ Add inside the top-level `<dict>`:
 <array>
   <dict>
     <key>CFBundleURLName</key>
-    <string>com.spritedex.app</string>
+    <string>com.spriteindex.app</string>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>spritedex</string>
+      <string>sprite-index</string>
     </array>
   </dict>
 </array>
@@ -60,7 +60,7 @@ Inside the main `<activity>` element, add:
   <action android:name="android.intent.action.VIEW" />
   <category android:name="android.intent.category.DEFAULT" />
   <category android:name="android.intent.category.BROWSABLE" />
-  <data android:scheme="spritedex" android:host="auth" />
+  <data android:scheme="sprite-index" android:host="auth" />
 </intent-filter>
 ```
 
@@ -72,7 +72,7 @@ Add the production callback URLs (already required for the web app):
 - Discord: `https://spritedex.onrender.com/api/auth/callback/discord`
 
 No mobile-specific redirect URI is needed: the OAuth flow always redirects to the
-server, which then bounces to `spritedex://auth` for native clients.
+server, which then bounces to `sprite-index://auth` for native clients.
 
 ## Everyday workflow
 
@@ -89,10 +89,10 @@ npm run cap:android     # opens Android Studio (then Run)
 - `js/config.js` — resolves the backend origin. On native it targets
   `PROD_API_ORIGIN`; on web it uses the same origin. Also derives `WS_URL`.
 - `js/auth.js` — `startOAuth()` opens the flow in the system browser on native.
-- `js/mobile.js` — listens for the `spritedex://auth` deep link and completes
+- `js/mobile.js` — listens for the `sprite-index://auth` deep link and completes
   login via `applyAuthParams()` (shared with the web flow in `js/init.js`).
 - `server.js` — the OAuth initiate/callback carry a `return=app` hint (cookie)
-  and redirect to `spritedex://auth?...` for native clients.
+  and redirect to `sprite-index://auth?...` for native clients.
 - `security.js` — CORS allows the Capacitor webview origins.
 - `capacitor.config.json` — `appId`, `appName`, `webDir: www`.
 - `scripts/build-www.js` — assembles the web bundle into `www/`.
@@ -100,5 +100,5 @@ npm run cap:android     # opens Android Studio (then Run)
 ## Notes
 
 - To point the app at a custom domain later, change `PROD_API_ORIGIN` in
-  `js/config.js` (or set `window.SPRITEDEX_API_ORIGIN` before scripts load).
+  `js/config.js` (or set `window.SPRITE_INDEX_API_ORIGIN` before scripts load).
 - The service worker is disabled inside the native shell (handled automatically).

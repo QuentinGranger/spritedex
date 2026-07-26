@@ -25,7 +25,7 @@ function test(name, fn) {
   }
 }
 
-console.log("\nRunning SPRITNEX notification catalog tests\n");
+console.log("\nRunning SPRITE-INDEX notification catalog tests\n");
 
 // ── Stable technical identifiers ──
 const EXPECTED_IDS = {
@@ -1729,7 +1729,7 @@ async function asyncTest(name, fn) {
       }
     };
 
-    // Ordinary SpriteDex notification blocked at the cap.
+    // Ordinary sprite-index notification blocked at the cap.
     assert.strictEqual(
       await channels.isPushFrequencyExceeded(pool, 1, 8, {
         type: catalog.NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED,

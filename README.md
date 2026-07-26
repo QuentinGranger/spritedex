@@ -1,4 +1,4 @@
-# SPRITNEX — Checklist Fortnite
+# SPRITE-INDEX — Checklist Fortnite
 
 Application web statique pour suivre les Sprites Fortnite et leurs variantes.
 
@@ -19,7 +19,7 @@ Option simple : ouvrir `index.html` dans un navigateur.
 Option recommandée avec serveur local :
 
 ```bash
-cd spritedex_app
+cd sprite-index
 python3 -m http.server 8000
 ```
 

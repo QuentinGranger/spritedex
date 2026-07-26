@@ -52,7 +52,7 @@ function computePassportProgress(ownedVariantCount, releasedVariantCount) {
   };
 }
 
-// Étape 21 — official SpriteDex rarities only (never Gold/Gummy/Galaxy/Holofoil).
+// Étape 21 — official sprite-index rarities only (never Gold/Gummy/Galaxy/Holofoil).
 const OFFICIAL_RARITY_SCORE = Object.freeze({
   common: 1,
   commun: 1,

@@ -6,11 +6,11 @@ const { Pool } = require("pg");
 const { databasePoolConfig } = require("../server/db");
 const { validateCatalog, formatReport } = require("./validate-catalog");
 
-const CATALOG_PATH = process.argv[2] || path.join(__dirname, "..", "SPRITNEX Catalogue Juil 18 2026.json");
+const CATALOG_PATH = process.argv[2] || path.join(__dirname, "..", "SPRITE-INDEX Catalogue Juil 18 2026.json");
 
 const pool = process.env.DATABASE_URL
   ? new Pool(databasePoolConfig(process.env.DATABASE_URL))
-  : new Pool({ database: "spritedex", host: "localhost", port: 5432 });
+  : new Pool({ database: "sprite-index", host: "localhost", port: 5432 });
 
 const raw = fs.readFileSync(CATALOG_PATH, "utf8");
 const catalog = JSON.parse(raw);

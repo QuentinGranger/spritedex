@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Étape 66 priority_variant_available integration tests
+// SPRITE-INDEX — Étape 66 priority_variant_available integration tests
 // Needs a live server + DATABASE_URL (same DB as the API).
 // ─────────────────────────────────────────────────────────────────
 require("dotenv").config();
@@ -143,7 +143,7 @@ function makeEvent({ variantId, variantName, previousStatus, newStatus, confiden
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX priority availability tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX priority availability tests against ${BASE}\n`);
 
   const probe = await fetch(`${API}/sprites`).catch(() => null);
   if (!probe || !probe.ok) {

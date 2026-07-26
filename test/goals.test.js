@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Collection goals integration tests
+// SPRITE-INDEX — Collection goals integration tests
 // Run against a live server: node server.js, then node test/goals.test.js
 // ─────────────────────────────────────────────────────────────────
 const assert = require("node:assert");
@@ -144,7 +144,7 @@ async function getVariantSamples(token) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX goals tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX goals tests against ${BASE}\n`);
 
   const alice = await register(`GoAlice${rnd()}`);
   const bob = await register(`GoBob${rnd()}`);

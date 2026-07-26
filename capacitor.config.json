@@ -1,6 +1,6 @@
 {
-  "appId": "com.spritedex.app",
-  "appName": "SPRITNEX",
+  "appId": "com.spriteindex.app",
+  "appName": "SPRITE-INDEX",
   "webDir": "www",
   "server": {
     "androidScheme": "https",

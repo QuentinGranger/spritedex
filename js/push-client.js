@@ -1,4 +1,4 @@
-// ── SPRITNEX push notification client ───────────────────────────────────────
+// ── SPRITE-INDEX push notification client ───────────────────────────────────────
 // Registers the device for push notifications on web (Push API + service worker)
 // and native (Capacitor Push Notifications plugin). Tokens are sent to the
 // backend at /api/push/register.
@@ -9,7 +9,7 @@
 (function () {
   "use strict";
 
-  const PREF_KEY = "spritedex_notifications";
+  const PREF_KEY = "sprite-index_notifications";
   let nativeListenersAttached = false;
   let nativePushRegistered = false;
   let nativeRegistrationInFlight = null;

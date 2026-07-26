@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Collector Passport Étapes 86–88
+// SPRITE-INDEX — Collector Passport Étapes 86–88
 // a11y · analytics · validation criteria
 // Needs live server for API cases: npm start, then npm run test:passport
 // ─────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ async function run(name, fn) {
 }
 
 async function main() {
-  console.log(`\nRunning SPRITNEX passport étapes 86–88 against ${API}\n`);
+  console.log(`\nRunning SPRITE-INDEX passport étapes 86–88 against ${API}\n`);
   let passed = 0;
   let failed = 0;
 

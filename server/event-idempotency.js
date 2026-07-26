@@ -1,4 +1,4 @@
-// ── SPRITNEX notification idempotency (Étapes 9, 10 & 14) ─────────────────
+// ── SPRITE-INDEX notification idempotency (Étapes 9, 10 & 14) ─────────────────
 // Each domain event carries a unique eventId. A single event can fan out into
 // several notifications (e.g. one acquisition → many friends). To guarantee that
 // the SAME event never produces the SAME notification twice for the SAME user,

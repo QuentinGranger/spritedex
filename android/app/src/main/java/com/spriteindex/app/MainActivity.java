@@ -1,4 +1,4 @@
-package com.spritedex.app;
+package com.spriteindex.app;
 
 import com.getcapacitor.BridgeActivity;
 

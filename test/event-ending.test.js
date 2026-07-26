@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Étape 67 wanted_event_ending_soon integration tests
+// SPRITE-INDEX — Étape 67 wanted_event_ending_soon integration tests
 // Needs a live server + DATABASE_URL (same DB as the API).
 // ─────────────────────────────────────────────────────────────────
 require("dotenv").config();
@@ -169,7 +169,7 @@ async function emitEnding({
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX event-ending tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX event-ending tests against ${BASE}\n`);
 
   const probe = await fetch(`${API}/sprites`).catch(() => null);
   if (!probe || !probe.ok) {

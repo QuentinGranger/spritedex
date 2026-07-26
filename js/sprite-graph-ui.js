@@ -33,7 +33,7 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
     return `
       <div class="sg-community sg-community--empty">
         <p class="sg-community__muted">${sgEscape((data && data.message) || "Données communautaires insuffisantes")}</p>
-        <p class="sg-community__disclaimer">Données issues de la communauté SpriteDex</p>
+        <p class="sg-community__disclaimer">Données issues de la communauté sprite-index</p>
       </div>
     `;
   }
@@ -67,7 +67,7 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
 
   return `
     <div class="sg-community">
-      <h3 class="sg-community__title">Communauté SpriteDex</h3>
+      <h3 class="sg-community__title">Communauté sprite-index</h3>
       ${sep.officialRarity ? `
         <p class="sg-community__official">
           <span class="sg-community__label">Rareté officielle</span>
@@ -75,8 +75,8 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
         </p>
         ${sep.ownershipLabel ? `
           <p class="sg-community__ownership">
-            <span class="sg-community__label">Taux de possession SpriteDex</span>
-            <strong>${sgFormatRate(sep.spritedexOwnershipRate)} %</strong>
+            <span class="sg-community__label">Taux de possession sprite-index</span>
+            <strong>${sgFormatRate(sep.spriteIndexOwnershipRate)} %</strong>
           </p>
         ` : ""}
         <p class="sg-community__note">${sgEscape(sep.note || "")}</p>
@@ -85,7 +85,7 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
         ${lines.map((l) => `<li>${sgEscape(l)}</li>`).join("")}
       </ul>
       ${historyHtml}
-      <p class="sg-community__disclaimer">Données issues de la communauté SpriteDex</p>
+      <p class="sg-community__disclaimer">Données issues de la communauté sprite-index</p>
     </div>
   `;
 }
@@ -141,7 +141,7 @@ async function loadDetailCommunityStats(variantId) {
 async function loadSpriteDetailCommunity(spriteId) {
   const mount = document.getElementById("spriteDetailCommunity");
   if (!mount || !spriteId) return;
-  mount.innerHTML = `<p class="sg-community__muted">Chargement des stats SpriteDex…</p>`;
+  mount.innerHTML = `<p class="sg-community__muted">Chargement des stats sprite-index…</p>`;
   try {
     const board = await fetchSpriteCommunity(spriteId);
     const variants = board.variants || [];
@@ -168,7 +168,7 @@ async function loadSpriteDetailCommunity(spriteId) {
       mount.innerHTML = `
         ${header}
         <p class="sg-community__muted">${sgEscape((pick && pick.message) || "Données communautaires insuffisantes")}</p>
-        <p class="sg-community__disclaimer">Données issues de la communauté SpriteDex</p>
+        <p class="sg-community__disclaimer">Données issues de la communauté sprite-index</p>
       `;
       return;
     }
@@ -202,18 +202,18 @@ async function loadSpriteDetailCommunity(spriteId) {
 /**
  * Étape 78 — Tendances page sections inside Stats.
  */
-async function renderSpritedexTrends() {
-  const container = document.getElementById("spritedexTrends");
+async function renderSpriteIndexTrends() {
+  const container = document.getElementById("sprite-indexTrends");
   if (!container) return;
-  container.innerHTML = `<p class="sg-community__muted">Chargement des tendances SpriteDex…</p>`;
+  container.innerHTML = `<p class="sg-community__muted">Chargement des tendances sprite-index…</p>`;
   try {
     const board = await fetchTrendsBoard();
     if (board.insufficient) {
       container.innerHTML = `
         <div class="stats-module sg-trends sg-trends--gated">
-          <h3 class="stats-module__title">${sgEscape(board.label || "Tendances SpriteDex")}</h3>
+          <h3 class="stats-module__title">${sgEscape(board.label || "Tendances sprite-index")}</h3>
           <p class="sg-community__muted">${sgEscape(board.message || "Données communautaires insuffisantes")}</p>
-          <p class="sg-community__disclaimer">${sgEscape(board.disclaimer || "Données issues de la communauté SpriteDex")}</p>
+          <p class="sg-community__disclaimer">${sgEscape(board.disclaimer || "Données issues de la communauté sprite-index")}</p>
         </div>
       `;
       return;
@@ -221,7 +221,7 @@ async function renderSpritedexTrends() {
     const sections = board.sections || {};
     const order = [
       "mostOwned",
-      "rarestInSpritedex",
+      "rarestInSpriteIndex",
       "mostSought",
       "mostPriorityAdds",
       "strongestRisers",
@@ -273,12 +273,12 @@ async function renderSpritedexTrends() {
 
     container.innerHTML = `
       <div class="stats-module sg-trends">
-        <h3 class="stats-module__title">${sgEscape(board.label || "Tendances SpriteDex")}</h3>
-        <p class="sg-community__disclaimer">${sgEscape(board.disclaimer || "Données issues de la communauté SpriteDex")}</p>
+        <h3 class="stats-module__title">${sgEscape(board.label || "Tendances sprite-index")}</h3>
+        <p class="sg-community__disclaimer">${sgEscape(board.disclaimer || "Données issues de la communauté sprite-index")}</p>
         ${blocks}
       </div>
     `;
   } catch (_) {
-    container.innerHTML = `<p class="sg-community__muted">Impossible de charger les tendances SpriteDex.</p>`;
+    container.innerHTML = `<p class="sg-community__muted">Impossible de charger les tendances sprite-index.</p>`;
   }
 }

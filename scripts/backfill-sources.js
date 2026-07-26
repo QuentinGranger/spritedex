@@ -8,7 +8,7 @@ const { databasePoolConfig } = require("../server/db");
 const pool = new Pool(process.env.DATABASE_URL
   ? databasePoolConfig(process.env.DATABASE_URL)
   : {
-      database: process.env.PGDATABASE || "spritedex",
+      database: process.env.PGDATABASE || "sprite-index",
       host: process.env.PGHOST || "localhost",
       port: process.env.PGPORT || 5432,
       user: process.env.PGUSER,

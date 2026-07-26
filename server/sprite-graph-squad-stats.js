@@ -790,7 +790,7 @@ async function getSquadCommunityContext(db = pool, squadId, {
     publicDisplay: {
       lines: [coverageLabel, peerLabel].filter(Boolean),
       tone: "encouraging",
-      disclaimer: "Données issues de la communauté SpriteDex — pas de classement."
+      disclaimer: "Données issues de la communauté sprite-index — pas de classement."
     }
   };
 }

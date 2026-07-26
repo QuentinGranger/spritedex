@@ -1,4 +1,4 @@
-# Checklist de validation — Passeport collectionneur SpriteDex
+# Checklist de validation — Passeport collectionneur sprite-index
 
 Cette liste définit quand le Passeport du collectionneur est considéré comme prêt (Étape 88).
 

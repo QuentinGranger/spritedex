@@ -1,7 +1,7 @@
 "use strict";
 
 // ── Sprite Graph — append-only event store (Étapes 1–35) ────────────────────
-// Historical memory of SpriteDex. PostgreSQL only; no graph DB in v1.
+// Historical memory of sprite-index. PostgreSQL only; no graph DB in v1.
 // Stable event type IDs must not change when UI copy changes.
 // graph_events rows are never updated/deleted — corrections are new rows.
 // Important events are emitted server-side after authorized, deduped writes

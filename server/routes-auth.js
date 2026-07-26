@@ -368,7 +368,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
   res.clearCookie(`oauth_return_${provider}`, { path: "/api/auth/callback" });
   res.clearCookie(`oauth_exchange_${provider}`, { path: "/api/auth/callback" });
   const sendResult = (query) =>
-    res.redirect(returnMode === "app" ? `spritedex://auth?${query}` : `/?${query}`);
+    res.redirect(returnMode === "app" ? `sprite-index://auth?${query}` : `/?${query}`);
 
   const code = req.query.code || req.body?.code;
   if (!code) return res.status(400).send("Code manquant");

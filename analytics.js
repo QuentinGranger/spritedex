@@ -1,4 +1,4 @@
-// ── SPRITNEX comparison analytics ───────────────────────────────────────────
+// ── SPRITE-INDEX comparison analytics ───────────────────────────────────────────
 // Anonymised usage events for the compare feature. No IP / user-agent / PII
 // stored beyond a nullable user_id for per-user aggregates.
 

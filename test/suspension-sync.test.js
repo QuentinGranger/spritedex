@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Suspension enforcement + import (replace) sync tests
+// SPRITE-INDEX — Suspension enforcement + import (replace) sync tests
 // Run against a live server: node server.js, then node test/suspension-sync.test.js
 // ─────────────────────────────────────────────────────────────────
 const assert = require("node:assert");
@@ -86,7 +86,7 @@ async function unsuspend(user) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX suspension + sync tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX suspension + sync tests against ${BASE}\n`);
 
   const user = await register(`SuspUser${rnd()}`);
   const [v1, v2] = await getTwoVariantIds(user.token);

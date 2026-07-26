@@ -1,4 +1,4 @@
-// ── SPRITNEX notification preferences ─────────────────────────────────────
+// ── SPRITE-INDEX notification preferences ─────────────────────────────────────
 // Étape 6: precedence between the general channel, a category and a precise
 // type. A notification is only allowed to be SENT (push / email) when ALL three
 // levels are enabled:

@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SPRITNEX</string>
-    <string name="title_activity_main">SPRITNEX</string>
-    <string name="package_name">com.spritedex.app</string>
-    <string name="custom_url_scheme">com.spritedex.app</string>
-    <string name="intent_scheme">spritedex</string>
+    <string name="app_name">SPRITE-INDEX</string>
+    <string name="title_activity_main">SPRITE-INDEX</string>
+    <string name="package_name">com.spriteindex.app</string>
+    <string name="custom_url_scheme">com.spriteindex.app</string>
+    <string name="intent_scheme">sprite-index</string>
     <string name="intent_host">auth</string>
 </resources>

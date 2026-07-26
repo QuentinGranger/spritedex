@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Friends / invitations integration tests
+// SPRITE-INDEX — Friends / invitations integration tests
 // Run against a live server: node server.js, then node test/friends.test.js
 // ─────────────────────────────────────────────────────────────────
 const assert = require("node:assert");
@@ -49,7 +49,7 @@ async function cleanup(user) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX friends tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX friends tests against ${BASE}\n`);
 
   const alice = await register(`FrAlice${rnd()}`);
   const bob = await register(`FrBob${rnd()}`);

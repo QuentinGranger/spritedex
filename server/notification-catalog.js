@@ -1,4 +1,4 @@
-// ── SPRITNEX contextual notification catalog ──────────────────────────────
+// ── SPRITE-INDEX contextual notification catalog ──────────────────────────────
 // Single source of truth for the "contextual notifications" feature.
 //
 // Design constraints (Étape 1):
@@ -60,7 +60,7 @@ const NOTIFICATION_CATEGORY_LIST = Object.freeze([
 //   queued    → waiting to be sent over push / email
 //   delivered → the external channel accepted / delivered the message
 //   failed    → the external send failed
-//   read      → the user opened it inside SpriteDex
+//   read      → the user opened it inside sprite-index
 //   archived  → removed from the main inbox
 //   cancelled → no longer relevant before it was ever sent
 const NOTIFICATION_STATUSES = Object.freeze({
@@ -101,8 +101,8 @@ const STATUS_DEFINITIONS = {
     en: { label: "Failed", description: "The external send failed." }
   },
   [NOTIFICATION_STATUSES.READ]: {
-    fr: { label: "Lue", description: "L'utilisateur l'a consultée dans SpriteDex." },
-    en: { label: "Read", description: "The user opened it inside SpriteDex." }
+    fr: { label: "Lue", description: "L'utilisateur l'a consultée dans sprite-index." },
+    en: { label: "Read", description: "The user opened it inside sprite-index." }
   },
   [NOTIFICATION_STATUSES.ARCHIVED]: {
     fr: { label: "Archivée", description: "Retirée de la boîte principale." },
@@ -148,7 +148,7 @@ const DEFAULT_LANGUAGE = "fr";
 
 // ── Channels (Étape 7) ──
 // Three delivery channels. Stable ids, labels generated separately per language.
-//   in_app → SpriteDex notification center (on by default for important events)
+//   in_app → sprite-index notification center (on by default for important events)
 //   push   → device/browser push, subject to consent, quiet hours, frequency
 //            limits and push-token state
 //   email  → reserved for important alerts or summaries
@@ -164,7 +164,7 @@ const NOTIFICATION_CHANNEL_LIST = Object.freeze([
   NOTIFICATION_CHANNELS.EMAIL
 ]);
 
-// Étape 52 — global safety cap for ordinary SpriteDex push notifications.
+// Étape 52 — global safety cap for ordinary sprite-index push notifications.
 // Counted per local calendar day in the user's timezone. 0 disables the cap.
 const DEFAULT_PUSH_MAX_PER_DAY = 8;
 
@@ -279,8 +279,8 @@ function getSendPriorityLabel(scoreOrLevel, lang = DEFAULT_LANGUAGE) {
 
 const CHANNEL_DEFINITIONS = {
   [NOTIFICATION_CHANNELS.IN_APP]: {
-    fr: { label: "Dans l'application", description: "Apparaît dans le centre de notifications de SpriteDex." },
-    en: { label: "In app", description: "Appears in the SpriteDex notification center." }
+    fr: { label: "Dans l'application", description: "Apparaît dans le centre de notifications de sprite-index." },
+    en: { label: "In app", description: "Appears in the sprite-index notification center." }
   },
   [NOTIFICATION_CHANNELS.PUSH]: {
     fr: { label: "Notifications push", description: "Notification sur téléphone ou navigateur, après autorisation." },

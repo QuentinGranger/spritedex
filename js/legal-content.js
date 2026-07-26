@@ -1,4 +1,4 @@
-/* ── SPRITNEX — contenus juridiques et conformité (France / Union européenne) ──
+/* ── SPRITE-INDEX — contenus juridiques et conformité (France / Union européenne) ──
  * Version prête à intégrer dans le site et l'application.
  *
  * Hypothèses retenues :
@@ -12,7 +12,7 @@
  *
  * IMPORTANT : le contenu juridique doit toujours correspondre au fonctionnement
  * réel du service. Supprimez de la liste des prestataires ou des données tout
- * élément qui n'est pas effectivement utilisé par SPRITNEX.
+ * élément qui n'est pas effectivement utilisé par SPRITE-INDEX.
  *
  * Sources principales vérifiées le 18 juillet 2026 :
  * - LCEN, article 1-1 : https://www.legifrance.gouv.fr/
@@ -33,7 +33,7 @@ const LEGAL_LAST_UPDATED_ISO = "2026-07-18";
 const LEGAL_LAST_UPDATED_FR = "18 juillet 2026";
 
 const LEGAL_CONFIG = Object.freeze({
-  APP_NAME: "SPRITNEX",
+  APP_NAME: "SPRITE-INDEX",
   EDITOR_NAME: "Quentin SAVIGNY",
   EDITOR_STATUS: "éditeur individuel non professionnel",
   CONTACT_EMAIL: "quentinsavigny@protonmail.com",
@@ -166,7 +166,7 @@ const LEGAL_DOCUMENTS = Object.freeze({
       <p>[APP_NAME] est une application de fan gratuite permettant notamment de répertorier une collection de Sprites liés à Fortnite, de suivre les éléments possédés ou recherchés et, selon les réglages choisis, de comparer une collection avec celle d'autres utilisateurs.</p>
       <p>[APP_NAME] ne vend aucun Sprite, objet Fortnite, compte de jeu ou contenu numérique, et n'agit pas comme intermédiaire de paiement ou de transaction.</p>
 
-      <h2>6. Propriété intellectuelle propre à SPRITNEX</h2>
+      <h2>6. Propriété intellectuelle propre à SPRITE-INDEX</h2>
       <p>Sous réserve des éléments appartenant à des tiers, la structure de l'application, son code source, son interface originale, ses textes juridiques, sa charte graphique et son logo propre sont protégés par le droit de la propriété intellectuelle.</p>
       <p>Toute reproduction ou exploitation non autorisée de ces créations est interdite, sauf disposition légale contraire ou autorisation écrite préalable de l'éditeur.</p>
 
@@ -455,7 +455,7 @@ const LEGAL_DOCUMENTS = Object.freeze({
       <h2>4. Protection des mineurs</h2>
       <p>Les comptes sont réservés aux personnes âgées d'au moins [ACCOUNT_MINIMUM_AGE] ans. Aucun utilisateur ne doit solliciter d'un mineur une adresse, un numéro de téléphone, une photographie privée, une information financière ou une rencontre hors ligne.</p>
 
-      <h2>5. Échanges hors de SPRITNEX</h2>
+      <h2>5. Échanges hors de SPRITE-INDEX</h2>
       <p>[APP_NAME] permet de suivre ou comparer des collections, mais ne sécurise, ne supervise et ne garantit aucun échange organisé entre utilisateurs en dehors du service.</p>
       <p>Ne transmettez jamais de mot de passe, de code d'authentification, de donnée bancaire ou d'accès à un compte Epic Games.</p>
 
@@ -617,7 +617,7 @@ const LEGAL_DOCUMENTS = Object.freeze({
 
   "contact": legalDocument({
     id: "contact",
-    title: "Contacter SPRITNEX",
+    title: "Contacter SPRITE-INDEX",
     short: "Support, données personnelles, signalements et sécurité.",
     content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
@@ -704,7 +704,7 @@ const LEGAL_DOCUMENTS = Object.freeze({
   "licences": legalDocument({
     id: "licences",
     title: "Licences, crédits et propriété intellectuelle",
-    short: "Avertissement Epic Games, créations SPRITNEX et composants tiers.",
+    short: "Avertissement Epic Games, créations SPRITE-INDEX et composants tiers.",
     content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
@@ -724,7 +724,7 @@ const LEGAL_DOCUMENTS = Object.freeze({
       <h2>4. Absence de monétisation autorisée par défaut</h2>
       <p>La politique de contenu de fan d'Epic Games encadre les sites et applications de fan comme des créations personnelles, gratuites et non commerciales. Aucune publicité, vente, abonnement, contenu payant ou autre monétisation ne doit être ajouté sur la base de ce seul document sans vérification préalable et autorisation appropriée lorsque celle-ci est nécessaire.</p>
 
-      <h2>5. Créations propres à SPRITNEX</h2>
+      <h2>5. Créations propres à SPRITE-INDEX</h2>
       <p>Les éléments originaux créés spécifiquement pour [APP_NAME], notamment son code, son architecture, ses textes, sa mise en page, ses composants d'interface et son logo distinct des marques d'Epic Games, restent protégés par les droits de leur auteur.</p>
       <p>Cette protection ne s'étend pas aux éléments, noms, illustrations ou marques appartenant à Epic Games ou à d'autres tiers.</p>
 
@@ -810,12 +810,12 @@ function validateLegalDocuments() {
 const LEGAL_VALIDATION = validateLegalDocuments();
 
 if (!LEGAL_VALIDATION.valid && typeof console !== "undefined") {
-  console.error("Erreur de validation des documents juridiques SPRITNEX", {
+  console.error("Erreur de validation des documents juridiques SPRITE-INDEX", {
     errors: LEGAL_VALIDATION.errors
   });
 }
 
-const SPRITEDEX_LEGAL = Object.freeze({
+const SPRITE_INDEX_LEGAL = Object.freeze({
   LEGAL_CONFIG,
   LEGAL_VERSION,
   LEGAL_LAST_UPDATED_ISO,
@@ -830,9 +830,9 @@ const SPRITEDEX_LEGAL = Object.freeze({
 });
 
 if (typeof window !== "undefined") {
-  window.SPRITNEXLegal = SPRITEDEX_LEGAL;
+  window.SPRITE_INDEXLegal = SPRITE_INDEX_LEGAL;
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = SPRITEDEX_LEGAL;
+  module.exports = SPRITE_INDEX_LEGAL;
 }

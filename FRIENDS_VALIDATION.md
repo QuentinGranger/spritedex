@@ -1,4 +1,4 @@
-# Critères de validation — Système d’amis SPRITNEX
+# Critères de validation — Système d’amis SPRITE-INDEX
 
 Ce document formalise les critères d’acceptation du système d’amis et les
 points de vérification automatisés associés.

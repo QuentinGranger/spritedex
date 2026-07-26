@@ -31,6 +31,7 @@ require("./server/routes-sprite-graph-admin");
 require("./server/notification-events");
 require("./server/recommendations");
 require("./server/news");
+require("./server/routes-dev-reload");
 require("./server/routes-spa");
 
 // 404 + global error handlers must be registered after every route.
@@ -62,7 +63,7 @@ ensureSquadTables()
     }, 24 * 60 * 60 * 1000);
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-      console.log(`SPRITNEX API + WebSocket running on http://localhost:${PORT}`);
+      console.log(`SPRITE-INDEX API + WebSocket running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {

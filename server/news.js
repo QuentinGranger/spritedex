@@ -626,7 +626,7 @@ async function refreshNews() {
 async function notifyNewsSubscribers(items) {
   if (!items.length) return;
   const title = items.length === 1
-    ? "Nouvelle actu SPRITNEX"
+    ? "Nouvelle actu SPRITE-INDEX"
     : `${items.length} nouvelles actus`;
   const body = items.length === 1
     ? items[0].title || "Un article vient d'être ajouté"

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Compare engine & security regression tests
+// SPRITE-INDEX — Compare engine & security regression tests
 //
 // Lightweight black-box integration tests against a RUNNING server.
 //
@@ -99,7 +99,7 @@ async function cleanup(user) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX compare tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX compare tests against ${BASE}\n`);
 
   const quentin = await registerUser(`QuentinCmp${rnd()}`);
   const lucy = await registerUser(`LucyCmp${rnd()}`);

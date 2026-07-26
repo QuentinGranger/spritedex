@@ -114,10 +114,15 @@ function emptyFriendsHTML(message = "Aucun résultat.") {
 function setFriendsTab(tab) {
   friendsState.activeTab = tab;
   document.querySelectorAll(".friends-tab").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.friendsTab === tab);
+    const active = btn.dataset.friendsTab === tab;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+    btn.tabIndex = active ? 0 : -1;
   });
   document.querySelectorAll(".friends-panel").forEach((panel) => {
-    panel.classList.toggle("active", panel.id === `friends-panel-${tab}`);
+    const active = panel.id === `friends-panel-${tab}`;
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
   });
 }
 
@@ -434,7 +439,7 @@ async function loadFriendsData() {
 
 async function loadSquadSuggestions() {
   friendsState.suggestions = [];
-  const code = state.activeSquad || localStorage.getItem("spritedex_squad");
+  const code = state.activeSquad || localStorage.getItem("sprite-index_squad");
   if (!code || !state.userId) return;
 
   try {

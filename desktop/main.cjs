@@ -2,7 +2,7 @@ const { app, BrowserWindow, protocol, shell } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 
-const APP_SCHEME = "spritedex";
+const APP_SCHEME = "sprite-index";
 const APP_HOST = "app";
 const STATIC_DIR = path.resolve(__dirname, "..", "www");
 const MIME_TYPES = {
@@ -126,7 +126,8 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 700,
     backgroundColor: "#0a0e1a",
-    title: "SPRITNEX",
+    title: "SPRITE-INDEX",
+    icon: path.join(__dirname, "logoImg", "icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,

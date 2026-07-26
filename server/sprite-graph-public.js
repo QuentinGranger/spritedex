@@ -26,7 +26,7 @@ const {
   getTopPopularSprites
 } = require("./sprite-graph-comparison-stats");
 
-const COMMUNITY_SOURCE_DISCLAIMER = "Données issues de la communauté SpriteDex";
+const COMMUNITY_SOURCE_DISCLAIMER = "Données issues de la communauté sprite-index";
 
 /** Étape 80 — min distinct dates before showing a history chart / series. */
 const MIN_HISTORY_POINTS = (() => {
@@ -196,11 +196,11 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
     publicDisplay,
     raritySeparation: {
       officialRarity,
-      spritedexOwnershipRate: ownershipRate,
+      spriteIndexOwnershipRate: ownershipRate,
       ownershipLabel: ownershipRate != null
-        ? `Taux de possession SpriteDex : ${formatRateFr(ownershipRate, { digits: 1 })} %`
+        ? `Taux de possession sprite-index : ${formatRateFr(ownershipRate, { digits: 1 })} %`
         : null,
-      note: "La rareté officielle et le taux de possession SpriteDex sont des indicateurs distincts."
+      note: "La rareté officielle et le taux de possession sprite-index sont des indicateurs distincts."
     },
     disclaimer: COMMUNITY_SOURCE_DISCLAIMER
   };
@@ -344,7 +344,7 @@ async function enrichVariantRows(db, items, idKey = "variantId") {
 }
 
 /**
- * Étape 78 — Tendances board (SpriteDex community only).
+ * Étape 78 — Tendances board (sprite-index community only).
  */
 async function getCommunityTrendsBoard(db = pool, {
   metricDate = null,
@@ -381,7 +381,7 @@ async function getCommunityTrendsBoard(db = pool, {
           minimumRequired: PUBLIC_ANONYMIZATION_MIN_USERS
         },
         disclaimer: COMMUNITY_SOURCE_DISCLAIMER,
-        label: "Tendances SpriteDex",
+        label: "Tendances sprite-index",
         sections: {}
       };
     }
@@ -499,14 +499,14 @@ async function getCommunityTrendsBoard(db = pool, {
   return {
     asOf: day,
     disclaimer: COMMUNITY_SOURCE_DISCLAIMER,
-    label: "Tendances SpriteDex",
+    label: "Tendances sprite-index",
     sections: {
       mostOwned: {
         title: "Les plus possédés",
         items: mapOwned
       },
-      rarestInSpritedex: {
-        title: "Les plus rares dans SpriteDex",
+      rarestInSpriteIndex: {
+        title: "Les plus rares dans sprite-index",
         note: "Rareté communautaire (taux de possession), distincte de la rareté officielle",
         items: mapRare
       },
@@ -576,7 +576,7 @@ async function getCompareCommunityInsights(db = pool, {
     }
 
     const ownershipLine = std.community.ownershipRate != null
-      ? `Seulement ${formatRateFr(std.community.ownershipRate, { digits: 1 })} % de la communauté SpriteDex la possède.`
+      ? `Seulement ${formatRateFr(std.community.ownershipRate, { digits: 1 })} % de la communauté sprite-index la possède.`
       : null;
     const priorityLine = std.community.priorityRateAmongMissing != null
       ? `Cette variante est prioritaire chez ${formatRateFr(std.community.priorityRateAmongMissing, { digits: 0 })} % des utilisateurs auxquels elle manque.`

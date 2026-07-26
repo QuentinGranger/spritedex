@@ -261,6 +261,12 @@
   background: rgba(0, 255, 135, 0.03);
 }
 
+.sd-variant--master {
+  border-color: rgba(255, 203, 76, 0.62);
+  background: linear-gradient(110deg, rgba(255, 197, 46, 0.12), rgba(0, 255, 135, 0.035));
+  box-shadow: inset 0 1px 0 rgba(255, 238, 174, 0.14), 0 0 16px rgba(255, 190, 35, 0.1);
+}
+
 .sd-variant__thumb {
   width: 38px;
   height: 38px;
@@ -293,11 +299,69 @@
   margin-left: 4px;
 }
 
+.sd-variant__mastery {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sd-variant__mastery-label {
+  min-width: 48px;
+  color: #8dd6ff;
+  font-family: var(--font-heading);
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sd-variant__mastery--master .sd-variant__mastery-label {
+  color: #ffdc73;
+  text-shadow: 0 0 9px rgba(255, 205, 65, 0.42);
+}
+
+.sd-variant__mastery-levels { display: flex; gap: 3px; }
+
+.sd-mastery-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(116, 141, 212, 0.26);
+  border-radius: 6px;
+  color: #65729b;
+  background: rgba(255, 255, 255, 0.025);
+  font-family: var(--font-heading);
+  font-size: 0.55rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 150ms ease, color 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.sd-mastery-btn:hover,
+.sd-mastery-btn:focus-visible { transform: translateY(-1px); border-color: #44cfff; color: #e3f9ff; outline: none; }
+.sd-mastery-btn.is-active { border-color: rgba(29, 204, 255, 0.7); color: #e6fbff; background: rgba(27, 175, 255, 0.24); }
+.sd-mastery-btn.is-master { color: #c89e43; }
+.sd-mastery-btn.is-master.is-active { border-color: #ffd35c; color: #ffe48a; background: rgba(255, 194, 38, 0.25); box-shadow: 0 0 8px rgba(255, 190, 35, 0.24); }
+
 .sd-variant__actions {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .sprite-detail { padding: 24px 14px; }
+  .sd-variant { align-items: flex-start; flex-wrap: wrap; gap: 8px; padding: 10px; }
+  .sd-variant__info { min-width: calc(100% - 50px); }
+  .sd-variant__mastery { width: 100%; justify-content: space-between; padding: 7px 8px; border: 1px solid rgba(81, 113, 204, 0.2); border-radius: 9px; background: rgba(6, 17, 46, 0.3); }
+  .sd-variant__mastery--master { border-color: rgba(255, 203, 76, 0.35); background: rgba(105, 71, 11, 0.2); }
+  .sd-variant__mastery-label { min-width: 56px; font-size: 0.65rem; }
+  .sd-mastery-btn { width: 28px; height: 28px; border-radius: 8px; font-size: 0.64rem; }
+  .sd-variant__actions { width: 100%; flex-wrap: wrap; }
+  .sd-status-select, .sd-prio-select { flex: 1 1 120px; max-width: none; }
 }
 
 .sd-status-select,

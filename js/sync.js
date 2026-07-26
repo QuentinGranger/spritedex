@@ -1,4 +1,4 @@
-const SYNC_QUEUE_KEY = "spritedex_sync_queue";
+const SYNC_QUEUE_KEY = "sprite-index_sync_queue";
 let syncTimer = null;
 let syncInFlight = false;
 
@@ -40,12 +40,13 @@ async function persist(spriteId) {
         status: entry.status,
         note: entry.note,
         priority: entry.priority,
+        masteryLevel: entry.masteryLevel,
         obtainedAt: entry.obtainedAt
       })
     });
     if (!res.ok) throw new Error(res.status);
     syncErrorState = false;
-    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     updateSyncStatus();
   } catch (e) {
     console.warn("Cloud save failed, queued:", spriteId, e);
@@ -82,6 +83,7 @@ async function flushSyncQueue() {
           status: entry.status,
           note: entry.note,
           priority: entry.priority,
+          masteryLevel: entry.masteryLevel,
           obtainedAt: entry.obtainedAt
         })
       });
@@ -98,7 +100,7 @@ async function flushSyncQueue() {
     scheduleSyncRetry();
   } else {
     syncErrorState = false;
-    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     console.log("Sync queue flushed");
   }
   updateSyncStatus();
@@ -116,7 +118,7 @@ async function fullSync() {
     if (!res.ok) throw new Error(res.status);
     saveSyncQueue([]);
     syncErrorState = false;
-    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     console.log("Full sync completed");
     updateSyncStatus();
   } catch (e) {
@@ -141,7 +143,7 @@ async function replaceCollection() {
     if (!res.ok) throw new Error(res.status);
     saveSyncQueue([]);
     syncErrorState = false;
-    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     updateSyncStatus();
     return true;
   } catch (e) {

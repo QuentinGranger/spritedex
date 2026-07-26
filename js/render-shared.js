@@ -76,8 +76,8 @@ function renderSharedProfile(data) {
         <div class="shared-view__grid">${grid}</div>
       </div>
 
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SPRITNEX</a>
-      <p class="legal-disclaimer">SPRITNEX est une application non officielle. Non affiliée à Epic Games. Fortnite est une marque d'Epic Games.</p>
+      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SPRITE-INDEX</a>
+      <p class="legal-disclaimer">SPRITE-INDEX est une application non officielle. Non affiliée à Epic Games. Fortnite est une marque d'Epic Games.</p>
     </div>`;
 
   document.body.appendChild(overlay);
@@ -90,7 +90,7 @@ function renderSharedError() {
     <div class="shared-view__card shared-view__card--error">
       <h1 class="shared-view__name">Lien indisponible</h1>
       <p class="shared-view__sub">Ce lien de partage est invalide ou a été révoqué par son propriétaire.</p>
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SPRITNEX</a>
+      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SPRITE-INDEX</a>
     </div>`;
   document.body.appendChild(overlay);
 }

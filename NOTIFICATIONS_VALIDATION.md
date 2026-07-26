@@ -1,4 +1,4 @@
-# Critères de validation — Notifications contextuelles SPRITNEX
+# Critères de validation — Notifications contextuelles SPRITE-INDEX
 
 Ce document formalise **quand le système de notifications est prêt** (Étape 72).
 Chaque critère a une condition d’acceptation et une preuve automatisée.

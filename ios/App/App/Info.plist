@@ -8,15 +8,15 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.spritedex.app</string>
+			<string>com.spriteindex.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>spritedex</string>
+				<string>sprite-index</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleDisplayName</key>
-        <string>SPRITNEX</string>
+        <string>SPRITE-INDEX</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

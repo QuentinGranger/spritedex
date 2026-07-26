@@ -1,4 +1,4 @@
-# Sprite Graph — mémoire historique SpriteDex
+# Sprite Graph — mémoire historique sprite-index
 
 ## Étape 1 — Définition
 
@@ -72,7 +72,7 @@ Même pour `collection.sprite_added`, l’événement référence la variante pr
 
 ## Étape 5 — Table `graph_events`
 
-Append-only. Types adaptés au schéma SpriteDex (INTEGER users/squads, VARCHAR sprites/variants — pas UUID pour ces FKs).
+Append-only. Types adaptés au schéma sprite-index (INTEGER users/squads, VARCHAR sprites/variants — pas UUID pour ces FKs).
 
 Voir `server/sprite-graph.js` → `ensureGraphEventsTable`.
 
@@ -331,7 +331,7 @@ Minimum **20** utilisateurs uniques (`GRAPH_PUBLIC_MIN_USERS`). En dessous : « 
 
 Table générique optionnelle. Dimensions nulles → sentinelles (`''` / `0`) pour une PK stable. En pratique, préférer les tables spécialisées (Étape 37).
 
-IDs adaptés au schéma SpriteDex : `variant_id` / `sprite_id` en VARCHAR, `squad_id` en INTEGER.
+IDs adaptés au schéma sprite-index : `variant_id` / `sprite_id` en VARCHAR, `squad_id` en INTEGER.
 
 ## Étape 37 — Agrégats spécialisés
 
@@ -408,9 +408,9 @@ avg = Σ complementarityRate (1 valeur récente / pairKey / catalogueVersion)
 
 Bandes : `0_25` | `25_50` | `50_75` | `75_100` (moyenne des taux de possession de la paire).
 
-## Étape 50–52 — Indice d’intérêt (Tendance SpriteDex)
+## Étape 50–52 — Indice d’intérêt (Tendance sprite-index)
 
-Pas une « popularité officielle » Fortnite — uniquement les utilisateurs SpriteDex.
+Pas une « popularité officielle » Fortnite — uniquement les utilisateurs sprite-index.
 
 ```text
 priorityScore / collectionScore / comparisonScore / notificationScore
@@ -423,7 +423,7 @@ interestScore =
   + notificationScore × 0,10
 ```
 
-Libellés : **Tendance SpriteDex** / **Indice d’intérêt communautaire**.
+Libellés : **Tendance sprite-index** / **Indice d’intérêt communautaire**.
 Poids : `GRAPH_POPULARITY_WEIGHTS`.
 
 ## Étape 53 — Évolution journalière (variante)
@@ -497,7 +497,7 @@ Incrémenter immédiatement (via outbox) : ajouts, priorités, comparaisons, inv
 ```
 
 Types : `priority_added`, `collection_added`, `comparison_completed`, `comparison_difference`, `invitation_sent`, `goal_completed`, `notification_opened`.
-`entity_id` est `VARCHAR` (ids SpriteDex), pas UUID.
+`entity_id` est `VARCHAR` (ids sprite-index), pas UUID.
 
 ## Étape 64 — Rebuild
 
@@ -558,11 +558,11 @@ Affichage public minimal : possession, priorité parmi manquants, tendance, éch
 
 ## Étape 78 — Page Tendances
 
-`GET /api/sprite-graph/trends` — sections : plus possédés, plus rares SpriteDex, plus recherchés, priorités, progressions, plus comparés. Toujours : « Données issues de la communauté SpriteDex ».
+`GET /api/sprite-graph/trends` — sections : plus possédés, plus rares sprite-index, plus recherchés, priorités, progressions, plus comparés. Toujours : « Données issues de la communauté sprite-index ».
 
 ## Étape 79 — Rareté officielle ≠ rareté communautaire
 
-Afficher séparément : `Rareté officielle` et `Taux de possession SpriteDex`.
+Afficher séparément : `Rareté officielle` et `Taux de possession sprite-index`.
 
 ## Étape 80 — Évolution historique
 

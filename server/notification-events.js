@@ -1,4 +1,4 @@
-// ── SPRITNEX notification service (Étape 8) ────────────────────────────────
+// ── SPRITE-INDEX notification service (Étape 8) ────────────────────────────────
 // Subscribes to domain events emitted on the central event bus and turns them
 // into notifications. For each event it determines:
 //   • the recipients        (who should be told)

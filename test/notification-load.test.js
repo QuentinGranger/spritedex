@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Étape 69 notification load / scale tests
+// SPRITE-INDEX — Étape 69 notification load / scale tests
 //
 // Pure (no live server) scale checks for hot notification paths.
 // Defaults stay CI-friendly; raise via env for heavier runs:
@@ -65,7 +65,7 @@ function memoryClaimPool() {
 }
 
 async function run() {
-  console.log("\nRunning SPRITNEX notification load tests (Étape 69)\n");
+  console.log("\nRunning SPRITE-INDEX notification load tests (Étape 69)\n");
   console.log(
     `  scale: friends=${FRIENDS} squadItems=${SQUAD_ITEMS} variants=${VARIANTS}`
     + ` eventUsers=${EVENT_USERS} acquisitions=${ACQUISITIONS} budget=${BUDGET_MS}ms\n`

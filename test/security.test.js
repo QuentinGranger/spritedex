@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Security regression tests
+// SPRITE-INDEX — Security regression tests
 //
 // These are lightweight black-box integration tests that hit a RUNNING
 // server. They verify the authorization / access-control fixes stay in place.
@@ -53,7 +53,7 @@ function authHeaders(token) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX security tests against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX security tests against ${BASE}\n`);
 
   const userA = await registerUser();
   const userB = await registerUser();

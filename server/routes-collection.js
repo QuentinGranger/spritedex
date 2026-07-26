@@ -16,6 +16,14 @@ const { emitDomainEvent, DOMAIN_EVENTS } = require("./event-bus");
 const { isAcquiredFromStatus } = require("./notification-gates");
 const acquisition = require("./notification-acquisition");
 
+const MASTERY_MAX_LEVEL = 5;
+
+function normalizeMasteryLevel(entry, status) {
+  if (status !== "owned") return 0;
+  const level = Number(entry?.masteryLevel);
+  return Number.isInteger(level) && level >= 1 && level <= MASTERY_MAX_LEVEL ? level : 1;
+}
+
 // ── Collection : GET all entries for user ──
 app.get("/api/collection/:userId", async (req, res) => {
   try {
@@ -37,7 +45,7 @@ app.get("/api/collection/:userId", async (req, res) => {
     const canSeeNotes = await canViewCollection(reqUser, userId, { visibilityKey: "notes" });
 
     const result = await pool.query(
-      "SELECT variant_id, sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
+      "SELECT variant_id, sprite_id, status, note, priority, obtained_at, mastery_level, updated_at FROM sprite_entries WHERE user_id = $1",
       [userId]
     );
     // variant_id values originate from persisted user data, including older
@@ -50,6 +58,7 @@ app.get("/api/collection/:userId", async (req, res) => {
         status: row.status,
         note: canSeeNotes ? (row.note || "") : "",
         priority: canSeePriority ? (row.priority || "none") : "none",
+        masteryLevel: row.status === "owned" ? Math.max(1, Number(row.mastery_level) || 1) : 0,
         obtainedAt: row.obtained_at || null,
         updatedAt: row.updated_at,
       };
@@ -149,14 +158,15 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
   if (!spriteId || spriteId.length > 120) return res.status(400).json({ error: "spriteId invalide" });
   const { variantId, spriteId: baseSpriteId } = await normalizeVariantId(spriteId);
   if (!variantId) return res.status(400).json({ error: "spriteId invalide" });
-  const { status, note, priority, obtainedAt } = req.validatedBody;
+  const { status, note, priority, obtainedAt, masteryLevel } = req.validatedBody;
   const hasObtainedAt = Object.prototype.hasOwnProperty.call(req.validatedBody, "obtainedAt");
+  const hasMasteryLevel = Object.prototype.hasOwnProperty.call(req.validatedBody, "masteryLevel");
   const client = await pool.connect();
   try {
     // Étape 30 — collection write + graph event in one transaction.
     await client.query("BEGIN");
     const prev = await client.query(
-      `SELECT id, status, priority FROM sprite_entries
+      `SELECT id, status, priority, mastery_level FROM sprite_entries
        WHERE user_id = $1 AND variant_id = $2
        FOR UPDATE`,
       [userId, variantId]
@@ -164,18 +174,33 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
     const isNewEntry = prev.rows.length === 0;
     const prevStatus = isNewEntry ? "new" : prev.rows[0].status;
     const prevPriority = isNewEntry ? "none" : (prev.rows[0].priority || "none");
+    const nextStatus = status ?? prevStatus;
+    if (hasMasteryLevel && masteryLevel > 0 && nextStatus !== "owned") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Le niveau de maîtrise nécessite une variante possédée." });
+    }
+    const nextMasteryLevel = hasMasteryLevel
+      ? normalizeMasteryLevel({ masteryLevel }, nextStatus)
+      : null;
 
     const saved = await client.query(
-      `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
-       VALUES ($1, $2, $3, COALESCE($4, 'new'), COALESCE($5, ''), COALESCE($6, 'none'), $7::timestamptz, NOW())
+      `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, mastery_level, updated_at)
+       VALUES ($1, $2, $3, COALESCE($4, 'new'), COALESCE($5, ''), COALESCE($6, 'none'), $7::timestamptz,
+               CASE WHEN COALESCE($4, 'new') = 'owned' THEN COALESCE($9, 1) ELSE 0 END, NOW())
        ON CONFLICT (user_id, variant_id)
        DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
                      status = COALESCE($4, sprite_entries.status),
                      note = COALESCE($5, sprite_entries.note),
                      priority = COALESCE($6, sprite_entries.priority),
                      obtained_at = CASE WHEN $8 THEN $7::timestamptz ELSE sprite_entries.obtained_at END,
+                     mastery_level = CASE
+                       WHEN COALESCE($4, sprite_entries.status) <> 'owned' THEN 0
+                       WHEN $10 THEN $9
+                       WHEN sprite_entries.status <> 'owned' THEN 1
+                       ELSE GREATEST(sprite_entries.mastery_level, 1)
+                     END,
                      updated_at = NOW()
-       RETURNING id, status, note, priority, obtained_at`,
+       RETURNING id, status, note, priority, obtained_at, mastery_level`,
       [
         userId,
         variantId,
@@ -184,7 +209,9 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
         note ?? null,
         priority ?? null,
         hasObtainedAt && obtainedAt !== "" ? obtainedAt : null,
-        hasObtainedAt
+        hasObtainedAt,
+        nextMasteryLevel,
+        hasMasteryLevel
       ]
     );
 
@@ -263,14 +290,14 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
     // A demotion (owned → missing), an import-like edit, or a priority change
     // must refresh the stored squad stats too.  The owned-gain path above
     // remains synchronous so coverage notifications retain their exact gain.
-    if (newStatus !== prevStatus || note !== undefined || priority !== undefined || hasObtainedAt) {
+    if (newStatus !== prevStatus || note !== undefined || priority !== undefined || hasObtainedAt || hasMasteryLevel) {
       scheduleSquadStatsForUser(userId).catch(err =>
         console.error("[setEntry] squad stats refresh failed", err)
       );
     }
 
     await checkAffectedGoals(userId, variantId);
-    res.json({ ok: true });
+    res.json({ ok: true, masteryLevel: savedEntry.mastery_level });
     broadcastSquadUpdate(userId);
     broadcastSquadCompletionUpdate(userId);
     if (newStatus === "owned" || prevStatus === "owned") {
@@ -305,7 +332,8 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
         status: newStatus,
         priority: savedEntry.priority || "none",
         note: savedEntry.note || "",
-        obtainedAt: savedEntry.obtained_at || null
+        obtainedAt: savedEntry.obtained_at || null,
+        masteryLevel: savedEntry.mastery_level
       }]
     });
   } catch (err) {
@@ -326,7 +354,7 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
 
   const variantIds = Object.keys(normalizedCollection).filter(v => !v.startsWith("fav_"));
   const prevRes = await pool.query(
-    `SELECT id, variant_id, status, note, priority, obtained_at FROM sprite_entries
+    `SELECT id, variant_id, status, note, priority, obtained_at, mastery_level FROM sprite_entries
      WHERE user_id = $1 AND variant_id = ANY($2)`,
     [userId, variantIds]
   );
@@ -341,23 +369,27 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
     await client.query("BEGIN");
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
+      const entryStatus = entry.status || "new";
+      const entryMasteryLevel = normalizeMasteryLevel(entry, entryStatus);
       const upsert = await client.query(
-        `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, COALESCE($8::timestamptz, NOW()))
+        `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, mastery_level, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8, COALESCE($9::timestamptz, NOW()))
          ON CONFLICT (user_id, variant_id)
          DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
                        status = $4,
                        note = $5,
                        priority = $6,
                        obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
-                       updated_at = COALESCE($8::timestamptz, NOW())
+                       mastery_level = $8,
+                       updated_at = COALESCE($9::timestamptz, NOW())
          RETURNING id`,
         [
           userId, variantId, entry.spriteId || null,
-          entry.status || "new",
+          entryStatus,
           entry.note || "",
           entry.priority || "none",
           entry.obtainedAt || null,
+          entryMasteryLevel,
           entry.updatedAt || null
         ]
       );
@@ -371,10 +403,12 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
       const newNote = entry.note || "";
       const newPriority = entry.priority || "none";
       const newObtainedAt = entry.obtainedAt || null;
+      const newMasteryLevel = normalizeMasteryLevel(entry, newStatus);
       const changed = !old
         || old.status !== newStatus
         || old.note !== newNote
         || old.priority !== newPriority
+        || Number(old.mastery_level || 0) !== newMasteryLevel
         || String(old.obtained_at || "") !== String(newObtainedAt);
       if (changed) {
         notifyChanges.push({
@@ -405,7 +439,8 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
         status: newStatus,
         priority: newPriority,
         note: newNote,
-        obtainedAt: newObtainedAt
+        obtainedAt: newObtainedAt,
+        masteryLevel: newMasteryLevel
       });
     }
     // Étape 30 — persist graph events before COMMIT.
@@ -509,7 +544,7 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
 
   const variantIds = Object.keys(normalizedCollection).filter(v => !v.startsWith("fav_"));
   const prevRes = await pool.query(
-    `SELECT id, variant_id, status, note, priority, obtained_at FROM sprite_entries
+    `SELECT id, variant_id, status, note, priority, obtained_at, mastery_level FROM sprite_entries
      WHERE user_id = $1 AND variant_id = ANY($2)`,
     [userId, variantIds]
   );
@@ -544,23 +579,27 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
     );
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
+      const entryStatus = entry.status || "new";
+      const entryMasteryLevel = normalizeMasteryLevel(entry, entryStatus);
       const upsert = await client.query(
-        `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, COALESCE($8::timestamptz, NOW()))
+        `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, mastery_level, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8, COALESCE($9::timestamptz, NOW()))
          ON CONFLICT (user_id, variant_id)
          DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
                        status = $4,
                        note = $5,
                        priority = $6,
                        obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
-                       updated_at = COALESCE($8::timestamptz, NOW())
+                       mastery_level = $8,
+                       updated_at = COALESCE($9::timestamptz, NOW())
          RETURNING id`,
         [
           userId, variantId, entry.spriteId || null,
-          entry.status || "new",
+          entryStatus,
           entry.note || "",
           entry.priority || "none",
           entry.obtainedAt || null,
+          entryMasteryLevel,
           entry.updatedAt || null
         ]
       );
@@ -574,10 +613,12 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
       const newNote = entry.note || "";
       const newPriority = entry.priority || "none";
       const newObtainedAt = entry.obtainedAt || null;
+      const newMasteryLevel = normalizeMasteryLevel(entry, newStatus);
       const changed = !old
         || old.status !== newStatus
         || old.note !== newNote
         || old.priority !== newPriority
+        || Number(old.mastery_level || 0) !== newMasteryLevel
         || String(old.obtained_at || "") !== String(newObtainedAt);
       if (changed) {
         notifyChanges.push({
@@ -608,7 +649,8 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
         status: newStatus,
         priority: newPriority,
         note: newNote,
-        obtainedAt: newObtainedAt
+        obtainedAt: newObtainedAt,
+        masteryLevel: newMasteryLevel
       });
     }
     // Treat removed rows as status transitions for history (possession audit trail).

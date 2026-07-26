@@ -65,7 +65,7 @@ function passportActivityLabel(item) {
     case "event_completed":
       return data.eventName ? `Événement complété : ${data.eventName}.` : "Événement complété.";
     case "account_created":
-      return "Inscription à SpriteDex.";
+      return "Inscription à sprite-index.";
     default:
       return type || "Activité";
   }

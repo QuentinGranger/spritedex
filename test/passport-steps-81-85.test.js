@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// SPRITNEX — Collector Passport Étapes 81–85
+// SPRITE-INDEX — Collector Passport Étapes 81–85
 // Needs live server: npm start, then npm run test:passport
 // ─────────────────────────────────────────────────────────────────
 process.env.APP_URL ||= "http://localhost:3000";
@@ -125,7 +125,7 @@ async function befriend(a, b) {
 }
 
 async function run() {
-  console.log(`\nRunning SPRITNEX passport étapes 81–85 against ${BASE}\n`);
+  console.log(`\nRunning SPRITE-INDEX passport étapes 81–85 against ${BASE}\n`);
   await ensurePassportBadgeTables(pool);
   await ensurePassportActivityTable(pool);
 
