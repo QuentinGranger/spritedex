@@ -14,9 +14,18 @@ function isLocalDatabaseUrl(url) {
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
+function isRenderInternalDatabaseUrl(url) {
+  const host = getDatabaseHost(url);
+  // Render injects internal Postgres URLs in the form `dpg-<id>-a`. They are
+  // reachable only over Render's private network and do not present the public
+  // TLS certificate used by external `*.render.com` database endpoints.
+  return /^dpg-[a-z0-9]+-a$/i.test(host || "");
+}
+
 function shouldUseSSL(url) {
   if (!url) return false;
   if (isLocalDatabaseUrl(url)) return false;
+  if (isRenderInternalDatabaseUrl(url)) return false;
   if (process.env.PGSSL === "disable") {
     if (process.env.NODE_ENV === "production") {
       throw new Error("[DB] PGSSL=disable is only permitted outside production");
@@ -45,8 +54,8 @@ function sanitizeConnectionString(url) {
 function databasePoolConfig(url) {
   return {
     connectionString: sanitizeConnectionString(url),
-    // TLS is enabled for every non-local URL and certificate validation is on
-    // by default. A development-only plaintext opt-out is handled above.
+    // TLS is enabled with certificate validation for every external URL. Local
+    // and Render-private connections stay on their private network.
     ssl: shouldUseSSL(url) ? { rejectUnauthorized: true } : false
   };
 }
@@ -59,4 +68,4 @@ const pool = process.env.DATABASE_URL
       port: 5432,
     });
 
-module.exports = { databasePoolConfig, getDatabaseHost, isLocalDatabaseUrl, pool, sanitizeConnectionString, shouldUseSSL };
+module.exports = { databasePoolConfig, getDatabaseHost, isLocalDatabaseUrl, isRenderInternalDatabaseUrl, pool, sanitizeConnectionString, shouldUseSSL };
