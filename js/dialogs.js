@@ -6,7 +6,10 @@ function openDetail(itemId) {
   const imageUrl = safeImageUrl(item.img);
   els.dialogAvatar.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="avatar-img" />` : `<span class="avatar-placeholder">?</span>`;
   els.dialogAvatar.style.setProperty("--card-color", safeCssColor(item.color));
-  els.dialogRarity.textContent = item.rarity;
+  // Étape 79 — label official rarity separately from community ownership.
+  els.dialogRarity.textContent = item.rarity
+    ? `Rareté officielle : ${item.rarity}`
+    : "Rareté officielle : —";
   els.dialogTitle.textContent = item.spriteName;
   els.dialogVariant.textContent = `${item.variant} · ${statusLabel(entry.status)}`;
   els.dialogEffect.textContent = `${item.effect} ${item.variant !== "Base" ? `Bonus variante : ${item.variantBonus}` : ""}`;
@@ -17,6 +20,10 @@ function openDetail(itemId) {
   });
 
   els.dialog.showModal();
+  // Étape 77/80 — community stats on variant fiche (async, non-blocking).
+  if (typeof loadDetailCommunityStats === "function") {
+    loadDetailCommunityStats(item.id);
+  }
 }
 
 function saveDialogNote() {
@@ -48,7 +55,7 @@ function openSpriteDetail(spriteId) {
       <div class="sd-header__info">
         <h2 class="sd-title">${escapeHtml(sprite.name)}</h2>
         <div class="sd-meta">
-          <span class="sd-rarity">${escapeHtml(sprite.rarity)}</span>
+          <span class="sd-rarity" title="Rareté catalogue Fortnite (officielle)">${escapeHtml(sprite.rarity ? `Rareté officielle : ${sprite.rarity}` : "Rareté officielle : —")}</span>
           ${sprite.confidence ? `<span class="sd-confidence sd-confidence--${confidenceClass(sprite.confidence)}">${escapeHtml(sprite.confidence)}</span>` : ""}
         </div>
         <button type="button" class="sd-fav ${isFavorite ? "active" : ""}" data-fav="${escapeHtml(String(sprite.id || ""))}" title="Favori">
@@ -194,6 +201,8 @@ function openSpriteDetail(spriteId) {
       <span class="sd-progress__pct">${pct}%</span>
     </div>
 
+    <div id="spriteDetailCommunity" class="sg-community-mount"></div>
+
     <div class="sd-variants">
       <h3 class="sd-section-title">Variantes</h3>
       ${variants.map(v => {
@@ -263,4 +272,8 @@ function openSpriteDetail(spriteId) {
   `;
 
   els.spriteDetailDialog.showModal();
+  // Étape 77–80 — community block after modal open.
+  if (typeof loadSpriteDetailCommunity === "function") {
+    loadSpriteDetailCommunity(spriteId);
+  }
 }

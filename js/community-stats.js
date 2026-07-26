@@ -165,6 +165,9 @@ function renderCommunityStats() {
     </div>
   `;
   loadCommunityOwnership();
+  if (typeof renderSpritedexTrends === "function") {
+    renderSpritedexTrends();
+  }
 }
 
 function loadCommunityOwnership() {

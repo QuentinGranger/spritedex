@@ -10,6 +10,9 @@
   "use strict";
 
   const PREF_KEY = "spritedex_notifications";
+  let nativeListenersAttached = false;
+  let nativePushRegistered = false;
+  let nativeRegistrationInFlight = null;
 
   function getHeaders() {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -111,23 +114,45 @@
   }
 
   // ── Native Capacitor Push ──
-  function registerNativePush() {
+  async function registerNativePush() {
     const plugins = (window.Capacitor && window.Capacitor.Plugins) || {};
     const { PushNotifications } = plugins;
     if (!PushNotifications || typeof PushNotifications.register !== "function") return;
 
-    PushNotifications.requestPermissions().then((result) => {
-      if (result.receive === "granted") PushNotifications.register();
-    });
+    if (!nativeListenersAttached) {
+      nativeListenersAttached = true;
+      try {
+        await Promise.all([
+          PushNotifications.addListener("registration", (token) => {
+            const platform = window.Capacitor.getPlatform() === "ios" ? "apns" : "fcm";
+            registerServerToken(token.value, platform);
+          }),
+          PushNotifications.addListener("registrationError", (err) => {
+            nativePushRegistered = false;
+            console.error("[PUSH] Native registration error:", err);
+          })
+        ]);
+      } catch (err) {
+        nativeListenersAttached = false;
+        console.error("[PUSH] Native listener setup failed:", err);
+        return;
+      }
+    }
 
-    PushNotifications.addListener("registration", (token) => {
-      const platform = window.Capacitor.getPlatform() === "ios" ? "apns" : "fcm";
-      registerServerToken(token.value, platform);
+    if (nativePushRegistered) return;
+    if (nativeRegistrationInFlight) return nativeRegistrationInFlight;
+    nativeRegistrationInFlight = (async () => {
+      const result = await PushNotifications.requestPermissions();
+      if (result.receive !== "granted") return;
+      await PushNotifications.register();
+      nativePushRegistered = true;
+    })().catch((err) => {
+      nativePushRegistered = false;
+      console.error("[PUSH] Native registration failed:", err);
+    }).finally(() => {
+      nativeRegistrationInFlight = null;
     });
-
-    PushNotifications.addListener("registrationError", (err) => {
-      console.error("[PUSH] Native registration error:", err);
-    });
+    return nativeRegistrationInFlight;
   }
 
   // Étape 45 — if the server invalidated all devices, offer to re-enable push.
@@ -145,7 +170,7 @@
       );
       if (accept) {
         if (isNativePlatform() && window.Capacitor?.Plugins?.PushNotifications) {
-          registerNativePush();
+          await registerNativePush();
         } else {
           await registerWebPush();
         }
@@ -159,7 +184,7 @@
   window.PushClient = {
     register: async () => {
       if (isNativePlatform() && window.Capacitor?.Plugins?.PushNotifications) {
-        registerNativePush();
+        await registerNativePush();
       } else {
         await registerWebPush();
       }

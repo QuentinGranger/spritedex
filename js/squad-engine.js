@@ -117,6 +117,8 @@ function renderEngineOverview(r) {
   const a = r.analysis || {};
   const mc = a.mostComplementaryMember || {};
   const uniqueOwners = a.uniqueOwners || {};
+  // Étape 83 — community context mounts asynchronously (no ranking).
+  queueMicrotask(() => loadSquadCommunityContext(r.squadId || state.activeSquad));
   return `
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
@@ -146,6 +148,11 @@ function renderEngineOverview(r) {
         </div>
       ` : ""}
     </div>
+    <div class="engine-section engine-section--community" id="squadCommunityContext" hidden>
+      <h4 class="engine-section__title">Contexte communautaire</h4>
+      <p class="engine-section__hint">Repères anonymes parmi des squads de taille comparable — pas de classement.</p>
+      <div class="engine-community" id="squadCommunityLines"></div>
+    </div>
     <div class="engine-section">
       <h4 class="engine-section__title">${explain("Membre le plus complémentaire", "mostComplementaryMember")}</h4>
       ${mc.username ? `
@@ -166,6 +173,37 @@ function renderEngineOverview(r) {
     </div>
     ${(r.warnings || []).length ? `<div class="engine-warnings">${r.warnings.map(w => `<p class="engine-warning">${escapeHtml(w)}</p>`).join("")}</div>` : ""}
   `;
+}
+
+/** Étape 83–84 — gentle peer averages (by size band), never a leaderboard. */
+async function loadSquadCommunityContext(squadRef) {
+  const mount = document.getElementById("squadCommunityContext");
+  const linesEl = document.getElementById("squadCommunityLines");
+  if (!mount || !linesEl || !squadRef) return;
+  try {
+    const res = await fetch(
+      `${API_BASE}/sprite-graph/squads/${encodeURIComponent(squadRef)}/community`,
+      { headers: typeof authHeaders === "function" ? authHeaders() : {} }
+    );
+    if (!res.ok) {
+      mount.hidden = true;
+      return;
+    }
+    const data = await res.json();
+    const lines = (data.publicDisplay && data.publicDisplay.lines) || [];
+    if (!lines.length) {
+      mount.hidden = true;
+      return;
+    }
+    linesEl.innerHTML = lines.map((line) => `
+      <p class="engine-community__line">${escapeHtml(line)}</p>
+    `).join("") + (data.publicDisplay?.disclaimer
+      ? `<p class="engine-community__disclaimer">${escapeHtml(data.publicDisplay.disclaimer)}</p>`
+      : "");
+    mount.hidden = false;
+  } catch (_e) {
+    mount.hidden = true;
+  }
 }
 
 const engineFilters = {

@@ -15,6 +15,7 @@ const state = {
   checklistFilter: "all",
   checklistSearch: "",
   checklistSort: "alpha",
+  passportMissingVariantIds: null,
   expandedSprite: null,
   squadMembers: [],
   squadFilter: "all",

@@ -50,7 +50,17 @@ function spriteMatchesFilter(sprite) {
     if (!nameMatch && !rarityMatch && !variantMatch && !effectMatch) return false;
   }
 
-  if (filter === "all") return true;
+  if (filter === "all") {
+    state.passportMissingVariantIds = null;
+    return true;
+  }
+
+  // Étape 62 — open checklist focused on event missing variants.
+  if (Array.isArray(state.passportMissingVariantIds) && state.passportMissingVariantIds.length) {
+    const missing = new Set(state.passportMissingVariantIds.map(String));
+    return getVariantList(sprite).some((v) => missing.has(String(variantId(sprite.id, v))));
+  }
+
   if (filter.startsWith("rarity:")) return sprite.rarity === filter.split(":")[1];
   if (filter.startsWith("variant:")) return getVariantList(sprite).includes(filter.split(":")[1]);
 
