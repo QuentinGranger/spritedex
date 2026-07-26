@@ -25,8 +25,88 @@ const {
   isPublicMetricDisabled,
   isSpriteGraphAdmin
 } = require("./sprite-graph-metrics");
-const { getRequestingUser } = require("./auth");
+const { getRequestingUser, requireNotSuspended } = require("./auth");
 const { INSUFFICIENT_COMMUNITY_DATA_MESSAGE } = require("./sprite-graph-privacy");
+const {
+  GRAPH_INTERACTION_EVENT_TYPE_SET,
+  recordGraphEvent
+} = require("./sprite-graph");
+
+const GRAPH_INTERACTION_SURFACES = new Set(["compare", "squad_engine", "notification", "passport"]);
+const GRAPH_INTERACTION_FILTERS = new Set([
+  "status", "sort", "season", "event", "rarity", "sprite",
+  "variant_type", "availability", "acquisition", "reset"
+]);
+
+function cleanInteractionText(value, max = 80) {
+  const text = String(value || "").trim();
+  return /^[a-z0-9_.-]+$/i.test(text) ? text.slice(0, max) : null;
+}
+
+/**
+ * Additive interaction telemetry. It is authenticated, allow-listed and
+ * append-only; never accept free-form values that could carry user content.
+ */
+app.post("/api/sprite-graph/interactions", requireNotSuspended, async (req, res) => {
+  try {
+    const userId = await getRequestingUser(req);
+    if (!userId) return res.status(401).json({ error: "Authentification requise" });
+    const body = req.body && typeof req.body === "object" ? req.body : {};
+    const eventType = String(body.type || "");
+    if (!GRAPH_INTERACTION_EVENT_TYPE_SET.has(eventType)) {
+      return res.status(400).json({ error: "Type d’interaction invalide" });
+    }
+    const surface = cleanInteractionText(body.surface, 40);
+    if (!surface || !GRAPH_INTERACTION_SURFACES.has(surface)) {
+      return res.status(400).json({ error: "Surface d’interaction invalide" });
+    }
+
+    const context = { surface };
+    const recommendationKey = cleanInteractionText(body.recommendationKey, 80);
+    const filterKind = cleanInteractionText(body.filterKind, 40);
+    if (eventType === "recommendation.clicked") {
+      if (!recommendationKey) return res.status(400).json({ error: "recommendationKey requis" });
+      context.recommendationKey = recommendationKey;
+    }
+    if (eventType === "comparison.filter_applied") {
+      if (!filterKind || !GRAPH_INTERACTION_FILTERS.has(filterKind)) {
+        return res.status(400).json({ error: "Filtre invalide" });
+      }
+      context.filterKind = filterKind;
+    }
+
+    const notificationId = Number(body.notificationId);
+    if (eventType.startsWith("notification.")) {
+      if (!Number.isSafeInteger(notificationId) || notificationId < 1) {
+        return res.status(400).json({ error: "notificationId requis" });
+      }
+      const notification = await pool.query(
+        "SELECT id, type, category FROM notifications WHERE id = $1 AND recipient_id = $2 LIMIT 1",
+        [notificationId, userId]
+      );
+      if (!notification.rows.length) return res.status(404).json({ error: "Notification introuvable" });
+      context.notificationType = notification.rows[0].type || null;
+      context.category = notification.rows[0].category || null;
+    }
+
+    const source = body.source === "ios" || body.source === "android" ? body.source : "web";
+    const bucket = Math.floor(Date.now() / 5000);
+    const target = notificationId || recommendationKey || filterKind || surface;
+    const event = await recordGraphEvent(pool, {
+      eventType,
+      actorUserId: userId,
+      notificationId: Number.isSafeInteger(notificationId) && notificationId > 0 ? notificationId : null,
+      source,
+      origin: "sprite_graph.interactions",
+      context,
+      deduplicationKey: `${eventType}:${userId}:${target}:${bucket}`
+    });
+    res.status(event ? 201 : 202).json({ ok: true, recorded: !!event });
+  } catch (err) {
+    console.error("[sprite-graph] interaction:", err.message);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 
 async function resolveLevel(req) {
   // Public by default. aggregated_internal requires graph admin (Étape 96/98).

@@ -358,6 +358,35 @@ async function getCommunityTrendsBoard(db = pool, {
     : new Date().toISOString().slice(0, 10);
   const lim = Math.max(1, Math.min(50, Number(limit) || 10));
 
+  // Do not render a board full of empty rankings while the community is still
+  // below its privacy threshold. Internal admin callers may still inspect the
+  // aggregates through their dedicated level.
+  if (level === GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC) {
+    const readiness = await db.query(
+      `SELECT COALESCE(MAX(sample_size), 0)::int AS max_sample_size
+       FROM community_variant_stats
+       WHERE metric_date = $1::date`,
+      [day]
+    );
+    const maxSampleSize = readiness.rows[0]?.max_sample_size || 0;
+    const gated = applyPublicAnonymizationGate({ uniqueUserCount: maxSampleSize });
+    if (!gated.ok) {
+      return {
+        asOf: day,
+        insufficient: true,
+        message: gated.message || INSUFFICIENT_COMMUNITY_DATA_MESSAGE,
+        dataQuality: {
+          minimumSampleReached: false,
+          maxSampleSize,
+          minimumRequired: PUBLIC_ANONYMIZATION_MIN_USERS
+        },
+        disclaimer: COMMUNITY_SOURCE_DISCLAIMER,
+        label: "Tendances SpriteDex",
+        sections: {}
+      };
+    }
+  }
+
   const mostOwned = await db.query(
     `SELECT variant_id, ownership_rate, sample_size, owner_user_count
      FROM community_variant_stats

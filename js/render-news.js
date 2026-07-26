@@ -625,7 +625,14 @@ function setupNotifBell() {
       // Étape 47/48 — mark read + clicked_at, then open the contextual destination.
       markNotifRead(id, { clicked: true }).then(() => checkNewsNotifications());
       const payload = notifItemsById.get(String(id)) || { id, type: item.dataset.notifType, data: {} };
-      openNotificationDestination(payload).catch(() => {});
+      openNotificationDestination(payload).then((opened) => {
+        if (opened && typeof trackSpriteGraphInteraction === "function") {
+          trackSpriteGraphInteraction("notification.converted", {
+            surface: "notification",
+            notificationId: Number(id)
+          });
+        }
+      }).catch(() => {});
     });
   }
 

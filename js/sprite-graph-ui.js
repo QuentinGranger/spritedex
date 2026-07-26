@@ -14,6 +14,20 @@ function sgFormatRate(rate, digits = 1) {
   return String(rounded).replace(".", ",");
 }
 
+// Fine interaction signals are optional and never block the user action. Only
+// allow-listed metadata is sent; no collection, search term or profile data.
+function trackSpriteGraphInteraction(type, details = {}) {
+  try {
+    if (!localStorage.getItem(TOKEN_KEY) || !API_BASE || typeof authHeaders !== "function") return;
+    const source = typeof isNativePlatform === "function" && isNativePlatform() ? "ios" : "web";
+    fetch(`${API_BASE}/sprite-graph/interactions`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ type, source, ...details })
+    }).catch(() => {});
+  } catch (_) { /* analytics must stay non-blocking */ }
+}
+
 function renderCommunityPublicBlock(data, { includeHistory = false, history = null } = {}) {
   if (!data || data.insufficient) {
     return `
@@ -194,6 +208,16 @@ async function renderSpritedexTrends() {
   container.innerHTML = `<p class="sg-community__muted">Chargement des tendances SpriteDex…</p>`;
   try {
     const board = await fetchTrendsBoard();
+    if (board.insufficient) {
+      container.innerHTML = `
+        <div class="stats-module sg-trends sg-trends--gated">
+          <h3 class="stats-module__title">${sgEscape(board.label || "Tendances SpriteDex")}</h3>
+          <p class="sg-community__muted">${sgEscape(board.message || "Données communautaires insuffisantes")}</p>
+          <p class="sg-community__disclaimer">${sgEscape(board.disclaimer || "Données issues de la communauté SpriteDex")}</p>
+        </div>
+      `;
+      return;
+    }
     const sections = board.sections || {};
     const order = [
       "mostOwned",

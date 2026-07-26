@@ -935,10 +935,20 @@ function renderCompareActions(result) {
     ${catalogFilters}`;
 
   const filterSelect = $("#compareFilterSelect");
-  if (filterSelect) filterSelect.addEventListener("change", (e) => { state.compareFilter = e.target.value; logCompareAnalytics("comparison_filter_used", { filter: "status", value: e.target.value }); renderCompare(); });
+  if (filterSelect) filterSelect.addEventListener("change", (e) => {
+    state.compareFilter = e.target.value;
+    logCompareAnalytics("comparison_filter_used", { filter: "status", value: e.target.value });
+    trackSpriteGraphInteraction("comparison.filter_applied", { surface: "compare", filterKind: "status" });
+    renderCompare();
+  });
 
   const sortSelectEl = $("#compareSortSelect");
-  if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => { state.compareSort = e.target.value; logCompareAnalytics("comparison_filter_used", { filter: "sort", value: e.target.value }); renderCompare(); });
+  if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => {
+    state.compareSort = e.target.value;
+    logCompareAnalytics("comparison_filter_used", { filter: "sort", value: e.target.value });
+    trackSpriteGraphInteraction("comparison.filter_applied", { surface: "compare", filterKind: "sort" });
+    renderCompare();
+  });
 
   const refreshBtn = $("#compareRefreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", () => {
@@ -960,12 +970,20 @@ function renderCompareActions(result) {
       if (!allowedFilterKeys.has(filterKey)) return;
       setSafeRecordValue(state.compareCatalogFilters, filterKey, String(e.target.value || "").slice(0, 240));
       logCompareAnalytics("comparison_filter_used", { filter: e.target.dataset.filterKey, value: e.target.value });
+      trackSpriteGraphInteraction("comparison.filter_applied", {
+        surface: "compare",
+        filterKind: filterKey === "variantType" ? "variant_type" : filterKey
+      });
       renderCompare();
     });
   });
 
   const resetBtn = $("#compareFilterReset");
-  if (resetBtn) resetBtn.addEventListener("click", () => { state.compareCatalogFilters = createSafeRecord(); renderCompare(); });
+  if (resetBtn) resetBtn.addEventListener("click", () => {
+    state.compareCatalogFilters = createSafeRecord();
+    trackSpriteGraphInteraction("comparison.filter_applied", { surface: "compare", filterKind: "reset" });
+    renderCompare();
+  });
 }
 
 async function loadCompareSquads() {
