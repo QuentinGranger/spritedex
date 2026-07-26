@@ -1,6 +1,7 @@
 // Squad completion engine UI
 let squadEngineReport = null;
 let squadEngineTab = "overview";
+let engineScenarioChanges = [];
 
 const engineDefinitions = {
   collectiveCompletionRate: "Pourcentage des variantes sorties possédées par au moins un membre actif de la squad.",
@@ -18,7 +19,9 @@ const engineDefinitions = {
   availableNow: "Variantes actuellement disponibles dans le jeu.",
   priorities: "Variantes jugées prioritaires par le moteur d'acquisition collectif.",
   bestPair: "Paire de membres couvrant ensemble le plus grand nombre de variantes.",
-  bestTeam: "Groupe de 3 membres couvrant ensemble le plus grand nombre de variantes."
+  bestTeam: "Groupe de 2 à 4 membres couvrant ensemble le plus grand nombre de variantes.",
+  minimumTeam: "Nombre minimal de membres permettant d’atteindre l’objectif de couverture choisi.",
+  simulation: "Scénario temporaire : il ne modifie jamais les collections réelles."
 };
 
 function explain(text, key) {
@@ -56,6 +59,7 @@ async function loadSquadEngine(code) {
       return;
     }
     squadEngineReport = await res.json();
+    engineScenarioChanges = [];
     if (els.squadEngineVersion) {
       els.squadEngineVersion.textContent = `v${squadEngineReport.engineVersion} · ${squadEngineReport.catalogueVersion}`;
     }
@@ -435,21 +439,76 @@ function renderEngineSimulateResult(result) {
         <div class="engine-card__sub">${coveredDelta > 0 ? "+" : ""}${coveredDelta} variante${Math.abs(coveredDelta) === 1 ? "" : "s"}</div>
       </div>
     </div>
+    ${result.appliedChanges != null ? `<p class="engine-section__hint">${safeFiniteNumber(result.appliedChanges, 0, { min: 0, max: 20 })} changement${result.appliedChanges > 1 ? "s" : ""} simulé${result.appliedChanges > 1 ? "s" : ""}.</p>` : ""}
   `;
 }
 
-function renderEngineOptimization(r) {
-  const o = r.optimization || {};
-  const bp = (r.analysis && r.analysis.bestPair) || {};
-  const bt = o.bestTeam || {};
-  const teams = bt.teams || [];
-  const members = getEngineSimulateMembers(r);
-  const variants = getEngineSimulateVariants(r);
-  const memberOpts = members.map(m => `<option value="${escapeHtml(String(m.userId))}">${escapeHtml(m.username)}</option>`).join("");
-  const variantOpts = variants.slice(0, 80).map(v => {
-    const label = `${v.spriteName}${v.variantName ? ` · ${v.variantName}` : ""}`;
-    return `<option value="${escapeHtml(v.variantId)}">${escapeHtml(label)}</option>`;
+function getEngineSelectableVariants(r) {
+  const variants = (r.analysis && r.analysis.allVariants) || [];
+  return variants
+    .filter(v => v && v.variantId)
+    .slice()
+    .sort((a, b) => String(a.spriteName || a.spriteId || "").localeCompare(String(b.spriteName || b.spriteId || ""))
+      || String(a.variantName || a.variantId).localeCompare(String(b.variantName || b.variantId)));
+}
+
+function engineMemberOptions(members) {
+  return members.map(m => `<option value="${escapeHtml(String(m.userId))}">${escapeHtml(m.username || String(m.userId))}</option>`).join("");
+}
+
+function engineVariantOptions(variants) {
+  return variants.map(v => {
+    const label = `${v.spriteName || v.spriteId || v.variantId}${v.variantName ? ` · ${v.variantName}` : ""}`;
+    return `<option value="${escapeHtml(String(v.variantId))}">${escapeHtml(label)}</option>`;
   }).join("");
+}
+
+function describeEngineScenarioChange(change, members, variants) {
+  const memberById = new Map(members.map(m => [String(m.userId), m.username || String(m.userId)]));
+  const variantById = new Map(variants.map(v => [String(v.variantId), `${v.spriteName || v.spriteId || v.variantId}${v.variantName ? ` · ${v.variantName}` : ""}`]));
+  if (change.type === "acquire") {
+    const names = (change.variantIds || []).map(id => variantById.get(String(id)) || String(id));
+    return `${memberById.get(String(change.memberId)) || change.memberId} obtient ${names.join(", ")}`;
+  }
+  if (change.type === "join") {
+    const names = (change.ownedVariantIds || []).map(id => variantById.get(String(id)) || String(id));
+    return `${change.username || "Nouveau membre"} rejoint${names.length ? ` avec ${names.join(", ")}` : " sans variante renseignée"}`;
+  }
+  if (change.type === "leave") return `${memberById.get(String(change.memberId)) || change.memberId} quitte la squad`;
+  return "Changement simulé";
+}
+
+function engineScenarioQueueHtml(members, variants) {
+  if (!engineScenarioChanges.length) return `<p class="engine-empty">Aucun changement dans le scénario.</p>`;
+  return `<ol class="engine-scenario__queue">${engineScenarioChanges.map((change, index) => `
+    <li><span>${escapeHtml(describeEngineScenarioChange(change, members, variants))}</span><button type="button" class="ghost-button engine-scenario__remove" data-engine-scenario-remove="${index}">Retirer</button></li>
+  `).join("")}</ol>`;
+}
+
+function renderEngineScenarioQueue(members, variants) {
+  const queue = document.getElementById("squadEngineScenarioQueue");
+  if (queue) queue.innerHTML = engineScenarioQueueHtml(members, variants);
+}
+
+function renderEngineCombinationResult(data) {
+  const team = data && (data.teams || [])[0];
+  if (!team) return `<p class="engine-empty">Aucune combinaison trouvée.</p>`;
+  const names = (team.members || []).map(m => escapeHtml(m.username || m.displayName || m.userId)).join(", ");
+  return `<div class="engine-result"><strong>${formatPct(team.coverageRate)} de couverture</strong><span>${safeFiniteNumber(team.coveredVariantCount, 0, { min: 0, max: 1000000 })} variantes · ${names || "Membres indisponibles"}</span></div>`;
+}
+
+function renderEngineMinimumTeamResult(data) {
+  if (!data) return `<p class="engine-empty">Aucune équipe ne peut atteindre cet objectif.</p>`;
+  const names = (data.members || []).map(m => escapeHtml(m.username || m.displayName || m.userId)).join(", ");
+  return `<div class="engine-result"><strong>${safeFiniteNumber(data.minPlayers, 0, { min: 0, max: 1000000 })} joueur${data.minPlayers > 1 ? "s" : ""}</strong><span>${escapeHtml(data.display || "")} ${names ? `· ${names}` : ""}</span></div>`;
+}
+
+function renderEngineOptimization(r) {
+  const bp = (r.analysis && r.analysis.bestPair) || {};
+  const members = getEngineSimulateMembers(r);
+  const variants = getEngineSelectableVariants(r);
+  const memberOpts = engineMemberOptions(members);
+  const variantOpts = engineVariantOptions(variants);
   return `
     <div class="engine-grid engine-grid--2">
       <div class="engine-card">
@@ -457,32 +516,56 @@ function renderEngineOptimization(r) {
         <div class="engine-card__label">${explain("Meilleure paire", "bestPair")}</div>
         <div class="engine-card__sub">${bp.userAName && bp.userBName ? `${escapeHtml(bp.userAName)} + ${escapeHtml(bp.userBName)}` : "Aucune"}</div>
       </div>
-      <div class="engine-card">
-        <div class="engine-card__value">${teams.length ? `${teams[0].coverageRate != null ? formatPct(teams[0].coverageRate) : "—"}` : "—"}</div>
-        <div class="engine-card__label">${explain(`Meilleur groupe de ${bt.teamSize || 3}`, "bestTeam")}</div>
-        <div class="engine-card__sub">${teams.length ? (teams[0].members || []).map(m => escapeHtml(m.username || m.userId)).join(", ") : "Aucun"}</div>
-      </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">Impact d’une acquisition</h4>
-      <p class="engine-section__hint">Simulation sans modifier les collections. Estime le Δ de couverture collective si un membre obtient une variante.</p>
-      <form class="engine-sim" id="squadEngineSimulateForm">
+      <h4 class="engine-section__title">${explain("Meilleur groupe", "bestTeam")}</h4>
+      <p class="engine-section__hint">Compare les groupes de 2, 3 ou 4 membres ayant la meilleure couverture collective.</p>
+      <form class="engine-sim" id="squadEngineCombinationForm">
         <label class="engine-sim__field">
-          <span>Membre</span>
-          <select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}>
-            <option value="">Choisir…</option>
-            ${memberOpts}
+          <span>Taille du groupe</span>
+          <select class="engine-select" name="size">
+            <option value="2">2 joueurs</option>
+            <option value="3" selected>3 joueurs</option>
+            <option value="4">4 joueurs</option>
           </select>
         </label>
-        <label class="engine-sim__field">
-          <span>Variante</span>
-          <select class="engine-select" name="variantId" required ${variants.length ? "" : "disabled"}>
-            <option value="">Choisir…</option>
-            ${variantOpts}
-          </select>
-        </label>
-        <button type="submit" class="ghost-button engine-sim__submit" ${members.length && variants.length ? "" : "disabled"}>Simuler</button>
+        <button type="submit" class="ghost-button engine-sim__submit">Calculer</button>
       </form>
+      <div id="squadEngineCombinationResult"><p class="engine-empty">Choisis une taille de groupe.</p></div>
+    </div>
+    <div class="engine-section">
+      <h4 class="engine-section__title">${explain("Équipe minimale", "minimumTeam")}</h4>
+      <p class="engine-section__hint">Trouve le plus petit nombre de membres nécessaire pour atteindre un objectif de couverture.</p>
+      <form class="engine-sim" id="squadEngineMinimumTeamForm">
+        <label class="engine-sim__field">
+          <span>Objectif de couverture</span>
+          <input class="engine-select" name="target" type="number" min="1" max="100" value="90" required>
+        </label>
+        <button type="submit" class="ghost-button engine-sim__submit">Calculer</button>
+      </form>
+      <div id="squadEngineMinimumTeamResult"><p class="engine-empty">Objectif par défaut : 90 %.</p></div>
+    </div>
+    <div class="engine-section">
+      <h4 class="engine-section__title">${explain("Scénario de squad", "simulation")}</h4>
+      <p class="engine-section__hint">Ajoute plusieurs acquisitions, l’arrivée d’un membre ou le départ d’un membre, puis simule l’ensemble sans modifier les collections.</p>
+      <div class="engine-scenario">
+        <form class="engine-sim" id="squadEngineScenarioAcquireForm">
+          <label class="engine-sim__field"><span>Membre</span><select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}><option value="">Choisir…</option>${memberOpts}</select></label>
+          <label class="engine-sim__field"><span>Variantes obtenues</span><select class="engine-select engine-sim__multi" name="variantIds" multiple required ${variants.length ? "" : "disabled"}>${variantOpts}</select></label>
+          <button type="submit" class="ghost-button engine-sim__submit" ${members.length && variants.length ? "" : "disabled"}>Ajouter acquisition</button>
+        </form>
+        <form class="engine-sim" id="squadEngineScenarioJoinForm">
+          <label class="engine-sim__field"><span>Nouveau membre</span><input class="engine-select" name="username" maxlength="80" placeholder="Pseudo"></label>
+          <label class="engine-sim__field"><span>Variantes possédées</span><select class="engine-select engine-sim__multi" name="ownedVariantIds" multiple>${variantOpts}</select></label>
+          <button type="submit" class="ghost-button engine-sim__submit">Ajouter arrivée</button>
+        </form>
+        <form class="engine-sim" id="squadEngineScenarioLeaveForm">
+          <label class="engine-sim__field"><span>Membre qui quitte</span><select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}><option value="">Choisir…</option>${memberOpts}</select></label>
+          <button type="submit" class="ghost-button engine-sim__submit" ${members.length ? "" : "disabled"}>Ajouter départ</button>
+        </form>
+      </div>
+      <div id="squadEngineScenarioQueue">${engineScenarioQueueHtml(members, variants)}</div>
+      <button type="button" class="ghost-button engine-scenario__run" id="squadEngineScenarioRun">Simuler le scénario</button>
       <div id="squadEngineSimulateResult">${renderEngineSimulateResult(null)}</div>
     </div>
   `;
@@ -522,18 +605,16 @@ function resetEngineFilters() {
   if (squadEngineTab === "missing") renderSquadEngineTab("missing");
 }
 
-async function runEngineAcquisitionSimulate(memberId, variantId) {
+async function runEngineScenarioSimulation(changes = engineScenarioChanges) {
   const code = state.activeSquad;
   const resultEl = document.getElementById("squadEngineSimulateResult");
-  if (!code || !memberId || !variantId || !resultEl) return;
+  if (!code || !resultEl || !changes.length) return;
   resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/completion/simulate`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({
-        changes: [{ type: "acquire", memberId, variantIds: [variantId] }]
-      })
+      body: JSON.stringify({ changes })
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -546,6 +627,46 @@ async function runEngineAcquisitionSimulate(memberId, variantId) {
     console.error("[runEngineAcquisitionSimulate]", e);
     resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
   }
+}
+
+async function loadEngineCombinations(size) {
+  const resultEl = document.getElementById("squadEngineCombinationResult");
+  if (!state.activeSquad || !resultEl) return;
+  resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
+  try {
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/completion/combinations?size=${encodeURIComponent(size)}`, { headers: authHeaders() });
+    const data = await res.json().catch(() => ({}));
+    resultEl.innerHTML = res.ok ? renderEngineCombinationResult(data) : `<p class="engine-empty">${escapeHtml(data.error || "Calcul impossible.")}</p>`;
+  } catch (e) {
+    console.error("[loadEngineCombinations]", e);
+    resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
+  }
+}
+
+async function loadEngineMinimumTeam(target) {
+  const resultEl = document.getElementById("squadEngineMinimumTeamResult");
+  if (!state.activeSquad || !resultEl) return;
+  resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
+  try {
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/minimum-team?targetType=coverage&target=${encodeURIComponent(target)}`, { headers: authHeaders() });
+    const data = await res.json().catch(() => ({}));
+    resultEl.innerHTML = res.ok ? renderEngineMinimumTeamResult(data) : `<p class="engine-empty">${escapeHtml(data.error || "Aucune équipe ne peut atteindre cet objectif.")}</p>`;
+  } catch (e) {
+    console.error("[loadEngineMinimumTeam]", e);
+    resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
+  }
+}
+
+function addEngineScenarioChange(change) {
+  if (engineScenarioChanges.length >= 20) {
+    toast("Un scénario est limité à 20 changements.");
+    return;
+  }
+  engineScenarioChanges.push(change);
+  renderEngineScenarioQueue(
+    getEngineSimulateMembers(squadEngineReport || {}),
+    getEngineSelectableVariants(squadEngineReport || {})
+  );
 }
 
 function setupSquadEngine() {
@@ -570,11 +691,56 @@ function setupSquadEngine() {
   const optimizationPanel = document.getElementById("squadEnginePanel-optimization");
   if (optimizationPanel) {
     optimizationPanel.addEventListener("submit", (e) => {
-      const form = e.target.closest("#squadEngineSimulateForm");
+      const form = e.target.closest("form");
       if (!form) return;
       e.preventDefault();
       const fd = new FormData(form);
-      runEngineAcquisitionSimulate(String(fd.get("memberId") || ""), String(fd.get("variantId") || ""));
+      if (form.id === "squadEngineCombinationForm") {
+        loadEngineCombinations(Math.max(2, Math.min(4, Number(fd.get("size")) || 3)));
+        return;
+      }
+      if (form.id === "squadEngineMinimumTeamForm") {
+        loadEngineMinimumTeam(Math.max(1, Math.min(100, Number(fd.get("target")) || 90)));
+        return;
+      }
+      if (form.id === "squadEngineScenarioAcquireForm") {
+        const memberId = String(fd.get("memberId") || "");
+        const variantIds = fd.getAll("variantIds").map(String).filter(Boolean);
+        if (!memberId || !variantIds.length) return;
+        addEngineScenarioChange({ type: "acquire", memberId, variantIds });
+        form.reset();
+        return;
+      }
+      if (form.id === "squadEngineScenarioJoinForm") {
+        const username = String(fd.get("username") || "").trim();
+        const ownedVariantIds = fd.getAll("ownedVariantIds").map(String).filter(Boolean);
+        addEngineScenarioChange({ type: "join", username: username || "Nouveau membre", ownedVariantIds });
+        form.reset();
+        return;
+      }
+      if (form.id === "squadEngineScenarioLeaveForm") {
+        const memberId = String(fd.get("memberId") || "");
+        if (!memberId) return;
+        addEngineScenarioChange({ type: "leave", memberId });
+        form.reset();
+      }
+    });
+    optimizationPanel.addEventListener("click", (e) => {
+      const remove = e.target.closest("[data-engine-scenario-remove]");
+      if (remove) {
+        const index = Number(remove.dataset.engineScenarioRemove);
+        if (Number.isInteger(index) && index >= 0) {
+          engineScenarioChanges.splice(index, 1);
+          renderEngineScenarioQueue(
+            getEngineSimulateMembers(squadEngineReport || {}),
+            getEngineSelectableVariants(squadEngineReport || {})
+          );
+        }
+        return;
+      }
+      if (e.target.closest("#squadEngineScenarioRun")) {
+        runEngineScenarioSimulation();
+      }
     });
   }
   if (els.squadEngine) {
