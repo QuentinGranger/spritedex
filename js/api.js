@@ -1,6 +1,11 @@
 async function loadSpritesFromAPI() {
+  // Do not let a stalled API request freeze the entire application boot. In
+  // particular, the login controls must remain reachable when a backend wakes
+  // up slowly or the device has no network connection.
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), 10000) : null;
   try {
-    const res = await fetch(`${API_BASE}/sprites`);
+    const res = await fetch(`${API_BASE}/sprites`, controller ? { signal: controller.signal } : undefined);
     if (!res.ok) throw new Error("API sprites failed");
     const data = await res.json();
 
@@ -78,6 +83,8 @@ async function loadSpritesFromAPI() {
   } catch (e) {
     console.warn("API sprites load failed, using fallback", e);
     return false;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }
 

@@ -219,6 +219,7 @@ function renderFriendItem(f) {
         <div class="friend-meta">${meta}</div>
       </div>
       <div class="friend-actions">
+        <button class="ghost-button" data-action="passport" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">Passeport</button>
         <button class="ghost-button" data-action="compare" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">Comparer</button>
         ${inviteSquad}
         <button class="ghost-button danger-text" data-action="remove" data-id="${escapeHtml(String(f.id))}">Supprimer</button>
@@ -611,6 +612,16 @@ async function handleFriendsActionClick(e) {
         await openSquadInviteDialog(friendId, friendName);
         break;
       }
+      case "passport": {
+        const friendId = btn.dataset.id;
+        const name = btn.dataset.name || "Ami";
+        if (typeof openCollectorPassport === "function") {
+          await openCollectorPassport(friendId, name);
+        } else {
+          toast("Passeport indisponible.");
+        }
+        break;
+      }
       case "compare": {
         const friendId = btn.dataset.id;
         const name = btn.dataset.name || "Ami";
@@ -624,9 +635,11 @@ async function handleFriendsActionClick(e) {
   }
 }
 
-async function compareWithFriend(friendId, name) {
+async function compareWithFriend(friendId, name, options = {}) {
   try {
-    const res = await fetch(`${API_BASE}/compare/${encodeURIComponent(friendId)}`, { headers: authHeadersOnly() });
+    const source = options && options.source ? String(options.source) : "friends_list";
+    const qs = source ? `?source=${encodeURIComponent(source)}` : "";
+    const res = await fetch(`${API_BASE}/compare/${encodeURIComponent(friendId)}${qs}`, { headers: authHeadersOnly() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       toast(data.error || "Impossible de comparer.");

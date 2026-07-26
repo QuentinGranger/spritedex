@@ -9,24 +9,30 @@
   if (!isNativePlatform()) return;
 
   const plugins = (window.Capacitor && window.Capacitor.Plugins) || {};
-  const { App, Browser, PushNotifications, StatusBar } = plugins;
+  const { App, Browser, StatusBar } = plugins;
   if (!App || typeof App.addListener !== "function") return;
 
   // Keep the status bar visible with a dark solid background; do not let the
   // web view render underneath it, so app headers are never hidden by the
   // clock/notch area.
   if (StatusBar && typeof StatusBar.setStyle === "function") {
-    try {
-      StatusBar.setStyle({ style: StatusBar.Style && StatusBar.Style.Dark ? StatusBar.Style.Dark : "DARK" });
-      if (typeof StatusBar.setOverlaysWebView === "function") {
-        StatusBar.setOverlaysWebView({ overlay: false });
+    void (async () => {
+      try {
+        await StatusBar.setStyle({ style: StatusBar.Style && StatusBar.Style.Dark ? StatusBar.Style.Dark : "DARK" });
+        // Capacitor intentionally leaves these StatusBar APIs unimplemented
+        // on iOS. The app uses safe-area CSS there instead.
+        if (window.Capacitor.getPlatform?.() !== "ios") {
+          if (typeof StatusBar.setOverlaysWebView === "function") {
+            await StatusBar.setOverlaysWebView({ overlay: false });
+          }
+          if (typeof StatusBar.setBackgroundColor === "function") {
+            await StatusBar.setBackgroundColor({ color: "#0a0e1a" });
+          }
+        }
+      } catch (e) {
+        console.warn("StatusBar config failed:", e);
       }
-      if (typeof StatusBar.setBackgroundColor === "function") {
-        StatusBar.setBackgroundColor({ color: "#0a0e1a" });
-      }
-    } catch (e) {
-      console.warn("StatusBar config failed:", e);
-    }
+    })();
   }
 
   App.addListener("appUrlOpen", async (data) => {
@@ -55,15 +61,4 @@
       console.error("Native OAuth deep-link handling failed:", e);
     }
   });
-
-  // Register native push notifications if the plugin is available.
-  if (PushNotifications && typeof PushNotifications.register === "function" && window.PushClient) {
-    PushNotifications.requestPermissions().then((result) => {
-      if (result.receive === "granted") PushNotifications.register();
-    });
-    PushNotifications.addListener("registration", (token) => {
-      const platform = window.Capacitor.getPlatform() === "ios" ? "apns" : "fcm";
-      window.PushClient.registerServerToken(token.value, platform);
-    });
-  }
 })();

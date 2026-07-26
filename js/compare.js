@@ -385,6 +385,11 @@ function renderCompareSummary(result, aName, bName) {
       <p>Ensemble, vous couvrez <strong>${pct(s.collectiveCompletionRate)}</strong> du catalogue.</p>
     </div>
     <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${pct(s.complementarityRate)}</strong> · Score de complémentarité : <strong>${pct(s.complementarityScore)}</strong>.</p>
+    <div class="compare-community" id="compareCommunityContext" hidden>
+      <p class="compare-community__title">Contexte communautaire</p>
+      <div class="compare-community__list" id="compareCommunityList"></div>
+      <p class="compare-community__note">Ces données restent secondaires par rapport à la comparaison personnelle.</p>
+    </div>
     <div class="compare-summary-grid">
       <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">Complétion collective</span></div>
       <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityRate)}</span><span class="compare-kpi__label">Complémentarité de base</span></div>
@@ -406,6 +411,54 @@ function renderCompareSummary(result, aName, bName) {
         <span class="compare-player__count">${s.bOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
     </div>`;
+}
+
+/** Étape 82 — secondary community lines under the personal compare summary. */
+async function loadCompareCommunityContext(result, aName, bName) {
+  const mount = document.getElementById("compareCommunityContext");
+  const list = document.getElementById("compareCommunityList");
+  if (!mount || !list || !result || !result.groups) return;
+
+  const pick = (arr, relation, n) => (arr || []).slice(0, n).map((r) => ({
+    variantId: r.variantId || r.id,
+    relation
+  }));
+  const items = [
+    ...pick(result.groups.bothMissing, "bothMissing", 3),
+    ...pick(result.groups.onlyUserA, "onlyA", 2),
+    ...pick(result.groups.onlyUserB, "onlyB", 2)
+  ].filter((i) => i.variantId);
+  if (!items.length) {
+    mount.hidden = true;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/sprite-graph/compare/community-context`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeadersOnly() },
+      body: JSON.stringify({ items, aName, bName })
+    });
+    if (!res.ok) {
+      mount.hidden = true;
+      return;
+    }
+    const data = await res.json();
+    const insights = Array.isArray(data.insights) ? data.insights : [];
+    if (!insights.length) {
+      mount.hidden = true;
+      return;
+    }
+    list.innerHTML = insights.map((ins) => `
+      <div class="compare-community__item">
+        ${ins.personalLine ? `<p class="compare-community__personal">${escapeHtml(ins.personalLine)}</p>` : ""}
+        ${ins.communityLine ? `<p class="compare-community__stat">${escapeHtml(ins.communityLine)}</p>` : ""}
+      </div>
+    `).join("");
+    mount.hidden = false;
+  } catch (_e) {
+    mount.hidden = true;
+  }
 }
 
 function compareStatusIcon(status) {
@@ -999,6 +1052,7 @@ function renderCompare() {
   const result = compareCollections(userA, userB, getCompareCatalogItems());
   state.lastCompareResult = result;
   renderCompareSummary(result, aName, bName);
+  loadCompareCommunityContext(result, aName, bName);
   renderCompareSquads();
   renderCompareActions(result);
   renderCompareRecommendations(result, aName, bName);
@@ -1304,7 +1358,7 @@ async function compareWithUser(identifier) {
 async function comparePair(userAId, userAName, userBId, userBName) {
   if (!userAId || !userBId) return;
   try {
-    const res = await fetch(`${API_BASE}/comparisons/users/${encodeURIComponent(userAId)}/${encodeURIComponent(userBId)}`, { headers: authHeadersOnly() });
+    const res = await fetch(`${API_BASE}/comparisons/users/${encodeURIComponent(userAId)}/${encodeURIComponent(userBId)}?source=squad`, { headers: authHeadersOnly() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       toast(data.error || "Impossible de comparer cette paire.");

@@ -521,7 +521,10 @@ const friendSearchSchema = z.object({
 }).passthrough();
 
 const friendRequestSchema = z.object({
-  addresseeId: z.string().trim().min(1).or(z.number())
+  addresseeId: z.string().trim().min(1).or(z.number()),
+  invitationMethod: z.enum(["username", "invite_link", "qr_code", "squad_member", "passport"]).optional(),
+  invitationSource: z.string().trim().min(1).max(80).optional(),
+  source: z.string().trim().min(1).max(80).optional()
 }).strict();
 
 const profileSuspendSchema = z.object({

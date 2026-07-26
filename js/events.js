@@ -1,3 +1,5 @@
+const MAIN_VIEWS = ["swipe", "checklist", "missing", "stats", "history", "social"];
+
 function renderAll() {
   renderSummary();
   renderChecklist();
@@ -5,6 +7,51 @@ function renderAll() {
   renderStats();
   renderCard();
   renderCompare();
+}
+
+function getActiveMainView() {
+  const active = document.querySelector(".tab.active");
+  return active ? active.dataset.view : "swipe";
+}
+
+function scrollActiveTabIntoView() {
+  const tab = document.querySelector(".tab.active");
+  const nav = document.getElementById("mainTabs");
+  if (!tab || !nav) return;
+  const tabRect = tab.getBoundingClientRect();
+  const navRect = nav.getBoundingClientRect();
+  if (tabRect.left < navRect.left + 8 || tabRect.right > navRect.right - 8) {
+    tab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }
+}
+
+function activateMainView(view, opts = {}) {
+  if (!MAIN_VIEWS.includes(view)) return false;
+  const current = getActiveMainView();
+  if (current === view && !opts.force) {
+    scrollActiveTabIntoView();
+    return true;
+  }
+
+  els.tabs.forEach((button) => {
+    const on = button.dataset.view === view;
+    button.classList.toggle("active", on);
+    if (on) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  els.views.forEach((section) => {
+    section.classList.toggle("active", section.id === `view-${view}`);
+  });
+
+  if (view !== "social") stopSquadPolling();
+  if (view === "history" && typeof renderHistory === "function") renderHistory();
+  if (view === "social") {
+    const activeSocialTab = document.querySelector(".social-tab.active");
+    setSocialTab(activeSocialTab ? activeSocialTab.dataset.socialTab : "friends");
+  }
+
+  scrollActiveTabIntoView();
+  return true;
 }
 
 function setSocialTab(tab, opts = {}) {
@@ -28,26 +75,112 @@ function setSocialTab(tab, opts = {}) {
   }
 }
 
+function isViewSwipeBlockedTarget(target, clientX = 0) {
+  if (!target || !target.closest) return true;
+  // Hard blocks — never steal focus from forms/dialogs/nav.
+  if (target.closest("input, textarea, select, dialog, .tabs, [data-no-view-swipe]")) return true;
+  const edge = 28;
+  const nearEdge = clientX <= edge || clientX >= window.innerWidth - edge;
+  if (nearEdge) return false;
+  return Boolean(target.closest([
+    ".sprite-card",
+    ".deck-zone",
+    ".swipe-actions",
+    "button",
+    "a",
+    "label",
+    ".filter-chips-bar",
+    ".social-tabs",
+    ".friends-tabs",
+    ".squad-engine__tabs",
+    ".squad-view-btn",
+    ".engine-filter-bar"
+  ].join(",")));
+}
+
+function setupViewSwipe() {
+  const main = document.getElementById("mainViews") || document.querySelector("main");
+  if (!main) return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+  let locked = null; // "h" | "v" | null
+  let pointerId = null;
+  const AXIS_LOCK = 12;
+  const COMMIT = 72;
+
+  const resetTransform = () => {
+    main.classList.remove("main-views--swiping");
+    main.style.removeProperty("--view-swipe-x");
+  };
+
+  main.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    if (isViewSwipeBlockedTarget(event.target, event.clientX)) return;
+    tracking = true;
+    locked = null;
+    pointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+  });
+
+  main.addEventListener("pointermove", (event) => {
+    if (!tracking || event.pointerId !== pointerId) return;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (!locked) {
+      if (Math.abs(dx) < AXIS_LOCK && Math.abs(dy) < AXIS_LOCK) return;
+      locked = Math.abs(dx) > Math.abs(dy) * 1.15 ? "h" : "v";
+      if (locked === "v") {
+        tracking = false;
+        resetTransform();
+        return;
+      }
+      main.classList.add("main-views--swiping");
+      try { main.setPointerCapture(event.pointerId); } catch (_) { /* ignore */ }
+    }
+    if (locked !== "h") return;
+    event.preventDefault();
+    const idx = MAIN_VIEWS.indexOf(getActiveMainView());
+    const atStart = idx <= 0 && dx > 0;
+    const atEnd = idx >= MAIN_VIEWS.length - 1 && dx < 0;
+    const resistance = (atStart || atEnd) ? 0.28 : 0.55;
+    main.style.setProperty("--view-swipe-x", `${dx * resistance}px`);
+  });
+
+  const end = (event) => {
+    if (!tracking || (pointerId != null && event.pointerId !== pointerId)) {
+      tracking = false;
+      locked = null;
+      pointerId = null;
+      resetTransform();
+      return;
+    }
+    const dx = event.clientX - startX;
+    const wasHorizontal = locked === "h";
+    tracking = false;
+    locked = null;
+    pointerId = null;
+    resetTransform();
+    if (!wasHorizontal || Math.abs(dx) < COMMIT) return;
+    const idx = MAIN_VIEWS.indexOf(getActiveMainView());
+    if (dx < 0 && idx < MAIN_VIEWS.length - 1) activateMainView(MAIN_VIEWS[idx + 1]);
+    else if (dx > 0 && idx > 0) activateMainView(MAIN_VIEWS[idx - 1]);
+  };
+
+  main.addEventListener("pointerup", end);
+  main.addEventListener("pointercancel", end);
+}
+
 function setupEvents() {
   document.querySelectorAll(".social-tab").forEach(btn => {
     btn.addEventListener("click", () => setSocialTab(btn.dataset.socialTab));
   });
 
   els.tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      els.tabs.forEach((button) => button.classList.toggle("active", button === tab));
-      els.views.forEach((view) => view.classList.toggle("active", view.id === `view-${tab.dataset.view}`));
-      if (tab.dataset.view !== "social") {
-        stopSquadPolling();
-      }
-      if (tab.dataset.view === "history") {
-        renderHistory();
-      }
-      if (tab.dataset.view === "social") {
-        const activeSocialTab = document.querySelector(".social-tab.active");
-        setSocialTab(activeSocialTab ? activeSocialTab.dataset.socialTab : "friends");
-      }
-    });
+    tab.addEventListener("click", () => activateMainView(tab.dataset.view, { force: true }));
   });
 
   $("#markOwned").addEventListener("click", () => animateAndMark("owned"));
@@ -76,6 +209,7 @@ function setupEvents() {
     els.filterChipsBar.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
     chip.classList.add("active");
     state.checklistFilter = chip.dataset.filter;
+    state.passportMissingVariantIds = null;
     state.expandedSprite = null;
     renderChecklist();
   });
@@ -289,6 +423,7 @@ function setupEvents() {
   setupCompareEvents();
   setupFriendsEvents();
   setupSwipeGestures();
+  setupViewSwipe();
 
   // Register the service worker for the web PWA only. In the native (Capacitor)
   // shell it would try to intercept capacitor:// requests and conflicts with the

@@ -4,8 +4,78 @@
     padding:
       calc(16px + env(safe-area-inset-top))
       calc(12px + env(safe-area-inset-right))
-      calc(92px + env(safe-area-inset-bottom))
+      calc(96px + env(safe-area-inset-bottom))
       calc(12px + env(safe-area-inset-left));
+  }
+
+  /* Bottom tab bar — ordre d’usage, swipe entre vues */
+  .tabs {
+    position: fixed;
+    z-index: 240;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    background:
+      linear-gradient(180deg, rgba(10, 14, 26, 0.72), rgba(10, 14, 26, 0.96) 40%),
+      var(--bg);
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.35);
+  }
+
+  .tab {
+    flex: 1 1 0;
+    min-width: 56px;
+    max-width: 88px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 4px 6px;
+    border-radius: 14px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    letter-spacing: 0.04em;
+    font-size: 0.62rem;
+    transform: none;
+  }
+
+  .tab__icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tab:hover {
+    transform: none;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .tab.active {
+    transform: none;
+    background: rgba(0, 225, 255, 0.12);
+    border-color: rgba(0, 225, 255, 0.28);
+    box-shadow: 0 0 18px rgba(0, 225, 255, 0.14);
+    text-shadow: none;
+  }
+
+  .tab.active:hover {
+    transform: none;
+  }
+
+  .main-views {
+    min-height: 50vh;
   }
 
   .hero-card {
@@ -102,5 +172,20 @@
 
   .squad-controls {
     gap: 8px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1023px) {
+  .tabs {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .tab {
+    flex: 0 0 auto;
   }
 }

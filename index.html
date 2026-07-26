@@ -324,6 +324,19 @@
           </div>
         </div>
 
+        <section class="collector-passport" id="collectorPassport" aria-labelledby="collectorPassportTitle">
+          <div class="collector-passport__header">
+            <div>
+              <p class="collector-passport__eyebrow">SpriteDex</p>
+              <h3 class="collector-passport__title" id="collectorPassportTitle">Passeport du collectionneur</h3>
+            </div>
+            <span class="collector-passport__status" id="passportReliability" role="status">—</span>
+          </div>
+          <div id="collectorPassportContent" class="collector-passport__content" tabindex="-1"><p class="collector-passport__empty" role="status">Calcul du passeport…</p></div>
+          <div class="collector-passport__actions" id="collectorPassportActions"></div>
+          <div class="sr-only" aria-live="polite" id="passportA11yStatus"></div>
+        </section>
+
         <!-- Profile actions -->
         <div class="profile-actions">
           <button class="profile-action-btn" id="accountEditUsernameBtn">
@@ -337,6 +350,10 @@
           <button class="profile-action-btn" id="accountGoCollection">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             Voir ma collection
+          </button>
+          <button class="profile-action-btn" id="accountGoCompare">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M11.5 9.2 14.8 14.8"/><path d="M4 17h7"/></svg>
+            Comparer un joueur
           </button>
           <button class="profile-action-btn" id="accountShare">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -369,6 +386,11 @@
                 <option value="public">Profil public</option>
               </select>
             </div>
+            <div class="account-row">
+              <span class="account-row__label">Participer aux statistiques communautaires anonymisées</span>
+              <label class="toggle"><input type="checkbox" id="accountCommunityStatsOptIn" /><span class="toggle__slider"></span></label>
+            </div>
+            <p class="account-row__hint" style="opacity:.7;font-size:.85rem;margin:.25rem 0 0">Les fonctions essentielles restent disponibles sans ce consentement.</p>
           </div>
 
           <!-- Notifications (Étape 49) -->
@@ -674,17 +696,35 @@
         </div>
       </section>
 
-      <nav class="tabs" aria-label="Navigation principale">
-        <button class="tab active" data-view="social">Social</button>
-        <button class="tab" data-view="swipe">Swipe</button>
-        <button class="tab" data-view="checklist">Checklist</button>
-        <button class="tab" data-view="missing">Manquants</button>
-        <button class="tab" data-view="stats">Stats</button>
-        <button class="tab" data-view="history">Historique</button>
+      <nav class="tabs" aria-label="Navigation principale" id="mainTabs">
+        <button class="tab active" data-view="swipe" type="button" aria-current="page">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
+          <span class="tab__label">Swipe</span>
+        </button>
+        <button class="tab" data-view="checklist" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span class="tab__label">Checklist</span>
+        </button>
+        <button class="tab" data-view="missing" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6"/></svg>
+          <span class="tab__label">Manquants</span>
+        </button>
+        <button class="tab" data-view="stats" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
+          <span class="tab__label">Stats</span>
+        </button>
+        <button class="tab" data-view="history" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span class="tab__label">Historique</span>
+        </button>
+        <button class="tab" data-view="social" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="tab__label">Social</span>
+        </button>
       </nav>
 
-      <main>
-        <section class="view" id="view-swipe">
+      <main id="mainViews" class="main-views">
+        <section class="view active" id="view-swipe">
           <div class="deck-toolbar">
             <select id="deckFilter" aria-label="Filtre du deck swipe">
               <option value="all">Tous</option>
@@ -737,7 +777,7 @@
             </button>
           </div>
 
-          <p class="hint">Swipe → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note</p>
+          <p class="hint">Carte : → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note<br>Écran : glisse depuis le bord pour changer d’onglet</p>
         </section>
 
         <section class="view" id="view-checklist">
@@ -844,12 +884,14 @@
 
             <div class="stats-insights" id="statsInsights"></div>
 
+            <div id="spritedexTrends"></div>
+
             <div id="communityStats"></div>
 
           </div>
         </section>
 
-        <section class="view active" id="view-social">
+        <section class="view" id="view-social">
           <nav class="social-tabs" role="tablist" aria-label="Social">
             <button class="social-tab active" data-social-tab="friends" type="button">Amis</button>
             <button class="social-tab" data-social-tab="compare" type="button">Comparer</button>
@@ -1097,6 +1139,7 @@
         <h2 id="dialogTitle">Sprite</h2>
         <p class="variant-name" id="dialogVariant">Variante</p>
         <p class="effect" id="dialogEffect">Effet</p>
+        <div id="dialogCommunityStats" class="sg-community-mount"></div>
         <div class="dialog-priority" id="dialogPriorityBar">
           <span class="dialog-priority__label">Priorité de farm :</span>
           <div class="dialog-priority__chips">
@@ -1177,6 +1220,53 @@
       </form>
     </dialog>
 
+    <dialog id="passportDialog" class="passport-dialog" aria-labelledby="passportDialogTitle">
+      <form method="dialog" class="dialog-card passport-dialog__card">
+        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <div class="collector-passport collector-passport--dialog">
+          <div class="collector-passport__header">
+            <div>
+              <p class="collector-passport__eyebrow">SpriteDex</p>
+              <h3 class="collector-passport__title" id="passportDialogTitle">Passeport</h3>
+            </div>
+            <span class="collector-passport__status" id="passportDialogReliability" role="status">—</span>
+          </div>
+          <div id="passportDialogContent" class="collector-passport__content" tabindex="-1"></div>
+          <div class="collector-passport__actions" id="passportDialogActions"></div>
+          <div class="sr-only" aria-live="polite" id="passportDialogA11yStatus"></div>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="passportShareDialog" class="passport-share-dialog" aria-labelledby="passportShareDialogTitle">
+      <form method="dialog" class="dialog-card passport-share-dialog__card">
+        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <h3 id="passportShareDialogTitle">Partager mon passeport</h3>
+        <p class="passport-share-preview__intro" id="passportSharePreviewIntro">Aperçu exact des informations visibles sur la carte :</p>
+        <div id="passportSharePreview" class="passport-share-preview" aria-live="polite" aria-describedby="passportSharePreviewIntro"></div>
+        <fieldset class="passport-share-options">
+          <legend>Options</legend>
+          <label><input type="checkbox" id="passportShareOptSquad" checked /> Afficher la squad</label>
+          <label><input type="checkbox" id="passportShareOptBadges" checked /> Afficher les badges</label>
+          <label><input type="checkbox" id="passportShareOptJoined" /> Afficher la date d’inscription</label>
+          <label><input type="checkbox" id="passportShareOptCompletion" checked /> Afficher le taux de complétion</label>
+          <label><input type="checkbox" id="passportShareOptEvents" checked /> Afficher les événements complétés</label>
+        </fieldset>
+        <div class="passport-share-format">
+          <label for="passportShareFormat">Format</label>
+          <select id="passportShareFormat">
+            <option value="1080x1080">1080 × 1080</option>
+            <option value="1080x1920">1080 × 1920</option>
+            <option value="1200x630">1200 × 630</option>
+          </select>
+        </div>
+        <div class="passport-share-actions">
+          <button type="submit" class="ghost-button" value="cancel">Annuler</button>
+          <button type="button" class="login-btn" id="passportShareGenerate">Générer la carte</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="memberActionsDialog" class="member-actions-dialog">
       <div class="dialog-card">
         <button class="close-button" id="memberActionsClose" aria-label="Fermer">×</button>
@@ -1205,6 +1295,7 @@
     <script src="js/render-checklist.js"></script>
     <script src="js/render-missing.js"></script>
     <script src="js/community-stats.js"></script>
+    <script src="js/sprite-graph-ui.js"></script>
     <script src="js/render-stats.js"></script>
     <script src="js/render-squad.js"></script>
     <script src="js/squad-engine.js"></script>
@@ -1218,6 +1309,7 @@
     <script src="js/friends.js"></script>
     <script src="js/events.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/passport-render.js"></script>
     <script src="js/account.js"></script>
     <script src="js/push-client.js"></script>
     <script src="js/init.js"></script>

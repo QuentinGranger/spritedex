@@ -154,6 +154,45 @@ async function handleOAuthReturn() {
   return false;
 }
 
+// Étape 67 — public passport URL /u/:username
+async function handlePassportPublicUrl() {
+  const match = location.pathname.match(/^\/u\/([^/]+)\/?$/i);
+  const boot = window.__SPRITEDEX_PASSPORT_USER__;
+  const username = match
+    ? decodeURIComponent(match[1])
+    : (boot && boot.username ? boot.username : null);
+  if (!username) return false;
+
+  if (state.userId && typeof openCollectorPassportByUsername === "function") {
+    await openCollectorPassportByUsername(username, boot && boot.displayName);
+    return false;
+  }
+
+  // Anonymous visitor: standalone public passport page (like ?share=).
+  try {
+    const res = await fetch(`${API_BASE}/u/${encodeURIComponent(username)}/passport`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (typeof renderPublicPassportError === "function") {
+        renderPublicPassportError(data.error || "Passeport non accessible");
+      } else {
+        toast(data.error || "Passeport non accessible");
+      }
+      return true;
+    }
+    if (typeof renderPublicPassportOverlay === "function") {
+      renderPublicPassportOverlay(data);
+    } else if (typeof openCollectorPassportByUsername === "function") {
+      await openCollectorPassportByUsername(username);
+    }
+  } catch {
+    if (typeof renderPublicPassportError === "function") {
+      renderPublicPassportError("Impossible de charger le passeport");
+    }
+  }
+  return true;
+}
+
 async function init() {
   const theme = localStorage.getItem(THEME_KEY);
   if (theme === "light") document.body.classList.add("light");
@@ -162,6 +201,10 @@ async function init() {
   showCookieBanner();
   setupOfflineIndicator();
 
+  // Attach the login/navigation controls before waiting for the catalogue.
+  // A slow or unreachable API used to leave Google, Discord and Email buttons
+  // inert because setupLogin() only ran after this request completed.
+  setupLogin();
   await loadSpritesFromAPI();
 
   // Read-only shared profile link takes over the whole page.
@@ -195,6 +238,7 @@ async function init() {
         await restoreSquad();
         handleJoinLink();
         handleInviteLink();
+        await handlePassportPublicUrl();
         setupNotifBell();
         checkNewsNotifications();
         if (window.PushClient) {
@@ -222,6 +266,7 @@ async function init() {
       await restoreSquad();
       handleJoinLink();
       handleInviteLink();
+      await handlePassportPublicUrl();
       setupNotifBell();
       checkNewsNotifications();
       if (window.PushClient) {
@@ -232,7 +277,8 @@ async function init() {
     }
   }
 
-  setupLogin();
+  // Anonymous public passport URL.
+  if (await handlePassportPublicUrl()) return;
 }
 
 init();

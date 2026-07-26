@@ -347,6 +347,7 @@ async function markAllNotifsRead() {
 }
 
 function switchAppView(view) {
+  if (typeof activateMainView === "function" && activateMainView(view, { force: true })) return;
   const tab = document.querySelector(`.tab[data-view="${view}"]`);
   if (tab) tab.click();
 }

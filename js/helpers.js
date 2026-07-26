@@ -93,6 +93,18 @@ function safeImageUrl(value) {
     const current = new URL(window.location.href);
     if (parsed.protocol === "https:" && !isPrivateOrLocalHostname(parsed.hostname)) return parsed.href;
     if (parsed.protocol === "http:" && parsed.protocol === current.protocol && parsed.host === current.host) return parsed.href;
+    // Capacitor serves bundled files from capacitor://localhost. The API stores
+    // sprite paths relative to the web root (for example Sprite/Air/Air.webp),
+    // which resolve to that origin on iOS. Keep this deliberately restricted to
+    // known packaged asset directories instead of treating all local URLs as
+    // safe image sources.
+    const isBundledAppOrigin = parsed.protocol === current.protocol
+      && parsed.host === current.host
+      && (current.protocol === "capacitor:" || current.protocol === "file:");
+    const isBundledSpriteAsset = parsed.pathname.startsWith("/Sprite/")
+      || parsed.pathname.startsWith("/Favicon/")
+      || parsed.pathname === "/LogoApp.png";
+    if (isBundledAppOrigin && isBundledSpriteAsset) return parsed.href;
   } catch {
     // Invalid URLs are rendered as the normal image placeholder.
   }

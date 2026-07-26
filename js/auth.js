@@ -21,6 +21,18 @@ function setupLogin() {
   const registerEmail = document.getElementById("registerEmail");
   const registerPassword = document.getElementById("registerPassword");
   const registerUsername = document.getElementById("registerUsername");
+  const oauthButtons = [
+    document.getElementById("authGoogle"),
+    document.getElementById("authDiscord"),
+    document.getElementById("authGoogleLogin"),
+    document.getElementById("authDiscordLogin")
+  ].filter(Boolean);
+  let oauthInProgress = false;
+
+  function setOAuthInProgress(inProgress) {
+    oauthInProgress = inProgress;
+    oauthButtons.forEach((button) => { button.disabled = inProgress; });
+  }
 
   // Navigation between steps
   document.getElementById("authEmailChoice").addEventListener("click", () => goToStep("onboardingStepRegister"));
@@ -269,6 +281,11 @@ function setupLogin() {
   }
 
   async function startOAuth(provider) {
+    // SFSafariViewController can present only one browser at a time. Without
+    // this guard, a second tap races the first one and Capacitor rejects it as
+    // "Unable to display URL" even though the OAuth URL itself is valid.
+    if (oauthInProgress) return;
+    setOAuthInProgress(true);
     try {
       const { verifier, challenge } = await createOAuthVerifier();
       sessionStorage.setItem(OAUTH_EXCHANGE_VERIFIER_KEY, verifier);
@@ -279,9 +296,14 @@ function setupLogin() {
       } else {
         window.location.href = `${API_BASE}/auth/oauth/${provider}?${params}`;
       }
+      // Browser.open resolves once the native controller has been presented.
+      // Keep only the short opening lock; Safari is then in front of the app,
+      // and a permanent lock can get stuck on simulator lifecycle events.
+      setOAuthInProgress(false);
     } catch (err) {
       console.error("OAuth initialisation failed:", err);
       loginHint.textContent = err.message || "Impossible de démarrer la connexion sécurisée.";
+      setOAuthInProgress(false);
     }
   }
   document.getElementById("authGoogle").addEventListener("click", () => startOAuth("google"));
