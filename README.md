@@ -29,6 +29,24 @@ Puis ouvrir :
 http://localhost:8000
 ```
 
+## Version desktop
+
+La version desktop utilise le même bundle hors-ligne que les applications mobiles,
+sans splash screen. Elle communique avec l’API de production par défaut.
+
+```bash
+npm install
+npm run desktop:dev
+```
+
+Pour créer un installateur, les fichiers sont générés dans `release/` :
+
+```bash
+npm run desktop:mac    # macOS (.dmg et .zip)
+npm run desktop:win    # Windows (.exe)
+npm run desktop:linux  # Linux (.AppImage)
+```
+
 ## Modifier la base de données
 
 La liste des sprites est dans `app.js`, constante `SPRITES`.

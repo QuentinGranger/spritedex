@@ -1,113 +1,295 @@
 // routes-goals.js — collection goals (personal or collective).
 
-const { getRequestingUser, isBlocked } = require("./auth");
+const { canViewCollection, getRequestingUser, requireNotSuspended } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const compare = require("./compare");
+const security = require("../security");
 const { broadcastGoalUpdate } = require("./ws");
 const analytics = require("../analytics");
 const pushService = require("../push-service");
 const { logSquadGoalCreated, logSquadGoalCompleted } = require("./squad-activity");
 const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
 
+const MAX_RECOMMENDATION_VARIANTS = 100;
+const MAX_RECOMMENDATION_ASSIGNEES = 10; // A squad has at most ten active members.
+const MAX_RECOMMENDATION_REASON_LENGTH = 600;
+const MAX_RECOMMENDATION_DEADLINE_LENGTH = 64;
+const MAX_RECOMMENDATION_GAIN = 10000;
+const MAX_USER_ID = 2147483647;
+const recommendationGoalLimiter = security.rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  keyPrefix: "recommendation-goal",
+  message: "Trop de créations d'objectifs depuis des recommandations. Réessaie dans quelques minutes."
+});
+
 async function hasBlockedPair(userIds) {
-  const ids = [...new Set(userIds.map(String))];
-  for (let i = 0; i < ids.length; i++) {
-    for (let j = i + 1; j < ids.length; j++) {
-      if (await isBlocked(ids[i], ids[j])) return true;
-    }
-  }
-  return false;
+  const ids = [...new Set(userIds.map(Number).filter(id => Number.isInteger(id) && id > 0 && id <= MAX_USER_ID))];
+  if (ids.length < 2) return false;
+  const result = await pool.query(
+    `SELECT 1
+     FROM user_blocks
+     WHERE blocker_id = ANY($1::integer[])
+       AND blocked_id = ANY($1::integer[])
+     LIMIT 1`,
+    [ids]
+  );
+  return result.rows.length > 0;
 }
 
-// ── Collection goals : create ──
-app.post("/api/collection-goals", async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
 
-  const { title, description, squadId, variantId, variantIds } = req.body || {};
-  const cleanTitle = String(title || "").trim();
-  if (!cleanTitle) return res.status(400).json({ error: "Titre requis" });
-  if (cleanTitle.length > 200) return res.status(400).json({ error: "Titre trop long (200 max)" });
+function normalizeRecommendationText(value, { field, maxLength, fallback = null } = {}) {
+  if (value === undefined || value === null || value === "") return { value: fallback };
+  if (typeof value !== "string") return { error: `${field} invalide` };
+  const normalized = value.trim();
+  if (normalized.length > maxLength) return { error: `${field} trop long (${maxLength} max)` };
+  return { value: normalized || fallback };
+}
 
-  const targetVariantIds = Array.isArray(variantIds)
-    ? variantIds.map(String).filter(Boolean)
-    : (variantId ? [String(variantId).trim()] : []);
-  const primaryVariantId = targetVariantIds[0] || (variantId ? String(variantId).trim() : null);
+function normalizeRecommendationVariantIds(rawVariantIds) {
+  if (!Array.isArray(rawVariantIds)) return { error: "Liste de variantes invalide" };
+  if (rawVariantIds.length > MAX_RECOMMENDATION_VARIANTS) {
+    return { error: `Trop de variantes (${MAX_RECOMMENDATION_VARIANTS} max)` };
+  }
 
+  const ids = [];
+  const seen = new Set();
+  for (const rawId of rawVariantIds) {
+    if (typeof rawId !== "string" && typeof rawId !== "number") {
+      return { error: "Identifiant de variante invalide" };
+    }
+    const variantId = String(rawId).trim();
+    if (!variantId || variantId.length > 120) {
+      return { error: "Identifiant de variante invalide" };
+    }
+    if (!seen.has(variantId)) {
+      seen.add(variantId);
+      ids.push(variantId);
+    }
+  }
+  return { value: ids };
+}
+
+function normalizeRecommendationMemberIds(rawMemberIds) {
+  if (!Array.isArray(rawMemberIds)) return { error: "Liste de membres assignés invalide" };
+  if (rawMemberIds.length > MAX_RECOMMENDATION_ASSIGNEES) {
+    return { error: `Trop de membres assignés (${MAX_RECOMMENDATION_ASSIGNEES} max)` };
+  }
+
+  const ids = [];
+  const seen = new Set();
+  for (const rawId of rawMemberIds) {
+    if ((typeof rawId !== "string" && typeof rawId !== "number") || !/^\d+$/.test(String(rawId).trim())) {
+      return { error: "Identifiant de membre invalide" };
+    }
+    const userId = Number(String(rawId).trim());
+    if (!Number.isSafeInteger(userId) || userId < 1 || userId > MAX_USER_ID) {
+      return { error: "Identifiant de membre invalide" };
+    }
+    if (!seen.has(userId)) {
+      seen.add(userId);
+      ids.push(userId);
+    }
+  }
+  return { value: ids };
+}
+
+function normalizeRecommendationNumber(value, { field, min, max, fallback = null, integer = false } = {}) {
+  if (value === undefined || value === null || value === "") return { value: fallback };
+  if (typeof value !== "number" || !Number.isFinite(value) || (integer && !Number.isInteger(value)) || value < min || value > max) {
+    return { error: `${field} invalide` };
+  }
+  return { value };
+}
+
+function normalizeRecommendationDeadline(value) {
+  const text = normalizeRecommendationText(value, {
+    field: "Date limite",
+    maxLength: MAX_RECOMMENDATION_DEADLINE_LENGTH
+  });
+  if (text.error || !text.value) return text;
+  const timestamp = Date.parse(text.value);
+  if (!Number.isFinite(timestamp)) return { error: "Date limite invalide" };
+  return { value: new Date(timestamp).toISOString() };
+}
+
+function getRawAssignedMemberIds(recommendation, overrides) {
+  if (overrides && Object.prototype.hasOwnProperty.call(overrides, "assignedMemberIds") && overrides.assignedMemberIds !== null) {
+    return normalizeRecommendationMemberIds(overrides.assignedMemberIds);
+  }
+
+  if (recommendation.participants === undefined || recommendation.participants === null) {
+    return { value: [] };
+  }
+  if (!Array.isArray(recommendation.participants)) {
+    return { error: "Liste de participants invalide" };
+  }
+  if (recommendation.participants.length > MAX_RECOMMENDATION_ASSIGNEES) {
+    return { error: `Trop de participants (${MAX_RECOMMENDATION_ASSIGNEES} max)` };
+  }
+  const participantIds = [];
+  for (const participant of recommendation.participants) {
+    if (!isPlainObject(participant)) return { error: "Participant invalide" };
+    participantIds.push(participant.userId);
+  }
+  return normalizeRecommendationMemberIds(participantIds);
+}
+
+function goalCreationError(status, message, details = {}) {
+  const error = new Error(message);
+  error.status = status;
+  error.details = details;
+  return error;
+}
+
+// Every path that creates a squad goal must use this transaction.  The active
+// goal quota is per member, so lock that member's row in the squad (and the
+// squad settings row) before counting.  Without the lock, parallel requests
+// could all observe the same count and exceed max_active_goals_per_member.
+async function insertCollectionGoalWithCapacity({
+  userId,
+  squadId = null,
+  title,
+  description,
+  variantId,
+  targetVariantIds
+}) {
+  let client;
+  let committed = false;
   try {
-    let squadIdNum = null;
+    client = await pool.connect();
+    await client.query("BEGIN");
+
     if (squadId) {
-      if (!/^\d+$/.test(String(squadId))) {
-        return res.status(400).json({ error: "squadId invalide" });
-      }
-      squadIdNum = Number(squadId);
-      const membership = await pool.query(
-        "SELECT 1 FROM squad_members WHERE squad_id = $1 AND user_id = $2 AND status = 'active'",
-        [squadIdNum, reqUser]
+      const membership = await client.query(
+        `SELECT s.max_active_goals_per_member
+         FROM squad_members sm
+         JOIN squads s ON s.id = sm.squad_id
+         WHERE sm.squad_id = $1 AND sm.user_id = $2 AND sm.status = 'active'
+         FOR UPDATE OF sm, s`,
+        [squadId, userId]
       );
       if (!membership.rows.length) {
-        return res.status(403).json({ error: "Vous n'êtes pas membre actif de cette escouade" });
+        throw goalCreationError(403, "Vous n'êtes pas membre actif de cette escouade");
       }
 
-      const [squadResult, activeGoalsResult] = await Promise.all([
-        pool.query("SELECT max_active_goals_per_member FROM squads WHERE id = $1", [squadIdNum]),
-        pool.query(
-          "SELECT COUNT(*) AS cnt FROM collection_goals WHERE user_id = $1 AND squad_id = $2 AND status = 'active'",
-          [reqUser, squadIdNum]
-        )
-      ]);
-
-      const maxActiveGoals = squadResult.rows[0]?.max_active_goals_per_member ?? 3;
+      const maxActiveGoals = membership.rows[0].max_active_goals_per_member ?? 3;
+      const activeGoalsResult = await client.query(
+        "SELECT COUNT(*) AS cnt FROM collection_goals WHERE user_id = $1 AND squad_id = $2 AND status = 'active'",
+        [userId, squadId]
+      );
       const activeGoalCount = parseInt(activeGoalsResult.rows[0].cnt, 10);
       if (activeGoalCount >= maxActiveGoals) {
-        return res.status(429).json({
-          error: "Limite d'objectifs actifs atteinte",
+        throw goalCreationError(429, "Limite d'objectifs actifs atteinte", {
           maxActiveGoals,
           activeGoalCount
         });
       }
     }
 
-    const result = await pool.query(
+    const result = await client.query(
       `INSERT INTO collection_goals (user_id, squad_id, title, description, variant_id, target_variant_ids, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'active')
        RETURNING id, created_at`,
-      [
-        reqUser,
-        squadIdNum,
-        cleanTitle,
-        description ? String(description).trim().slice(0, 1000) : null,
-        primaryVariantId,
-        targetVariantIds.length ? targetVariantIds : null
-      ]
+      [userId, squadId, title, description, variantId, targetVariantIds]
     );
+    await client.query("COMMIT");
+    committed = true;
+    return result.rows[0];
+  } catch (err) {
+    if (client && !committed) await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client?.release();
+  }
+}
+
+// ── Collection goals : create ──
+app.post("/api/collection-goals", requireNotSuspended, async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+
+  const { title, description, squadId, variantId, variantIds } = req.body || {};
+  const normalizedTitle = normalizeRecommendationText(title, { field: "Titre", maxLength: 200 });
+  if (normalizedTitle.error) return res.status(400).json({ error: normalizedTitle.error });
+  const cleanTitle = normalizedTitle.value;
+  if (!cleanTitle) return res.status(400).json({ error: "Titre requis" });
+
+  const rawVariantIds = variantIds !== undefined && variantIds !== null
+    ? variantIds
+    : (variantId !== undefined && variantId !== null && variantId !== "" ? [variantId] : []);
+  const normalizedVariantIds = normalizeRecommendationVariantIds(rawVariantIds);
+  if (normalizedVariantIds.error) return res.status(400).json({ error: normalizedVariantIds.error });
+  const targetVariantIds = normalizedVariantIds.value;
+  const primaryVariantId = targetVariantIds[0] || null;
+
+  if (targetVariantIds.length) {
+    try {
+      const catalogue = await compare.getServerCompareCatalogItemsCached();
+      const knownVariantIds = new Set(catalogue.map(item => String(item.id)));
+      if (targetVariantIds.some(id => !knownVariantIds.has(id))) {
+        return res.status(400).json({ error: "Une ou plusieurs variantes sont inconnues" });
+      }
+    } catch (err) {
+      console.error("[/api/collection-goals] catalogue validation failed", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
+
+  const normalizedDescription = normalizeRecommendationText(description, { field: "Description", maxLength: 1000 });
+  if (normalizedDescription.error) return res.status(400).json({ error: normalizedDescription.error });
+  const cleanDescription = normalizedDescription.value;
+
+  try {
+    let squadIdNum = null;
+    if (squadId !== undefined && squadId !== null && squadId !== "") {
+      if (!/^[1-9]\d*$/.test(String(squadId)) || Number(squadId) > MAX_USER_ID) {
+        return res.status(400).json({ error: "squadId invalide" });
+      }
+      squadIdNum = Number(squadId);
+    }
+
+    const result = await insertCollectionGoalWithCapacity({
+      userId: reqUser,
+      squadId: squadIdNum,
+      title: cleanTitle,
+      description: cleanDescription,
+      variantId: primaryVariantId,
+      targetVariantIds: targetVariantIds.length ? targetVariantIds : null
+    });
 
     if (squadIdNum) {
       logSquadGoalCreated(squadIdNum, reqUser, cleanTitle).catch(err => console.error("[goals] squad activity log failed", err));
-      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.rows[0].id, title: cleanTitle, variantId: variantId ? String(variantId).trim() : null } });
+      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.id, title: cleanTitle, variantId: primaryVariantId } });
     }
 
     broadcastGoalUpdate({
-      id: result.rows[0].id,
+      id: result.id,
       title: cleanTitle,
-      description: description ? String(description).trim().slice(0, 1000) : null,
+      description: cleanDescription,
       variant_id: primaryVariantId,
       target_variant_ids: targetVariantIds.length ? targetVariantIds : null,
       squad_id: squadIdNum,
       user_id: reqUser,
       status: "active",
-      created_at: result.rows[0].created_at
+      created_at: result.created_at
     }, "created").catch(err => console.error("[goals] broadcast failed", err));
 
     if (squadIdNum) invalidateSquadAnalysisCache(squadIdNum);
 
     res.status(201).json({
       ok: true,
-      goalId: result.rows[0].id,
-      createdAt: result.rows[0].created_at
+      goalId: result.id,
+      createdAt: result.created_at
     });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, ...(err.details || {}) });
+    }
     console.error("[/api/collection-goals]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
@@ -149,19 +331,42 @@ app.get("/api/collection-goals/:goalId/feasibility", async (req, res) => {
 });
 
 // ── Collection goals : convert a recommendation into a real goal ──
-app.post("/api/collection-goals/from-recommendation", async (req, res) => {
+app.post("/api/collection-goals/from-recommendation", recommendationGoalLimiter, requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
   const { recommendation, confirm, overrides } = req.body || {};
-  if (!recommendation || typeof recommendation !== "object") {
+  if (!isPlainObject(recommendation)) {
     return res.status(400).json({ error: "Recommendation requise" });
   }
+  if (overrides !== undefined && overrides !== null && !isPlainObject(overrides)) {
+    return res.status(400).json({ error: "Overrides invalides" });
+  }
+  if (confirm !== undefined && typeof confirm !== "boolean") {
+    return res.status(400).json({ error: "Confirmation invalide" });
+  }
 
-  const rawSquadId = overrides?.squadId || recommendation?.squadId || req.body?.squadId;
+  const target = recommendation.target === undefined || recommendation.target === null ? {} : recommendation.target;
+  if (!isPlainObject(target)) return res.status(400).json({ error: "Cible de recommendation invalide" });
+
+  // Bound every client-provided array even if an override takes precedence,
+  // so a forged unused field cannot turn validation into a large loop later.
+  for (const candidate of [target.variantIds, overrides?.variantIds]) {
+    if (candidate !== undefined && candidate !== null) {
+      const normalized = normalizeRecommendationVariantIds(candidate);
+      if (normalized.error) return res.status(400).json({ error: normalized.error });
+    }
+  }
+  if (recommendation.participants !== undefined && recommendation.participants !== null) {
+    if (!Array.isArray(recommendation.participants) || recommendation.participants.length > MAX_RECOMMENDATION_ASSIGNEES) {
+      return res.status(400).json({ error: `Trop de participants (${MAX_RECOMMENDATION_ASSIGNEES} max)` });
+    }
+  }
+
+  const rawSquadId = overrides?.squadId ?? recommendation.squadId ?? req.body?.squadId;
   let squadIdNum = null;
-  if (rawSquadId) {
-    if (!/^\d+$/.test(String(rawSquadId))) {
+  if (rawSquadId !== undefined && rawSquadId !== null && rawSquadId !== "") {
+    if (!/^[1-9]\d*$/.test(String(rawSquadId)) || Number(rawSquadId) > MAX_USER_ID) {
       return res.status(400).json({ error: "squadId invalide" });
     }
     squadIdNum = Number(rawSquadId);
@@ -174,27 +379,108 @@ app.post("/api/collection-goals/from-recommendation", async (req, res) => {
     }
   }
 
-  const target = recommendation.target || {};
-  const variantIds = overrides?.variantIds || target.variantIds || (target.variant_id ? [target.variant_id] : []);
-  const cleanVariantIds = Array.isArray(variantIds) ? variantIds.map(String).filter(Boolean) : [];
+  const rawVariantIds = overrides?.variantIds !== undefined && overrides.variantIds !== null
+    ? overrides.variantIds
+    : (target.variantIds !== undefined && target.variantIds !== null
+      ? target.variantIds
+      : (target.variant_id !== undefined && target.variant_id !== null && target.variant_id !== "" ? [target.variant_id] : []));
+  const normalizedVariantIds = normalizeRecommendationVariantIds(rawVariantIds);
+  if (normalizedVariantIds.error) return res.status(400).json({ error: normalizedVariantIds.error });
+  const cleanVariantIds = normalizedVariantIds.value;
 
-  const title = String(overrides?.title || recommendation.title || "Nouvel objectif").trim();
+  if (cleanVariantIds.length) {
+    try {
+      const catalogue = await compare.getServerCompareCatalogItemsCached();
+      const knownVariantIds = new Set(catalogue.map(item => String(item.id)));
+      if (cleanVariantIds.some(variantId => !knownVariantIds.has(variantId))) {
+        return res.status(400).json({ error: "Une ou plusieurs variantes sont inconnues" });
+      }
+    } catch (err) {
+      console.error("[/api/collection-goals/from-recommendation] catalogue validation failed", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
+
+  const normalizedTitle = normalizeRecommendationText(overrides?.title || recommendation.title || "Nouvel objectif", {
+    field: "Titre",
+    maxLength: 200
+  });
+  if (normalizedTitle.error) return res.status(400).json({ error: normalizedTitle.error });
+  const title = normalizedTitle.value;
   if (!title) return res.status(400).json({ error: "Titre requis" });
-  if (title.length > 200) return res.status(400).json({ error: "Titre trop long (200 max)" });
 
-  const deadline = overrides?.deadline || recommendation.deadline || null;
-  const participants = recommendation.participants || [];
-  const assignedMemberIds = overrides?.assignedMemberIds || participants.map(p => p.userId).filter(Boolean);
+  const normalizedDeadline = normalizeRecommendationDeadline(overrides?.deadline || recommendation.deadline || null);
+  if (normalizedDeadline.error) return res.status(400).json({ error: normalizedDeadline.error });
+  const deadline = normalizedDeadline.value;
+
+  const normalizedAssignedMemberIds = getRawAssignedMemberIds(recommendation, overrides);
+  if (normalizedAssignedMemberIds.error) return res.status(400).json({ error: normalizedAssignedMemberIds.error });
+  const assignedMemberIds = normalizedAssignedMemberIds.value;
+
+  let assignedMemberNames = [];
+  if (assignedMemberIds.length && squadIdNum) {
+    const membersResult = await pool.query(
+      `SELECT sm.user_id, u.username, u.display_name
+       FROM squad_members sm
+       JOIN users u ON u.id = sm.user_id
+       WHERE sm.squad_id = $1
+         AND sm.status = 'active'
+         AND sm.user_id = ANY($2::integer[])
+         AND u.deleted_at IS NULL
+         AND (u.suspended_until IS NULL OR u.suspended_until < NOW())`,
+      [squadIdNum, assignedMemberIds]
+    );
+    if (membersResult.rows.length !== assignedMemberIds.length) {
+      return res.status(400).json({ error: "Les membres assignés doivent être des membres actifs de l'escouade" });
+    }
+    const membersById = new Map(membersResult.rows.map(member => [Number(member.user_id), member]));
+    assignedMemberNames = assignedMemberIds.map(memberId => {
+      const member = membersById.get(memberId);
+      return member.display_name || member.username || String(memberId);
+    });
+  } else if (assignedMemberIds.length) {
+    if (assignedMemberIds.length !== 1 || String(assignedMemberIds[0]) !== String(reqUser)) {
+      return res.status(400).json({ error: "Un objectif personnel ne peut assigner que son créateur" });
+    }
+    const ownerResult = await pool.query(
+      "SELECT username, display_name FROM users WHERE id = $1 AND deleted_at IS NULL",
+      [reqUser]
+    );
+    if (!ownerResult.rows.length) return res.status(404).json({ error: "Utilisateur introuvable" });
+    assignedMemberNames = [ownerResult.rows[0].display_name || ownerResult.rows[0].username || String(reqUser)];
+  }
 
   const blockedGoalMemberIds = [reqUser, ...assignedMemberIds].filter(Boolean);
   if (await hasBlockedPair(blockedGoalMemberIds)) {
     return res.status(403).json({ error: "Impossible de créer un objectif entre des membres bloqués" });
   }
 
-  const assignedMemberNames = participants.map(p => p.username || p.userId).filter(Boolean);
-  const expectedGain = recommendation.expectedCollectiveGain ?? "—";
-  const reason = recommendation.reason || "Objectif issu d'une recommandation";
-  const currentProgress = recommendation.currentProgress ?? 0;
+  const normalizedExpectedGain = normalizeRecommendationNumber(recommendation.expectedCollectiveGain, {
+    field: "Gain collectif attendu",
+    min: 0,
+    max: MAX_RECOMMENDATION_GAIN,
+    integer: true,
+    fallback: null
+  });
+  if (normalizedExpectedGain.error) return res.status(400).json({ error: normalizedExpectedGain.error });
+  const expectedGain = normalizedExpectedGain.value === null ? "—" : normalizedExpectedGain.value;
+
+  const normalizedReason = normalizeRecommendationText(recommendation.reason, {
+    field: "Raison",
+    maxLength: MAX_RECOMMENDATION_REASON_LENGTH,
+    fallback: "Objectif issu d'une recommandation"
+  });
+  if (normalizedReason.error) return res.status(400).json({ error: normalizedReason.error });
+  const reason = normalizedReason.value;
+
+  const normalizedCurrentProgress = normalizeRecommendationNumber(recommendation.currentProgress, {
+    field: "Progression initiale",
+    min: 0,
+    max: 100,
+    fallback: 0
+  });
+  if (normalizedCurrentProgress.error) return res.status(400).json({ error: normalizedCurrentProgress.error });
+  const currentProgress = normalizedCurrentProgress.value;
 
   const descriptionParts = [String(reason)];
   if (expectedGain !== "—") descriptionParts.push(`Gain collectif attendu : ${expectedGain} variante(s).`);
@@ -222,35 +508,22 @@ app.post("/api/collection-goals/from-recommendation", async (req, res) => {
   }
 
   try {
-    if (squadIdNum) {
-      const [squadResult, activeGoalsResult] = await Promise.all([
-        pool.query("SELECT max_active_goals_per_member FROM squads WHERE id = $1", [squadIdNum]),
-        pool.query(
-          "SELECT COUNT(*) AS cnt FROM collection_goals WHERE user_id = $1 AND squad_id = $2 AND status = 'active'",
-          [reqUser, squadIdNum]
-        )
-      ]);
-      const maxActiveGoals = squadResult.rows[0]?.max_active_goals_per_member ?? 3;
-      const activeGoalCount = parseInt(activeGoalsResult.rows[0].cnt, 10);
-      if (activeGoalCount >= maxActiveGoals) {
-        return res.status(429).json({ error: "Limite d'objectifs actifs atteinte", maxActiveGoals, activeGoalCount });
-      }
-    }
-
-    const result = await pool.query(
-      `INSERT INTO collection_goals (user_id, squad_id, title, description, variant_id, target_variant_ids, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'active')
-       RETURNING id, created_at`,
-      [reqUser, squadIdNum, title, description || null, primaryVariantId, cleanVariantIds.length ? cleanVariantIds : null]
-    );
+    const result = await insertCollectionGoalWithCapacity({
+      userId: reqUser,
+      squadId: squadIdNum,
+      title,
+      description: description || null,
+      variantId: primaryVariantId,
+      targetVariantIds: cleanVariantIds.length ? cleanVariantIds : null
+    });
 
     if (squadIdNum) {
       logSquadGoalCreated(squadIdNum, reqUser, title).catch(err => console.error("[goals] squad activity log failed", err));
-      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.rows[0].id, title, variantIds: cleanVariantIds } });
+      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.id, title, variantIds: cleanVariantIds } });
     }
 
     broadcastGoalUpdate({
-      id: result.rows[0].id,
+      id: result.id,
       title,
       description,
       variant_id: primaryVariantId,
@@ -258,18 +531,21 @@ app.post("/api/collection-goals/from-recommendation", async (req, res) => {
       squad_id: squadIdNum,
       user_id: reqUser,
       status: "active",
-      created_at: result.rows[0].created_at
+      created_at: result.created_at
     }, "created").catch(err => console.error("[goals] broadcast failed", err));
 
     if (squadIdNum) invalidateSquadAnalysisCache(squadIdNum);
 
     res.status(201).json({
       ok: true,
-      goalId: result.rows[0].id,
-      createdAt: result.rows[0].created_at,
+      goalId: result.id,
+      createdAt: result.created_at,
       prefill
     });
   } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ error: err.message, ...(err.details || {}) });
+    }
     console.error("[/api/collection-goals/from-recommendation]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
@@ -409,7 +685,7 @@ async function getGoalFeasibility(goal, reqUser) {
   const memberHelpFactor = Math.max(0.5, 1 - (activeMemberCount - 1) * 0.03);
 
   const recentRes = await pool.query(
-    "SELECT COUNT(DISTINCT variant_id)::int AS cnt FROM sprite_entries WHERE user_id = ANY($1) AND status = 'owned' AND created_at > NOW() - INTERVAL '7 days'",
+    "SELECT COUNT(DISTINCT variant_id)::int AS cnt FROM sprite_entries WHERE user_id = ANY($1) AND status = 'owned' AND updated_at > NOW() - INTERVAL '7 days'",
     [memberIds]
   );
   const recentGains = recentRes.rows[0].cnt || 0;
@@ -514,15 +790,22 @@ async function checkAffectedGoals(userId, variantId) {
         }
         const userResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
         const actorName = userResult.rows[0]?.username || "Quelqu'un";
-        pushService.createNotification(pool, {
-          recipientId: goal.user_id,
-          actorId: userId,
-          type: "goal_completed",
-          entityId: goal.variant_id,
-          context: { goalId: goal.id },
-          message: `Objectif${goal.title ? ` : ${goal.title}` : ""} atteint par ${actorName}.`,
-          url: "/collection"
-        }).catch(err => console.error("[goals] notification failed", err));
+        // Awaited so the notification is persisted before the request responds;
+        // external push/email delivery is detached inside createNotification.
+        // A squad goal can complete because another member acquired its
+        // target. Do not turn that collection fact into a direct notification
+        // for an owner who is no longer allowed to view the actor's collection.
+        if (await canViewCollection(goal.user_id, userId)) {
+          await pushService.createNotification(pool, {
+            recipientId: goal.user_id,
+            actorId: userId,
+            type: "goal_completed",
+            entityId: goal.variant_id,
+            context: { goalId: goal.id },
+            message: `Objectif${goal.title ? ` : ${goal.title}` : ""} atteint par ${actorName}.`,
+            url: "/collection"
+          });
+        }
       }
     }
   } catch (err) {

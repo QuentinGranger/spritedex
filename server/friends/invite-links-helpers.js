@@ -2,9 +2,15 @@
 // friend invite links.
 
 const crypto = require("crypto");
+const { APP_URL } = require("../core");
 
 function generateInviteToken() {
   return `f_${crypto.randomBytes(16).toString("base64url")}`;
+}
+
+function hashInviteToken(token) {
+  if (typeof token !== "string" || !/^f_[A-Za-z0-9_-]{22}$/.test(token)) return null;
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 function computeInviteLinkMeta(duration) {
@@ -23,13 +29,15 @@ function computeInviteLinkMeta(duration) {
 }
 
 async function fetchInviteLink(client, token) {
+  const tokenHash = hashInviteToken(token);
+  if (!tokenHash) return null;
   const result = await client.query(
     `SELECT l.*, u.id AS owner_exists, u.deleted_at AS owner_deleted,
             (u.suspended_until IS NOT NULL AND u.suspended_until > NOW()) AS owner_suspended
      FROM friend_invite_links l
      JOIN users u ON u.id = l.owner_id
      WHERE l.token_hash = $1`,
-    [token]
+    [tokenHash]
   );
   if (!result.rows.length) return null;
   const link = result.rows[0];
@@ -41,13 +49,13 @@ async function fetchInviteLink(client, token) {
   return link;
 }
 
-function buildLinkUrl(req, token) {
-  const base = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-  return `${base}/?invite=${token}`;
+function buildLinkUrl(_req, token) {
+  return `${APP_URL}/?invite=${encodeURIComponent(token)}`;
 }
 
 module.exports = {
   generateInviteToken,
+  hashInviteToken,
   computeInviteLinkMeta,
   fetchInviteLink,
   buildLinkUrl

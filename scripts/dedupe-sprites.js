@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { Pool } = require("pg");
+const { databasePoolConfig } = require("../server/db");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dedupe duplicate catalog sprites that share the same slug.
@@ -23,21 +24,8 @@ const { Pool } = require("pg");
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
-function shouldUseSSL(url) {
-  if (!url) return false;
-  const hostname = new URL(url).hostname;
-  return (
-    url.includes("sslmode=require") ||
-    url.includes("ssl=true") ||
-    (!hostname.includes("localhost") && !hostname.endsWith(".local"))
-  );
-}
-
 const pool = process.env.DATABASE_URL
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: shouldUseSSL(process.env.DATABASE_URL) ? { rejectUnauthorized: false } : false,
-    })
+  ? new Pool(databasePoolConfig(process.env.DATABASE_URL))
   : new Pool({ database: "spritedex", host: "localhost", port: 5432 });
 
 const isUnknown = (v) => v === null || v === undefined || v === "" || v === "unknown";

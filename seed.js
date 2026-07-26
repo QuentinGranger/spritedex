@@ -4,19 +4,10 @@
 
 const { Pool } = require("pg");
 const { seedReferenceData } = require("./sprite-data");
-
-function useSSL(url) {
-  if (!url) return false;
-  if (/localhost|127\.0\.0\.1/.test(url)) return false;
-  if (process.env.PGSSL === "disable") return false;
-  return true;
-}
+const { databasePoolConfig } = require("./server/db");
 
 const pool = process.env.DATABASE_URL
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: useSSL(process.env.DATABASE_URL) ? { rejectUnauthorized: false } : false
-    })
+  ? new Pool(databasePoolConfig(process.env.DATABASE_URL))
   : new Pool({ database: "spritedex", host: "localhost", port: 5432 });
 
 async function seed() {

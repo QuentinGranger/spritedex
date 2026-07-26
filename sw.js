@@ -1,4 +1,11 @@
-const CACHE_NAME = "spritedex-v12";
+// Bump whenever security-sensitive client code changes so an old cached
+// renderer cannot keep serving a vulnerable version after deployment.
+const CACHE_NAME = "spritedex-v15";
+const TRUSTED_NOTIFICATION_ORIGINS = new Set([
+  "https://fortnite.com",
+  "https://www.fortnite.com",
+  "https://fortnite.gg"
+]);
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -37,7 +44,6 @@ const STATIC_ASSETS = [
   "/js/mobile.js",
   "/manifest.json",
   "/LogoApp.png",
-  "/splashScreen.mp4",
   "/Favicon/favicon.ico",
   "/Favicon/favicon-32x32.png",
   "/Favicon/favicon-16x16.png",
@@ -64,6 +70,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+
+  // Never cache mutations or cross-origin responses.  Besides avoiding cache
+  // errors for POST/PUT requests, this prevents the app cache from becoming a
+  // storage sink for third-party requests made by a controlled page.
+  if (event.request.method !== "GET" || url.origin !== self.location.origin) return;
 
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
@@ -102,18 +113,31 @@ self.addEventListener("push", (event) => {
   const title = notif.title || "SPRITNEX";
   const options = {
     body: notif.body || "",
-    icon: notif.icon || "/Favicon/android-chrome-192x192.png",
-    badge: notif.badge || "/Favicon/android-chrome-192x192.png",
+    // Keep notification assets local; remote URLs in a push payload would make
+    // the device contact an attacker-controlled host on receipt.
+    icon: "/Favicon/android-chrome-192x192.png",
+    badge: "/Favicon/android-chrome-192x192.png",
     tag: notif.tag || "spritedex",
-    data: notif.data || { url: "/" },
+    data: { url: safeNotificationUrl(notif.data?.url) },
     requireInteraction: false
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
+function safeNotificationUrl(value) {
+  try {
+    const parsed = new URL(typeof value === "string" ? value : "/", self.location.origin);
+    if (parsed.origin === self.location.origin && parsed.pathname.startsWith("/")) return parsed.href;
+    if (parsed.protocol === "https:" && TRUSTED_NOTIFICATION_ORIGINS.has(parsed.origin)) return parsed.href;
+  } catch {
+    // Fall through to the safe app home below.
+  }
+  return new URL("/", self.location.origin).href;
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/";
+  const url = safeNotificationUrl(event.notification.data?.url);
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {

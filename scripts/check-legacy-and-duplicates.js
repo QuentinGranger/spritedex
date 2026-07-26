@@ -1,21 +1,11 @@
 require("dotenv").config();
 const { Pool } = require("pg");
 const path = require("path");
-
-function shouldUseSSL(url) {
-  if (!url) return false;
-  const hostname = new URL(url).hostname;
-  return (
-    url.includes("sslmode=require") ||
-    url.includes("ssl=true") ||
-    (!hostname.includes("localhost") && !hostname.endsWith(".local"))
-  );
-}
+const { databasePoolConfig } = require("../server/db");
 
 const pool = process.env.DATABASE_URL
   ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: shouldUseSSL(process.env.DATABASE_URL) ? { rejectUnauthorized: false } : false,
+      ...databasePoolConfig(process.env.DATABASE_URL),
       connectionTimeoutMillis: 5000,
       idleTimeoutMillis: 5000,
     })

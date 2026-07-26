@@ -5,6 +5,11 @@ require("dotenv").config();
 const { pool } = require("./server/db");
 const { app, server } = require("./server/core");
 const secLog = require("./security-logger");
+const eventIdempotency = require("./server/event-idempotency");
+const acquisition = require("./server/notification-acquisition");
+const squadCompletion = require("./server/notification-squad-completion");
+const eventEndingScheduler = require("./server/notification-event-ending-scheduler");
+const deliveryQueue = require("./server/notification-delivery-queue");
 
 // Load helpers and route registrations (order preserved from the original file).
 require("./server/ws");
@@ -20,6 +25,7 @@ require("./server/routes-collection");
 require("./server/routes-squad");
 require("./server/routes-squad-invitations");
 require("./server/routes-goals");
+require("./server/notification-events");
 require("./server/recommendations");
 require("./server/news");
 require("./server/routes-spa");
@@ -35,14 +41,25 @@ ensureSquadTables()
   .then(ensureReferenceDataSeeded)
   .then(() => {
     startNewsCron();
+    acquisition.startAcquisitionBatchSweep();
+    squadCompletion.startSquadCompletionBatchSweep();
+    eventEndingScheduler.startWantedEventEndingScheduler();
+    deliveryQueue.startDeliveryQueueWorker(pool);
+    require("./server/notification-digest").startDigestSweep(pool);
     purgeDeletedAccounts();
     secLog.purgeOldSecurityLogs(pool);
+    eventIdempotency.purgeProcessedEvents(pool);
     setInterval(() => {
       purgeDeletedAccounts();
       secLog.purgeOldSecurityLogs(pool);
+      eventIdempotency.purgeProcessedEvents(pool);
     }, 24 * 60 * 60 * 1000);
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
       console.log(`SPRITNEX API + WebSocket running on http://localhost:${PORT}`);
     });
+  })
+  .catch((err) => {
+    console.error("Fatal: server bootstrap failed:", err);
+    process.exit(1);
   });

@@ -1,13 +1,13 @@
 // friends/routes-blocks.js — block / unblock and relationship status endpoints.
 
-const { getRequestingUser, isBlocked, getRelationship } = require("../auth");
+const { getRequestingUser, isBlocked, getRelationship, requireNotSuspended } = require("../auth");
 const { app } = require("../core");
 const { pool } = require("../db");
 const { resolveUsers } = require("./helpers");
 const { applyFriendAction, blockUser } = require("./state-machine");
 
 // ── Block a user from any context (profile, friend list, public link, report) ──
-app.post("/api/users/:userId/block", async (req, res) => {
+app.post("/api/users/:userId/block", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
@@ -29,7 +29,7 @@ app.post("/api/users/:userId/block", async (req, res) => {
 });
 
 // ── Block a user (friendship context) ──────────────────────────────────────────
-app.post("/api/friends/:friendId/block", async (req, res) => {
+app.post("/api/friends/:friendId/block", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -40,7 +40,7 @@ app.post("/api/friends/:friendId/block", async (req, res) => {
 });
 
 // ── Unblock a user ───────────────────────────────────────────────────────────
-app.post("/api/friends/:friendId/unblock", async (req, res) => {
+app.post("/api/friends/:friendId/unblock", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -51,7 +51,7 @@ app.post("/api/friends/:friendId/unblock", async (req, res) => {
 });
 
 // ── Unblock a user from the users endpoint (does not restore friendship) ───
-app.delete("/api/users/:userId/block", async (req, res) => {
+app.delete("/api/users/:userId/block", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
@@ -92,7 +92,7 @@ app.get("/api/users/blocked", async (req, res) => {
 });
 
 // ── Report a user ────────────────────────────────────────────────────────────
-app.post("/api/users/:userId/report", async (req, res) => {
+app.post("/api/users/:userId/report", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 

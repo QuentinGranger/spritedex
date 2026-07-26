@@ -19,9 +19,11 @@ function getFriendsEl(id) {
 }
 
 function friendAvatarHTML(user) {
+  user = user && typeof user === "object" ? user : {};
   const initial = escapeHtml((user.displayName || user.username || "?").slice(0, 2));
-  if (user.avatarUrl) {
-    return `<div class="friend-avatar" style="background-image:url('${escapeHtml(user.avatarUrl)}'); background-size:cover; background-position:center; color:transparent" aria-label="${initial}">${initial}</div>`;
+  const avatarUrl = safeImageUrl(user.avatarUrl);
+  if (avatarUrl) {
+    return `<div class="friend-avatar" style="background-image:url('${escapeHtml(avatarUrl)}'); background-size:cover; background-position:center; color:transparent" aria-label="${initial}">${initial}</div>`;
   }
   return `<div class="friend-avatar">${initial}</div>`;
 }
@@ -633,18 +635,19 @@ async function compareWithFriend(friendId, name) {
     const result = await res.json();
 
     // Rebuild friend's collection from server records so renderCompare works offline afterwards.
-    const friendCollection = {};
+    const friendCollection = createSafeRecord();
     for (const rec of result.records || []) {
       const entry = rec.userB || {};
+      const safeEntry = sanitizeCollectionEntry(entry);
       if (rec.variantId) {
-        friendCollection[rec.variantId] = { status: entry.status, priority: entry.priority, note: entry.note };
+        setSafeRecordValue(friendCollection, rec.variantId, safeEntry);
       }
       if (rec.id && rec.id !== rec.variantId) {
-        friendCollection[rec.id] = { status: entry.status, priority: entry.priority, note: entry.note };
+        setSafeRecordValue(friendCollection, rec.id, safeEntry);
       }
       if (Array.isArray(rec.legacyKeys)) {
         for (const key of rec.legacyKeys) {
-          friendCollection[key] = { status: entry.status, priority: entry.priority, note: entry.note };
+          setSafeRecordValue(friendCollection, key, safeEntry);
         }
       }
     }
@@ -743,7 +746,11 @@ async function copyFriendInviteLink() {
     });
     if (!res.ok) throw new Error("invite link failed");
     const data = await res.json();
-    const link = data.url || `${webOrigin()}/?invite=${data.token}`;
+    const fallbackLink = data.token
+      ? `${webOrigin()}/?invite=${encodeURIComponent(String(data.token))}`
+      : "";
+    const link = safeAppWebUrl(data.url) || safeAppWebUrl(fallbackLink);
+    if (!link) throw new Error("invalid invite link");
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(link);
       toast("Lien copié dans le presse-papiers.");
@@ -767,35 +774,27 @@ async function showMyQrCode() {
   if (img) { img.style.display = "none"; img.src = ""; }
   if (hint) hint.textContent = "Génération du QR code…";
   try {
-    console.log("[qr] step1: POST invite-links, userId=", state.userId, "API_BASE=", API_BASE);
     const res = await fetch(`${API_BASE}/friends/invite-links`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ duration: "permanent" })
     });
-    console.log("[qr] step1 status:", res.status);
     if (!res.ok) {
-      const errBody = await res.text();
-      console.error("[qr] step1 error body:", errBody);
-      throw new Error(`invite link failed: ${res.status} ${errBody}`);
+      throw new Error(`invite link failed: ${res.status}`);
     }
     const data = await res.json();
-    console.log("[qr] step1 ok, token:", data.token);
     if (!data.token) throw new Error("missing token");
 
     // Prefer server-rendered QR, fallback to a public QR API if the endpoint is unavailable.
     const qrUrl = `${API_BASE}/friends/invite-links/${encodeURIComponent(data.token)}/qr`;
-    console.log("[qr] step2: GET", qrUrl);
     const qrRes = await fetch(qrUrl, { headers: authHeadersOnly() });
-    console.log("[qr] step2 status:", qrRes.status);
     if (!qrRes.ok) {
-      const errBody = await qrRes.text();
-      console.error("[qr] step2 error body:", errBody);
-      throw new Error(`qr failed: ${qrRes.status} ${errBody}`);
+      throw new Error(`qr failed: ${qrRes.status}`);
     }
     const qrData = await qrRes.json();
-    if (img && qrData.qr) {
-      img.src = qrData.qr;
+    const qrImage = safeImageUrl(qrData.qr);
+    if (img && qrImage) {
+      img.src = qrImage;
       img.style.display = "block";
       if (hint) hint.style.display = "none";
       return;

@@ -332,11 +332,12 @@ function compareStatusTag(status, entry) {
 }
 
 function compareItemHTML(item, extraHTML = "") {
-  const img = item.img
-    ? `<img src="${item.img}" alt="${escapeHtml(item.spriteName)}" class="ci-thumb" />`
+  const imageUrl = safeImageUrl(item.img);
+  const img = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="ci-thumb" />`
     : `<span class="ci-thumb ci-thumb--empty">?</span>`;
   return `
-    <div class="compare-item" style="--card-color:${item.color || 'var(--text)'}">
+    <div class="compare-item" style="--card-color:${safeCssColor(item.color, '#8d7cff')}">
       ${img}
       <div class="compare-item__info">
         <span class="compare-item__name">${escapeHtml(item.spriteName)}</span>
@@ -462,7 +463,7 @@ function getCompareFilterOptions(records, key, labelFn) {
 
 function renderCompareCatalogFilters(records) {
   if (!records) return "";
-  state.compareCatalogFilters = state.compareCatalogFilters || {};
+  state.compareCatalogFilters = state.compareCatalogFilters || createSafeRecord();
   const filters = state.compareCatalogFilters;
   const makeSelect = (key, label, options) => {
     const current = filters[key] || "";
@@ -569,6 +570,12 @@ function getCompareFilterRecords(result, filter) {
   return result.records;
 }
 
+function recordMatchesCompareFocus(record, focusIds) {
+  if (!focusIds || !focusIds.length) return true;
+  const keys = [record.variantId, record.id, ...(record.legacyKeys || [])].filter(Boolean).map(String);
+  return focusIds.some((id) => keys.includes(String(id)));
+}
+
 function renderCompareTable(result, aName, bName) {
   if (!els.compareTable) return;
   const filter = state.compareFilter || "all";
@@ -576,6 +583,11 @@ function renderCompareTable(result, aName, bName) {
   const sort = state.compareSort || "alpha";
   let records = getCompareFilterRecords(result, filter);
   records = records.filter(r => matchesCompareCatalogFilters(r, catalogFilters));
+  const focusIds = Array.isArray(state.compareFocusVariantIds) ? state.compareFocusVariantIds : null;
+  if (focusIds && focusIds.length) {
+    const focused = records.filter(r => recordMatchesCompareFocus(r, focusIds));
+    if (focused.length) records = focused;
+  }
   records = compareSortRecords(records, sort);
 
   const header = `
@@ -587,13 +599,14 @@ function renderCompareTable(result, aName, bName) {
     </div>`;
 
   const rows = records.map(r => {
+    const imageUrl = safeImageUrl(r.img);
     const actions = `
-      <button type="button" class="compare-action compare-action--detail" data-sprite-id="${r.spriteId}">Fiche</button>
+      <button type="button" class="compare-action compare-action--detail" data-sprite-id="${escapeHtml(String(r.spriteId || ""))}">Fiche</button>
       ${compareQuickActionsHTML(r.variantId, r.userA.status)}`;
     return `
-      <div class="compare-table__row" data-sprite-id="${r.spriteId}" data-variant-id="${r.variantId}">
+      <div class="compare-table__row" data-sprite-id="${escapeHtml(String(r.spriteId || ""))}" data-variant-id="${escapeHtml(String(r.variantId || ""))}">
         <span class="compare-table__cell compare-table__cell--variant">
-          <img src="${r.img || ""}" alt="" class="compare-table__thumb" loading="lazy" onerror="this.style.display='none'">
+          ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="" class="compare-table__thumb" loading="lazy">` : `<span class="compare-table__thumb" aria-hidden="true"></span>`}
           <span class="compare-table__name">${escapeHtml(r.spriteName)} — ${escapeHtml(r.variantName || "Base")}</span>
         </span>
         <span class="compare-table__cell compare-table__cell--status">${compareStatusIcon(r.userA.status)}<span class="compare-table__status-label">${statusLabel(r.userA.status)}</span></span>
@@ -642,10 +655,11 @@ function openCompareSprite(spriteId) {
   const total = records.length;
   const covered = records.filter(r => r.userA.status === "owned" || r.userB.status === "owned").length;
   const pct = total ? Math.round((covered / total) * 10000) / 100 : 0;
+  const headerImage = safeImageUrl(records[0].img);
 
   const header = `
-    <div class="compare-sprite-header" style="--card-color:${sprite && sprite.color ? sprite.color : 'var(--text)'}">
-      ${records[0].img ? `<img src="${records[0].img}" alt="${spriteName}" class="compare-sprite-header__img" onerror="this.style.display='none'">` : ""}
+    <div class="compare-sprite-header" style="--card-color:${safeCssColor(sprite && sprite.color, '#8d7cff')}">
+      ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="${spriteName}" class="compare-sprite-header__img">` : ""}
       <div class="compare-sprite-header__info">
         <h2>${spriteName}</h2>
         <span class="compare-sprite-completion">Complétion collective du ${spriteName} : <strong>${pct}%</strong></span>
@@ -693,8 +707,9 @@ function compareQuickActionsHTML(variantId, selectedStatus) {
     { value: "priority", label: "Prioritaire" },
     { value: "spotted", label: "Repéré" }
   ];
-  const select = `<select class="compare-status-select" data-variant-id="${variantId}">${options.map(o => `<option value="${o.value}" ${selectedStatus === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
-  const noteBtn = `<button type="button" class="compare-action compare-action--note" data-variant-id="${variantId}">Note</button>`;
+  const safeVariantId = escapeHtml(String(variantId || ""));
+  const select = `<select class="compare-status-select" data-variant-id="${safeVariantId}">${options.map(o => `<option value="${o.value}" ${selectedStatus === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  const noteBtn = `<button type="button" class="compare-action compare-action--note" data-variant-id="${safeVariantId}">Note</button>`;
   return `<span class="compare-quick-actions">${select}${noteBtn}</span>`;
 }
 
@@ -733,16 +748,17 @@ function attachCompareQuickActions(container, spriteIdForDialog = null) {
 function groupCompareRecordsBy(records, key) {
   return records.reduce((acc, r) => {
     const v = r[key];
-    if (v === undefined || v === null || v === "") return acc;
-    acc[v] = acc[v] || [];
-    acc[v].push(r);
+    const recordKey = String(v ?? "");
+    if (!recordKey || !isSafeRecordKey(recordKey)) return acc;
+    acc[recordKey] = acc[recordKey] || [];
+    acc[recordKey].push(r);
     return acc;
-  }, {});
+  }, createSafeRecord());
 }
 
 function generateCompareRecommendations(result, aName, bName) {
-  const safeA = escapeHtml(aName);
-  const safeB = escapeHtml(bName);
+  const safeA = safeText(aName, "Joueur A");
+  const safeB = safeText(bName, "Joueur B");
   const recs = [];
 
   // 1. Priority exchanges
@@ -789,7 +805,7 @@ function generateCompareRecommendations(result, aName, bName) {
       if (missingA && missingB) detail = ` (${safeA} en manque ${missingA}, ${safeB} en manque ${missingB})`;
       else if (missingA) detail = ` (${safeA} en manque ${missingA})`;
       else if (missingB) detail = ` (${safeB} en manque ${missingB})`;
-      recs.push({ type: "completeTogether", title: `Vous possédez ensemble toutes les variantes du ${escapeHtml(spriteName)}${detail}`, items: records.filter(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status)) });
+      recs.push({ type: "completeTogether", title: `Vous possédez ensemble toutes les variantes du ${safeText(spriteName)}${detail}`, items: records.filter(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status)) });
     }
   }
 
@@ -802,7 +818,7 @@ function generateCompareRecommendations(result, aName, bName) {
     if (total - covered === 1) {
       const missingRecord = records.find(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status));
       if (missingRecord) {
-        recs.push({ type: "eventClose", title: `Il ne vous manque qu’une variante pour compléter l’événement ${escapeHtml(compareEventLabel(eventId))}`, items: [missingRecord] });
+        recs.push({ type: "eventClose", title: `Il ne vous manque qu’une variante pour compléter l’événement ${safeText(compareEventLabel(eventId))}`, items: [missingRecord] });
       }
     }
   }
@@ -820,7 +836,7 @@ function renderCompareRecommendations(result, aName, bName) {
   } else {
     for (const rec of recommendations) {
       const list = rec.items.map(r => compareItemHTML(r, `${compareStatusIcon(r.userA.status)} ${compareStatusIcon(r.userB.status)}`)).join("");
-      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${rec.title}</h4><div class="compare-list">${list}</div></div>`;
+      html += `<div class="compare-subsection"><h4 class="compare-subsection__title">${escapeHtml(rec.title)}</h4><div class="compare-list">${list}</div></div>`;
     }
   }
   html += `</div></div>`;
@@ -872,22 +888,31 @@ function renderCompareActions(result) {
   if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => { state.compareSort = e.target.value; logCompareAnalytics("comparison_filter_used", { filter: "sort", value: e.target.value }); renderCompare(); });
 
   const refreshBtn = $("#compareRefreshBtn");
-  if (refreshBtn) refreshBtn.addEventListener("click", () => { state.compareFilter = "all"; state.compareSort = "alpha"; state.compareCatalogFilters = {}; renderCompare(); });
+  if (refreshBtn) refreshBtn.addEventListener("click", () => {
+    state.compareFilter = "all";
+    state.compareSort = "alpha";
+    state.compareCatalogFilters = createSafeRecord();
+    state.compareFocusVariantIds = null;
+    renderCompare();
+  });
 
   const shareBtn = $("#compareShareActionBtn");
   if (shareBtn) shareBtn.addEventListener("click", shareCompareLink);
 
   els.compareActions.querySelectorAll("[data-filter-key]").forEach(sel => {
     sel.addEventListener("change", (e) => {
-      state.compareCatalogFilters = state.compareCatalogFilters || {};
-      state.compareCatalogFilters[e.target.dataset.filterKey] = e.target.value;
+      const filterKey = e.target.dataset.filterKey;
+      const allowedFilterKeys = new Set(["season", "event", "rarity", "sprite", "variantType", "availability", "acquisition"]);
+      state.compareCatalogFilters = state.compareCatalogFilters || createSafeRecord();
+      if (!allowedFilterKeys.has(filterKey)) return;
+      setSafeRecordValue(state.compareCatalogFilters, filterKey, String(e.target.value || "").slice(0, 240));
       logCompareAnalytics("comparison_filter_used", { filter: e.target.dataset.filterKey, value: e.target.value });
       renderCompare();
     });
   });
 
   const resetBtn = $("#compareFilterReset");
-  if (resetBtn) resetBtn.addEventListener("click", () => { state.compareCatalogFilters = {}; renderCompare(); });
+  if (resetBtn) resetBtn.addEventListener("click", () => { state.compareCatalogFilters = createSafeRecord(); renderCompare(); });
 }
 
 async function loadCompareSquads() {
@@ -1022,7 +1047,7 @@ async function loadCompareTarget(raw) {
       userId: data.id,
       username: data.username || "Ami",
       avatarUrl: data.avatarUrl || "",
-      collection: data.collection || {}
+      collection: sanitizeCollection(data.collection)
     };
     logCompareAnalytics("comparison_viewed", { source: "shared_profile", targetId: data.id });
     if (els.compareTokenInput) els.compareTokenInput.value = raw;
@@ -1038,21 +1063,27 @@ async function loadCompareTarget(raw) {
 }
 
 function setShareResult(url, qrDataUrl = null) {
+  const absoluteUrl = safeAppWebUrl(url);
+  if (!absoluteUrl) {
+    toast("Lien de partage invalide.");
+    return;
+  }
   if (els.shareCompareUrl) {
-    els.shareCompareUrl.href = url;
-    els.shareCompareUrl.textContent = url;
+    els.shareCompareUrl.href = absoluteUrl;
+    els.shareCompareUrl.textContent = absoluteUrl;
   }
   if (els.shareCompareQr) {
-    els.shareCompareQr.style.display = qrDataUrl ? "block" : "none";
-    els.shareCompareQr.src = qrDataUrl || "";
+    const qrImage = safeImageUrl(qrDataUrl);
+    els.shareCompareQr.style.display = qrImage ? "block" : "none";
+    els.shareCompareQr.src = qrImage;
   }
   if (els.shareCompareCopy) {
     els.shareCompareCopy.onclick = async () => {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(absoluteUrl);
         toast("Lien copié !");
       } else {
-        toast(url);
+        toast(absoluteUrl);
       }
     };
   }
@@ -1164,9 +1195,9 @@ async function loadCompareShare(token) {
     state.compareShareOptions = data.options;
 
     const owner = data.result?.users?.userA;
-    const ownerCollection = {};
+    const ownerCollection = createSafeRecord();
     for (const r of (data.result?.records || [])) {
-      ownerCollection[r.variantId] = { status: r.userA.status, priority: r.userA.priority, note: r.userA.note };
+      setSafeRecordValue(ownerCollection, r.variantId, sanitizeCollectionEntry(r.userA));
     }
 
     state.compareTarget = {
@@ -1243,15 +1274,15 @@ async function compareWithUser(identifier) {
 
     const targetId = result.users?.userB?.id;
     const targetName = result.users?.userB?.displayName || target;
-    const targetCollection = {};
+    const targetCollection = createSafeRecord();
     for (const rec of result.records || []) {
       const entry = rec.userB || {};
-      targetCollection[rec.variantId] = {
+      setSafeRecordValue(targetCollection, rec.variantId, sanitizeCollectionEntry({
         status: entry.status || "new",
         priority: entry.priority || "none",
         note: entry.note || "",
         obtainedAt: entry.obtainedAt || null
-      };
+      }));
     }
 
     state.compareTarget = {
@@ -1280,15 +1311,17 @@ async function comparePair(userAId, userAName, userBId, userBName) {
       return;
     }
     const result = await res.json();
-    const collectionA = {};
-    const collectionB = {};
+    const collectionA = createSafeRecord();
+    const collectionB = createSafeRecord();
     for (const rec of result.records || []) {
       const a = rec.userA || {};
       const b = rec.userB || {};
-      collectionA[rec.variantId] = { status: a.status || "new", priority: a.priority || "none", note: a.note || "", obtainedAt: null };
-      if (rec.id && rec.id !== rec.variantId) collectionA[rec.id] = { status: a.status || "new", priority: a.priority || "none", note: a.note || "", obtainedAt: null };
-      collectionB[rec.variantId] = { status: b.status || "new", priority: b.priority || "none", note: b.note || "", obtainedAt: null };
-      if (rec.id && rec.id !== rec.variantId) collectionB[rec.id] = { status: b.status || "new", priority: b.priority || "none", note: b.note || "", obtainedAt: null };
+      const entryA = sanitizeCollectionEntry({ status: a.status || "new", priority: a.priority || "none", note: a.note || "", obtainedAt: null });
+      const entryB = sanitizeCollectionEntry({ status: b.status || "new", priority: b.priority || "none", note: b.note || "", obtainedAt: null });
+      setSafeRecordValue(collectionA, rec.variantId, entryA);
+      if (rec.id && rec.id !== rec.variantId) setSafeRecordValue(collectionA, rec.id, entryA);
+      setSafeRecordValue(collectionB, rec.variantId, entryB);
+      if (rec.id && rec.id !== rec.variantId) setSafeRecordValue(collectionB, rec.id, entryB);
     }
 
     state.compareAsPair = { userA: { id: Number(userAId), displayName: userAName || "Joueur A", collection: collectionA } };
@@ -1315,15 +1348,15 @@ async function handleCompareUserParams() {
   const target = String(userA) === String(state.username || state.userId) ? userB : userA;
   const targetId = result.users?.userB?.id;
   const targetName = result.users?.userB?.displayName || target;
-  const targetCollection = {};
+  const targetCollection = createSafeRecord();
   for (const rec of result.records || []) {
     const entry = rec.userB || {};
-    targetCollection[rec.variantId] = {
+    setSafeRecordValue(targetCollection, rec.variantId, sanitizeCollectionEntry({
       status: entry.status || "new",
       priority: entry.priority || "none",
       note: entry.note || "",
       obtainedAt: entry.obtainedAt || null
-    };
+    }));
   }
   state.compareTarget = {
     userId: targetId ? Number(targetId) : null,
@@ -1391,18 +1424,18 @@ function updateCompareFromMessage(msg) {
   if (!isTarget && !isSelf) return;
 
   if (msg.type === "compare_reset") {
-    if (isTarget) state.compareTarget.collection = {};
-    if (isSelf) state.collection = {};
+    if (isTarget) state.compareTarget.collection = createSafeRecord();
+    if (isSelf) state.collection = createSafeRecord();
   } else if (msg.type === "compare_update" && Array.isArray(msg.changes)) {
     for (const ch of msg.changes) {
-      const entry = {
+      const entry = sanitizeCollectionEntry({
         status: ch.status || "new",
         priority: ch.priority || "none",
         note: ch.note || "",
         obtainedAt: ch.obtainedAt || null
-      };
-      if (isTarget) state.compareTarget.collection[ch.variantId] = entry;
-      if (isSelf) state.collection[ch.variantId] = entry;
+      });
+      if (isTarget) setSafeRecordValue(state.compareTarget.collection, ch.variantId, entry);
+      if (isSelf) setSafeRecordValue(state.collection, ch.variantId, entry);
     }
     if (isTarget && msg.changes.length > 0) {
       showCompareUpdateToast(msg, msg.changes[0]);

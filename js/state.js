@@ -1,12 +1,12 @@
 let VARIANT_META = {};
 let SPRITES = [];
-let SPRITE_IMAGES = {};
-let SPRITE_VARIANTS = {};
-let SEASONS = {};
-let EVENTS = {};
+let SPRITE_IMAGES = Object.create(null);
+let SPRITE_VARIANTS = Object.create(null);
+let SEASONS = Object.create(null);
+let EVENTS = Object.create(null);
 
 const state = {
-  collection: {},
+  collection: Object.create(null),
   currentDeck: [],
   currentIndex: 0,
   activeDetailId: null,
@@ -26,7 +26,10 @@ const state = {
   squadJoinOpen: true,
   compareTarget: null,
   compareToken: null,
-  compareMode: "friend"
+  compareMode: "friend",
+  // Étape 48 — contextual notification destinations
+  compareFocusVariantIds: null,
+  missingEventFilter: null
 };
 
 const $ = (selector) => document.querySelector(selector);

@@ -2,6 +2,10 @@
 
 const analytics = require("../analytics");
 const pushService = require("../push-service");
+const notifPrefs = require("./notification-preferences");
+const eventIdempotency = require("./event-idempotency");
+const acquisition = require("./notification-acquisition");
+const squadCompletion = require("./notification-squad-completion");
 const secLog = require("../security-logger");
 const { seedReferenceData } = require("../sprite-data");
 const { shareSquad } = require("./auth");
@@ -181,11 +185,27 @@ async function ensureSquadTables() {
       CREATE TABLE IF NOT EXISTS sessions (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        token VARCHAR(64) UNIQUE NOT NULL,
+        token VARCHAR(80) UNIQUE NOT NULL,
         expires_at TIMESTAMPTZ NOT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions (token);
+
+      -- Session secrets are stored only as s_<sha256>, never as a usable
+      -- bearer token. Invalidating older plaintext rows is intentional.
+      ALTER TABLE sessions ALTER COLUMN token TYPE VARCHAR(80);
+      DELETE FROM sessions WHERE token !~ '^s_[0-9a-f]{64}$';
+
+      CREATE TABLE IF NOT EXISTS oauth_exchange_codes (
+        code_hash VARCHAR(64) PRIMARY KEY,
+        verifier_hash VARCHAR(64) NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_oauth_exchange_codes_expiry
+        ON oauth_exchange_codes (expires_at);
+      DELETE FROM oauth_exchange_codes WHERE expires_at <= NOW();
     `);
     await pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
@@ -197,6 +217,7 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMPTZ DEFAULT NOW();
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(64);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verify_token_expires TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(64);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);
@@ -211,6 +232,7 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS cookie_consent JSONB;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(50);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS friend_invites_from VARCHAR(20) DEFAULT 'everyone';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS squad_invites_from VARCHAR(20) DEFAULT 'friends';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_visibility VARCHAR(20) DEFAULT 'public';
@@ -514,30 +536,175 @@ async function ensureSquadTables() {
       );
       CREATE INDEX IF NOT EXISTS idx_compare_share_token ON compare_share_tokens (token);
       CREATE INDEX IF NOT EXISTS idx_compare_share_owner ON compare_share_tokens (owner_user_id);
+
+      CREATE TABLE IF NOT EXISTS security_migrations (
+        name VARCHAR(100) PRIMARY KEY,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
     `);
+    // These URL values are bearer capabilities. Earlier versions persisted
+    // them in clear text, so invalidate that one legacy generation exactly
+    // once before the application starts looking up SHA-256 digests.
+    const migrationClient = await pool.connect();
+    try {
+      await migrationClient.query("BEGIN");
+      const capabilityMigration = await migrationClient.query(
+        `INSERT INTO security_migrations (name)
+         VALUES ('capability_token_hashing_v1')
+         ON CONFLICT (name) DO NOTHING
+         RETURNING name`
+      );
+      if (capabilityMigration.rows.length) {
+        await migrationClient.query("UPDATE users SET share_token = NULL WHERE share_token IS NOT NULL");
+        await migrationClient.query("UPDATE compare_share_tokens SET revoked_at = NOW() WHERE revoked_at IS NULL");
+        await migrationClient.query("DELETE FROM friend_invite_links");
+        console.warn("[SECURITY] Existing share and invite links were invalidated to migrate bearer tokens to hashed storage.");
+      }
+      await migrationClient.query("COMMIT");
+    } catch (err) {
+      await migrationClient.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      migrationClient.release();
+    }
+
+    // Password-reset and email-verification values used to be persisted as
+    // raw URL tokens.  New values are SHA-256 digests, but both formats are
+    // hexadecimal and therefore cannot be safely distinguished in-place.
+    // Invalidate the one pre-hardening generation once rather than leaving a
+    // replayable secret in a database backup or a mistakenly rolled-back
+    // process. Affected users can simply request a new email.
+    const authTokenMigrationClient = await pool.connect();
+    try {
+      await authTokenMigrationClient.query("BEGIN");
+      const authTokenMigration = await authTokenMigrationClient.query(
+        `INSERT INTO security_migrations (name)
+         VALUES ('opaque_auth_token_hashing_v1')
+         ON CONFLICT (name) DO NOTHING
+         RETURNING name`
+      );
+      if (authTokenMigration.rows.length) {
+        await authTokenMigrationClient.query(
+          `UPDATE users
+           SET reset_token = NULL,
+               reset_token_expires = NULL,
+               email_verify_token = NULL,
+               email_verify_token_expires = NULL
+           WHERE reset_token IS NOT NULL OR email_verify_token IS NOT NULL`
+        );
+        console.warn("[SECURITY] Existing password-reset and verification links were invalidated to migrate bearer tokens to hashed storage.");
+      }
+      await authTokenMigrationClient.query("COMMIT");
+    } catch (err) {
+      await authTokenMigrationClient.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      authTokenMigrationClient.release();
+    }
+    // ── Notifications (contextual notifications feature) ──
+    // Every notification is persisted here before any push/email dispatch, so it
+    // also acts as the in-app inbox and an outbox for delivery workers.
+    // NOTE: the reference spec uses UUID ids, but SPRITNEX users.id is an INTEGER
+    // SERIAL and variant ids are strings, so we keep SERIAL/INTEGER keys and a
+    // VARCHAR entity_id (a variant/squad/event/invitation id) rather than UUID.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL,
+        recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         actor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        type VARCHAR(80) NOT NULL,
+        category VARCHAR(30) NOT NULL DEFAULT 'general',
+        title TEXT NOT NULL DEFAULT 'SPRITNEX',
+        body TEXT NOT NULL DEFAULT '',
+        entity_type VARCHAR(50),
         entity_id VARCHAR(100),
-        context JSONB DEFAULT '{}',
-        message TEXT NOT NULL,
+        data JSONB NOT NULL DEFAULT '{}',
+        status VARCHAR(30) NOT NULL DEFAULT 'created',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        delivered_at TIMESTAMPTZ,
         read_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        clicked_at TIMESTAMPTZ,
+        archived_at TIMESTAMPTZ
       );
-      CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications (user_id, created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications (user_id, read_at NULLS FIRST);
     `);
 
-    // Ensure the context column exists even on databases created before this change.
+    // Migrate legacy notifications tables (pre "contextual notifications"), which
+    // used user_id / context / message. Rename in place to avoid data loss.
+    await pool.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='user_id')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='recipient_id') THEN
+          ALTER TABLE notifications RENAME COLUMN user_id TO recipient_id;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='context')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='data') THEN
+          ALTER TABLE notifications RENAME COLUMN context TO data;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='message')
+           AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='body') THEN
+          ALTER TABLE notifications RENAME COLUMN message TO body;
+        END IF;
+      END $$;
+    `);
+
+    // Add any columns missing on older databases.
     await pool.query(`
       ALTER TABLE notifications
-      ADD COLUMN IF NOT EXISTS context JSONB DEFAULT '{}';
-      CREATE INDEX IF NOT EXISTS idx_notifications_context ON notifications USING GIN (context);
+        ADD COLUMN IF NOT EXISTS category VARCHAR(30) NOT NULL DEFAULT 'general',
+        ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'SPRITNEX',
+        ADD COLUMN IF NOT EXISTS body TEXT NOT NULL DEFAULT '',
+        ADD COLUMN IF NOT EXISTS entity_type VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS entity_id VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}',
+        ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'created',
+        ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS clicked_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS hidden_at TIMESTAMPTZ;
+    `);
+
+    // Normalize constraints on columns that may have been renamed from legacy.
+    await pool.query(`
+      ALTER TABLE notifications ALTER COLUMN type TYPE VARCHAR(80);
+      UPDATE notifications SET data = '{}'::jsonb WHERE data IS NULL;
+      ALTER TABLE notifications ALTER COLUMN data SET DEFAULT '{}';
+      ALTER TABLE notifications ALTER COLUMN data SET NOT NULL;
+    `);
+
+    // Backfill categories for known contextual types; leave others as 'general'.
+    await pool.query(`
+      UPDATE notifications SET category = CASE type
+        WHEN 'friend_request_accepted' THEN 'social'
+        WHEN 'friend_acquired_missing_variant' THEN 'collection'
+        WHEN 'squad_completion_increased' THEN 'collection'
+        WHEN 'priority_variant_available' THEN 'alerts'
+        WHEN 'wanted_event_ending_soon' THEN 'alerts'
+        ELSE category END
+      WHERE category = 'general';
+    `);
+
+    // Indexes: drop legacy (user_*) names and recreate on recipient_id/data.
+    await pool.query(`
+      DROP INDEX IF EXISTS idx_notifications_user_created;
+      DROP INDEX IF EXISTS idx_notifications_context;
+      DROP INDEX IF EXISTS idx_notifications_unread;
+      DROP INDEX IF EXISTS idx_notifications_pending;
+      CREATE INDEX IF NOT EXISTS idx_notifications_recipient_created ON notifications (recipient_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications (recipient_id, read_at NULLS FIRST)
+        WHERE archived_at IS NULL AND hidden_at IS NULL;
+      CREATE INDEX IF NOT EXISTS idx_notifications_data ON notifications USING GIN (data);
+      CREATE INDEX IF NOT EXISTS idx_notifications_pending ON notifications (created_at) WHERE status IN ('created', 'queued');
     `);
     await pushService.ensurePushTables(pool);
+    await require("./push-subscriptions").ensurePushSubscriptionsTable(pool);
+    await notifPrefs.ensureNotificationPreferencesTable(pool);
+    await eventIdempotency.ensureProcessedEventsTable(pool);
+    await require("./notification-delivery-queue").ensureDeliveryQueueTable(pool);
+    await require("./notification-deliveries").ensureDeliveriesTable(pool);
+    await require("./notification-blocks").ensureNotificationHiddenColumn(pool);
+    await acquisition.ensureAcquisitionBatchTable(pool);
+    await squadCompletion.ensureSquadCompletionTables(pool);
     await secLog.ensureSecurityLogTable(pool);
     await analytics.ensureCompareAnalyticsTable(pool);
     await analytics.ensureProductAnalyticsTable(pool);

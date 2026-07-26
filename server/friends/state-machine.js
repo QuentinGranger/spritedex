@@ -47,14 +47,24 @@ async function applyFriendAction(reqUser, friendId, action) {
     }
 
     case "accept": {
+      // Trigger (Étape 11): only the addressee can accept, and only while the
+      // relationship is still `pending`. Success means pending → accepted.
       if (!active || active.status !== "pending" || !isAddressee) {
         return { error: 404, message: "Aucune invitation en attente" };
       }
+      const previousStatus = active.status;
       await pool.query(
         `UPDATE friendships SET status = 'accepted', responded_at = NOW(), updated_at = NOW() WHERE id = $1`,
         [active.id]
       );
-      return { ok: true };
+      return {
+        ok: true,
+        previousStatus,
+        newStatus: "accepted",
+        friendshipId: active.id,
+        requesterId: active.requester_id,
+        accepterId: reqUser
+      };
     }
 
     case "decline": {
@@ -116,6 +126,9 @@ async function applyFriendAction(reqUser, friendId, action) {
           [reqUser, friendId]
         );
         await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw err;
       } finally {
         client.release();
       }
@@ -146,6 +159,9 @@ async function applyFriendAction(reqUser, friendId, action) {
           [reqUser, friendId]
         );
         await client.query("COMMIT");
+      } catch (err) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw err;
       } finally {
         client.release();
       }
@@ -172,6 +188,20 @@ async function blockUser(reqUser, userId) {
        AND (expires_at IS NULL OR expires_at > NOW())`,
     [reqUser, userId]
   );
+  // A personal profile share link is also a bearer capability. Once either
+  // side blocks the other, revoke both parties' links so a previously copied
+  // anonymous URL cannot bypass the new privacy boundary.
+  await pool.query(
+    "UPDATE users SET share_token = NULL WHERE id IN ($1, $2)",
+    [reqUser, userId]
+  );
+  // Étape 57 — purge pending social notifs, hide private reveals, stop batches.
+  try {
+    const blocks = require("../notification-blocks");
+    await blocks.applyBlockNotificationCleanup(pool, reqUser, userId);
+  } catch (err) {
+    console.error("[blockUser] notification cleanup failed:", err.message);
+  }
   return { ok: true };
 }
 

@@ -6,7 +6,7 @@
 
 function renderSharedProfile(data) {
   const items = getAllItems();
-  const collection = data.collection || {};
+  const collection = sanitizeCollection(data.collection);
   const isOwned = (id) => (collection[id]?.status || "new") === "owned";
 
   const total = items.length;
@@ -25,8 +25,9 @@ function renderSharedProfile(data) {
 
   const ownedItems = items.filter(i => isOwned(i.id));
 
-  const avatar = data.avatarUrl
-    ? `<img src="${encodeURI(data.avatarUrl)}" alt="" class="shared-view__avatar" />`
+  const avatarUrl = safeImageUrl(data.avatarUrl);
+  const avatar = avatarUrl
+    ? `<img src="${escapeHtml(avatarUrl)}" alt="" class="shared-view__avatar" />`
     : `<div class="shared-view__avatar shared-view__avatar--empty">?</div>`;
 
   const rarityBars = rarities.map(r => `
@@ -39,7 +40,7 @@ function renderSharedProfile(data) {
   const grid = ownedItems.length
     ? ownedItems.map(i => `
         <div class="shared-card" title="${escapeHtml(i.spriteName)} · ${escapeHtml(i.variant)}">
-          ${i.img ? `<img src="${encodeURI(i.img)}" alt="" class="shared-card__img" loading="lazy" />` : `<div class="shared-card__img shared-card__img--empty"></div>`}
+          ${safeImageUrl(i.img) ? `<img src="${escapeHtml(safeImageUrl(i.img))}" alt="" class="shared-card__img" loading="lazy" />` : `<div class="shared-card__img shared-card__img--empty"></div>`}
           <span class="shared-card__name">${escapeHtml(i.spriteName)}</span>
           <span class="shared-card__variant">${escapeHtml(i.variant)}</span>
         </div>`).join("")

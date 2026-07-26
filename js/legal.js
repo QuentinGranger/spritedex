@@ -33,6 +33,20 @@ function openLegal(docIdOrAlias) {
   dialog.showModal();
 }
 
+// Keep legal controls compatible with a strict CSP: inline onclick
+// attributes are executable script and are intentionally disallowed.
+document.addEventListener("click", (event) => {
+  const legalTrigger = event.target.closest("[data-legal-doc]");
+  if (legalTrigger) {
+    event.preventDefault();
+    openLegal(legalTrigger.dataset.legalDoc);
+    return;
+  }
+  if (event.target.closest("[data-legal-close]")) {
+    document.getElementById("legalDialog")?.close();
+  }
+});
+
 // ── Cookie / tracker consent ───────────────────────────────────────────────
 const CONSENT_KEY = "spritedex_consent_v1";
 const CONSENT_DATE_KEY = "spritedex_consent_date";

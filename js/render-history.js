@@ -38,14 +38,14 @@ function formatHistoryTime(dateStr) {
 }
 
 function renderHistoryItem(item) {
-  const { name, variant } = spriteName(item.sprite_id);
+  const { name, variant } = spriteName(String(item.sprite_id || ""));
   const isAcquisition = item.new_status === "owned";
   return `
     <div class="history-item${isAcquisition ? " history-item--owned" : ""}">
       <div class="history-item__icon">${statusIcon(item.new_status)}</div>
       <div class="history-item__body">
-        <p class="history-item__title">${name} <span class="history-item__variant">${variant}</span></p>
-        <p class="history-item__change">${statusLabelFR(item.old_status)} → ${statusLabelFR(item.new_status)}</p>
+        <p class="history-item__title">${escapeHtml(name)} <span class="history-item__variant">${escapeHtml(variant)}</span></p>
+        <p class="history-item__change">${escapeHtml(statusLabelFR(item.old_status))} → ${escapeHtml(statusLabelFR(item.new_status))}</p>
       </div>
       <div class="history-item__date">
         <span class="history-item__day">${formatHistoryDate(item.created_at)}</span>
@@ -58,20 +58,21 @@ function renderWeeklyChart(weeks) {
   if (!weeks || weeks.length === 0) return "";
   const maxVal = Math.max(...weeks.map(w => parseInt(w.changes)), 1);
   const bars = weeks.map(w => {
-    const pct = Math.round((parseInt(w.changes) / maxVal) * 100);
-    const acq = parseInt(w.acquisitions);
+    const changes = safeFiniteNumber(w.changes, 0, { min: 0, max: 1000000 });
+    const pct = safePercentage(Math.round((changes / maxVal) * 100), 0);
+    const acq = safeFiniteNumber(w.acquisitions, 0, { min: 0, max: 1000000 });
     const weekLabel = new Date(w.week).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
     return `
       <div class="history-bar">
         <div class="history-bar__fill" style="height:${pct}%">
-          <span class="history-bar__val">${w.changes}</span>
+          <span class="history-bar__val">${changes}</span>
         </div>
         <span class="history-bar__label">${weekLabel}</span>
       </div>`;
   }).reverse().join("");
 
-  const totalChanges = weeks.reduce((s, w) => s + parseInt(w.changes), 0);
-  const totalAcq = weeks.reduce((s, w) => s + parseInt(w.acquisitions), 0);
+  const totalChanges = weeks.reduce((s, w) => s + safeFiniteNumber(w.changes, 0, { min: 0, max: 1000000 }), 0);
+  const totalAcq = weeks.reduce((s, w) => s + safeFiniteNumber(w.acquisitions, 0, { min: 0, max: 1000000 }), 0);
 
   return `
     <div class="history-summary">
@@ -110,7 +111,8 @@ async function loadMoreHistory() {
       if (weeklyEl) weeklyEl.innerHTML = renderWeeklyChart(data.weeklyStats);
 
       const statsEl = document.getElementById("historyStats");
-      if (statsEl) statsEl.innerHTML = `<p class="history-total">${data.total} changement${data.total > 1 ? "s" : ""} enregistré${data.total > 1 ? "s" : ""}</p>`;
+      const historyTotal = safeFiniteNumber(data.total, 0, { min: 0, max: 1000000 });
+      if (statsEl) statsEl.innerHTML = `<p class="history-total">${historyTotal} changement${historyTotal > 1 ? "s" : ""} enregistré${historyTotal > 1 ? "s" : ""}</p>`;
     }
 
     if (history.length === 0 && historyOffset === 0) {

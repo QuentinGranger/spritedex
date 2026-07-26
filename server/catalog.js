@@ -9,6 +9,18 @@ const { pool } = require("./db");
 let catalogIdMapCache = null;
 let catalogIdMapCacheTs = 0;
 const CATALOG_MAP_TTL = 30_000;
+// Never use attacker-controlled identifiers as keys on a normal object.  In
+// particular, __proto__ has setter semantics on Object.prototype and used to
+// let legacy collection imports alter an intermediate object's prototype.
+const UNSAFE_RECORD_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+function isSafeRecordKey(value) {
+  return typeof value === "string" && value.length > 0 && !UNSAFE_RECORD_KEYS.has(value);
+}
+
+function ownRecordValue(record, key) {
+  return record && Object.prototype.hasOwnProperty.call(record, key) ? record[key] : undefined;
+}
 
 async function getCatalogIdMaps() {
   const now = Date.now();
@@ -19,17 +31,19 @@ async function getCatalogIdMaps() {
     pool.query("SELECT id, sprite_id, variant_type FROM sprite_variants"),
     pool.query("SELECT id, slug FROM sprites")
   ]);
-  const variantMap = {};
-  const typeToVariantId = {};
-  const spriteBySlug = {};
-  const spriteById = {};
+  const variantMap = Object.create(null);
+  const typeToVariantId = Object.create(null);
+  const spriteBySlug = Object.create(null);
+  const spriteById = Object.create(null);
   for (const row of variants.rows) {
+    if (!isSafeRecordKey(row.id) || !isSafeRecordKey(row.sprite_id) || !isSafeRecordKey(row.variant_type)) continue;
     variantMap[row.id] = { spriteId: row.sprite_id, type: row.variant_type };
     typeToVariantId[`${row.sprite_id}::${row.variant_type}`] = row.id;
   }
   for (const row of sprites.rows) {
+    if (!isSafeRecordKey(row.id)) continue;
     spriteById[row.id] = row.id;
-    if (row.slug) spriteBySlug[row.slug] = row.id;
+    if (isSafeRecordKey(row.slug)) spriteBySlug[row.slug] = row.id;
   }
   catalogIdMapCache = { variantMap, typeToVariantId, spriteBySlug, spriteById };
   catalogIdMapCacheTs = now;
@@ -37,19 +51,21 @@ async function getCatalogIdMaps() {
 }
 
 function normalizeVariantIdWithMaps(raw, maps) {
-  if (!raw || typeof raw !== "string") return { variantId: raw, spriteId: null };
+  if (!isSafeRecordKey(raw)) return { variantId: null, spriteId: null };
   if (raw.startsWith("fav_")) return { variantId: raw, spriteId: null };
 
   // Already a stable variant id
-  if (maps.variantMap[raw]) {
-    return { variantId: raw, spriteId: maps.variantMap[raw].spriteId };
+  const knownVariant = ownRecordValue(maps.variantMap, raw);
+  if (knownVariant && isSafeRecordKey(knownVariant.spriteId)) {
+    return { variantId: raw, spriteId: knownVariant.spriteId };
   }
 
   // Already a base sprite id (or slug resolves to one): the base variant
-  const baseFromId = maps.spriteById[raw];
+  const baseFromId = ownRecordValue(maps.spriteById, raw);
   if (baseFromId) return { variantId: raw, spriteId: baseFromId };
-  if (maps.spriteBySlug[raw]) {
-    const sid = maps.spriteBySlug[raw];
+  const spriteFromSlug = ownRecordValue(maps.spriteBySlug, raw);
+  if (spriteFromSlug) {
+    const sid = spriteFromSlug;
     return { variantId: sid, spriteId: sid };
   }
 
@@ -58,15 +74,20 @@ function normalizeVariantIdWithMaps(raw, maps) {
   if (sepIndex !== -1) {
     const baseRaw = raw.slice(0, sepIndex);
     const typeRaw = raw.slice(sepIndex + 2);
-    const baseId = maps.spriteById[baseRaw] || maps.spriteBySlug[baseRaw] || baseRaw;
+    if (!isSafeRecordKey(baseRaw) || !typeRaw) return { variantId: null, spriteId: null };
+    const baseId = ownRecordValue(maps.spriteById, baseRaw)
+      || ownRecordValue(maps.spriteBySlug, baseRaw)
+      || baseRaw;
+    if (!isSafeRecordKey(baseId)) return { variantId: null, spriteId: null };
     const key = `${baseId}::${typeRaw}`;
-    if (maps.typeToVariantId[key]) {
-      return { variantId: maps.typeToVariantId[key], spriteId: baseId };
+    const knownVariantId = ownRecordValue(maps.typeToVariantId, key);
+    if (knownVariantId && isSafeRecordKey(knownVariantId)) {
+      return { variantId: knownVariantId, spriteId: baseId };
     }
     // Case-insensitive variant type match
     for (const [k, vid] of Object.entries(maps.typeToVariantId)) {
       const [b, t] = k.split("::");
-      if (b === baseId && t.toLowerCase() === typeRaw.toLowerCase()) {
+      if (b === baseId && t.toLowerCase() === typeRaw.toLowerCase() && isSafeRecordKey(vid)) {
         return { variantId: vid, spriteId: baseId };
       }
     }
@@ -84,10 +105,12 @@ async function normalizeVariantId(raw) {
 
 async function normalizeCollection(collection) {
   const maps = await getCatalogIdMaps();
-  const normalized = {};
+  const normalized = Object.create(null);
   for (const [rawKey, entry] of Object.entries(collection)) {
+    if (!isSafeRecordKey(rawKey)) continue;
     if (rawKey.startsWith("fav_")) { normalized[rawKey] = entry; continue; }
     const { variantId, spriteId } = normalizeVariantIdWithMaps(rawKey, maps);
+    if (!isSafeRecordKey(variantId)) continue;
     normalized[variantId] = { ...entry, spriteId };
   }
   return normalized;
@@ -338,4 +361,4 @@ function dedupeSpritesBySlug(sprites) {
   return result;
 }
 
-module.exports = { ACQUISITION_TYPES, CATALOG_MAP_TTL, HONEST_AVAILABILITY_STATUSES, RECURRENCE_STATUSES, VALID_DATA_STATUSES, buildAcquisitionMethod, buildAvailability, buildDates, buildRecurrence, catalogIdMapCache, catalogIdMapCacheTs, computeMissingFields, dedupeSpritesBySlug, ensureSource, getCatalogIdMaps, inferSourceReliability, inferSourceType, normalizeAcquisitionType, normalizeAvailabilityStatus, normalizeCollection, normalizeDataStatus, normalizeRecurrenceStatus, normalizeSpriteEntryId, normalizeVariantId, normalizeVariantIdWithMaps };
+module.exports = { ACQUISITION_TYPES, CATALOG_MAP_TTL, HONEST_AVAILABILITY_STATUSES, RECURRENCE_STATUSES, UNSAFE_RECORD_KEYS, VALID_DATA_STATUSES, buildAcquisitionMethod, buildAvailability, buildDates, buildRecurrence, catalogIdMapCache, catalogIdMapCacheTs, computeMissingFields, dedupeSpritesBySlug, ensureSource, getCatalogIdMaps, inferSourceReliability, inferSourceType, isSafeRecordKey, normalizeAcquisitionType, normalizeAvailabilityStatus, normalizeCollection, normalizeDataStatus, normalizeRecurrenceStatus, normalizeSpriteEntryId, normalizeVariantId, normalizeVariantIdWithMaps };

@@ -126,7 +126,7 @@ function setupEvents() {
     const favBtn = event.target.closest("[data-fav]");
     if (favBtn) {
       const key = `fav_${favBtn.dataset.fav}`;
-      state.collection[key] = !state.collection[key];
+      setSafeRecordValue(state.collection, key, !state.collection[key]);
       persist();
       openSpriteDetail(favBtn.dataset.fav);
       return;
@@ -173,7 +173,7 @@ function setupEvents() {
   els.resetData.addEventListener("click", async () => {
     const ok = confirm("Réinitialiser toute ta checklist SPRITNEX ?");
     if (!ok) return;
-    state.collection = {};
+    state.collection = createSafeRecord();
     localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
     if (state.userId) {
       try { await fetch(`${API_BASE}/collection/${state.userId}`, { method: "DELETE", headers: authHeadersOnly() }); } catch {}

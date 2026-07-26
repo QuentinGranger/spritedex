@@ -10,7 +10,34 @@ const pushService = require("../push-service");
 
 const PUBLIC_SQUAD_PROFILE = new Set(["public", "squad", "squad_only"]);
 
-async function logSquadEvent({ squadId, userId, type, action, spriteId, metadata = {}, message, url }) {
+// `notifySquadMembers` is intentionally broad for non-collection activity.
+// Collection activity, however, must only reach members that can currently
+// view the actor's collection.  Sending selected recipients directly keeps the
+// existing push preference gates while avoiding a broad squad notification.
+async function notifySelectedSquadMembers(squadId, recipientIds, message) {
+  const ids = [...new Set((recipientIds || []).map(Number).filter(Number.isInteger))];
+  if (!squadId || !ids.length || !message) return;
+
+  const recipients = await pool.query(
+    `SELECT sm.user_id
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1
+       AND sm.status = 'active'
+       AND sm.user_id = ANY($2::integer[])
+       AND u.deleted_at IS NULL
+       AND u.push_enabled = TRUE
+       AND u.push_pref_squad_activity = TRUE`,
+    [squadId, ids]
+  );
+
+  await Promise.all(recipients.rows.map(({ user_id: recipientId }) =>
+    pushService.sendNotificationToUser(pool, recipientId, message)
+      .catch(err => console.error("[squad-activity] selected push failed:", err))
+  ));
+}
+
+async function logSquadEvent({ squadId, userId, type, action, spriteId, metadata = {}, message, url, recipientIds = null }) {
   if (!squadId || !type) return;
   try {
     await pool.query(
@@ -20,12 +47,16 @@ async function logSquadEvent({ squadId, userId, type, action, spriteId, metadata
     );
 
     if (message) {
-      pushService.notifySquadMembers(pool, squadId, userId, {
+      const payload = {
         title: "SPRITNEX — Escouade",
         body: message,
         icon: "/icons/icon-192x192.png",
         url: url || `/?squad=${squadId}`
-      }).catch(err => console.error("[squad-activity] push failed:", err));
+      };
+      const send = Array.isArray(recipientIds)
+        ? notifySelectedSquadMembers(squadId, recipientIds, payload)
+        : pushService.notifySquadMembers(pool, squadId, userId, payload);
+      send.catch(err => console.error("[squad-activity] push failed:", err));
     }
   } catch (err) {
     console.error("[logSquadEvent]", err);
@@ -54,34 +85,29 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
     for (const row of squads.rows) {
       const squadId = row.squad_id;
 
-      // Determine whether this variant was absent from the squad before this change.
       const membersRes = await pool.query(
         `SELECT user_id FROM squad_members
          WHERE squad_id = $1 AND status = 'active' AND user_id <> $2`,
         [squadId, userId]
       );
       const otherIds = membersRes.rows.map(r => r.user_id);
-      let firstInSquad = true;
-      if (otherIds.length) {
-        const ownedRes = await pool.query(
-          `SELECT 1 FROM sprite_entries
-           WHERE user_id = ANY($1::integer[]) AND variant_id = $2 AND status = 'owned'
-           LIMIT 1`,
-          [otherIds, variantId]
-        );
-        firstInSquad = ownedRes.rows.length === 0;
+      const visibleRecipientIds = [];
+      for (const otherId of otherIds) {
+        // Squad membership is never an implicit permission to inspect a
+        // collection.  This also covers either direction of a user block.
+        if (await canViewCollection(otherId, userId)) visibleRecipientIds.push(otherId);
       }
-
       const metadata = {
         variantId,
         spriteId,
         spriteName,
-        firstInSquad,
         source: action === "owned" ? "owned" : "spotted"
       };
 
-      let message = `${username} ${actionLabel} ${spriteName}`;
-      if (firstInSquad) message += " (absent de la squad)";
+      // Do not expose whether other members own the variant: that is a
+      // collective statistic and may be derived from collections hidden from
+      // an otherwise-authorized recipient.
+      const message = `${username} ${actionLabel} ${spriteName}`;
 
       await logSquadEvent({
         squadId,
@@ -91,7 +117,8 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
         spriteId: variantId,
         metadata,
         message,
-        url: `/?squad=${squadId}`
+        url: `/?squad=${squadId}`,
+        recipientIds: visibleRecipientIds
       });
     }
 
@@ -216,6 +243,23 @@ async function logSquadGoalCompleted(squadId, userId, goalName, variantId) {
     [userId]
   );
   const username = userResult.rows[0]?.username || "Un joueur";
+  const members = await pool.query(
+    `SELECT sm.user_id
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1
+       AND sm.status = 'active'
+       AND sm.user_id <> $2
+       AND u.deleted_at IS NULL`,
+    [squadId, userId]
+  );
+  const recipientIds = [];
+  for (const row of members.rows) {
+    // Completing a goal from a collection edit confirms that this actor owns
+    // the target variant(s); it follows the same collection visibility rule as
+    // a direct collection_update.
+    if (await canViewCollection(row.user_id, userId)) recipientIds.push(row.user_id);
+  }
   await logSquadEvent({
     squadId,
     userId,
@@ -223,7 +267,8 @@ async function logSquadGoalCompleted(squadId, userId, goalName, variantId) {
     action: "completed",
     metadata: { goalName, variantId },
     message: `Objectif collectif${goalName ? ` : ${goalName}` : ""} atteint par ${username}.`,
-    url: `/?squad=${squadId}`
+    url: `/?squad=${squadId}`,
+    recipientIds
   });
 }
 

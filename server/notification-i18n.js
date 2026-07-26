@@ -1,0 +1,355 @@
+// ── Étape 62 — Notification translation catalogs ───────────────────────────
+// Message templates are keyed as:
+//   notifications.{type}.title
+//   notifications.{type}.body
+// Optional template branch:
+//   notifications.{type}.{template}.title|body
+//
+// Placeholders use `{paramName}` interpolation.
+// Sprite / variant display names must come from the localized catalog
+// (FR → name, EN → official_name), not from a frozen French string.
+
+const TRANSLATIONS = Object.freeze({
+  fr: Object.freeze({
+    "notifications.friend_request_accepted.title":
+      "{friendName} a accepté votre invitation",
+    "notifications.friend_request_accepted.body":
+      "Vous pouvez maintenant comparer vos collections.",
+
+    "notifications.friend_acquired_missing_variant.title":
+      "Une nouvelle correspondance avec {friendName}",
+    "notifications.friend_acquired_missing_variant.body":
+      "{friendName} possède désormais {variantName}, qui manque à votre collection.",
+    "notifications.friend_acquired_missing_variant.priority.title":
+      "{friendName} possède une variante prioritaire",
+    "notifications.friend_acquired_missing_variant.priority.body":
+      "{friendName} vient d'ajouter {variantName}, que vous recherchez en priorité.",
+    "notifications.friend_acquired_missing_variant.batch.title":
+      "{friendName} a plusieurs variantes qui vous manquent",
+    "notifications.friend_acquired_missing_variant.batch.body":
+      "{friendName} possède désormais {count} variantes qui manquent à votre collection, dont {variantName}.",
+
+    "notifications.squad_completion_increased.title":
+      "{squadName} progresse",
+    "notifications.squad_completion_increased.body":
+      "{friendName} a ajouté {variantName}. La squad couvre maintenant {completionRate} % du catalogue.",
+    "notifications.squad_completion_increased.batch.title":
+      "{squadName} progresse",
+    "notifications.squad_completion_increased.batch.body":
+      "{squadName} a ajouté {count} nouvelles variantes et atteint {completionRate} % de complétion.",
+    "notifications.squad_completion_increased.milestone.title":
+      "{squadName} atteint {milestone} %",
+    "notifications.squad_completion_increased.milestone.body":
+      "Votre squad couvre désormais {coveredCount} variantes sur {totalVariants}.",
+    "notifications.squad_completion_increased.milestone_rate.body":
+      "Votre squad couvre désormais {completionRate} % du catalogue.",
+
+    "notifications.priority_variant_available.title":
+      "{variantName} est disponible",
+    "notifications.priority_variant_available.body":
+      "Une variante que vous recherchez en priorité est maintenant disponible.",
+    "notifications.priority_variant_available.with_end.title":
+      "{variantName} est disponible",
+    "notifications.priority_variant_available.with_end.body":
+      "{variantName} est disponible jusqu'au {availableUntil}.",
+
+    "notifications.wanted_event_ending_soon.title":
+      "{eventName} se termine {when}",
+    "notifications.wanted_event_ending_soon.body":
+      "Il vous manque encore {remainingCount} {remainingLabel}.",
+    "notifications.wanted_event_ending_soon.empty.body":
+      "Il vous manque encore des variantes prioritaires."
+  }),
+
+  en: Object.freeze({
+    "notifications.friend_request_accepted.title":
+      "{friendName} accepted your friend request",
+    "notifications.friend_request_accepted.body":
+      "You can now compare your collections.",
+
+    "notifications.friend_acquired_missing_variant.title":
+      "A new match with {friendName}",
+    "notifications.friend_acquired_missing_variant.body":
+      "{friendName} now owns {variantName}, which is missing from your collection.",
+    "notifications.friend_acquired_missing_variant.priority.title":
+      "{friendName} owns a priority variant",
+    "notifications.friend_acquired_missing_variant.priority.body":
+      "{friendName} just added {variantName}, which you marked as a priority.",
+    "notifications.friend_acquired_missing_variant.batch.title":
+      "{friendName} has several variants you're missing",
+    "notifications.friend_acquired_missing_variant.batch.body":
+      "{friendName} now owns {count} variants missing from your collection, including {variantName}.",
+
+    "notifications.squad_completion_increased.title":
+      "{squadName} is progressing",
+    "notifications.squad_completion_increased.body":
+      "{friendName} added {variantName}. The squad now covers {completionRate}% of the catalogue.",
+    "notifications.squad_completion_increased.batch.title":
+      "{squadName} is progressing",
+    "notifications.squad_completion_increased.batch.body":
+      "{squadName} added {count} new variants and reached {completionRate}% completion.",
+    "notifications.squad_completion_increased.milestone.title":
+      "{squadName} reached {milestone}%",
+    "notifications.squad_completion_increased.milestone.body":
+      "Your squad now covers {coveredCount} variants out of {totalVariants}.",
+    "notifications.squad_completion_increased.milestone_rate.body":
+      "Your squad now covers {completionRate}% of the catalogue.",
+
+    "notifications.priority_variant_available.title":
+      "{variantName} is available",
+    "notifications.priority_variant_available.body":
+      "A variant you marked as a priority is now available.",
+    "notifications.priority_variant_available.with_end.title":
+      "{variantName} is available",
+    "notifications.priority_variant_available.with_end.body":
+      "{variantName} is available until {availableUntil}.",
+
+    "notifications.wanted_event_ending_soon.title":
+      "{eventName} ends {when}",
+    "notifications.wanted_event_ending_soon.body":
+      "You still need {remainingCount} {remainingLabel}.",
+    "notifications.wanted_event_ending_soon.empty.body":
+      "You still need priority variants from this event."
+  })
+});
+
+const FALLBACK_NAME = Object.freeze({ fr: "Un joueur", en: "A player" });
+const FALLBACK_SPRITE = Object.freeze({ fr: "une variante", en: "a variant" });
+const FALLBACK_SQUAD = Object.freeze({ fr: "Votre squad", en: "Your squad" });
+const FALLBACK_EVENT = Object.freeze({ fr: "L'événement", en: "The event" });
+
+function getTranslations(lang) {
+  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  return TRANSLATIONS[locale] || TRANSLATIONS.fr;
+}
+
+function interpolate(template, params = {}) {
+  if (template == null) return null;
+  return String(template).replace(/\{(\w+)\}/g, (_, key) => {
+    const value = params[key];
+    return value == null ? "" : String(value);
+  });
+}
+
+function messageKey(type, part, template = "default") {
+  const base = `notifications.${type}`;
+  if (!template || template === "default") return `${base}.${part}`;
+  return `${base}.${template}.${part}`;
+}
+
+function lookupMessage(lang, type, part, template = "default") {
+  const dict = getTranslations(lang);
+  const specific = dict[messageKey(type, part, template)];
+  if (specific != null) return specific;
+  if (template && template !== "default") {
+    return dict[messageKey(type, part, "default")] || null;
+  }
+  return null;
+}
+
+/**
+ * Pick a localized catalog label.
+ * FR → local `name`, EN → `official_name`, with sensible fallbacks.
+ */
+function pickLocalizedName(lang, { name = null, officialName = null } = {}) {
+  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  if (locale === "en") {
+    return officialName || name || null;
+  }
+  return name || officialName || null;
+}
+
+/**
+ * Load sprite/variant display names from the localized catalog.
+ */
+async function lookupLocalizedCatalogNames(pool, {
+  variantId = null,
+  spriteId = null
+} = {}, lang = "fr") {
+  if (!pool) return { variantName: null, spriteName: null, spriteId: null, variantId: null };
+  if (variantId) {
+    const res = await pool.query(
+      `SELECT v.id AS variant_id, v.name AS variant_name, v.official_name AS variant_official,
+              s.id AS sprite_id, s.name AS sprite_name, s.official_name AS sprite_official
+       FROM sprite_variants v
+       LEFT JOIN sprites s ON s.id = v.sprite_id
+       WHERE v.id = $1`,
+      [variantId]
+    );
+    const row = res.rows[0];
+    if (!row) {
+      return { variantName: null, spriteName: null, spriteId: null, variantId: String(variantId) };
+    }
+    return {
+      variantId: String(row.variant_id),
+      spriteId: row.sprite_id != null ? String(row.sprite_id) : null,
+      variantName: pickLocalizedName(lang, {
+        name: row.variant_name,
+        officialName: row.variant_official
+      }),
+      spriteName: pickLocalizedName(lang, {
+        name: row.sprite_name,
+        officialName: row.sprite_official
+      })
+    };
+  }
+  if (spriteId) {
+    const res = await pool.query(
+      `SELECT id, name, official_name FROM sprites WHERE id = $1`,
+      [spriteId]
+    );
+    const row = res.rows[0];
+    if (!row) return { variantName: null, spriteName: null, spriteId: String(spriteId), variantId: null };
+    return {
+      variantId: null,
+      spriteId: String(row.id),
+      variantName: null,
+      spriteName: pickLocalizedName(lang, {
+        name: row.name,
+        officialName: row.official_name
+      })
+    };
+  }
+  return { variantName: null, spriteName: null, spriteId: null, variantId: null };
+}
+
+function formatVariantDisplay(params, lang) {
+  const variant = params.variantName || FALLBACK_SPRITE[lang] || FALLBACK_SPRITE.fr;
+  const sprite = params.spriteName;
+  return sprite ? `${variant} (${sprite})` : variant;
+}
+
+function pct(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  const rounded = Math.round(n * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+/**
+ * Build interpolation params for a notification template.
+ * Catalog names (variant/sprite) should already be localized by the caller
+ * when a DB is available; frozen names are only fallbacks.
+ */
+function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
+  const p = rawParams && typeof rawParams === "object" ? { ...rawParams } : {};
+  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  const friendName = p.friendName || FALLBACK_NAME[locale] || FALLBACK_NAME.fr;
+  const variantLabel = formatVariantDisplay(p, locale);
+
+  const out = {
+    ...p,
+    friendName,
+    variantName: variantLabel,
+    squadName: p.squadName || FALLBACK_SQUAD[locale] || FALLBACK_SQUAD.fr,
+    eventName: p.eventName || FALLBACK_EVENT[locale] || FALLBACK_EVENT.fr,
+    count: p.count != null ? Number(p.count) : undefined,
+    completionRate: p.completionRate != null ? pct(p.completionRate) : undefined,
+    milestone: p.milestone != null ? pct(p.milestone) : undefined,
+    coveredCount: p.coveredCount != null ? Number(p.coveredCount) : undefined,
+    totalVariants: p.totalVariants != null ? Number(p.totalVariants) : undefined,
+    remainingCount: p.remainingCount != null ? Number(p.remainingCount) : undefined,
+    availableUntil: p.availableUntilFormatted || p.availableUntil || undefined,
+    when: p.when || undefined
+  };
+
+  if (type === "wanted_event_ending_soon") {
+    const count = Number(out.remainingCount) || 0;
+    if (locale === "en") {
+      out.remainingLabel = count === 1 ? "priority variant" : "priority variants";
+    } else {
+      out.remainingLabel = count <= 1 ? "variante prioritaire" : "variantes prioritaires";
+    }
+  }
+
+  return out;
+}
+
+function resolveTemplate(type, params = {}) {
+  if (params.template && params.template !== "default") return params.template;
+  // Infer from params when template omitted.
+  if (type === "friend_acquired_missing_variant") {
+    if (Number(params.count) > 1) return "batch";
+    if (params.priorityLevel === "strong" || params.recipientCollectionStatus === "priority") {
+      return "priority";
+    }
+  }
+  if (type === "squad_completion_increased") {
+    if (params.milestone != null) return "milestone";
+    if (Number(params.count) > 1) return "batch";
+  }
+  if (type === "priority_variant_available" && params.availableUntil) {
+    return "with_end";
+  }
+  if (type === "wanted_event_ending_soon" && !(Number(params.remainingCount) > 0)) {
+    return "empty";
+  }
+  return "default";
+}
+
+/**
+ * Render title/body from the translation catalogs.
+ * Returns { title, body, translationKey } or null if keys are missing.
+ */
+function renderTranslatedMessage(type, translationParams = {}, lang = "fr") {
+  if (!type) return null;
+  const template = resolveTemplate(type, translationParams);
+  let bodyTemplateKey = template;
+  // Milestone without covered/total uses the rate-only body.
+  if (
+    type === "squad_completion_increased"
+    && template === "milestone"
+    && !(Number(translationParams.totalVariants) > 0)
+  ) {
+    bodyTemplateKey = "milestone_rate";
+  }
+  if (
+    type === "wanted_event_ending_soon"
+    && !(Number(translationParams.remainingCount) > 0)
+  ) {
+    bodyTemplateKey = "empty";
+  }
+
+  const titleTpl = lookupMessage(lang, type, "title", template === "empty" ? "default" : template);
+  const bodyTpl = lookupMessage(lang, type, "body", bodyTemplateKey);
+  if (!titleTpl && !bodyTpl) return null;
+
+  const params = buildInterpolateParams(type, translationParams, lang);
+  const baseKey = `notifications.${type}`;
+  return {
+    title: interpolate(titleTpl || lookupMessage(lang, type, "title", "default"), params) || "",
+    body: interpolate(bodyTpl || lookupMessage(lang, type, "body", "default"), params) || "",
+    translationKey: baseKey,
+    template
+  };
+}
+
+/**
+ * Enrich translation params with localized catalog names (async).
+ */
+async function enrichParamsWithLocalizedCatalog(pool, translationParams = {}, lang = "fr") {
+  const params = { ...(translationParams || {}) };
+  const variantId = params.variantId || null;
+  const spriteId = params.spriteId || null;
+  if (!variantId && !spriteId) return params;
+
+  const names = await lookupLocalizedCatalogNames(pool, { variantId, spriteId }, lang);
+  if (names.variantName) params.variantName = names.variantName;
+  if (names.spriteName) params.spriteName = names.spriteName;
+  if (names.spriteId && !params.spriteId) params.spriteId = names.spriteId;
+  return params;
+}
+
+module.exports = {
+  TRANSLATIONS,
+  getTranslations,
+  interpolate,
+  messageKey,
+  lookupMessage,
+  pickLocalizedName,
+  lookupLocalizedCatalogNames,
+  buildInterpolateParams,
+  resolveTemplate,
+  renderTranslatedMessage,
+  enrichParamsWithLocalizedCatalog
+};

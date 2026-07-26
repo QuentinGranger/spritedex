@@ -79,13 +79,40 @@ function renderSquadEngineTab(tab) {
 }
 
 function formatPct(n) {
-  return Number(n || 0).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + "%";
+  return safeFiniteNumber(n, 0, { min: -100, max: 100 }).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + "%";
+}
+
+function uniqueContributionCount(member) {
+  if (!member) return 0;
+  return safeFiniteNumber(member.uniqueVariantCount ?? member.uniqueCount ?? member.count, 0, { min: 0, max: 1000000 });
+}
+
+function priorityDisplay(p) {
+  return p.display || p.impactDisplay || "";
+}
+
+function renderUniqueOwnersLeaderboard(uniqueOwners) {
+  const byMember = (uniqueOwners && uniqueOwners.byMember) || [];
+  if (!byMember.length) {
+    return `<p class="engine-empty">Aucune contribution unique pour le moment.</p>`;
+  }
+  return `
+    <ul class="engine-list engine-list--ranked">
+      ${byMember.slice(0, 12).map((m, i) => `
+        <li>
+          <span class="engine-list__label"><span class="engine-rank">${i + 1}</span>${escapeHtml(m.username || m.userId)}</span>
+          <span class="engine-list__count">${uniqueContributionCount(m)}</span>
+        </li>
+      `).join("")}
+    </ul>
+  `;
 }
 
 function renderEngineOverview(r) {
   const s = r.summary || {};
   const a = r.analysis || {};
   const mc = a.mostComplementaryMember || {};
+  const uniqueOwners = a.uniqueOwners || {};
   return `
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
@@ -93,24 +120,24 @@ function renderEngineOverview(r) {
         <div class="engine-card__label">${explain("Taux collectif", "collectiveCompletionRate")}</div>
       </div>
       <div class="engine-card">
-        <div class="engine-card__value">${s.coveredVariantCount || 0}</div>
+        <div class="engine-card__value">${safeFiniteNumber(s.coveredVariantCount, 0, { min: 0, max: 1000000 })}</div>
         <div class="engine-card__label">${explain("Variantes couvertes", "coveredVariantCount")}</div>
       </div>
       <div class="engine-card">
-        <div class="engine-card__value">${s.totalMissing || 0}</div>
+        <div class="engine-card__value">${safeFiniteNumber(s.totalMissing, 0, { min: 0, max: 1000000 })}</div>
         <div class="engine-card__label">${explain("Variantes manquantes", "totalMissing")}</div>
       </div>
       <div class="engine-card">
-        <div class="engine-card__value">${s.totalUnique || 0}</div>
+        <div class="engine-card__value">${safeFiniteNumber(s.totalUnique, 0, { min: 0, max: 1000000 })}</div>
         <div class="engine-card__label">${explain("Variantes uniques", "totalUnique")}</div>
       </div>
       <div class="engine-card">
-        <div class="engine-card__value">${s.includedMemberCount != null ? s.includedMemberCount : "—"}/${s.totalActiveMembers || 0}</div>
+        <div class="engine-card__value">${s.includedMemberCount != null ? safeFiniteNumber(s.includedMemberCount, 0, { min: 0, max: 1000000 }) : "—"}/${safeFiniteNumber(s.totalActiveMembers, 0, { min: 0, max: 1000000 })}</div>
         <div class="engine-card__label">${explain("Collections utilisées", "includedMemberCount")}</div>
       </div>
-      ${s.excludedPrivateCollections > 0 ? `
+      ${safeFiniteNumber(s.excludedPrivateCollections, 0, { min: 0, max: 1000000 }) > 0 ? `
         <div class="engine-card engine-card--warning">
-          <div class="engine-card__value">${s.excludedPrivateCollections}</div>
+          <div class="engine-card__value">${safeFiniteNumber(s.excludedPrivateCollections, 0, { min: 0, max: 1000000 })}</div>
           <div class="engine-card__label">${explain("Collections privées exclues", "excludedPrivateCollections")}</div>
         </div>
       ` : ""}
@@ -120,9 +147,14 @@ function renderEngineOverview(r) {
       ${mc.username ? `
         <div class="engine-card engine-card--member">
           <div class="engine-card__value">${escapeHtml(mc.username)}</div>
-          <div class="engine-card__label">${mc.uniqueCount || 0} variantes uniques apportées</div>
+          <div class="engine-card__label">${uniqueContributionCount(mc)} variantes uniques apportées</div>
+          ${mc.contributionDisplay ? `<div class="engine-card__sub">${escapeHtml(mc.contributionDisplay)}</div>` : ""}
         </div>
       ` : `<p class="engine-empty">Aucun membre complémentaire détecté.</p>`}
+    </div>
+    <div class="engine-section">
+      <h4 class="engine-section__title">${explain("Contributions uniques par membre", "uniqueOwner")}</h4>
+      ${renderUniqueOwnersLeaderboard(uniqueOwners)}
     </div>
     <div class="engine-meta">
       <span>Généré le ${new Date(r.generatedAt).toLocaleString("fr-FR")}</span>
@@ -261,23 +293,50 @@ function renderEngineMissing(r) {
 function renderGroupList(groups) {
   if (!groups || !groups.length) return `<p class="engine-empty">Aucun groupe</p>`;
   return `<ul class="engine-list">
-    ${groups.map(g => `<li><span class="engine-list__label">${escapeHtml(g.label || g.key)}</span><span class="engine-list__count">${g.count}</span></li>`).join("")}
+    ${groups.map(g => `<li><span class="engine-list__label">${escapeHtml(g.label || g.key)}</span><span class="engine-list__count">${safeFiniteNumber(g.count, 0, { min: 0, max: 1000000 })}</span></li>`).join("")}
   </ul>`;
+}
+
+function getEngineAssignmentGroups(rec) {
+  const planMembers = (rec.plan && rec.plan.members) || [];
+  if (planMembers.length) {
+    return planMembers.map(m => ({
+      userId: m.userId,
+      username: m.username,
+      variants: m.recommendations || []
+    }));
+  }
+  const grouped = new Map();
+  for (const a of rec.assignments || []) {
+    const responsible = a.responsible || a.recommendedMember;
+    if (!responsible) continue;
+    const key = String(responsible.userId);
+    if (!grouped.has(key)) {
+      grouped.set(key, { userId: responsible.userId, username: responsible.username, variants: [] });
+    }
+    grouped.get(key).variants.push(a);
+  }
+  return Array.from(grouped.values());
 }
 
 function renderEngineRecommendations(r) {
   const rec = r.recommendations || {};
   const goals = rec.recommendedGoals || [];
-  const assignments = rec.assignments || [];
+  const groups = getEngineAssignmentGroups(rec);
   const priorities = rec.priorities || [];
   return `
     <div class="engine-section">
       <h4 class="engine-section__title">Priorité par membre</h4>
+      <p class="engine-section__hint">Répartition déterministe des recherches à fort impact entre les membres visibles.</p>
       <div class="engine-assignments">
-        ${assignments.length ? assignments.slice(0, 20).map(a => `
+        ${groups.length ? groups.slice(0, 20).map(a => `
           <div class="engine-assignment">
             <div class="engine-assignment__member">${escapeHtml(a.username || a.userId)}</div>
-            <div class="engine-assignment__variants">${(a.variants || []).map(v => `<span class="engine-chip">${escapeHtml(v.spriteName || v.variantId)}</span>`).join("")}</div>
+            <div class="engine-assignment__variants">${(a.variants || []).slice(0, 8).map(v => {
+              const tip = (v.explanation && v.explanation.join(" ")) || priorityDisplay(v) || "";
+              const gain = v.projectedCompletionGain != null ? ` · +${v.projectedCompletionGain}%` : (v.collectiveCoverageDelta != null ? ` · +${v.collectiveCoverageDelta}%` : "");
+              return `<span class="engine-chip" title="${escapeHtml(tip)}">${escapeHtml(v.spriteName || v.variantId)}${gain ? `<small>${escapeHtml(gain)}</small>` : ""}</span>`;
+            }).join("")}</div>
           </div>
         `).join("") : `<p class="engine-empty">Aucune assignation.</p>`}
       </div>
@@ -285,19 +344,95 @@ function renderEngineRecommendations(r) {
     <div class="engine-section">
       <h4 class="engine-section__title">Acquisitions à fort impact (${priorities.length})</h4>
       <div class="engine-chip-list">
-        ${priorities.slice(0, 20).map(p => `<span class="engine-chip" title="${escapeHtml(p.impactDisplay || "")}">${escapeHtml(p.spriteName || p.variantId)}</span>`).join("")}
+        ${priorities.slice(0, 20).map(p => {
+          const tip = priorityDisplay(p);
+          const delta = p.collectiveCoverageDelta != null ? ` · +${p.collectiveCoverageDelta}%` : "";
+          return `<span class="engine-chip" title="${escapeHtml(tip)}">${escapeHtml(p.spriteName || p.variantId)}${delta ? `<small>${escapeHtml(delta)}</small>` : ""}</span>`;
+        }).join("")}
       </div>
     </div>
     <div class="engine-section">
       <h4 class="engine-section__title">Objectifs suggérés (${goals.length})</h4>
       <div class="engine-goal-list">
-        ${goals.map(g => `
+        ${goals.length ? goals.map(g => `
           <div class="engine-goal-card">
             <div class="engine-goal-card__title">${escapeHtml(g.title)}</div>
             <div class="engine-goal-card__meta">${escapeHtml(g.reason || "")}</div>
-            <div class="engine-goal-card__gain">Gain collectif : +${g.expectedCollectiveGain || 0}</div>
+            <div class="engine-goal-card__gain">Gain collectif : +${safePercentage(g.expectedCollectiveGain, 0)}%</div>
           </div>
-        `).join("")}
+        `).join("") : `<p class="engine-empty">Aucun objectif suggéré.</p>`}
+      </div>
+    </div>
+  `;
+}
+
+function getEngineSimulateMembers(r) {
+  const fromUnique = ((r.analysis && r.analysis.uniqueOwners && r.analysis.uniqueOwners.byMember) || [])
+    .map(m => ({ userId: m.userId, username: m.username }));
+  const fromState = (typeof state !== "undefined" && Array.isArray(state.squadMembers))
+    ? state.squadMembers.map(m => ({ userId: m.userId, username: m.username }))
+    : [];
+  const fromPlan = (((r.recommendations || {}).plan || {}).members || [])
+    .map(m => ({ userId: m.userId, username: m.username }));
+  const map = new Map();
+  for (const m of [...fromState, ...fromUnique, ...fromPlan]) {
+    if (m.userId == null) continue;
+    map.set(String(m.userId), { userId: m.userId, username: m.username || String(m.userId) });
+  }
+  if (typeof state !== "undefined" && state.userId != null) {
+    map.set(String(state.userId), {
+      userId: state.userId,
+      username: state.username || "Moi"
+    });
+  }
+  return Array.from(map.values()).sort((a, b) => String(a.username).localeCompare(String(b.username)));
+}
+
+function getEngineSimulateVariants(r) {
+  const missing = ((r.analysis && r.analysis.missing && r.analysis.missing.variants) || [])
+    .filter(v => v.classification === "confirmed_missing" || v.isMissingAll);
+  const priorities = (r.recommendations && r.recommendations.priorities) || [];
+  const all = (r.analysis && r.analysis.allVariants) || [];
+  const map = new Map();
+  for (const v of [...priorities, ...missing, ...all.filter(x => x.isMissingAll || x.isPriority)]) {
+    if (!v.variantId || map.has(v.variantId)) continue;
+    map.set(v.variantId, {
+      variantId: v.variantId,
+      spriteName: v.spriteName || v.spriteId || v.variantId,
+      variantName: v.variantName || "",
+      score: v.score || 0,
+      collectiveCoverageDelta: v.collectiveCoverageDelta
+    });
+  }
+  return Array.from(map.values()).sort((a, b) => (b.score || 0) - (a.score || 0) || String(a.spriteName).localeCompare(String(b.spriteName)));
+}
+
+function renderEngineSimulateResult(result) {
+  if (!result) {
+    return `<p class="engine-empty">Choisis un membre et une variante pour estimer l’impact collectif.</p>`;
+  }
+  const before = result.before || {};
+  const after = result.after || {};
+  const diff = result.difference || {};
+  const rateDelta = Number(diff.completionRate || 0);
+  const coveredDelta = Number(diff.coveredCount || 0);
+  const rateClass = rateDelta > 0 ? "engine-sim__delta--up" : (rateDelta < 0 ? "engine-sim__delta--down" : "");
+  return `
+    <div class="engine-grid engine-grid--3">
+      <div class="engine-card">
+        <div class="engine-card__value">${formatPct(before.completionRate)}</div>
+        <div class="engine-card__label">Avant</div>
+        <div class="engine-card__sub">${safeFiniteNumber(before.coveredCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(before.totalVariantCount, 0, { min: 0, max: 1000000 })}</div>
+      </div>
+      <div class="engine-card">
+        <div class="engine-card__value">${formatPct(after.completionRate)}</div>
+        <div class="engine-card__label">Après</div>
+        <div class="engine-card__sub">${safeFiniteNumber(after.coveredCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(after.totalVariantCount, 0, { min: 0, max: 1000000 })}</div>
+      </div>
+      <div class="engine-card">
+        <div class="engine-card__value ${rateClass}">${rateDelta > 0 ? "+" : ""}${formatPct(rateDelta)}</div>
+        <div class="engine-card__label">Δ taux collectif</div>
+        <div class="engine-card__sub">${coveredDelta > 0 ? "+" : ""}${coveredDelta} variante${Math.abs(coveredDelta) === 1 ? "" : "s"}</div>
       </div>
     </div>
   `;
@@ -308,6 +443,13 @@ function renderEngineOptimization(r) {
   const bp = (r.analysis && r.analysis.bestPair) || {};
   const bt = o.bestTeam || {};
   const teams = bt.teams || [];
+  const members = getEngineSimulateMembers(r);
+  const variants = getEngineSimulateVariants(r);
+  const memberOpts = members.map(m => `<option value="${escapeHtml(String(m.userId))}">${escapeHtml(m.username)}</option>`).join("");
+  const variantOpts = variants.slice(0, 80).map(v => {
+    const label = `${v.spriteName}${v.variantName ? ` · ${v.variantName}` : ""}`;
+    return `<option value="${escapeHtml(v.variantId)}">${escapeHtml(label)}</option>`;
+  }).join("");
   return `
     <div class="engine-grid engine-grid--2">
       <div class="engine-card">
@@ -322,8 +464,26 @@ function renderEngineOptimization(r) {
       </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">Simulations</h4>
-      <p class="engine-empty">Utilise l'API <code>POST /api/squads/:squadId/completion/simulate</code> pour tester des acquisitions ou des arrivées de membres.</p>
+      <h4 class="engine-section__title">Impact d’une acquisition</h4>
+      <p class="engine-section__hint">Simulation sans modifier les collections. Estime le Δ de couverture collective si un membre obtient une variante.</p>
+      <form class="engine-sim" id="squadEngineSimulateForm">
+        <label class="engine-sim__field">
+          <span>Membre</span>
+          <select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}>
+            <option value="">Choisir…</option>
+            ${memberOpts}
+          </select>
+        </label>
+        <label class="engine-sim__field">
+          <span>Variante</span>
+          <select class="engine-select" name="variantId" required ${variants.length ? "" : "disabled"}>
+            <option value="">Choisir…</option>
+            ${variantOpts}
+          </select>
+        </label>
+        <button type="submit" class="ghost-button engine-sim__submit" ${members.length && variants.length ? "" : "disabled"}>Simuler</button>
+      </form>
+      <div id="squadEngineSimulateResult">${renderEngineSimulateResult(null)}</div>
     </div>
   `;
 }
@@ -362,6 +522,32 @@ function resetEngineFilters() {
   if (squadEngineTab === "missing") renderSquadEngineTab("missing");
 }
 
+async function runEngineAcquisitionSimulate(memberId, variantId) {
+  const code = state.activeSquad;
+  const resultEl = document.getElementById("squadEngineSimulateResult");
+  if (!code || !memberId || !variantId || !resultEl) return;
+  resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
+  try {
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/completion/simulate`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        changes: [{ type: "acquire", memberId, variantIds: [variantId] }]
+      })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      resultEl.innerHTML = `<p class="engine-empty">${escapeHtml(data.error || "Simulation impossible.")}</p>`;
+      return;
+    }
+    const data = await res.json();
+    resultEl.innerHTML = renderEngineSimulateResult(data);
+  } catch (e) {
+    console.error("[runEngineAcquisitionSimulate]", e);
+    resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
+  }
+}
+
 function setupSquadEngine() {
   if (!els.squadEngineBtn) return;
   els.squadEngineBtn.addEventListener("click", showSquadEngine);
@@ -379,6 +565,16 @@ function setupSquadEngine() {
     });
     missingPanel.addEventListener("click", (e) => {
       if (e.target.closest("#squadEngineResetFilters")) resetEngineFilters();
+    });
+  }
+  const optimizationPanel = document.getElementById("squadEnginePanel-optimization");
+  if (optimizationPanel) {
+    optimizationPanel.addEventListener("submit", (e) => {
+      const form = e.target.closest("#squadEngineSimulateForm");
+      if (!form) return;
+      e.preventDefault();
+      const fd = new FormData(form);
+      runEngineAcquisitionSimulate(String(fd.get("memberId") || ""), String(fd.get("variantId") || ""));
     });
   }
   if (els.squadEngine) {

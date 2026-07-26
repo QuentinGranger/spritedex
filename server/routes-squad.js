@@ -2,8 +2,8 @@
 
 const security = require("../security");
 const analytics = require("../analytics");
-const { getRequestingUser, isAccountSuspended, isBlocked, requireSquadMember, areFriends, getRelationship, shareSquad, canViewCollection } = require("./auth");
-const { app } = require("./core");
+const { getRequestingUser, isBlocked, requireNotSuspended, requireSquadMember, areFriends, getRelationship, shareSquad, canViewCollection } = require("./auth");
+const { APP_URL, app } = require("./core");
 const compare = require("./compare");
 const { pool } = require("./db");
 const { resolveAddressee } = require("./friends/helpers");
@@ -16,12 +16,154 @@ const {
 const crypto = require("crypto");
 const QRCode = require("qrcode");
 
+const MAX_USER_ID = 2147483647;
+const MAX_SQUAD_SIMULATION_CHANGES = 20;
+const MAX_SQUAD_SIMULATION_VARIANTS = 100;
+const MAX_SQUAD_SIMULATION_TEXT_LENGTH = 80;
+const MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH = 120;
+const SQUAD_SIMULATION_TYPES = new Set(["acquire", "join", "leave", "unavailable", "add_event"]);
+const squadSimulationLimiter = security.rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  keyPrefix: "squad-simulation",
+  message: "Trop de simulations. Réessaie dans une minute."
+});
+
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function parsePositiveUserId(value) {
+  if ((typeof value !== "string" && typeof value !== "number") || !/^[1-9]\d*$/.test(String(value).trim())) {
+    return null;
+  }
+  const id = Number(String(value).trim());
+  return Number.isSafeInteger(id) && id <= MAX_USER_ID ? id : null;
+}
+
+function normalizeSimulationMemberId(value, { field = "memberId", required = true, allowSynthetic = false } = {}) {
+  if (value === undefined || value === null || value === "") {
+    return required ? { error: `${field} requis` } : { value: null };
+  }
+  const numericId = parsePositiveUserId(value);
+  if (numericId !== null) return { value: numericId };
+  if (allowSynthetic && typeof value === "string") {
+    const normalized = value.trim();
+    if (/^[A-Za-z0-9_-]{1,64}$/.test(normalized)) return { value: normalized };
+  }
+  return { error: `${field} invalide` };
+}
+
+function normalizeSimulationText(value, field) {
+  if (value === undefined || value === null || value === "") return { value: null };
+  if (typeof value !== "string") return { error: `${field} invalide` };
+  const normalized = value.trim();
+  if (normalized.length > MAX_SQUAD_SIMULATION_TEXT_LENGTH) {
+    return { error: `${field} trop long (${MAX_SQUAD_SIMULATION_TEXT_LENGTH} max)` };
+  }
+  return { value: normalized || null };
+}
+
+function normalizeSimulationVariantIds(value, { field = "variantIds", required = false } = {}) {
+  if (value === undefined || value === null || value === "") {
+    return required ? { error: `${field} requis` } : { value: [] };
+  }
+
+  let rawIds;
+  if (Array.isArray(value)) {
+    rawIds = value;
+  } else if (typeof value === "string") {
+    if (value.length > MAX_SQUAD_SIMULATION_VARIANTS * (MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH + 1)) {
+      return { error: `${field} trop volumineux` };
+    }
+    rawIds = value.split(",");
+  } else {
+    return { error: `${field} invalide` };
+  }
+
+  if (rawIds.length > MAX_SQUAD_SIMULATION_VARIANTS) {
+    return { error: `Trop de variantes (${MAX_SQUAD_SIMULATION_VARIANTS} max)` };
+  }
+
+  const variantIds = [];
+  const seen = new Set();
+  for (const rawId of rawIds) {
+    if (typeof rawId !== "string" && typeof rawId !== "number") {
+      return { error: "Identifiant de variante invalide" };
+    }
+    const variantId = String(rawId).trim();
+    if (!variantId || variantId.length > MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH) {
+      return { error: "Identifiant de variante invalide" };
+    }
+    if (!seen.has(variantId)) {
+      seen.add(variantId);
+      variantIds.push(variantId);
+    }
+  }
+  if (required && !variantIds.length) return { error: `${field} requis` };
+  return { value: variantIds };
+}
+
+function normalizeSimulationChange(change) {
+  if (!isPlainObject(change)) return { error: "Changement de simulation invalide" };
+  if (typeof change.type !== "string" || !SQUAD_SIMULATION_TYPES.has(change.type)) {
+    return { error: "Type de changement invalide" };
+  }
+
+  const normalized = { type: change.type };
+  if (change.type === "acquire") {
+    const memberId = normalizeSimulationMemberId(change.memberId, { allowSynthetic: true });
+    const variantIds = normalizeSimulationVariantIds(change.variantIds, { required: true });
+    if (memberId.error || variantIds.error) return { error: memberId.error || variantIds.error };
+    normalized.memberId = memberId.value;
+    normalized.variantIds = variantIds.value;
+  } else if (change.type === "join") {
+    const memberId = normalizeSimulationMemberId(change.memberId, { required: false, allowSynthetic: true });
+    const ownedVariantIds = normalizeSimulationVariantIds(change.ownedVariantIds, { required: false });
+    const username = normalizeSimulationText(change.username, "username");
+    const displayName = normalizeSimulationText(change.displayName, "displayName");
+    if (memberId.error || ownedVariantIds.error || username.error || displayName.error) {
+      return { error: memberId.error || ownedVariantIds.error || username.error || displayName.error };
+    }
+    if (memberId.value !== null) normalized.memberId = memberId.value;
+    if (username.value) normalized.username = username.value;
+    if (displayName.value) normalized.displayName = displayName.value;
+    normalized.ownedVariantIds = ownedVariantIds.value;
+  } else if (change.type === "leave") {
+    const memberId = normalizeSimulationMemberId(change.memberId, { allowSynthetic: true });
+    if (memberId.error) return memberId;
+    normalized.memberId = memberId.value;
+  } else {
+    const variantIds = normalizeSimulationVariantIds(change.variantIds, { required: true });
+    if (variantIds.error) return variantIds;
+    normalized.variantIds = variantIds.value;
+  }
+
+  return { value: normalized };
+}
+
+function normalizeSimulationChanges(changes) {
+  if (!Array.isArray(changes)) return { error: "changes doit être un tableau" };
+  if (changes.length > MAX_SQUAD_SIMULATION_CHANGES) {
+    return { error: `Trop de changements (${MAX_SQUAD_SIMULATION_CHANGES} max)` };
+  }
+  const normalized = [];
+  for (const change of changes) {
+    const result = normalizeSimulationChange(change);
+    if (result.error) return result;
+    normalized.push(result.value);
+  }
+  return { value: normalized };
+}
+
 // ── Squad : secure code generation ──
 function generateSquadCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  const bytes = crypto.randomBytes(8);
-  for (let i = 0; i < 8; i++) {
+  // Thirteen base32 characters give 65 bits of entropy while keeping the
+  // `SPRITE-` prefix within the existing VARCHAR(20) database column.
+  const bytes = crypto.randomBytes(13);
+  for (let i = 0; i < 13; i++) {
     code += chars[bytes[i] % chars.length];
   }
   return "SPRITE-" + code;
@@ -42,8 +184,47 @@ async function getSquadByIdOrCode(idOrCode) {
   );
 }
 
+// Resolve the visibility of every member from the perspective of the current
+// viewer.  Every squad matrix must go through this helper: membership alone
+// never grants access to a private collection, and priority visibility is a
+// separate permission from collection visibility.
+async function getViewerSafeSquadMembers(memberRows, reqUser) {
+  return Promise.all(memberRows.map(async (row) => {
+    const userId = row.userId ?? row.user_id ?? row.id;
+    const isSelf = String(userId) === String(reqUser);
+    const visible = isSelf || await canViewCollection(reqUser, userId);
+    const prioritiesVisible = visible && (isSelf || await canViewCollection(reqUser, userId, {
+      visibilityKey: "priorities"
+    }));
+    return {
+      ...row,
+      userId,
+      username: row.username || String(userId),
+      visible,
+      prioritiesVisible
+    };
+  }));
+}
+
+// Never mutate the global compare collection cache when redacting a field for
+// one viewer.  `status: priority` remains collection data, matching the
+// existing collection/compare privacy semantics; only the granular priority
+// level is removed when the owner has hidden it.
+function redactCollectionPriorities(collection) {
+  return Object.fromEntries(Object.entries(collection).map(([variantId, entry]) => [
+    variantId,
+    { ...entry, priority: "none" }
+  ]));
+}
+
+async function loadViewerSafeCollection(member) {
+  if (!member?.visible) return {};
+  const collection = await compare.loadServerCompareCollection(member.userId);
+  return member.prioritiesVisible ? collection : redactCollectionPriorities(collection);
+}
+
 // ── Squad : create ──
-app.post("/api/squads", security.squadCreateLimiter, security.validateBody(security.schemas.squadCreateSchema), async (req, res) => {
+app.post("/api/squads", security.squadCreateLimiter, requireNotSuspended, security.validateBody(security.schemas.squadCreateSchema), async (req, res) => {
   const userId = await getRequestingUser(req);
   if (!userId) return res.status(401).json({ error: "Authentification requise" });
   const { name } = req.validatedBody;
@@ -110,45 +291,58 @@ app.get("/api/squads/common/:userA/:userB", async (req, res) => {
 });
 
 // ── Squad : join by code ──
-app.post("/api/squads/join", security.squadJoinLimiter, security.validateBody(security.schemas.squadJoinSchema), async (req, res) => {
+app.post("/api/squads/join", security.squadJoinLimiter, requireNotSuspended, security.validateBody(security.schemas.squadJoinSchema), async (req, res) => {
   const userId = await getRequestingUser(req);
   if (!userId) return res.status(401).json({ error: "Authentification requise" });
   const { code } = req.validatedBody;
 
+  let client;
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name, join_open, created_at FROM squads WHERE code = $1",
+    client = await pool.connect();
+    await client.query("BEGIN");
+    // The squad row serialises every capacity-changing path (direct join and
+    // invitation acceptance).  Counting first on independent connections made
+    // it possible for concurrent joins to both observe the ninth member.
+    const squadResult = await client.query(
+      "SELECT id, code, name, join_open, created_by, created_at FROM squads WHERE code = $1 FOR UPDATE",
       [code.trim().toUpperCase()]
     );
     if (!squadResult.rows.length) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Code d'escouade introuvable" });
     }
-    const squad = squadResult.rows[0];
+    const { created_by: createdBy, ...squad } = squadResult.rows[0];
     if (squad.join_open === false) {
+      await client.query("ROLLBACK");
       return res.status(403).json({ error: "Cette escouade n'accepte plus de nouveaux membres" });
     }
 
-    const memberCount = await pool.query(
+    const memberCount = await client.query(
       "SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'",
       [squad.id]
     );
     if (parseInt(memberCount.rows[0].count) >= 10) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ error: "Escouade pleine (max 10)" });
     }
 
-    const role = String(squad.created_by) === String(userId) ? "owner" : "member";
-    await pool.query(
+    const role = String(createdBy) === String(userId) ? "owner" : "member";
+    await client.query(
       `INSERT INTO squad_members (squad_id, user_id, role, status)
        VALUES ($1, $2, $3, 'active')
        ON CONFLICT (squad_id, user_id)
        DO UPDATE SET status = 'active', left_at = NULL, role = EXCLUDED.role`,
       [squad.id, userId, role]
     );
+    await client.query("COMMIT");
     invalidateSquadAnalysisCache(squad.id);
     res.json(squad);
   } catch (err) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
+  } finally {
+    client?.release();
   }
 });
 
@@ -167,8 +361,7 @@ app.get("/api/squads/:code/qr", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const base = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-    const url = `${base}/?joinSquad=${encodeURIComponent(squad.code)}`;
+    const url = `${APP_URL}/?joinSquad=${encodeURIComponent(squad.code)}`;
     let qr = null;
     try {
       qr = await QRCode.toDataURL(url, { type: "image/png", margin: 2, width: 300, errorCorrectionLevel: "M" });
@@ -242,27 +435,34 @@ app.get("/api/squads/:code", async (req, res) => {
       [squad.id]
     );
 
-    const allActiveMemberIds = membersResult.rows.map(m => m.id);
-    const matrixMembers = membersResult.rows.map(m => ({ userId: m.id, username: m.username || String(m.id), visible: true }));
+    const viewerMembers = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
+    const matrixMembers = viewerMembers.map(m => ({
+      userId: m.userId,
+      username: m.username || String(m.userId),
+      visible: m.visible,
+      prioritiesVisible: m.prioritiesVisible
+    }));
     const members = [];
-    const visibleMemberIds = [];
-    for (const member of membersResult.rows) {
+    for (const member of viewerMembers) {
       // Hide members who mutually blocked the requester in this squad context.
-      if (reqUser && await isBlocked(reqUser, member.id)) continue;
-      const canSeeCollection = String(member.id) === String(reqUser) ||
-        await canViewCollection(reqUser, member.id);
+      if (reqUser && await isBlocked(reqUser, member.userId)) continue;
+      const canSeeCollection = member.visible;
 
-      let collection = {};
+      // A member's old imported variant_id can be "__proto__"; keep it inert
+      // while constructing the squad response.
+      let collection = Object.create(null);
       let entryCount = 0;
       let lastUpdated = null;
       if (canSeeCollection) {
-        visibleMemberIds.push(member.id);
         const entriesResult = await pool.query(
-          "SELECT sprite_id, status, priority, updated_at FROM sprite_entries WHERE user_id = $1",
-          [member.id]
+          "SELECT variant_id, status, priority, updated_at FROM sprite_entries WHERE user_id = $1",
+          [member.userId]
         );
         for (const row of entriesResult.rows) {
-          collection[row.sprite_id] = { status: row.status, priority: row.priority || "none" };
+          collection[row.variant_id] = {
+            status: row.status,
+            priority: member.prioritiesVisible ? (row.priority || "none") : "none"
+          };
           if (row.updated_at && (!lastUpdated || row.updated_at > lastUpdated)) {
             lastUpdated = row.updated_at;
           }
@@ -270,12 +470,12 @@ app.get("/api/squads/:code", async (req, res) => {
         entryCount = entriesResult.rows.length;
       }
 
-      const { friendshipStatus, canReceiveFriendRequest, friendRequestDirection } = await getMemberFriendshipStatus(reqUser, member.id);
+      const { friendshipStatus, canReceiveFriendRequest, friendRequestDirection } = await getMemberFriendshipStatus(reqUser, member.userId);
       members.push({
-        userId: member.id,
+        userId: member.userId,
         username: member.username,
         avatarUrl: member.avatar_url || "",
-        role: member.role || (String(member.id) === String(squad.created_by) ? "owner" : "member"),
+        role: member.role || (String(member.userId) === String(squad.created_by) ? "owner" : "member"),
         joinedAt: member.joined_at,
         collection,
         entryCount,
@@ -287,7 +487,9 @@ app.get("/api/squads/:code", async (req, res) => {
     }
 
     const [recommendationsList, matrix] = await Promise.all([
-      compare.getSquadRecommendations(visibleMemberIds),
+      // Preserve granular priority visibility in aggregate recommendation
+      // scores/counts as well as in the matrix returned to this viewer.
+      compare.getSquadRecommendations(matrixMembers),
       compare.buildSquadCollectionMatrix(matrixMembers)
     ]);
 
@@ -345,7 +547,7 @@ app.get("/api/squads/:code", async (req, res) => {
 });
 
 // ── Squad : leave ──
-app.post("/api/squads/:code/leave", async (req, res) => {
+app.post("/api/squads/:code/leave", requireNotSuspended, async (req, res) => {
   const userId = await getRequestingUser(req);
   if (!userId) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -362,6 +564,16 @@ app.post("/api/squads/:code/leave", async (req, res) => {
       [squadResult.rows[0].id, userId]
     );
     invalidateSquadAnalysisCache(squadResult.rows[0].id);
+
+    // Étape 58 — stop future squad progress notifs; cancel scheduled; revoke destinations.
+    try {
+      const squadCompletion = require("./notification-squad-completion");
+      await squadCompletion.applySquadLeaveNotificationCleanup(
+        pool, squadResult.rows[0].id, userId
+      );
+    } catch (err) {
+      console.error("[leave] notification cleanup failed", err);
+    }
 
     try {
       await refreshSquadStats(squadResult.rows[0].id);
@@ -385,7 +597,7 @@ app.post("/api/squads/:code/leave", async (req, res) => {
 });
 
 // ── Squad : kick member (creator only) ──
-app.post("/api/squads/:code/kick", async (req, res) => {
+app.post("/api/squads/:code/kick", requireNotSuspended, async (req, res) => {
   // SECURITY FIX: this was previously calling getRequestingUser() without
   // `await`, so reqUser held a pending Promise (always truthy) and every
   // String(reqUser) comparison against created_by failed — the route was
@@ -393,8 +605,8 @@ app.post("/api/squads/:code/kick", async (req, res) => {
   // enforcing the ownership check it appeared to have.
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const { targetUserId } = req.body;
-  if (!targetUserId) return res.status(400).json({ error: "targetUserId requis" });
+  const targetUserId = parsePositiveUserId(req.body?.targetUserId);
+  if (targetUserId === null) return res.status(400).json({ error: "targetUserId invalide" });
   try {
     const squadResult = await pool.query(
       "SELECT id, created_by FROM squads WHERE code = $1",
@@ -418,6 +630,17 @@ app.post("/api/squads/:code/kick", async (req, res) => {
       [squad.id, targetUserId]
     );
     invalidateSquadAnalysisCache(squad.id);
+
+    // Étape 58 — same cleanup as leave for the removed member.
+    try {
+      const squadCompletion = require("./notification-squad-completion");
+      await squadCompletion.applySquadLeaveNotificationCleanup(
+        pool, squad.id, targetUserId
+      );
+    } catch (err) {
+      console.error("[kick] notification cleanup failed", err);
+    }
+
     try {
       await refreshSquadStats(squad.id);
     } catch (err) {
@@ -431,7 +654,7 @@ app.post("/api/squads/:code/kick", async (req, res) => {
 });
 
 // ── Squad : regenerate code (creator only) ──
-app.post("/api/squads/:code/regenerate", security.squadCodeLimiter, async (req, res) => {
+app.post("/api/squads/:code/regenerate", security.squadCodeLimiter, requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -457,7 +680,7 @@ app.post("/api/squads/:code/regenerate", security.squadCodeLimiter, async (req, 
 });
 
 // ── Squad : toggle join open/closed (creator only) ──
-app.post("/api/squads/:code/toggle-join", async (req, res) => {
+app.post("/api/squads/:code/toggle-join", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -480,7 +703,7 @@ app.post("/api/squads/:code/toggle-join", async (req, res) => {
 });
 
 // ── Squad : update settings (creator only) ──
-app.post("/api/squads/:code/settings", async (req, res) => {
+app.post("/api/squads/:code/settings", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -515,12 +738,9 @@ app.post("/api/squads/:code/settings", async (req, res) => {
 
 // ── Squad : invite an accepted friend into the active squad ──
 // This does NOT create a friendship; it only adds the friend as a member.
-app.post("/api/squads/:code/invite/:friendId", async (req, res) => {
+app.post("/api/squads/:code/invite/:friendId", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  if (await isAccountSuspended(reqUser)) {
-    return res.status(403).json({ error: "Compte suspendu" });
-  }
 
   const friendId = Number(req.params.friendId);
   if (!friendId || isNaN(friendId)) {
@@ -680,12 +900,9 @@ app.get("/api/squads/invitable", async (req, res) => {
 });
 
 // ── Squad : invite a friend by squad id (body inviteeId) ──
-app.post("/api/squads/:squadId/invitations", async (req, res) => {
+app.post("/api/squads/:squadId/invitations", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  if (await isAccountSuspended(reqUser)) {
-    return res.status(403).json({ error: "Compte suspendu" });
-  }
 
   const resolved = await resolveAddressee(reqUser, req.body?.inviteeId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
@@ -766,7 +983,11 @@ app.post("/api/squads/:squadId/invitations", async (req, res) => {
        RETURNING id`,
       [squad.id, reqUser, friendId]
     );
-    const source = req.body?.source || "squad_invite";
+    // `source` is analytics metadata. It is not a free-form user field:
+    // accepting it verbatim would let an invitation request persist up to the
+    // JSON body limit in product_analytics. These are the only two product
+    // meanings used below.
+    const source = req.body?.source === "recommended" ? "recommended" : "squad_invite";
     analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "friend_invited_to_squad", details: { friendId, source } });
     if (source === "recommended") {
       analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "recommended_friend_invited", details: { friendId } });
@@ -920,6 +1141,7 @@ app.get("/api/squads/:code/history", async (req, res) => {
     );
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     if (!(await requireSquadMember(req, res, squadResult.rows[0].id))) return;
+    const reqUser = await getRequestingUser(req);
 
     const days = parseInt(req.query.days) || 7;
     const limit = Math.min(parseInt(req.query.limit) || 200, 500);
@@ -936,15 +1158,34 @@ app.get("/api/squads/:code/history", async (req, res) => {
       [squadResult.rows[0].id, days, limit]
     );
 
-    const entries = result.rows.map(row => ({
-      type: row.type,
-      action: row.action,
-      sprite_id: row.sprite_id,
-      metadata: row.metadata || {},
-      created_at: row.created_at,
-      username: row.username,
-      user_id: row.user_id
-    }));
+    const entries = [];
+    for (const row of result.rows) {
+      // These activity types disclose a concrete collection change or confirm
+      // that the actor owns a goal target. Keep their shared row for
+      // authorized members, but never expose it to a squad member who cannot
+      // view the actor's collection (including blocks and a later privacy
+      // change). Fail closed for anonymised old rows.
+      if (["collection_update", "goal_completed"].includes(row.type) && (
+        !row.user_id || !(await canViewCollection(reqUser, row.user_id))
+      )) {
+        continue;
+      }
+      const metadata = row.metadata && typeof row.metadata === "object"
+        ? { ...row.metadata }
+        : {};
+      // Older rows may still carry this aggregate. It must not be used to
+      // infer ownership in another member's hidden collection.
+      if (row.type === "collection_update") delete metadata.firstInSquad;
+      entries.push({
+        type: row.type,
+        action: row.action,
+        sprite_id: row.sprite_id,
+        metadata,
+        created_at: row.created_at,
+        username: row.username,
+        user_id: row.user_id
+      });
+    }
 
     res.json({ entries });
   } catch (err) {
@@ -963,13 +1204,16 @@ async function getSquadRecommendedFriends(squad, reqUser) {
   const itemMap = new Map(catalogue.map(i => [i.id, i]));
   const total = catalogue.length;
 
-  const memberIds = membersRes.rows.map(r => r.user_id);
-  const reqUserMembership = membersRes.rows.find(r => String(r.user_id) === String(reqUser));
+  const viewerMembers = await getViewerSafeSquadMembers(membersRes.rows, reqUser);
+  const memberIds = viewerMembers.map(r => r.userId);
+  const reqUserMembership = viewerMembers.find(r => String(r.userId) === String(reqUser));
   if (!reqUserMembership) return [];
 
   const canInviteAnyone = reqUserMembership.role === "owner" || reqUserMembership.role === "admin" || (reqUserMembership.role === "member" && squad.join_open !== false);
 
-  const memberCollections = await Promise.all(memberIds.map(id => compare.loadServerCompareCollection(id)));
+  const memberCollections = await Promise.all(
+    viewerMembers.filter(member => member.visible).map(loadViewerSafeCollection)
+  );
   const currentOwned = new Set();
   for (const c of memberCollections) {
     for (const item of catalogue) {
@@ -995,6 +1239,7 @@ async function getSquadRecommendedFriends(squad, reqUser) {
     if (memberIds.some(m => String(m) === String(row.id))) continue;
     if (await isBlocked(reqUser, row.id)) continue;
     if (!(await canViewCollection(reqUser, row.id))) continue;
+    const prioritiesVisible = await canViewCollection(reqUser, row.id, { visibilityKey: "priorities" });
 
     const invitePref = row.squad_invites_from || "friends";
     let canReceiveInvite = false;
@@ -1004,7 +1249,11 @@ async function getSquadRecommendedFriends(squad, reqUser) {
     else if (invitePref === "nobody") canReceiveInvite = false;
     if (!canReceiveInvite) continue;
 
-    const cCollection = await compare.loadServerCompareCollection(row.id);
+    const cCollection = await loadViewerSafeCollection({
+      userId: row.id,
+      visible: true,
+      prioritiesVisible
+    });
     const cOwned = new Set();
     const cPriority = new Set();
     for (const item of catalogue) {
@@ -1103,19 +1352,10 @@ async function getSquadComplementaryPairs(squad, reqUser) {
     [memberIds]
   );
 
-  const allowed = [];
-  for (const u of usersRes.rows) {
-    if (await canViewCollection(reqUser, u.id)) allowed.push(u);
-  }
+  const allowed = (await getViewerSafeSquadMembers(usersRes.rows, reqUser))
+    .filter(member => member.visible);
 
-  const collectionCache = new Map();
-  const memberCollections = await Promise.all(
-    allowed.map(async (u) => {
-      const c = await compare.loadServerCompareCollection(u.id);
-      collectionCache.set(String(u.id), c);
-      return c;
-    })
-  );
+  const memberCollections = await Promise.all(allowed.map(loadViewerSafeCollection));
 
   const blockedPairs = new Set();
   for (let i = 0; i < allowed.length; i++) {
@@ -1133,11 +1373,9 @@ async function getSquadComplementaryPairs(squad, reqUser) {
       const userA = { id: a.id, displayName: a.display_name || a.username, collection: memberCollections[i] };
       const userB = { id: b.id, displayName: b.display_name || b.username, collection: memberCollections[j] };
 
-      let result = compare.getCachedCompareResult(a.id, b.id);
-      if (!result) {
-        result = compare.compareCollectionsServer(userA, userB, catalogue);
-        compare.setCachedCompareResult(a.id, b.id, result);
-      }
+      // This is viewer-specific: each collection may have had its priorities
+      // redacted above.  Do not reuse the generic raw comparison cache here.
+      const result = compare.compareCollectionsServer(userA, userB, catalogue);
 
       pairs.push({
         userAId: a.id,
@@ -1175,13 +1413,11 @@ async function getSquadBestPair(squad, reqUser) {
     [memberIds]
   );
 
-  const allowed = [];
-  for (const u of usersRes.rows) {
-    if (await canViewCollection(reqUser, u.id)) allowed.push(u);
-  }
+  const allowed = (await getViewerSafeSquadMembers(usersRes.rows, reqUser))
+    .filter(member => member.visible);
   if (allowed.length < 2) return null;
 
-  const collections = await Promise.all(allowed.map(u => compare.loadServerCompareCollection(u.id)));
+  const collections = await Promise.all(allowed.map(loadViewerSafeCollection));
 
   const blockedPairs = new Set();
   for (let i = 0; i < allowed.length; i++) {
@@ -1199,11 +1435,9 @@ async function getSquadBestPair(squad, reqUser) {
       const userA = { id: a.id, displayName: a.display_name || a.username, collection: collections[i] };
       const userB = { id: b.id, displayName: b.display_name || b.username, collection: collections[j] };
 
-      let result = compare.getCachedCompareResult(a.id, b.id);
-      if (!result) {
-        result = compare.compareCollectionsServer(userA, userB, catalogue);
-        compare.setCachedCompareResult(a.id, b.id, result);
-      }
+      // See getSquadComplementaryPairs: this result is scoped to the
+      // requesting viewer's granular priority permissions.
+      const result = compare.compareCollectionsServer(userA, userB, catalogue);
 
       const s = result.summary;
       pairs.push({
@@ -1771,7 +2005,9 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
       }
       case "add_event": {
         const variantIds = toVariantIdList(change.variantIds);
-        for (const vid of variantIds) activeIds.add(vid);
+        for (const vid of variantIds) {
+          if (validIds.has(vid)) activeIds.add(vid);
+        }
         break;
       }
       default:
@@ -1954,7 +2190,9 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
       }
       case "add_event": {
         const variantIds = toVariantIdList(change.variantIds);
-        for (const vid of variantIds) activeIds.add(vid);
+        for (const vid of variantIds) {
+          if (validIds.has(vid)) activeIds.add(vid);
+        }
         break;
       }
     }
@@ -2004,11 +2242,7 @@ async function getSquadRecommendedGoals(squad, reqUser) {
     [squad.id]
   );
 
-  const members = [];
-  for (const r of membersResult.rows) {
-    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-    members.push({ userId: r.user_id, username: r.username, visible });
-  }
+  const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const matrix = await compare.buildSquadCollectionMatrix(members, catalogueAll);
@@ -2137,12 +2371,7 @@ async function buildSquadCompletionMembers(squad, reqUser) {
     [squad.id]
   );
 
-  const members = [];
-  for (const r of membersRes.rows) {
-    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-    members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
-  }
-  return members;
+  return getViewerSafeSquadMembers(membersRes.rows, reqUser);
 }
 
 async function getSquadCompletionScope(squad, reqUser) {
@@ -2161,11 +2390,12 @@ async function getSquadCompletionScope(squad, reqUser) {
 
   const MIN_EXPLICIT_ENTRIES = 0;
 
-  for (const row of membersRes.rows) {
-    const memberId = row.user_id;
+  const viewerMembers = await getViewerSafeSquadMembers(membersRes.rows, reqUser);
+  for (const member of viewerMembers) {
+    const memberId = member.userId;
     totalActiveMembers.push(memberId);
 
-    if (!(await canViewCollection(reqUser, memberId))) {
+    if (!member.visible) {
       excludedPrivateCollections++;
       continue;
     }
@@ -2183,10 +2413,11 @@ async function getSquadCompletionScope(squad, reqUser) {
   }
 
   const includedIds = new Set(includedMembers.map(id => String(id)));
-  const membersForMatrix = membersRes.rows.map(r => ({
-    userId: r.user_id,
-    username: String(r.user_id),
-    visible: includedIds.has(String(r.user_id))
+  const membersForMatrix = viewerMembers.map(member => ({
+    userId: member.userId,
+    username: member.username || String(member.userId),
+    visible: includedIds.has(String(member.userId)),
+    prioritiesVisible: member.prioritiesVisible
   }));
   const matrix = await compare.buildSquadCollectionMatrix(membersForMatrix, activeCatalogue);
   const completion = compare.getSquadCollectiveCompletion(matrix, squad.name);
@@ -2259,6 +2490,7 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
     memberGoalVariantSet,
     maxGoalAssignments: 2
   });
+  const plan = compare.getSquadCollectivePlan(matrix, assignments);
 
   const allVariants = matrix.map(r => ({
     variantId: r.variantId,
@@ -2324,6 +2556,7 @@ async function getSquadVersionedCompletionReport(squad, reqUser) {
       activeGoalCount: activeGoalVariantIds.size,
       priorities,
       assignments,
+      plan,
       recommendedGoals: recommendedGoals.goals
     },
     optimization: {
@@ -2505,7 +2738,7 @@ app.get("/api/squads/:code/minimum-team", async (req, res) => {
 });
 
 // ── Squad : simulate acquisition without modifying collections ──
-app.post("/api/squads/:code/simulate-acquisition", async (req, res) => {
+app.post("/api/squads/:code/simulate-acquisition", requireNotSuspended, squadSimulationLimiter, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -2514,15 +2747,16 @@ app.post("/api/squads/:code/simulate-acquisition", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const memberId = req.body.memberId;
-    let acquireVariantIds = req.body.acquireVariantIds;
-
-    if (!memberId) {
-      return res.status(400).json({ error: "memberId requis" });
+    const memberId = parsePositiveUserId(req.body?.memberId);
+    if (memberId === null) return res.status(400).json({ error: "memberId invalide" });
+    const normalizedAcquireVariantIds = normalizeSimulationVariantIds(req.body?.acquireVariantIds, {
+      field: "acquireVariantIds",
+      required: true
+    });
+    if (normalizedAcquireVariantIds.error) {
+      return res.status(400).json({ error: normalizedAcquireVariantIds.error });
     }
-    if (!acquireVariantIds) {
-      return res.status(400).json({ error: "acquireVariantIds requis" });
-    }
+    const acquireVariantIds = normalizedAcquireVariantIds.value;
 
     const result = await simulateSquadAcquisition(squad, reqUser, memberId, acquireVariantIds);
     res.json({
@@ -2543,7 +2777,7 @@ app.post("/api/squads/:code/simulate-acquisition", async (req, res) => {
 });
 
 // ── Squad : multi-scenario simulation ──
-app.post("/api/squads/:code/simulate", async (req, res) => {
+app.post("/api/squads/:code/simulate", requireNotSuspended, squadSimulationLimiter, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -2552,7 +2786,9 @@ app.post("/api/squads/:code/simulate", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const changes = Array.isArray(req.body.changes) ? req.body.changes : [];
+    const normalizedChanges = normalizeSimulationChanges(req.body?.changes);
+    if (normalizedChanges.error) return res.status(400).json({ error: normalizedChanges.error });
+    const changes = normalizedChanges.value;
     const result = await simulateSquadChanges(squad, reqUser, changes);
 
     res.json({
@@ -2567,7 +2803,7 @@ app.post("/api/squads/:code/simulate", async (req, res) => {
 });
 
 // ── Squad : what-if impact for a single change ──
-app.post("/api/squads/:code/what-if", async (req, res) => {
+app.post("/api/squads/:code/what-if", requireNotSuspended, squadSimulationLimiter, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -2576,12 +2812,12 @@ app.post("/api/squads/:code/what-if", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const change = req.body.change || req.body;
-    if (!change || !change.type) {
-      return res.status(400).json({ error: "change.type requis" });
-    }
+    const body = req.body;
+    const change = isPlainObject(body) && Object.prototype.hasOwnProperty.call(body, "change") ? body.change : body;
+    const normalizedChange = normalizeSimulationChange(change);
+    if (normalizedChange.error) return res.status(400).json({ error: normalizedChange.error });
 
-    const result = await getSquadWhatIfImpact(squad, reqUser, change);
+    const result = await getSquadWhatIfImpact(squad, reqUser, normalizedChange.value);
     res.json({
       squadCode: squad.code,
       squadName: squad.name,
@@ -2614,11 +2850,7 @@ app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
       [squad.id]
     );
 
-    const members = membersResult.rows.map(r => ({
-      userId: r.user_id,
-      username: r.username || String(r.user_id),
-      visible: true
-    }));
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-most-complementary-member", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
@@ -2674,11 +2906,7 @@ app.get("/api/squads/:code/analysis", async (req, res) => {
       [squad.id]
     );
 
-    const matrixMembers = membersResult.rows.map(r => ({
-      userId: r.user_id,
-      username: r.username || String(r.user_id),
-      visible: true
-    }));
+    const matrixMembers = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-analysis", async () => {
       const [matrix, pairs] = await Promise.all([
@@ -2907,7 +3135,7 @@ app.get("/api/squads/:squadId/completion/combinations", async (req, res) => {
 });
 
 // ── Squad Completion Engine : simulate completion changes ──
-app.post("/api/squads/:squadId/completion/simulate", async (req, res) => {
+app.post("/api/squads/:squadId/completion/simulate", requireNotSuspended, squadSimulationLimiter, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -2916,7 +3144,9 @@ app.post("/api/squads/:squadId/completion/simulate", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const changes = Array.isArray(req.body.changes) ? req.body.changes : [];
+    const normalizedChanges = normalizeSimulationChanges(req.body?.changes);
+    if (normalizedChanges.error) return res.status(400).json({ error: normalizedChanges.error });
+    const changes = normalizedChanges.value;
     const result = await simulateSquadChanges(squad, reqUser, changes);
 
     res.json({
@@ -2972,15 +3202,7 @@ app.get("/api/squads/:code/matrix", async (req, res) => {
       [squad.id]
     );
 
-    const members = [];
-    for (const row of membersResult.rows) {
-      const visible = String(row.user_id) === String(reqUser) || await canViewCollection(reqUser, row.user_id);
-      members.push({
-        userId: row.user_id,
-        username: row.username || String(row.user_id),
-        visible
-      });
-    }
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-matrix", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
@@ -3023,15 +3245,7 @@ app.get("/api/squads/:code/missing-variants", async (req, res) => {
       [squad.id]
     );
 
-    const members = [];
-    for (const row of membersResult.rows) {
-      const visible = String(row.user_id) === String(reqUser) || await canViewCollection(reqUser, row.user_id);
-      members.push({
-        userId: row.user_id,
-        username: row.username || String(row.user_id),
-        visible
-      });
-    }
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-missing-variants", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
@@ -3070,11 +3284,7 @@ app.get("/api/squads/:code/unique-owners", async (req, res) => {
       [squad.id]
     );
 
-    const members = membersResult.rows.map(r => ({
-      userId: r.user_id,
-      username: r.username || String(r.user_id),
-      visible: true
-    }));
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-unique-owners", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
@@ -3114,11 +3324,7 @@ app.get("/api/squads/:code/shared-variants", async (req, res) => {
       [squad.id]
     );
 
-    const members = membersResult.rows.map(r => ({
-      userId: r.user_id,
-      username: r.username || String(r.user_id),
-      visible: true
-    }));
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-shared-variants", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
@@ -3138,7 +3344,7 @@ app.get("/api/squads/:code/shared-variants", async (req, res) => {
 });
 
 // ── Squad : delete (creator only) ──
-app.delete("/api/squads/:code", async (req, res) => {
+app.delete("/api/squads/:code", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -3185,11 +3391,7 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
       [squad.id]
     );
 
-    const members = [];
-    for (const r of membersResult.rows) {
-      const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-      members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
-    }
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
     const memberIds = members.map(m => m.userId);
 
     const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
@@ -3274,11 +3476,7 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
     }
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "member-recommendations", async () => {
-      const members = [];
-      for (const r of membersResult.rows) {
-        const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-        members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
-      }
+      const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
       const memberIds = members.map(m => m.userId);
 
       const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
@@ -3358,11 +3556,7 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
       [squad.id]
     );
 
-    const members = [];
-    for (const r of membersResult.rows) {
-      const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-      members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
-    }
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
     const memberIds = members.map(m => m.userId);
 
     const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
@@ -3448,11 +3642,7 @@ app.get("/api/squads/:code/helpful/:memberId", async (req, res) => {
     const targetRow = membersResult.rows.find(r => String(r.user_id) === String(targetUserId));
     if (!targetRow) return res.status(404).json({ error: "Membre introuvable dans l'escouade" });
 
-    const members = [];
-    for (const r of membersResult.rows) {
-      const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
-      members.push({ userId: r.user_id, username: r.username || String(r.user_id), visible });
-    }
+    const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "helpful-member", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);

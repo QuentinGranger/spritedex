@@ -1,6 +1,6 @@
 // friends/routes-requests.js — send / accept / decline / cancel / remove endpoints.
 
-const { getRequestingUser, isBlocked, shareSquad } = require("../auth");
+const { getRequestingUser, isBlocked, shareSquad, requireNotSuspended } = require("../auth");
 const { app } = require("../core");
 const { pool } = require("../db");
 const analytics = require("../../analytics");
@@ -10,9 +10,10 @@ const compare = require("../compare");
 const { logSquadFriendship } = require("../squad-activity");
 const { resolveUsers, resolveAddressee, getActiveFriendship } = require("./helpers");
 const { applyFriendAction } = require("./state-machine");
+const { emitDomainEvent, DOMAIN_EVENTS } = require("../event-bus");
 
 // ── Send a friend request ────────────────────────────────────────────────────
-app.post("/api/friends/:friendId/request", async (req, res) => {
+app.post("/api/friends/:friendId/request", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -41,7 +42,7 @@ app.post("/api/friends/:friendId/request", async (req, res) => {
 });
 
 // ── Send a friend request by addresseeId (username or numeric id) ───────────
-app.post("/api/friends/requests", security.validateBody(security.schemas.friendRequestSchema), async (req, res) => {
+app.post("/api/friends/requests", requireNotSuspended, security.validateBody(security.schemas.friendRequestSchema), async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
@@ -73,7 +74,7 @@ app.post("/api/friends/requests", security.validateBody(security.schemas.friendR
 });
 
 // ── Accept a friend request ──────────────────────────────────────────────────
-app.post("/api/friends/:friendId/accept", async (req, res) => {
+app.post("/api/friends/:friendId/accept", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -83,21 +84,28 @@ app.post("/api/friends/:friendId/accept", async (req, res) => {
 
   logSquadFriendship(reqUser, friendId);
 
-  const reqUserRecord = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
-  await pushService.createNotification(pool, {
-    recipientId: friendId,
-    actorId: reqUser,
-    type: "friend_request_accepted",
-    context: { friendId: reqUser },
-    message: `${reqUserRecord.rows[0]?.username || "Quelqu'un"} a accepté votre demande.`,
-    url: "/friends"
-  });
+  // Étape 11 — trigger: friendship.accepted fires only on pending → accepted.
+  // Recipient = original requester. The accepter is never notified of their own action.
+  if (outcome.previousStatus === "pending" && outcome.newStatus === "accepted") {
+    await emitDomainEvent(DOMAIN_EVENTS.FRIENDSHIP_ACCEPTED, {
+      actorId: outcome.accepterId,
+      entityType: "user",
+      entityId: outcome.requesterId,
+      context: {
+        previousStatus: outcome.previousStatus,
+        newStatus: outcome.newStatus,
+        friendshipId: outcome.friendshipId,
+        requesterId: outcome.requesterId,
+        accepterId: outcome.accepterId
+      }
+    });
+  }
 
   res.json({ ok: true });
 });
 
 // ── Accept a friend request by request id ────────────────────────────────────
-app.post("/api/friends/requests/:requestId/accept", async (req, res) => {
+app.post("/api/friends/requests/:requestId/accept", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   const requestId = req.params.requestId;
@@ -136,23 +144,29 @@ app.post("/api/friends/requests/:requestId/accept", async (req, res) => {
       return res.status(403).json({ error: "Vous ne pouvez pas interagir avec cet utilisateur" });
     }
 
+    // Étape 11 — pending → accepted (row was locked with status = 'pending').
     await client.query(
       `UPDATE friendships
        SET status = 'accepted', responded_at = NOW(), updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1 AND status = 'pending'`,
       [requestId]
     );
     await client.query("COMMIT");
 
     logSquadFriendship(reqUser, request.requester_id);
 
-    const accepter = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
-    await pushService.createNotification(pool, {
-      recipientId: request.requester_id,
+    // Recipient = original requester. The accepter (reqUser) is never notified.
+    await emitDomainEvent(DOMAIN_EVENTS.FRIENDSHIP_ACCEPTED, {
       actorId: reqUser,
-      type: "friend_request_accepted",
-      message: `${accepter.rows[0]?.username || "Quelqu'un"} a accepté votre demande.`,
-      url: "/friends"
+      entityType: "user",
+      entityId: request.requester_id,
+      context: {
+        previousStatus: "pending",
+        newStatus: "accepted",
+        friendshipId: request.id,
+        requesterId: request.requester_id,
+        accepterId: reqUser
+      }
     });
 
     res.json({ ok: true });
@@ -166,7 +180,7 @@ app.post("/api/friends/requests/:requestId/accept", async (req, res) => {
 });
 
 // ── Decline a friend request by request id ───────────────────────────────────
-app.post("/api/friends/requests/:requestId/decline", async (req, res) => {
+app.post("/api/friends/requests/:requestId/decline", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   const requestId = req.params.requestId;
@@ -196,7 +210,7 @@ app.post("/api/friends/requests/:requestId/decline", async (req, res) => {
 });
 
 // ── Cancel a friend request by request id ────────────────────────────────────
-app.delete("/api/friends/requests/:requestId", async (req, res) => {
+app.delete("/api/friends/requests/:requestId", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   const requestId = req.params.requestId;
@@ -219,7 +233,7 @@ app.delete("/api/friends/requests/:requestId", async (req, res) => {
 });
 
 // ── Decline an invitation ────────────────────────────────────────────────────
-app.post("/api/friends/:friendId/decline", async (req, res) => {
+app.post("/api/friends/:friendId/decline", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -230,7 +244,7 @@ app.post("/api/friends/:friendId/decline", async (req, res) => {
 });
 
 // ── Cancel an invitation sent ────────────────────────────────────────────────
-app.post("/api/friends/:friendId/cancel", async (req, res) => {
+app.post("/api/friends/:friendId/cancel", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -242,7 +256,7 @@ app.post("/api/friends/:friendId/cancel", async (req, res) => {
 
 // ── Remove a friendship ──────────────────────────────────────────────────────
 // UI should prompt for confirmation before calling this endpoint.
-app.post("/api/friends/:friendId/remove", async (req, res) => {
+app.post("/api/friends/:friendId/remove", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;
@@ -265,7 +279,7 @@ app.post("/api/friends/:friendId/remove", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.delete("/api/friends/:friendId", async (req, res) => {
+app.delete("/api/friends/:friendId", requireNotSuspended, async (req, res) => {
   const resolved = await resolveUsers(req, req.params.friendId);
   if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
   const { reqUser, friendId } = resolved;

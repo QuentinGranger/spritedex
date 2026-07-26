@@ -2,7 +2,7 @@
   "name": "spritedex_app",
   "version": "1.0.0",
   "description": "Application web statique pour suivre les Sprites Fortnite et leurs variantes.",
-  "main": "server.js",
+  "main": "desktop/main.cjs",
   "scripts": {
     "start": "node server.js",
     "seed": "node seed.js",
@@ -11,11 +11,21 @@
     "test:friends": "node test/friends.test.js",
     "test:squads": "node test/squads.test.js",
     "test:goals": "node test/goals.test.js",
-    "test": "npm run test:security && npm run test:compare && npm run test:friends && npm run test:squads && npm run test:goals",
+    "test:suspension-sync": "node test/suspension-sync.test.js",
+    "test:priority-availability": "node test/priority-availability.test.js",
+    "test:event-ending": "node test/event-ending.test.js",
+    "test:notification-load": "node test/notification-load.test.js",
+    "test:notifications": "node test/notifications.test.js",
+    "test": "npm run test:notifications && npm run test:security && npm run test:compare && npm run test:friends && npm run test:squads && npm run test:goals && npm run test:suspension-sync && npm run test:priority-availability && npm run test:event-ending && npm run test:notification-load",
     "build:www": "node scripts/build-www.js",
     "cap:sync": "npm run build:www && npx cap sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
-    "cap:android": "npm run cap:sync && npx cap open android"
+    "cap:android": "npm run cap:sync && npx cap open android",
+    "desktop:dev": "npm run build:www && electron .",
+    "desktop:dist": "npm run build:www && electron-builder",
+    "desktop:mac": "npm run build:www && electron-builder --mac",
+    "desktop:win": "npm run build:www && electron-builder --win",
+    "desktop:linux": "npm run build:www && electron-builder --linux"
   },
   "engines": {
     "node": ">=18"
@@ -46,6 +56,33 @@
     "@capacitor/browser": "^6.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
-    "@capacitor/ios": "^6.0.0"
+    "@capacitor/ios": "^6.0.0",
+    "electron": "^37.10.3",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.spritedex.desktop",
+    "productName": "SPRITNEX",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "desktop/**/*",
+      "www/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    }
   }
 }

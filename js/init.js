@@ -64,29 +64,46 @@ async function handleShareLink() {
   return true;
 }
 
-// Completes an OAuth login from a set of URL params. Shared by the web return
-// flow (query string) and the native deep-link flow (js/mobile.js). Returns
-// true when a session was established.
+// Completes an OAuth login from a one-time code. Shared by the web return flow
+// (query string) and the native deep-link flow (js/mobile.js). The code only
+// works with the verifier generated before the OAuth redirect.
 async function applyAuthParams(params) {
-  const authToken = params.get("authToken");
-  const authUserStr = params.get("authUser");
+  const authCode = params.get("authCode");
   const authError = params.get("authError");
 
   if (authError) {
+    sessionStorage.removeItem(window.OAUTH_EXCHANGE_VERIFIER_KEY || "spritedex_oauth_exchange_verifier");
     const messages = {
       invalid_state: "Session expirée (cookie bloqué). Réessaie.",
       token_failed: "Clé/secret OAuth invalide côté serveur.",
       no_email: "Aucune adresse email fournie par le provider.",
+      unverified_email: "L'adresse email fournie par le provider n'est pas vérifiée.",
+      invalid_exchange: "La connexion sécurisée a expiré. Réessaie.",
       server_error: "Erreur serveur OAuth. Réessaie."
     };
     toast(messages[authError] || `Erreur OAuth : ${authError}`);
     return false;
   }
 
-  if (authToken && authUserStr) {
+  if (authCode) {
+    const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "spritedex_oauth_exchange_verifier";
+    const verifier = sessionStorage.getItem(verifierKey);
+    if (!verifier) {
+      toast("Connexion sécurisée expirée. Réessaie.");
+      return false;
+    }
     try {
-      const user = JSON.parse(authUserStr);
-      localStorage.setItem(TOKEN_KEY, authToken);
+      const response = await fetch(`${API_BASE}/auth/oauth/exchange`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: authCode, verifier })
+      });
+      const user = await response.json().catch(() => ({}));
+      if (!response.ok || !user.token) {
+        throw new Error(user.error || "Connexion OAuth expirée. Réessaie.");
+      }
+      sessionStorage.removeItem(verifierKey);
+      localStorage.setItem(TOKEN_KEY, user.token);
       localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
       if (user.avatar_url) localStorage.setItem("spritedex_avatar", user.avatar_url);
       localStorage.setItem("spritedex_email_verified", "true");
@@ -108,6 +125,7 @@ async function applyAuthParams(params) {
       return true;
     } catch (e) {
       console.error("OAuth return parse error:", e);
+      toast(e.message || "Connexion OAuth impossible. Réessaie.");
     }
   }
   return false;
@@ -129,7 +147,7 @@ async function handleOAuthReturn() {
     }
   }
 
-  if (params.get("authError") || (params.get("authToken") && params.get("authUser"))) {
+  if (params.get("authError") || params.get("authCode")) {
     history.replaceState(null, "", location.pathname);
     return applyAuthParams(params);
   }
@@ -179,7 +197,10 @@ async function init() {
         handleInviteLink();
         setupNotifBell();
         checkNewsNotifications();
-        if (window.PushClient) window.PushClient.register();
+        if (window.PushClient) {
+          window.PushClient.register();
+          if (window.PushClient.checkReactivation) window.PushClient.checkReactivation();
+        }
         return;
       } else {
         localStorage.removeItem(TOKEN_KEY);
@@ -203,7 +224,10 @@ async function init() {
       handleInviteLink();
       setupNotifBell();
       checkNewsNotifications();
-      if (window.PushClient) window.PushClient.register();
+      if (window.PushClient) {
+        window.PushClient.register();
+        if (window.PushClient.checkReactivation) window.PushClient.checkReactivation();
+      }
       return;
     }
   }

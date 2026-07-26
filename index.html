@@ -36,93 +36,9 @@
     <link rel="stylesheet" href="css/legal.css" />
     <link rel="stylesheet" href="css/utility.css" />
     <link rel="stylesheet" href="css/responsive.css" />
-    <style>
-      #videoSplash {
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        background: #0a0e1a;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.5s ease;
-        cursor: pointer;
-        user-select: none;
-      }
-      #videoSplash.is-hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
-      #videoSplash video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      #videoSplash__skip {
-        position: absolute;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 8px 18px;
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 999px;
-        color: rgba(255,255,255,0.7);
-        font-family: 'Rajdhani', sans-serif;
-        font-size: 0.8rem;
-        letter-spacing: 0.03em;
-        pointer-events: none;
-      }
-    </style>
+    <link rel="stylesheet" href="css/desktop.css" />
   </head>
   <body>
-    <div id="videoSplash" aria-hidden="true">
-      <video id="videoSplashVid" src="splashScreen.mp4" muted playsinline autoplay preload="metadata"></video>
-      <div id="videoSplash__skip">Appuie pour passer</div>
-    </div>
-    <script>
-      (function () {
-        var overlay = document.getElementById("videoSplash");
-        var vid = document.getElementById("videoSplashVid");
-        if (!overlay || !vid) return;
-
-        // Splash screen is only wanted in the native Capacitor app, not on the website.
-        var isNative = typeof window !== "undefined" && window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform();
-        if (!isNative) {
-          overlay.parentNode.removeChild(overlay);
-          return;
-        }
-
-        // Show splash at most once per day per device.
-        var SPLASH_KEY = "spritedex_splash_seen";
-        var lastSeen = localStorage.getItem(SPLASH_KEY);
-        var oneDay = 24 * 60 * 60 * 1000;
-        if (lastSeen && Date.now() - parseInt(lastSeen, 10) < oneDay) {
-          overlay.parentNode.removeChild(overlay);
-          return;
-        }
-
-        var done = false;
-        function hide() {
-          if (done) return;
-          done = true;
-          try { localStorage.setItem(SPLASH_KEY, String(Date.now())); } catch (e) {}
-          if (vid && vid.pause) try { vid.pause(); } catch (e) {}
-          overlay.classList.add("is-hidden");
-          setTimeout(function () {
-            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-          }, 500);
-        }
-        vid.addEventListener("ended", hide);
-        vid.addEventListener("error", hide);
-        overlay.addEventListener("click", hide);
-        overlay.addEventListener("touchstart", hide, { passive: true });
-        // Safety net: never block the app for more than 5s
-        setTimeout(hide, 5000);
-        var p = vid.play();
-        if (p && p.catch) p.catch(hide);
-      })();
-    </script>
     <div class="login-screen" id="loginScreen">
       <div class="login-card">
         <img src="LogoApp.png" alt="SPRITNEX" class="login-logo" />
@@ -209,11 +125,11 @@
           <div class="login-form active" id="loginFormRegister">
             <input type="text" id="registerUsername" class="login-input" placeholder="Pseudo" maxlength="50" autocomplete="username" />
             <input type="email" id="registerEmail" class="login-input" placeholder="Email" autocomplete="email" />
-            <input type="password" id="registerPassword" class="login-input" placeholder="Mot de passe (min 6 car.)" autocomplete="new-password" />
+            <input type="password" id="registerPassword" class="login-input" placeholder="Mot de passe (min 8 car.)" autocomplete="new-password" />
             <label class="cgu-check" id="registerCguLabel">
               <input type="checkbox" id="registerCgu" />
               <span class="cgu-check__box"></span>
-              <span class="cgu-check__text">J'accepte les <button class="onboarding-link" type="button" onclick="openLegal('cgu')">Conditions générales d'utilisation</button> et la <button class="onboarding-link" type="button" onclick="openLegal('politique-confidentialite')">Politique de confidentialité</button>.</span>
+              <span class="cgu-check__text">J'accepte les <button class="onboarding-link" type="button" data-legal-doc="cgu">Conditions générales d'utilisation</button> et la <button class="onboarding-link" type="button" data-legal-doc="politique-confidentialite">Politique de confidentialité</button>.</span>
             </label>
             <label class="cgu-check" id="registerAgeLabel">
               <input type="checkbox" id="registerAge" />
@@ -309,9 +225,9 @@
         <p class="login-hint" id="loginHint"></p>
 
         <div class="login-legal-links">
-          <button class="onboarding-link" onclick="openLegal('privacyPolicy')">Politique de confidentialité</button>
+          <button class="onboarding-link" type="button" data-legal-doc="privacyPolicy">Politique de confidentialité</button>
           <span>•</span>
-          <button class="onboarding-link" onclick="openLegal('mentionsLegales')">Mentions légales</button>
+          <button class="onboarding-link" type="button" data-legal-doc="mentionsLegales">Mentions légales</button>
         </div>
 
         <p class="legal-disclaimer">SPRITNEX est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
@@ -329,13 +245,24 @@
               <svg class="notif-bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               <span class="notif-bell__badge" id="notifBadge" style="display:none">0</span>
             </button>
-            <div class="notif-dropdown" id="notifDropdown" style="display:none">
+            <div class="notif-dropdown notif-center" id="notifDropdown" style="display:none" role="dialog" aria-label="Notifications">
               <div class="notif-dropdown__header">
-                <span class="notif-dropdown__title">Actus Sprites</span>
-                <button class="notif-dropdown__close" id="notifClose">✕</button>
+                <span class="notif-dropdown__title">Notifications</span>
+                <div class="notif-dropdown__header-actions">
+                  <button type="button" class="notif-dropdown__mark-read" id="notifMarkAllRead" title="Tout marquer comme lu">Tout lu</button>
+                  <button type="button" class="notif-dropdown__close" id="notifClose" aria-label="Fermer">✕</button>
+                </div>
+              </div>
+              <div class="notif-center__filters" id="notifFilters" role="tablist" aria-label="Filtres">
+                <button type="button" class="notif-filter active" data-notif-filter="all">Toutes</button>
+                <button type="button" class="notif-filter" data-notif-filter="social">Social</button>
+                <button type="button" class="notif-filter" data-notif-filter="collection">Collections</button>
+                <button type="button" class="notif-filter" data-notif-filter="squads">Squads</button>
+                <button type="button" class="notif-filter" data-notif-filter="alerts">Alertes</button>
+                <button type="button" class="notif-filter" data-notif-filter="unread">Non lues</button>
               </div>
               <div class="notif-dropdown__list" id="notifList">
-                <p class="notif-dropdown__empty">Aucune actu récente.</p>
+                <p class="notif-dropdown__empty">Aucune notification.</p>
               </div>
             </div>
           </div>
@@ -444,36 +371,170 @@
             </div>
           </div>
 
-          <!-- Notifications -->
-          <div class="account-section">
+          <!-- Notifications (Étape 49) -->
+          <div class="account-section" id="notifSettingsSection">
             <h3 class="account-section__title">Notifications</h3>
-            <div class="account-row">
-              <span class="account-row__label">Nouveaux sprites</span>
-              <label class="toggle"><input type="checkbox" id="notifNewSprites" checked /><span class="toggle__slider"></span></label>
-            </div>
-            <div class="account-row">
-              <span class="account-row__label">Nouvelles variantes</span>
-              <label class="toggle"><input type="checkbox" id="notifNewVariants" checked /><span class="toggle__slider"></span></label>
-            </div>
-            <div class="account-row">
-              <span class="account-row__label">Activité de squad</span>
-              <label class="toggle"><input type="checkbox" id="notifSquadActivity" checked /><span class="toggle__slider"></span></label>
-            </div>
-            <div class="account-row">
-              <span class="account-row__label">Résumé de session</span>
-              <label class="toggle"><input type="checkbox" id="notifSessionSummary" checked /><span class="toggle__slider"></span></label>
-            </div>
-            <div class="account-row">
-              <span class="account-row__label">Objectifs</span>
-              <label class="toggle"><input type="checkbox" id="notifGoals" checked /><span class="toggle__slider"></span></label>
-            </div>
-            <div class="account-row">
-              <span class="account-row__label">Synchronisation</span>
-              <label class="toggle"><input type="checkbox" id="notifSync" checked /><span class="toggle__slider"></span></label>
-            </div>
-            <div class="account-row">
-              <span class="account-row__label">Actus / news</span>
-              <label class="toggle"><input type="checkbox" id="notifNews" checked /><span class="toggle__slider"></span></label>
+            <div class="notif-settings" id="notifSettings">
+              <div class="notif-settings__group">
+                <h4 class="notif-settings__group-title">Canaux</h4>
+                <div class="account-row">
+                  <span class="account-row__label">Dans l'application</span>
+                  <label class="toggle"><input type="checkbox" id="notifChannelInApp" data-notif-channel="in_app" checked /><span class="toggle__slider"></span></label>
+                </div>
+                <div class="account-row">
+                  <span class="account-row__label">Notifications push</span>
+                  <label class="toggle"><input type="checkbox" id="notifChannelPush" data-notif-channel="push" checked /><span class="toggle__slider"></span></label>
+                </div>
+                <div class="account-row">
+                  <span class="account-row__label">E-mails</span>
+                  <label class="toggle"><input type="checkbox" id="notifChannelEmail" data-notif-channel="email" checked /><span class="toggle__slider"></span></label>
+                </div>
+              </div>
+
+              <div class="notif-settings__group">
+                <h4 class="notif-settings__group-title">Social</h4>
+                <div class="notif-delivery" data-notif-delivery="friend_request_accepted">
+                  <p class="notif-delivery__title">Invitations d'amis acceptées</p>
+                  <div class="account-row">
+                    <span class="account-row__label">Dans l'application</span>
+                    <label class="toggle"><input type="checkbox" data-notif-in-app="friend_request_accepted" checked /><span class="toggle__slider"></span></label>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Push</span>
+                    <select class="account-row__select" data-notif-push="friend_request_accepted" aria-label="Push — invitation acceptée">
+                      <option value="enabled" selected>Activé</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="notif-settings__group">
+                <h4 class="notif-settings__group-title">Collections et squads</h4>
+                <div class="notif-delivery" data-notif-delivery="friend_acquired_missing_variant">
+                  <p class="notif-delivery__title">Un ami possède une variante qui me manque</p>
+                  <div class="account-row">
+                    <span class="account-row__label">Dans l'application</span>
+                    <label class="toggle"><input type="checkbox" data-notif-in-app="friend_acquired_missing_variant" checked /><span class="toggle__slider"></span></label>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Push</span>
+                    <select class="account-row__select" data-notif-push="friend_acquired_missing_variant" aria-label="Push — variante manquante chez un ami">
+                      <option value="enabled">Activé</option>
+                      <option value="priorities_only" selected>Activé seulement pour les priorités</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Fréquence</span>
+                    <select class="account-row__select" data-notif-frequency="friend_acquired_missing_variant" aria-label="Fréquence — variante manquante chez un ami">
+                      <option value="immediate" selected>Immédiatement</option>
+                      <option value="daily_digest">Résumé quotidien</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                    <p class="notif-settings__hint">Les acquisitions multiples peuvent être regroupées dans un résumé quotidien.</p>
+                  </div>
+                </div>
+                <div class="notif-delivery" data-notif-delivery="squad_completion_increased">
+                  <p class="notif-delivery__title">Progression de mes squads</p>
+                  <div class="account-row">
+                    <span class="account-row__label">Dans l'application</span>
+                    <label class="toggle"><input type="checkbox" data-notif-in-app="squad_completion_increased" checked /><span class="toggle__slider"></span></label>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Push</span>
+                    <select class="account-row__select" data-notif-push="squad_completion_increased" aria-label="Push — progression de squad">
+                      <option value="enabled">Activé</option>
+                      <option value="milestones_only" selected>Paliers importants uniquement</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="notif-settings__group">
+                <h4 class="notif-settings__group-title">Priorités et événements</h4>
+                <div class="notif-delivery" data-notif-delivery="priority_variant_available">
+                  <p class="notif-delivery__title">Une variante prioritaire devient disponible</p>
+                  <div class="account-row">
+                    <span class="account-row__label">Dans l'application</span>
+                    <label class="toggle"><input type="checkbox" data-notif-in-app="priority_variant_available" checked /><span class="toggle__slider"></span></label>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Push</span>
+                    <select class="account-row__select" data-notif-push="priority_variant_available" aria-label="Push — variante prioritaire disponible">
+                      <option value="enabled" selected>Activé</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Fréquence</span>
+                    <select class="account-row__select" data-notif-frequency="priority_variant_available" aria-label="Fréquence — variante prioritaire disponible">
+                      <option value="immediate" selected>Immédiatement</option>
+                      <option value="daily_digest">Résumé quotidien</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="notif-delivery" data-notif-delivery="wanted_event_ending_soon">
+                  <p class="notif-delivery__title">Un événement recherché se termine bientôt</p>
+                  <div class="account-row">
+                    <span class="account-row__label">Dans l'application</span>
+                    <label class="toggle"><input type="checkbox" data-notif-in-app="wanted_event_ending_soon" checked /><span class="toggle__slider"></span></label>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Push</span>
+                    <select class="account-row__select" data-notif-push="wanted_event_ending_soon" aria-label="Push — événement bientôt terminé">
+                      <option value="enabled" selected>Activé</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                  <div class="account-row account-row--stack">
+                    <span class="account-row__label">Fréquence</span>
+                    <select class="account-row__select" data-notif-frequency="wanted_event_ending_soon" aria-label="Fréquence — événement bientôt terminé">
+                      <option value="immediate" selected>Immédiatement</option>
+                      <option value="daily_digest">Résumé quotidien</option>
+                      <option value="disabled">Désactivé</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="notif-settings__group">
+                <h4 class="notif-settings__group-title">Confort</h4>
+                <div class="account-row account-row--stack">
+                  <span class="account-row__label">Heures silencieuses</span>
+                  <div class="notif-settings__quiet">
+                    <label class="notif-settings__quiet-field">
+                      <span>De</span>
+                      <select class="account-row__select" id="notifQuietStart" aria-label="Début des heures silencieuses"></select>
+                    </label>
+                    <label class="notif-settings__quiet-field">
+                      <span>à</span>
+                      <select class="account-row__select" id="notifQuietEnd" aria-label="Fin des heures silencieuses"></select>
+                    </label>
+                  </div>
+                  <p class="notif-settings__hint">Les push non urgents sont reportés pendant cette plage (fuseau local).</p>
+                </div>
+                <div class="account-row account-row--stack">
+                  <span class="account-row__label">Fuseau horaire</span>
+                  <select class="account-row__select" id="notifTimezone" aria-label="Fuseau horaire"></select>
+                </div>
+                <div class="account-row account-row--stack">
+                  <span class="account-row__label">Maximum de push par jour</span>
+                  <select class="account-row__select" id="notifMaxPushPerDay" aria-label="Maximum de notifications push par jour">
+                    <option value="8" selected>8 (recommandé)</option>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                    <option value="0">Illimité</option>
+                  </select>
+                  <p class="notif-settings__hint">Limite de sécurité pour les notifications SpriteDex ordinaires. Les alertes critiques (sécurité, juridique, service) ne sont pas plafonnées.</p>
+                </div>
+              </div>
+
+              <p class="notif-settings__status" id="notifSettingsStatus" hidden></p>
             </div>
           </div>
 
@@ -498,43 +559,43 @@
           <div class="account-section">
             <h3 class="account-section__title">Informations et confidentialité</h3>
             <div class="legal-menu">
-              <button class="legal-menu__item" onclick="openLegal('mentions-legales')">
+              <button class="legal-menu__item" type="button" data-legal-doc="mentions-legales">
                 <span>Mentions légales</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('politique-confidentialite')">
+              <button class="legal-menu__item" type="button" data-legal-doc="politique-confidentialite">
                 <span>Politique de confidentialité</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('cgu')">
+              <button class="legal-menu__item" type="button" data-legal-doc="cgu">
                 <span>Conditions générales d'utilisation</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('cookies')">
+              <button class="legal-menu__item" type="button" data-legal-doc="cookies">
                 <span>Confidentialité et traceurs</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('donnees-personnelles')">
+              <button class="legal-menu__item" type="button" data-legal-doc="donnees-personnelles">
                 <span>Gérer mes données</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('suppression-compte')">
+              <button class="legal-menu__item" type="button" data-legal-doc="suppression-compte">
                 <span>Supprimer mon compte</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('contact')">
+              <button class="legal-menu__item" type="button" data-legal-doc="contact">
                 <span>Contacter le support</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('signalement')">
+              <button class="legal-menu__item" type="button" data-legal-doc="signalement">
                 <span>Signaler un contenu</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('regles-communautaires')">
+              <button class="legal-menu__item" type="button" data-legal-doc="regles-communautaires">
                 <span>Règles communautaires</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="legal-menu__item" onclick="openLegal('licences')">
+              <button class="legal-menu__item" type="button" data-legal-doc="licences">
                 <span>Licences et crédits</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -1126,7 +1187,7 @@
 
     <dialog id="legalDialog" class="legal-dialog">
       <div class="dialog-card">
-        <button class="close-button" onclick="document.getElementById('legalDialog').close()">×</button>
+        <button class="close-button" type="button" data-legal-close>×</button>
         <div class="legal-dialog__content" id="legalContent"></div>
       </div>
     </dialog>

@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Desktop workspace
+   The application stays touch-first below 1024px.  Above that breakpoint the
+   same views become a keyboard/mouse-friendly workspace with a persistent
+   rail, broad content panels and denser data layouts.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  :root {
+    --desktop-rail-width: 244px;
+    --desktop-content-width: 1520px;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse at 8% 15%, rgba(141, 124, 255, 0.19), transparent 31%),
+      radial-gradient(ellipse at 92% 90%, rgba(0, 225, 255, 0.13), transparent 32%),
+      linear-gradient(135deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+
+  .app-shell {
+    width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 28px 44px 56px calc(var(--desktop-rail-width) + 68px);
+  }
+
+  .app-shell::before {
+    content: "";
+    position: fixed;
+    z-index: 90;
+    top: 18px;
+    bottom: 18px;
+    left: 18px;
+    width: calc(var(--desktop-rail-width) + 18px);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background:
+      linear-gradient(180deg, rgba(15, 25, 60, 0.9), rgba(8, 13, 34, 0.78)),
+      var(--surface);
+    box-shadow: 0 18px 70px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    pointer-events: none;
+  }
+
+  .topbar,
+  .hero-card,
+  .sync-bar,
+  .email-banner,
+  main {
+    width: min(100%, var(--desktop-content-width));
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .topbar {
+    min-height: 66px;
+    margin-bottom: 24px;
+    padding: 0 0 18px;
+  }
+
+  .topbar-logo {
+    height: 48px;
+  }
+
+  .topbar-actions {
+    gap: 12px;
+  }
+
+  .hero-card {
+    min-height: 148px;
+    margin-bottom: 28px;
+    padding: 28px 32px;
+    border-radius: 24px;
+  }
+
+  .progress-line strong {
+    font-size: clamp(3.8rem, 5vw, 5.8rem);
+  }
+
+  .ring {
+    width: 112px;
+    height: 112px;
+  }
+
+  /* Persistent desktop navigation.  The actual mobile tabs remain the source
+     of truth, so all current JavaScript navigation continues to work. */
+  .tabs {
+    position: fixed;
+    z-index: 100;
+    top: 104px;
+    bottom: 38px;
+    left: 32px;
+    width: 216px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 54px 10px 12px;
+  }
+
+  .tabs::before {
+    content: "NAVIGATION";
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    color: var(--muted);
+    font-family: var(--font-heading);
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+  }
+
+  .tab {
+    width: 100%;
+    min-height: 48px;
+    padding: 13px 16px;
+    border-color: transparent;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--muted);
+    text-align: left;
+    letter-spacing: 0.08em;
+    box-shadow: none;
+  }
+
+  .tab:hover {
+    transform: none;
+    border-color: var(--line);
+    background: rgba(255, 255, 255, 0.045);
+    box-shadow: none;
+  }
+
+  .tab.active,
+  .tab.active:hover {
+    transform: none;
+    border-color: rgba(0, 225, 255, 0.26);
+    background: linear-gradient(90deg, rgba(0, 225, 255, 0.18), rgba(141, 124, 255, 0.15));
+    box-shadow: inset 3px 0 0 var(--accent-2), 0 0 18px rgba(0, 225, 255, 0.08);
+  }
+
+  main {
+    min-width: 0;
+  }
+
+  .view.active {
+    animation: desktop-view-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes desktop-view-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* A desktop swipe view becomes a two-column work area: card on the left,
+     deliberate mouse/keyboard actions on the right. */
+  #view-swipe.active {
+    display: grid;
+    grid-template-columns: minmax(400px, 610px) minmax(250px, 360px);
+    grid-template-areas:
+      "toolbar actions"
+      "deck actions"
+      "hint hint";
+    align-items: center;
+    justify-content: center;
+    gap: 18px 48px;
+    min-height: 650px;
+  }
+
+  #view-swipe .deck-toolbar { grid-area: toolbar; margin: 0; }
+  #view-swipe .deck-zone { grid-area: deck; min-height: 560px; }
+  #view-swipe .swipe-actions {
+    grid-area: actions;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-self: stretch;
+    align-content: center;
+    gap: 14px;
+  }
+  #view-swipe .hint { grid-area: hint; margin: 0; text-align: center; }
+
+  .sprite-card {
+    width: min(440px, 100%);
+    min-height: 530px;
+  }
+
+  .swipe-actions .action {
+    min-height: 112px;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 0.8rem;
+  }
+
+  .swipe-actions .action-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Filters and data density are useful with a pointer and a wide viewport. */
+  .checklist-toolbar {
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) auto;
+    align-items: center;
+    gap: 14px 18px;
+    margin-bottom: 18px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+  }
+
+  .checklist-toolbar .search-box { grid-column: 1; grid-row: 1; }
+  .checklist-toolbar .sort-bar { grid-column: 2; grid-row: 1; }
+  .checklist-toolbar .filter-chips-bar {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .bulk-actions {
+    justify-content: flex-end;
+    margin-bottom: 18px;
+  }
+
+  .cl-sprite__header {
+    padding: 16px 20px;
+  }
+
+  /* Stats use the horizontal space as a dashboard rather than a stacked
+     mobile feed. */
+  .stats-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(330px, 0.8fr);
+    align-items: start;
+    gap: 20px;
+  }
+
+  .stats-page > .stats-hero { grid-column: 1; margin: 0; min-height: 172px; }
+  .stats-page > .stats-kpis {
+    grid-column: 2;
+    margin: 0;
+    height: 100%;
+    align-content: stretch;
+  }
+  .stats-page > .stats-module { margin: 0; }
+  .stats-page > .stats-insights,
+  .stats-page > #communityStats { grid-column: 1 / -1; }
+
+  .stats-kpi {
+    display: grid;
+    align-content: center;
+    min-height: 100%;
+  }
+
+  /* Social, squad and comparison areas become panel-oriented rather than
+     full-width phone lists. */
+  .social-tabs {
+    justify-content: flex-start;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .social-tab {
+    flex: 0 0 auto;
+    padding: 12px 22px;
+    border: 1px solid transparent;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .social-tab.active {
+    border-color: var(--line);
+    border-bottom-color: var(--accent);
+    background: var(--surface);
+  }
+
+  .friends-toolbar {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) auto auto;
+    margin-bottom: 18px;
+  }
+
+  #friendsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 12px;
+  }
+
+  .friend-item {
+    min-height: 82px;
+    padding: 14px;
+  }
+
+  .squad-cards {
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  }
+
+  .squad-table-wrap,
+  .compare-table__wrap {
+    max-height: min(68vh, 760px);
+  }
+
+  .compare-summary-grid {
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .app-shell {
+    padding-right: 64px;
+    padding-left: calc(var(--desktop-rail-width) + 88px);
+  }
+
+  .hero-card {
+    min-height: 164px;
+  }
+
+  #view-swipe.active {
+    grid-template-columns: minmax(460px, 650px) minmax(280px, 390px);
+    gap: 24px 72px;
+  }
+
+  .stats-page {
+    grid-template-columns: minmax(0, 1.35fr) minmax(370px, 0.8fr);
+  }
+}

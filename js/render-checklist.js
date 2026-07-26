@@ -131,7 +131,7 @@ function renderChecklist() {
     const total = variants.length;
     const pct = total ? Math.round((owned / total) * 100) : 0;
     const isExpanded = state.expandedSprite === sprite.id;
-    const baseImg = getSpriteImg(sprite.id, "Base");
+    const baseImg = safeImageUrl(getSpriteImg(sprite.id, "Base"));
 
     let variantFilter = null;
     if (state.checklistFilter.startsWith("variant:")) {
@@ -142,17 +142,17 @@ function renderChecklist() {
       : variants;
 
     return `
-      <article class="cl-sprite ${isExpanded ? "cl-sprite--open" : ""}" style="--card-color:${sprite.color}" data-sprite-id="${sprite.id}" data-rarity="${sprite.rarity}">
-        <div class="cl-sprite__header" data-toggle="${sprite.id}">
-          <div class="cl-sprite__avatar">${baseImg ? `<img src="${baseImg}" alt="${sprite.name}" class="cl-sprite__img" />` : `<span class="avatar-placeholder">?</span>`}</div>
+      <article class="cl-sprite ${isExpanded ? "cl-sprite--open" : ""}" style="--card-color:${safeCssColor(sprite.color)}" data-sprite-id="${escapeHtml(String(sprite.id || ""))}" data-rarity="${escapeHtml(sprite.rarity)}">
+        <div class="cl-sprite__header" data-toggle="${escapeHtml(String(sprite.id || ""))}">
+          <div class="cl-sprite__avatar">${baseImg ? `<img src="${escapeHtml(baseImg)}" alt="${escapeHtml(sprite.name)}" class="cl-sprite__img" />` : `<span class="avatar-placeholder">?</span>`}</div>
           <div class="cl-sprite__info">
-            <h3 class="cl-sprite__name">${sprite.name}</h3>
-            <p class="cl-sprite__meta">${sprite.rarity} · ${owned}/${total} variantes ${sprite.confidence ? `<span class="cl-confidence cl-confidence--${sprite.confidence}">${sprite.confidence}</span>` : ""}</p>
+            <h3 class="cl-sprite__name">${escapeHtml(sprite.name)}</h3>
+            <p class="cl-sprite__meta">${escapeHtml(sprite.rarity)} · ${owned}/${total} variantes ${sprite.confidence ? `<span class="cl-confidence cl-confidence--${confidenceClass(sprite.confidence)}">${escapeHtml(sprite.confidence)}</span>` : ""}</p>
           </div>
           <div class="cl-sprite__bar">
             <div class="cl-sprite__bar-fill" style="width:${pct}%"></div>
           </div>
-          <button class="cl-sprite__detail" data-sprite-detail="${sprite.id}" title="Fiche complète">
+          <button class="cl-sprite__detail" data-sprite-detail="${escapeHtml(String(sprite.id || ""))}" title="Fiche complète">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
           <svg class="cl-sprite__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -165,23 +165,23 @@ function renderChecklist() {
               ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(vPrio)}">${priorityLabel(vPrio)}</span>`
               : "";
             return `
-            <div class="cl-variant" data-variant-id="${v.id}">
+            <div class="cl-variant" data-variant-id="${escapeHtml(String(v.id || ""))}">
               <div class="cl-variant__left">
-                <div class="cl-variant__thumb">${v.img ? `<img src="${v.img}" class="cl-variant__img" />` : `<span>?</span>`}</div>
-                <span class="cl-variant__name">${v.name} ${vPrioBadge}</span>
+                <div class="cl-variant__thumb">${v.img ? `<img src="${escapeHtml(safeImageUrl(v.img))}" class="cl-variant__img" />` : `<span>?</span>`}</div>
+                <span class="cl-variant__name">${escapeHtml(v.name)} ${vPrioBadge}</span>
               </div>
               <div class="cl-variant__status">${statusEmoji(v.entry.status)} <span>${statusLabel(v.entry.status)}</span></div>
               <div class="cl-variant__actions">
-                <button class="cl-btn cl-btn--owned ${v.entry.status === "owned" ? "active" : ""}" data-id="${v.id}" data-status="owned" title="Possédé">
+                <button class="cl-btn cl-btn--owned ${v.entry.status === "owned" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="owned" title="Possédé">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </button>
-                <button class="cl-btn cl-btn--missing ${v.entry.status === "missing" ? "active" : ""}" data-id="${v.id}" data-status="missing" title="Manquant">
+                <button class="cl-btn cl-btn--missing ${v.entry.status === "missing" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="missing" title="Manquant">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
-                <button class="cl-btn cl-btn--priority ${v.entry.status === "priority" ? "active" : ""}" data-id="${v.id}" data-status="priority" title="Prioritaire">
+                <button class="cl-btn cl-btn--priority ${v.entry.status === "priority" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="priority" title="Prioritaire">
                   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 </button>
-                <button class="cl-btn cl-btn--unsure ${v.entry.status === "unsure" ? "active" : ""}" data-id="${v.id}" data-status="unsure" title="À vérifier">
+                <button class="cl-btn cl-btn--unsure ${v.entry.status === "unsure" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="unsure" title="À vérifier">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
                 </button>
               </div>

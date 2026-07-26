@@ -1,16 +1,16 @@
 // friends/routes-invite-links.js — create / list / revoke / view / redeem / QR /
 // regenerate friend invite links.
 
-const { getRequestingUser, isBlocked, isAccountSuspended } = require("../auth");
+const { getRequestingUser, isBlocked, isAccountSuspended, requireNotSuspended } = require("../auth");
 const { app } = require("../core");
 const { pool } = require("../db");
 const security = require("../../security");
 const QRCode = require("qrcode");
 const { pairWhereClause, getActiveFriendship, recentRequestCooldown } = require("./helpers");
-const { generateInviteToken, computeInviteLinkMeta, fetchInviteLink, buildLinkUrl } = require("./invite-links-helpers");
+const { generateInviteToken, hashInviteToken, computeInviteLinkMeta, fetchInviteLink, buildLinkUrl } = require("./invite-links-helpers");
 
 // ── Create a friend invite link ─────────────────────────────────────────────
-app.post("/api/friends/invite-links", security.validateBody(security.schemas.friendInviteLinkCreateSchema), async (req, res) => {
+app.post("/api/friends/invite-links", security.capabilityLinkLimiter, security.validateBody(security.schemas.friendInviteLinkCreateSchema), async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   if (await isAccountSuspended(reqUser)) {
@@ -19,13 +19,33 @@ app.post("/api/friends/invite-links", security.validateBody(security.schemas.fri
   const { duration } = req.validatedBody;
   const { expiresAt, maxUses } = computeInviteLinkMeta(duration);
   const token = generateInviteToken();
+  const tokenHash = hashInviteToken(token);
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
-      `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
-       VALUES ($1, $2, $3, $4) RETURNING id, token_hash, expires_at, max_uses, use_count, created_at`,
-      [reqUser, token, expiresAt, maxUses]
+    await client.query("BEGIN");
+    // Serialize capacity checks per owner. An IP limiter alone can be bypassed
+    // by concurrent requests from multiple addresses on the same account.
+    await client.query("SELECT pg_advisory_xact_lock($1::bigint)", [reqUser]);
+    const activeCount = await client.query(
+      `SELECT COUNT(*)::int AS count
+       FROM friend_invite_links
+       WHERE owner_id = $1
+         AND revoked_at IS NULL
+         AND (expires_at IS NULL OR expires_at > NOW())
+         AND (max_uses IS NULL OR use_count < max_uses)`,
+      [reqUser]
     );
+    if ((activeCount.rows[0]?.count || 0) >= 25) {
+      await client.query("ROLLBACK");
+      return res.status(429).json({ error: "Trop de liens actifs : révoque un lien avant d'en créer un autre" });
+    }
+    const result = await client.query(
+      `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
+       VALUES ($1, $2, $3, $4) RETURNING id, expires_at, max_uses, use_count, created_at`,
+      [reqUser, tokenHash, expiresAt, maxUses]
+    );
+    await client.query("COMMIT");
     const link = result.rows[0];
     res.status(201).json({
       id: link.id,
@@ -37,8 +57,11 @@ app.post("/api/friends/invite-links", security.validateBody(security.schemas.fri
       createdAt: link.created_at
     });
   } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error("[/api/friends/invite-links]", err);
     res.status(500).json({ error: "Erreur serveur" });
+  } finally {
+    client.release();
   }
 });
 
@@ -48,7 +71,7 @@ app.get("/api/friends/invite-links", async (req, res) => {
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
     const result = await pool.query(
-      `SELECT id, token_hash, expires_at, max_uses, use_count, revoked_at, created_at
+      `SELECT id, expires_at, max_uses, use_count, revoked_at, created_at
        FROM friend_invite_links
        WHERE owner_id = $1
        ORDER BY created_at DESC`,
@@ -60,7 +83,6 @@ app.get("/api/friends/invite-links", async (req, res) => {
       const depleted = link.max_uses !== null && link.use_count >= link.max_uses;
       return {
         id: link.id,
-        token: link.token_hash,
         expiresAt: link.expires_at,
         maxUses: link.max_uses,
         useCount: link.use_count,
@@ -79,7 +101,7 @@ app.get("/api/friends/invite-links", async (req, res) => {
 });
 
 // ── Revoke an invite link ─────────────────────────────────────────────────────
-app.delete("/api/friends/invite-links/:id", async (req, res) => {
+app.delete("/api/friends/invite-links/:id", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -139,16 +161,18 @@ app.get("/api/friends/invite-links/:token", async (req, res) => {
 });
 
 // ── Redeem a friend invite link ──────────────────────────────────────────────
-app.post("/api/friends/invite-links/:token/use", async (req, res) => {
+app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   const token = req.params.token;
+  const tokenHash = hashInviteToken(token);
+  if (!tokenHash) return res.status(404).json({ error: "Lien introuvable" });
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const linkResult = await client.query(
       "SELECT * FROM friend_invite_links WHERE token_hash = $1 FOR UPDATE",
-      [token]
+      [tokenHash]
     );
     if (!linkResult.rows.length) {
       await client.query("ROLLBACK");
@@ -230,19 +254,21 @@ app.get("/api/friends/invite-links/:token/qr", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   const token = req.params.token;
+  const tokenHash = hashInviteToken(token);
+  if (!tokenHash) return res.status(404).json({ error: "Lien introuvable" });
   try {
     const result = await pool.query(
       `SELECT token_hash, revoked_at, expires_at, max_uses, use_count
        FROM friend_invite_links
        WHERE token_hash = $1 AND owner_id = $2`,
-      [token, reqUser]
+      [tokenHash, reqUser]
     );
     if (!result.rows.length) return res.status(404).json({ error: "Lien introuvable" });
     const link = result.rows[0];
     if (link.revoked_at || (link.expires_at && new Date(link.expires_at) < new Date()) || (link.max_uses !== null && link.use_count >= link.max_uses)) {
       return res.status(410).json({ error: "Lien expiré ou révoqué" });
     }
-    const url = buildLinkUrl(req, link.token_hash);
+    const url = buildLinkUrl(req, token);
     const qr = await QRCode.toDataURL(url, { type: "image/png", margin: 2, width: 300, errorCorrectionLevel: "M" });
     res.json({ qr, url });
   } catch (err) {
@@ -253,7 +279,7 @@ app.get("/api/friends/invite-links/:token/qr", async (req, res) => {
 
 // ── Regenerate an invite link token ───────────────────────────────────────────
 // Keeps the same duration settings, but creates a new token and revokes the old one.
-app.post("/api/friends/invite-links/:id/regenerate", async (req, res) => {
+app.post("/api/friends/invite-links/:id/regenerate", security.capabilityLinkLimiter, requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   const client = await pool.connect();
@@ -272,18 +298,19 @@ app.post("/api/friends/invite-links/:id/regenerate", async (req, res) => {
     await client.query("UPDATE friend_invite_links SET revoked_at = NOW() WHERE id = $1", [oldLink.id]);
     // Create a fresh link with the same settings
     const token = generateInviteToken();
+    const tokenHash = hashInviteToken(token);
     const insert = await client.query(
       `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, token_hash, expires_at, max_uses, use_count, created_at`,
-      [reqUser, token, oldLink.expires_at, oldLink.max_uses]
+       RETURNING id, expires_at, max_uses, use_count, created_at`,
+      [reqUser, tokenHash, oldLink.expires_at, oldLink.max_uses]
     );
     await client.query("COMMIT");
     const link = insert.rows[0];
     res.status(201).json({
       id: link.id,
-      token: link.token_hash,
-      url: buildLinkUrl(req, link.token_hash),
+      token,
+      url: buildLinkUrl(req, token),
       expiresAt: link.expires_at,
       maxUses: link.max_uses,
       useCount: link.use_count,

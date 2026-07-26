@@ -57,13 +57,24 @@ async function setPrivacy(user, privacy) {
   assert.ok(res.ok, `set privacy failed: ${res.status}`);
 }
 
-async function setEntry(token, userId, variantId, status) {
+async function setEntry(token, userId, variantId, status, priority) {
+  const body = { status };
+  if (priority !== undefined) body.priority = priority;
   const res = await fetch(`${API}/collection/${userId}/${encodeURIComponent(variantId)}`, {
     method: "PUT",
     headers: authHeaders(token),
-    body: JSON.stringify({ status })
+    body: JSON.stringify(body)
   });
   assert.ok(res.ok, `setEntry ${variantId} failed: ${res.status}`);
+}
+
+async function setVisibility(user, visibility) {
+  const res = await fetch(`${API}/profile/${user.id}`, {
+    method: "PATCH",
+    headers: authHeaders(user.token),
+    body: JSON.stringify({ visibility })
+  });
+  assert.ok(res.ok, `set visibility failed: ${res.status}`);
 }
 
 async function resetCollection(token, userId) {
@@ -215,6 +226,37 @@ async function run() {
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
     assert.strictEqual(data.summary.insufficientData, true, "insufficientData should be true");
     assert.ok(!data.groups.bothOwned.length, "no owned rows with empty collections");
+  });
+
+  await test("hidden priorities cannot be inferred from comparison filters, scores or entry counts", async () => {
+    await prepare();
+    await setEntry(quentin.token, quentin.id, vOnlyA, "owned");
+    await setEntry(lucy.token, lucy.id, vOnlyA, "missing");
+    const baseline = await compare(quentin.id, lucy.id, quentin.token);
+    assert.strictEqual(baseline.status, 200);
+
+    // Populate the raw cache with a priority, then make it private.  The
+    // viewer must receive the same score as the non-priority baseline.
+    await setEntry(lucy.token, lucy.id, vOnlyA, "missing", "urgent");
+    await setVisibility(lucy, { priorities: "private" });
+
+    const unfiltered = await compare(quentin.id, lucy.id, quentin.token);
+    assert.strictEqual(unfiltered.status, 200);
+    const record = unfiltered.data.records.find(r => r.variantId === vOnlyA);
+    assert.ok(record, "priority fixture is missing from the comparison");
+    assert.strictEqual(record.userB.priority, "none", "hidden priority value leaked");
+    assert.strictEqual(unfiltered.data.summary.complementarityScore, baseline.data.summary.complementarityScore, "hidden priority leaked through complementarity score");
+    assert.strictEqual(unfiltered.data.summary.bEnteredCount, baseline.data.summary.bEnteredCount, "hidden priority changed summary entry count");
+    assert.strictEqual(unfiltered.data.users.userB.enteredCount, baseline.data.users.userB.enteredCount, "hidden priority changed user entry count");
+
+    const prioritiesOnly = await compare(quentin.id, lucy.id, quentin.token, { status: "priorities" });
+    assert.strictEqual(prioritiesOnly.status, 200);
+    assert.ok(
+      !prioritiesOnly.data.records.some(r => r.variantId === vOnlyA),
+      "hidden priority was discoverable through status=priorities"
+    );
+
+    await setVisibility(lucy, { priorities: "public" });
   });
 
   await test("rounding does not produce NaN or negative", async () => {

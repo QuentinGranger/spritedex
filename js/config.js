@@ -15,9 +15,13 @@ function isNativePlatform() {
   return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
 }
 
+function isDesktopPlatform() {
+  return window.SPRITEDEX_DESKTOP === true;
+}
+
 function resolveApiOrigin() {
   if (window.SPRITEDEX_API_ORIGIN) return window.SPRITEDEX_API_ORIGIN;
-  if (isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
+  if (isDesktopPlatform() || isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
     return PROD_API_ORIGIN;
   }
   const host = location.hostname;
@@ -31,7 +35,7 @@ function resolveApiOrigin() {
 let API_ORIGIN = resolveApiOrigin();
 
 function webOrigin() {
-  if (isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
+  if (isDesktopPlatform() || isNativePlatform() || location.protocol === "capacitor:" || location.protocol === "file:") {
     return PROD_API_ORIGIN;
   }
   if ((location.hostname === "localhost" || location.hostname === "127.0.0.1") && !location.port) {

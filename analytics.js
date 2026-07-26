@@ -187,15 +187,15 @@ async function getProductAnalyticsMetrics(pool, { days = 30 } = {}) {
 
     const invited = friendsInvited.rows[0].total || 0;
     const accepted = invitations.rows[0].accepted || 0;
-    const totalInv = invitations.rows[0].total || 1;
-    const recViewed = recommendationsViewed.rows[0].total || 1;
+    const totalInv = invitations.rows[0].total || 0;
+    const recViewed = recommendationsViewed.rows[0].total || 0;
 
     return {
       days,
       friendsInvitedToSquad: invited,
       recommendedFriendsInvited: recommendedFriendsInvited.rows[0].total || 0,
       recommendationUsageRate: recViewed ? Math.round(((recommendedFriendsInvited.rows[0].total || 0) / recViewed) * 10000) / 100 : 0,
-      invitationAcceptanceRate: Math.round((accepted / totalInv) * 10000) / 100,
+      invitationAcceptanceRate: totalInv ? Math.round((accepted / totalInv) * 10000) / 100 : 0,
       comparisonsLaunchedFromSquad: comparisonsFromSquad.rows[0].total || 0,
       sharedGoalsCreated: sharedGoalsCreated.rows[0].total || 0,
       sharedGoalsCompleted: sharedGoalsCompleted.rows[0].total || 0,

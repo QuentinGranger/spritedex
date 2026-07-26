@@ -3,11 +3,20 @@
 const analytics = require("../analytics");
 const security = require("../security");
 const secLog = require("../security-logger");
-const { canViewCollection, getRequestingUser, getVisibility, isBlocked, requireSameUser } = require("./auth");
+const { canViewCollection, getRequestingUser, getVisibility, hashCapabilityToken, isBlocked, requireNotSuspended, requireSameUser } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const crypto = require("crypto");
 const { invalidateSquadAnalysisCacheForUser } = require("./squad-analysis-cache");
+const { revokeUserSockets } = require("./ws");
+const { normalizeCookieConsent } = require("./consent");
+
+const consentLimiter = security.rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  keyPrefix: "consent",
+  message: "Trop de mises à jour du consentement. Réessaie dans quelques minutes."
+});
 
 // ── Profile : GET ──
 app.get("/api/profile/:userId", async (req, res) => {
@@ -33,6 +42,7 @@ app.get("/api/profile/:userId", async (req, res) => {
     if (!canViewProfile && !isSelf) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
+    const canViewActivity = isSelf || await canViewCollection(reqUser, profile.id, { visibilityKey: "activity" });
 
     const payload = {
       id: profile.id,
@@ -40,7 +50,9 @@ app.get("/api/profile/:userId", async (req, res) => {
       displayName: profile.display_name,
       avatarUrl: profile.avatar_url,
       createdAt: profile.created_at,
-      lastActiveAt: profile.last_active_at,
+      // Activity has its own granular visibility setting.  A public profile
+      // must not make the owner's last-seen timestamp public by accident.
+      lastActiveAt: canViewActivity ? profile.last_active_at : null,
       visibility
     };
     if (isSelf) {
@@ -56,13 +68,17 @@ app.get("/api/profile/:userId", async (req, res) => {
 });
 
 // ── Consent update (owner only) ──
-app.patch("/api/consent", async (req, res) => {
+app.patch("/api/consent", consentLimiter, requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const body = req.body || {};
-  const payload = body.cookieConsent && typeof body.cookieConsent === "object"
-    ? { ...body.cookieConsent, consentedAt: body.cookieConsent.consentedAt || new Date().toISOString() }
-    : { necessary: true, analytics: false, consentedAt: new Date().toISOString() };
+  const body = req.body == null ? {} : req.body;
+  const isPlainBody = body && typeof body === "object" && !Array.isArray(body) &&
+    (Object.getPrototypeOf(body) === Object.prototype || Object.getPrototypeOf(body) === null);
+  if (!isPlainBody || Object.keys(body).some(key => key !== "cookieConsent")) {
+    return res.status(400).json({ error: "Consentement invalide" });
+  }
+  const payload = normalizeCookieConsent(body.cookieConsent);
+  if (!payload) return res.status(400).json({ error: "Consentement invalide" });
   try {
     await pool.query("UPDATE users SET cookie_consent = $1 WHERE id = $2 AND deleted_at IS NULL", [JSON.stringify(payload), reqUser]);
     secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "consent_updated", status: "ok", details: { payload } });
@@ -81,7 +97,7 @@ app.get("/api/export", async (req, res) => {
     const userResult = await pool.query(
       `SELECT id, username, email, avatar_url, privacy, created_at, last_active_at,
               email_verified, cgu_accepted, cgu_version, cgu_accepted_at,
-              cookie_consent, age_confirmed, push_enabled,
+              cookie_consent, age_confirmed, push_enabled, share_token,
               push_pref_new_sprites, push_pref_new_variants, push_pref_squad_activity,
               push_pref_session_summary, push_pref_goals, push_pref_sync
        FROM users WHERE id = $1 AND deleted_at IS NULL`,
@@ -94,7 +110,8 @@ app.get("/api/export", async (req, res) => {
       "SELECT variant_id, sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
       [reqUser]
     );
-    const collection = {};
+    // Protect exports against a legacy collection row named "__proto__".
+    const collection = Object.create(null);
     for (const row of collectionResult.rows) {
       collection[row.variant_id] = {
         spriteId: row.sprite_id,
@@ -131,7 +148,8 @@ app.get("/api/export", async (req, res) => {
     );
 
     const pushTokensResult = await pool.query(
-      "SELECT platform, enabled, created_at, updated_at FROM push_tokens WHERE user_id = $1",
+      `SELECT platform, is_active AS enabled, created_at, updated_at, endpoint
+       FROM push_subscriptions WHERE user_id = $1 ORDER BY created_at DESC`,
       [reqUser]
     );
 
@@ -166,7 +184,9 @@ app.get("/api/export", async (req, res) => {
         ageConfirmed: user.age_confirmed,
         cookieConsent: user.cookie_consent
       },
-      shareLink: user.share_token || null,
+      // The stored value is a digest of a bearer link, never expose it even
+      // to an export consumer.
+      shareLinkActive: !!user.share_token,
       collection,
       squads: squadsResult.rows,
       squadActivity: activityResult.rows,
@@ -189,24 +209,26 @@ app.get("/api/profile/:userId/share-link", async (req, res) => {
   try {
     const result = await pool.query("SELECT share_token FROM users WHERE id = $1 AND deleted_at IS NULL", [req.params.userId]);
     if (!result.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
-    res.json({ token: result.rows[0].share_token || null });
+    res.json({ active: !!result.rows[0].share_token });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-app.post("/api/profile/:userId/share-link", async (req, res) => {
+app.post("/api/profile/:userId/share-link", requireNotSuspended, async (req, res) => {
   if (!(await requireSameUser(req, res, req.params.userId))) return;
   try {
-    const existing = await pool.query("SELECT share_token FROM users WHERE id = $1 AND deleted_at IS NULL", [req.params.userId]);
-    if (!existing.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
-    // Reuse the current token unless the caller explicitly asks to rotate it.
-    let token = existing.rows[0].share_token;
-    if (!token || req.body?.rotate === true) {
-      token = crypto.randomBytes(32).toString("hex");
-      await pool.query("UPDATE users SET share_token = $1 WHERE id = $2", [token, req.params.userId]);
-    }
+    // The browser is the only place that sees the raw bearer capability.
+    // Reissuing deliberately rotates any previous link, because a digest
+    // cannot safely be turned back into its original token.
+    const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = hashCapabilityToken(token);
+    const updated = await pool.query(
+      "UPDATE users SET share_token = $1 WHERE id = $2 AND deleted_at IS NULL RETURNING id",
+      [tokenHash, req.params.userId]
+    );
+    if (!updated.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     secLog.logSecurityEvent(pool, { req, userId: req.params.userId, event: "share_link_created", status: "ok" });
     res.json({ token });
   } catch (err) {
@@ -241,12 +263,17 @@ app.get("/api/shared/:token", async (req, res) => {
     return res.status(404).json({ error: "Lien de partage invalide" });
   }
   try {
+    const tokenHash = hashCapabilityToken(token);
+    if (!tokenHash) return res.status(404).json({ error: "Lien de partage invalide" });
     const userResult = await pool.query(
       `SELECT id, username, display_name, avatar_url, privacy,
               profile_visibility, collection_visibility, priority_visibility, notes_visibility,
               visibility, created_at
-       FROM users WHERE share_token = $1 AND deleted_at IS NULL`,
-      [token]
+       FROM users
+       WHERE share_token = $1
+         AND deleted_at IS NULL
+         AND (suspended_until IS NULL OR suspended_until <= NOW())`,
+      [tokenHash]
     );
     if (!userResult.rows.length) {
       return res.status(404).json({ error: "Lien de partage invalide ou révoqué" });
@@ -257,7 +284,9 @@ app.get("/api/shared/:token", async (req, res) => {
       return res.status(403).json({ error: "Accès refusé" });
     }
     const visibility = getVisibility(user);
-    let collection = {};
+    // Collection keys originate from persisted user data and may predate input
+    // validation, so use a record without Object.prototype setters.
+    let collection = Object.create(null);
     if (visibility.collection !== "private") {
       const entries = await pool.query(
         "SELECT variant_id, sprite_id, status, priority FROM sprite_entries WHERE user_id = $1",
@@ -283,7 +312,7 @@ app.get("/api/shared/:token", async (req, res) => {
 });
 
 // ── Profile : PATCH (update own profile) ──
-app.patch("/api/profile/:userId", security.validateBody(security.schemas.profilePatchSchema), async (req, res) => {
+app.patch("/api/profile/:userId", security.validateBody(security.schemas.profilePatchSchema), requireNotSuspended, async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   const { username, displayName, avatarUrl, privacy, visibility: visibilityPatch, profileVisibility, collectionVisibility, priorityVisibility, notesVisibility, friendInvitesFrom, squadInvitesFrom, pushPrefFriendCollectionUpdates, pushPrefFriendPriorityMatches } = req.validatedBody;
@@ -414,6 +443,7 @@ app.delete("/api/profile/:userId", async (req, res) => {
 
     await client.query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", [userId]);
     await client.query("COMMIT");
+    revokeUserSockets(userId, "Account deleted");
     invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_deleted", status: "ok" });
     res.json({ ok: true, scheduledDeletionAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
@@ -437,6 +467,7 @@ app.post("/api/profile/:userId/suspend", security.validateBody(security.schemas.
       "UPDATE users SET suspended_at = NOW(), suspended_until = $1 WHERE id = $2 AND deleted_at IS NULL",
       [until.toISOString(), userId]
     );
+    revokeUserSockets(userId, "Account suspended");
     invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_suspended", status: "ok", details: { until } });
     res.json({ ok: true, suspendedUntil: until.toISOString() });
@@ -462,4 +493,3 @@ app.post("/api/profile/:userId/unsuspend", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-

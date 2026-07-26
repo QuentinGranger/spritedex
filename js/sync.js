@@ -3,7 +3,12 @@ let syncTimer = null;
 let syncInFlight = false;
 
 function getSyncQueue() {
-  try { return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]"); } catch { return []; }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((key) => isSafeRecordKey(key)).slice(-1000)
+      : [];
+  } catch { return []; }
 }
 
 function saveSyncQueue(queue) {
@@ -121,23 +126,49 @@ async function fullSync() {
   }
 }
 
+// ── Replace the server collection with the full local one (used by JSON import) ──
+// Unlike fullSync (a merge via /sync), this hits /import which removes server
+// entries absent from the payload, so deleting entries in an imported file
+// actually propagates the deletion to the cloud.
+async function replaceCollection() {
+  if (!state.userId) return false;
+  try {
+    const res = await fetch(`${API_BASE}/collection/${state.userId}/import`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ collection: state.collection })
+    });
+    if (!res.ok) throw new Error(res.status);
+    saveSyncQueue([]);
+    syncErrorState = false;
+    localStorage.setItem("spritedex_last_sync", new Date().toISOString());
+    updateSyncStatus();
+    return true;
+  } catch (e) {
+    syncErrorState = true;
+    console.warn("Replace collection failed", e);
+    updateSyncStatus();
+    return false;
+  }
+}
+
 async function loadFromServer() {
   if (!state.userId) return false;
   try {
     const res = await fetch(`${API_BASE}/collection/${state.userId}`, { headers: authHeaders() });
     if (!res.ok) return false;
-    const serverData = await res.json();
-    if (serverData && typeof serverData === "object" && Object.keys(serverData).length > 0) {
-      const local = state.collection;
+    const serverData = sanitizeCollection(await res.json());
+    if (Object.keys(serverData).length > 0) {
+      const local = sanitizeCollection(state.collection);
       for (const [key, serverEntry] of Object.entries(serverData)) {
         const localEntry = local[key];
         if (!localEntry) {
-          local[key] = serverEntry;
+          setSafeRecordValue(local, key, serverEntry);
         } else {
           const localTime = localEntry.updatedAt ? new Date(localEntry.updatedAt).getTime() : 0;
           const serverTime = serverEntry.updatedAt ? new Date(serverEntry.updatedAt).getTime() : 0;
           if (serverTime > localTime) {
-            local[key] = serverEntry;
+            setSafeRecordValue(local, key, serverEntry);
           }
         }
       }
@@ -248,11 +279,11 @@ function normalizeVariantName(name) {
 
 // Build a runtime map from old display names / slugs to current sprite ids.
 function buildSpriteNameMap() {
-  const map = {};
+  const map = createSafeRecord();
   for (const s of SPRITES || []) {
-    if (s.name) map[s.name.toLowerCase()] = s.id;
-    if (s.officialName) map[s.officialName.toLowerCase()] = s.id;
-    if (s.slug) map[s.slug.toLowerCase()] = s.id;
+    if (s.name) setSafeRecordValue(map, s.name.toLowerCase(), s.id);
+    if (s.officialName) setSafeRecordValue(map, s.officialName.toLowerCase(), s.id);
+    if (s.slug) setSafeRecordValue(map, s.slug.toLowerCase(), s.id);
   }
   return map;
 }
@@ -306,13 +337,13 @@ function resolveLegacyKey(key, spriteMap) {
 function normalizeLocalCollection() {
   if (!SPRITES || !SPRITES.length) return;
   const spriteMap = buildSpriteNameMap();
-  const normalized = {};
-  const unknown = {};
+  const normalized = createSafeRecord();
+  const unknown = createSafeRecord();
 
   for (const [key, entry] of Object.entries(state.collection || {})) {
-    if (key.startsWith("fav_")) { normalized[key] = entry; continue; }
+    if (key.startsWith("fav_")) { setSafeRecordValue(normalized, key, entry === true); continue; }
     const resolved = resolveLegacyKey(key, spriteMap);
-    if (!resolved) { unknown[key] = entry; continue; }
+    if (!resolved) { setSafeRecordValue(unknown, key, entry); continue; }
 
     if (normalized[resolved]) {
       const existing = normalized[resolved];
@@ -322,21 +353,24 @@ function normalizeLocalCollection() {
       if (entry.obtainedAt) existing.obtainedAt = earliest(existing.obtainedAt, entry.obtainedAt);
       if (entry.updatedAt) existing.updatedAt = latest(existing.updatedAt, entry.updatedAt);
     } else {
-      normalized[resolved] = { ...entry };
+      setSafeRecordValue(normalized, resolved, sanitizeCollectionEntry(entry));
     }
   }
 
   // Preserve unrecognized keys so no data is deleted.
-  state.collection = { ...normalized, ...unknown };
+  const merged = createSafeRecord();
+  for (const [key, entry] of Object.entries(normalized)) setSafeRecordValue(merged, key, entry);
+  for (const [key, entry] of Object.entries(unknown)) setSafeRecordValue(merged, key, entry);
+  state.collection = merged;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.collection));
 }
 
 async function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    state.collection = raw ? JSON.parse(raw) : {};
+    state.collection = sanitizeCollection(raw ? JSON.parse(raw) : {});
   } catch {
-    state.collection = {};
+    state.collection = createSafeRecord();
   }
 
   const serverLoaded = await loadFromServer();

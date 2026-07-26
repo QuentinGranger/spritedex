@@ -1,10 +1,11 @@
 // compare.js — extracted from server.js
 
 const analytics = require("../analytics");
+const security = require("../security");
 const secLog = require("../security-logger");
-const { areFriends, canViewCollection, checkPrivacyAccess, getCollectionAccessReason, getRequestingUser, getVisibility, isBlocked, shareSquad } = require("./auth");
+const { areFriends, canViewCollection, checkPrivacyAccess, getCollectionAccessReason, getRequestingUser, getVisibility, hashCapabilityToken, isBlocked, requireNotSuspended, shareSquad } = require("./auth");
 const { buildAcquisitionMethod, buildAvailability, buildRecurrence } = require("./catalog");
-const { app } = require("./core");
+const { APP_URL, app } = require("./core");
 const { pool } = require("./db");
 const crypto = require("crypto");
 const QRCode = require("qrcode");
@@ -115,8 +116,11 @@ async function buildCompareResult(reqUser, targetUser, source, queryParams = {})
     analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId: reqUser, userBId: targetUser.id, source } });
   }
 
-  result = applyServerCompareFilters(result, queryParams);
+  // Redact before applying query filters or calculating any presentation
+  // metrics.  Filtering the raw cached result first made `status=priorities`
+  // and complementarity scores an oracle for a hidden priority.
   result = await applyCollectionVisibilityFilters(result, reqUser, userMap);
+  result = applyServerCompareFilters(result, queryParams);
   result.accessReason = accessReason;
   analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId: reqUser, userBId: targetUser.id, source } });
 
@@ -185,7 +189,10 @@ async function loadServerCompareCollection(userId) {
     "SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries WHERE user_id = $1",
     [userId]
   );
-  const collection = {};
+  // variant_id comes from persisted collections, including legacy imports.
+  // Keep a malicious legacy "__proto__" entry as data rather than changing
+  // the prototype of this comparison cache record.
+  const collection = Object.create(null);
   for (const row of result.rows) {
     collection[row.variant_id] = {
       status: row.status || "new",
@@ -216,9 +223,18 @@ async function buildSquadCollectionMatrix(members, catalogue) {
   if (!members || members.length === 0) return [];
   const memberList = members.map(m => {
     if (m && typeof m === "object" && m.userId !== undefined) {
-      return { userId: m.userId, username: m.username || String(m.userId), visible: m.visible !== false };
+      return {
+        userId: m.userId,
+        username: m.username || String(m.userId),
+        visible: m.visible !== false,
+        // A squad analysis can use a member's collection without necessarily
+        // being allowed to disclose their granular priority level.  Keep the
+        // collection visibility and priority visibility distinct so callers
+        // can safely reuse the matrix for both kinds of analysis.
+        prioritiesVisible: m.prioritiesVisible !== false
+      };
     }
-    return { userId: m, username: String(m), visible: true };
+    return { userId: m, username: String(m), visible: true, prioritiesVisible: true };
   });
 
   const activeCatalogue = (catalogue || await getServerCompareCatalogItemsCached()).filter(isVariantReleasedAndActiveServer);
@@ -236,9 +252,14 @@ async function buildSquadCollectionMatrix(members, catalogue) {
 
     for (let i = 0; i < memberList.length; i++) {
       const m = memberList[i];
-      const entry = m.visible
+      const rawEntry = m.visible
         ? (collections[i][item.id] || compareServerDefaultEntry())
         : { status: "unknown", priority: "none", note: "" };
+      // Do not mutate the cached collection object.  It may be reused by a
+      // later request that is authorized to see priority levels.
+      const entry = m.visible && !m.prioritiesVisible
+        ? { ...rawEntry, priority: "none" }
+        : rawEntry;
       const classification = m.visible ? compareServerClassify(entry) : "unknown";
 
       memberDetails.push({
@@ -373,7 +394,13 @@ function classifyRecommendationAvailability(availabilityStatus) {
 
 async function getSquadRecommendations(memberIds, catalogue) {
   if (!memberIds || memberIds.length < 2) return { immediate: [], watchList: [], immediateCount: 0, watchListCount: 0 };
-  const members = memberIds.map(id => ({ userId: id, username: String(id), visible: true }));
+  // Callers that know the viewer's granular permissions can pass the member
+  // descriptors built for their matrix.  Keep accepting a plain list of IDs
+  // for internal, system-wide computations (for example squad stat refreshes).
+  const members = memberIds.map(member => {
+    if (member && typeof member === "object" && member.userId !== undefined) return member;
+    return { userId: member, username: String(member), visible: true, prioritiesVisible: true };
+  });
   const matrix = await buildSquadCollectionMatrix(members, catalogue);
   const recs = [];
   for (const row of matrix) {
@@ -1452,25 +1479,7 @@ function setCachedCompareResult(userAId, userBId, result) {
   });
 }
 
-function applyServerCompareFilters(result, query) {
-  let records = result.records;
-  const status = query.status;
-  if (status) {
-    if (result.groups[status]) {
-      records = result.groups[status];
-    } else if (status === "differences" || status === "missingMatch") {
-      records = [...result.groups.onlyUserA, ...result.groups.onlyUserB];
-    } else if (status === "priorities") {
-      records = records.filter(r => compareServerIsPriority(r.userA) || compareServerIsPriority(r.userB));
-    }
-  }
-
-  if (query.seasonId) records = records.filter(r => r.seasonId === query.seasonId);
-  if (query.eventId) records = records.filter(r => r.eventId === query.eventId);
-  if (query.rarity) records = records.filter(r => r.rarity && String(r.rarity).toLowerCase() === String(query.rarity).toLowerCase());
-  if (query.variantType) records = records.filter(r => r.variantType && String(r.variantType).toLowerCase() === String(query.variantType).toLowerCase());
-  if (query.availability) records = records.filter(r => r.availabilityStatus === query.availability);
-
+function rebuildCompareResult(result, records, entryCounts = null) {
   const groups = { bothOwned: [], onlyUserA: [], onlyUserB: [], bothMissing: [], unknown: [] };
   for (const rec of records) {
     const sa = compareServerClassify(rec.userA);
@@ -1494,6 +1503,18 @@ function applyServerCompareFilters(result, query) {
   const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
   const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
 
+  // Counts are intentionally taken from the full presentation result rather
+  // than the current query-filtered subset.  When a caller redacts priority
+  // or notes first it supplies viewer-safe counts here, preventing those
+  // metadata-only entries from becoming a side channel in `enteredCount`.
+  const aEnteredCount = entryCounts?.aEnteredCount
+    ?? result.summary?.aEnteredCount
+    ?? result.users?.userA?.enteredCount
+    ?? 0;
+  const bEnteredCount = entryCounts?.bEnteredCount
+    ?? result.summary?.bEnteredCount
+    ?? result.users?.userB?.enteredCount
+    ?? 0;
   const complementarityRate = toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount);
   const complementarityScore = computeComplementarityScore(complementarityRate, records);
   const summary = {
@@ -1512,10 +1533,46 @@ function applyServerCompareFilters(result, query) {
     collectiveCompletionRate: toRate(collectiveOwnedCount, total),
     complementarityRate,
     complementarityScore,
-    insufficientData: result.summary?.insufficientData ?? false
+    aEnteredCount,
+    bEnteredCount,
+    insufficientData: aEnteredCount === 0 || bEnteredCount === 0
+  };
+  const users = {
+    ...result.users,
+    userA: { ...result.users?.userA, enteredCount: aEnteredCount },
+    userB: { ...result.users?.userB, enteredCount: bEnteredCount }
   };
 
-  return { ...result, records, groups, summary };
+  return { ...result, users, records, groups, summary };
+}
+
+function countVisibleCompareEntries(records, userKey) {
+  return records.reduce(
+    (count, record) => count + (compareServerIsExplicitEntry(record[userKey]) ? 1 : 0),
+    0
+  );
+}
+
+function applyServerCompareFilters(result, query = {}) {
+  let records = result.records;
+  const status = query.status;
+  if (status) {
+    if (result.groups[status]) {
+      records = result.groups[status];
+    } else if (status === "differences" || status === "missingMatch") {
+      records = [...result.groups.onlyUserA, ...result.groups.onlyUserB];
+    } else if (status === "priorities") {
+      records = records.filter(r => compareServerIsPriority(r.userA) || compareServerIsPriority(r.userB));
+    }
+  }
+
+  if (query.seasonId) records = records.filter(r => r.seasonId === query.seasonId);
+  if (query.eventId) records = records.filter(r => r.eventId === query.eventId);
+  if (query.rarity) records = records.filter(r => r.rarity && String(r.rarity).toLowerCase() === String(query.rarity).toLowerCase());
+  if (query.variantType) records = records.filter(r => r.variantType && String(r.variantType).toLowerCase() === String(query.variantType).toLowerCase());
+  if (query.availability) records = records.filter(r => r.availabilityStatus === query.availability);
+
+  return rebuildCompareResult(result, records);
 }
 
 // ── Comparisons : GET comparison between two users ──
@@ -1563,8 +1620,10 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
       analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId, userBId, source: "api" } });
     }
 
-    result = applyServerCompareFilters(result, req.query);
+    // See buildCompareResult: filters and derived scores must operate on the
+    // viewer-redacted representation, never on the raw cache entry.
     result = await applyCollectionVisibilityFilters(result, reqUser, userMap);
+    result = applyServerCompareFilters(result, req.query);
 
     analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId, userBId, source: "api" } });
 
@@ -1616,11 +1675,47 @@ async function applyCollectionVisibilityFilters(result, reqUser, userMap) {
   });
 
   const records = result.records.map(filterRecord);
-  const groups = {};
-  for (const [key, list] of Object.entries(result.groups)) {
-    groups[key] = list.map(filterRecord);
+  // Rebuild all derived values after redaction.  In particular, a raw cached
+  // complementarity score and `status=priorities` filter must not reveal a
+  // priority value that was just hidden in the record payload.
+  return rebuildCompareResult(result, records, {
+    aEnteredCount: countVisibleCompareEntries(records, "userA"),
+    bEnteredCount: countVisibleCompareEntries(records, "userB")
+  });
+}
+
+const COMPARE_SHARE_DURATIONS = new Set(["1h", "24h", "7d", "permanent"]);
+
+function parseCompareShareOptions(value) {
+  const body = value == null ? {} : value;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return { ok: false, error: "Options de partage invalides" };
   }
-  return { ...result, records, groups };
+  const allowed = new Set([
+    "duration", "collectionVisible", "showNotes", "showPriorities", "allowVisitorCompare"
+  ]);
+  if (Object.keys(body).some(key => !allowed.has(key))) {
+    return { ok: false, error: "Option de partage invalide" };
+  }
+  const duration = body.duration === undefined ? "24h" : body.duration;
+  if (typeof duration !== "string" || !COMPARE_SHARE_DURATIONS.has(duration)) {
+    return { ok: false, error: "Durée de partage invalide" };
+  }
+  for (const key of ["collectionVisible", "showNotes", "showPriorities", "allowVisitorCompare"]) {
+    if (body[key] !== undefined && typeof body[key] !== "boolean") {
+      return { ok: false, error: "Option de partage invalide" };
+    }
+  }
+  return {
+    ok: true,
+    value: {
+      duration,
+      collectionVisible: body.collectionVisible !== false,
+      showNotes: body.showNotes === true,
+      showPriorities: body.showPriorities !== false,
+      allowVisitorCompare: body.allowVisitorCompare !== false
+    }
+  };
 }
 
 function computeDurationExpiry(duration) {
@@ -1636,7 +1731,9 @@ async function loadCollectionForShare(userId, options) {
     "SELECT variant_id, status, note, priority, obtained_at FROM sprite_entries WHERE user_id = $1",
     [userId]
   );
-  const collection = {};
+  // See loadServerCompareCollection: shared links must also serialize legacy
+  // collection keys without invoking Object.prototype's __proto__ setter.
+  const collection = Object.create(null);
   for (const row of result.rows) {
     collection[row.variant_id] = {
       status: row.status || "new",
@@ -1649,10 +1746,13 @@ async function loadCollectionForShare(userId, options) {
 }
 
 // ── Compare share tokens ──
-app.post("/api/compare/share", async (req, res) => {
+app.post("/api/compare/share", security.capabilityLinkLimiter, requireNotSuspended, async (req, res) => {
   try {
     const reqUser = await getRequestingUser(req);
     if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const parsedOptions = parseCompareShareOptions(req.body);
+    if (!parsedOptions.ok) return res.status(400).json({ error: parsedOptions.error });
+    const { duration, collectionVisible, showNotes, showPriorities, allowVisitorCompare } = parsedOptions.value;
 
     const ownerRes = await pool.query(
       `SELECT privacy, collection_visibility, visibility FROM users WHERE id = $1 AND deleted_at IS NULL
@@ -1665,24 +1765,46 @@ app.post("/api/compare/share", async (req, res) => {
       return res.status(403).json({ error: "Impossible de partager une collection privée" });
     }
 
-    const duration = req.body?.duration || "24h";
     const expiresAt = computeDurationExpiry(duration);
     const token = crypto.randomBytes(32).toString("hex");
-    const collectionVisible = req.body?.collectionVisible !== false;
-    const showNotes = !!req.body?.showNotes;
-    const showPriorities = req.body?.showPriorities !== false;
-    const allowVisitorCompare = req.body?.allowVisitorCompare !== false;
+    const tokenHash = hashCapabilityToken(token);
 
-    const insert = await pool.query(
-      `INSERT INTO compare_share_tokens (token, owner_user_id, expires_at, collection_visible, show_notes, show_priorities, allow_visitor_compare)
-       VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7) RETURNING id, token, expires_at, created_at`,
-      [token, reqUser, expiresAt, collectionVisible, showNotes, showPriorities, allowVisitorCompare]
-    );
+    let insert;
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // A link is a persistent capability. Serialize the per-owner quota so
+      // concurrent requests cannot turn this endpoint into unbounded storage.
+      await client.query("SELECT pg_advisory_xact_lock($1::bigint)", [reqUser]);
+      const activeCount = await client.query(
+        `SELECT COUNT(*)::int AS count
+         FROM compare_share_tokens
+         WHERE owner_user_id = $1
+           AND revoked_at IS NULL
+           AND (expires_at IS NULL OR expires_at > NOW())`,
+        [reqUser]
+      );
+      if ((activeCount.rows[0]?.count || 0) >= 25) {
+        await client.query("ROLLBACK");
+        return res.status(429).json({ error: "Trop de liens actifs : révoque un lien avant d'en créer un autre" });
+      }
+      insert = await client.query(
+        `INSERT INTO compare_share_tokens (token, owner_user_id, expires_at, collection_visible, show_notes, show_priorities, allow_visitor_compare)
+         VALUES ($1, $2, $3::timestamptz, $4, $5, $6, $7) RETURNING id, expires_at, created_at`,
+        [tokenHash, reqUser, expiresAt, collectionVisible, showNotes, showPriorities, allowVisitorCompare]
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
 
     secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_created", status: "ok" });
     analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_shared", details: { duration, source: "compare" } });
     analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "compare_invitation_generated", details: { source: "compare" } });
-    const shareUrl = `${req.protocol}://${req.get("host")}/compare/share/${token}`;
+    const shareUrl = `${APP_URL}/compare/share/${token}`;
     let qr = null;
     try {
       qr = await QRCode.toDataURL(shareUrl, { type: "image/png", margin: 2, width: 300, errorCorrectionLevel: "M" });
@@ -1707,6 +1829,8 @@ app.get("/api/compare/share/:token", async (req, res) => {
   try {
     const token = req.params.token;
     if (!/^[a-f0-9]{64}$/i.test(token)) return res.status(400).json({ error: "Token invalide" });
+    const tokenHash = hashCapabilityToken(token);
+    if (!tokenHash) return res.status(400).json({ error: "Token invalide" });
 
     const tokenRes = await pool.query(
       `SELECT t.*, u.username as owner_username, u.collection_visibility, u.privacy, u.visibility
@@ -1716,7 +1840,7 @@ app.get("/api/compare/share/:token", async (req, res) => {
          AND (t.expires_at IS NULL OR t.expires_at > NOW())
          AND u.deleted_at IS NULL
          AND (u.suspended_until IS NULL OR u.suspended_until < NOW())`,
-      [token]
+      [tokenHash]
     );
     if (!tokenRes.rows.length) return res.status(404).json({ error: "Lien invalide, expiré ou révoqué" });
     const share = tokenRes.rows[0];
@@ -1728,7 +1852,11 @@ app.get("/api/compare/share/:token", async (req, res) => {
 
     await pool.query("UPDATE compare_share_tokens SET last_used_at = NOW() WHERE id = $1", [share.id]);
 
-    const ownerCollection = await loadCollectionForShare(share.owner_user_id, share);
+    // collectionVisible is an explicit owner privacy choice, independent of
+    // the visibility required to resolve the share link itself.
+    const ownerCollection = share.collection_visible
+      ? await loadCollectionForShare(share.owner_user_id, share)
+      : {};
     let visitorCollection = {};
     let visitorName = "Visiteur";
     if (visitor && share.allow_visitor_compare) {
@@ -1745,7 +1873,6 @@ app.get("/api/compare/share/:token", async (req, res) => {
     analytics.logCompareAnalyticsEvent(pool, { userId: visitor, event: "comparison_viewed", details: { source: "share", ownerId: share.owner_user_id } });
 
     res.json({
-      token,
       accessReason: "shared_link",
       options: {
         collectionVisible: share.collection_visible,
@@ -1761,14 +1888,16 @@ app.get("/api/compare/share/:token", async (req, res) => {
   }
 });
 
-app.delete("/api/compare/share/:token", async (req, res) => {
+app.delete("/api/compare/share/:token", requireNotSuspended, async (req, res) => {
   try {
     const reqUser = await getRequestingUser(req);
     if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const tokenHash = hashCapabilityToken(req.params.token);
+    if (!tokenHash) return res.status(404).json({ error: "Lien non trouvé" });
 
     const result = await pool.query(
       "UPDATE compare_share_tokens SET revoked_at = NOW() WHERE token = $1 AND owner_user_id = $2 RETURNING id",
-      [req.params.token, reqUser]
+      [tokenHash, reqUser]
     );
     if (!result.rows.length) return res.status(404).json({ error: "Lien non trouvé" });
     secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_revoked", status: "ok" });
@@ -1784,7 +1913,7 @@ app.get("/api/compare/shares", async (req, res) => {
     const reqUser = await getRequestingUser(req);
     if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
     const result = await pool.query(
-      `SELECT token, expires_at, revoked_at, collection_visible, show_notes, show_priorities, allow_visitor_compare, created_at, last_used_at
+      `SELECT id, expires_at, revoked_at, collection_visible, show_notes, show_priorities, allow_visitor_compare, created_at, last_used_at
        FROM compare_share_tokens
        WHERE owner_user_id = $1 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > NOW())
        ORDER BY created_at DESC`,
@@ -1793,6 +1922,26 @@ app.get("/api/compare/shares", async (req, res) => {
     res.json({ shares: result.rows });
   } catch (err) {
     console.error("[/api/compare/shares]", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// Lists intentionally omit bearer values. Owners can revoke a previously
+// issued link by its opaque database id without having to retain the URL.
+app.delete("/api/compare/shares/:shareId", requireNotSuspended, async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+  if (!/^\d+$/.test(req.params.shareId)) return res.status(404).json({ error: "Lien non trouvé" });
+  try {
+    const result = await pool.query(
+      "UPDATE compare_share_tokens SET revoked_at = NOW() WHERE id = $1 AND owner_user_id = $2 AND revoked_at IS NULL RETURNING id",
+      [req.params.shareId, reqUser]
+    );
+    if (!result.rows.length) return res.status(404).json({ error: "Lien non trouvé" });
+    secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_revoked", status: "ok" });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[/api/compare/shares/:shareId DELETE]", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
@@ -1856,15 +2005,42 @@ app.get("/api/compare/:userA/:userB", async (req, res) => {
 
 // ── Compare analytics ──
 const COMPARE_ANALYTICS_EVENTS_SET = analytics.COMPARE_ANALYTICS_EVENTS;
+const ANALYTICS_ADMIN_IDS = new Set(
+  String(process.env.ANALYTICS_ADMIN_USER_IDS || "")
+    .split(",")
+    .map(id => id.trim())
+    .filter(id => /^\d+$/.test(id))
+);
 
-app.post("/api/analytics/compare", async (req, res) => {
+function isAnalyticsAdmin(userId) {
+  return !!userId && ANALYTICS_ADMIN_IDS.has(String(userId));
+}
+
+function sanitizeAnalyticsDetails(value, depth = 0) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 2) return Object.create(null);
+  const clean = Object.create(null);
+  for (const [rawKey, rawValue] of Object.entries(value).slice(0, 20)) {
+    const key = String(rawKey).slice(0, 64);
+    if (!/^[A-Za-z0-9_.-]+$/.test(key) || key === "__proto__" || key === "prototype" || key === "constructor") continue;
+    if (typeof rawValue === "string") clean[key] = rawValue.slice(0, 200);
+    else if (typeof rawValue === "number" && Number.isFinite(rawValue)) clean[key] = rawValue;
+    else if (typeof rawValue === "boolean") clean[key] = rawValue;
+    else if (rawValue && typeof rawValue === "object" && !Array.isArray(rawValue)) {
+      clean[key] = sanitizeAnalyticsDetails(rawValue, depth + 1);
+    }
+  }
+  return clean;
+}
+
+app.post("/api/analytics/compare", security.analyticsLimiter, requireNotSuspended, async (req, res) => {
   try {
     const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
     const { event, details } = req.body || {};
     if (!event || !COMPARE_ANALYTICS_EVENTS_SET.has(event)) {
       return res.status(400).json({ error: "Événement inconnu" });
     }
-    const cleanDetails = details && typeof details === "object" ? details : {};
+    const cleanDetails = sanitizeAnalyticsDetails(details);
     analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event, details: cleanDetails });
     res.json({ ok: true });
   } catch (err) {
@@ -1877,6 +2053,7 @@ app.get("/api/analytics/compare", async (req, res) => {
   try {
     const reqUser = await getRequestingUser(req);
     if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    if (!isAnalyticsAdmin(reqUser)) return res.status(403).json({ error: "Accès réservé" });
     const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
     const metrics = await analytics.getCompareAnalyticsMetrics(pool, { days });
     res.json(metrics);
@@ -1890,6 +2067,7 @@ app.get("/api/analytics/product", async (req, res) => {
   try {
     const reqUser = await getRequestingUser(req);
     if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    if (!isAnalyticsAdmin(reqUser)) return res.status(403).json({ error: "Accès réservé" });
     const days = Math.max(1, Math.min(365, parseInt(req.query.days) || 30));
     const metrics = await analytics.getProductAnalyticsMetrics(pool, { days });
     res.json(metrics);
@@ -1899,4 +2077,4 @@ app.get("/api/analytics/product", async (req, res) => {
   }
 });
 
-module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyServerCompareFilters, buildSquadCollectionMatrix, classifyEventUrgency, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadCollectivePlan, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };
+module.exports = { COMPARE_ANALYTICS_EVENTS_SET, COMPARE_CACHE_TTL_MS, COMPARE_SERVER_RULES, MAX_COMPARE_RESULT_CACHE, applyCollectionVisibilityFilters, applyServerCompareFilters, buildSquadCollectionMatrix, classifyEventUrgency, compareCatalogCache, compareCollectionsServer, compareResultCache, compareServerClassify, compareServerDefaultEntry, compareServerIsExplicitEntry, compareServerIsMissing, compareServerIsOwned, compareServerIsPriority, compareServerIsRecommend, compareServerIsUnknown, computeComplementarityScore, computeDurationExpiry, countServerExplicitCollectionEntries, formatSquadMemberRecommendation, getCachedCompareResult, getCompareCacheKey, getServerCompareCatalogItems, getServerCompareCatalogItemsCached, getSquadAcquisitionAssignments, getSquadAcquisitionPriority, getSquadAverageOwnership, getSquadCollectiveCompletion, getSquadCollectiveCompletionSummary, getSquadCollectivePlan, getSquadHelpScores, getSquadLevel1Analysis, getSquadMemberRecommendations, getSquadMissingVariants, getSquadMostComplementaryMember, getSquadRecommendations, getSquadSharedVariants, getSquadUniqueOwners, invalidateCompareCacheForUser, isVariantReleasedAndActiveServer, loadCollectionForShare, loadServerCompareCollection, pruneCompareResultCache, setCachedCompareResult };

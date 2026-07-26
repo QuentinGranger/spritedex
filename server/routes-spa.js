@@ -1,7 +1,8 @@
 // routes-spa.js — extracted from server.js
 
 const { compareCollectionsServer, getServerCompareCatalogItemsCached, loadCollectionForShare } = require("./compare");
-const { app, escapeHtml } = require("./core");
+const { getVisibility, hashCapabilityToken } = require("./auth");
+const { APP_URL, app, escapeHtml } = require("./core");
 const { pool } = require("./db");
 const fs = require("fs");
 const path = require("path");
@@ -11,8 +12,7 @@ const ROOT_DIR = require("path").join(__dirname, "..");
 // ── Friend invite link redirect (legacy /invite/:token → /?invite=:token) ──
 app.get("/invite/:token", (req, res) => {
   const token = req.params.token;
-  const base = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-  res.redirect(301, `${base}/?invite=${encodeURIComponent(token)}`);
+  res.redirect(302, `${APP_URL}/?invite=${encodeURIComponent(token)}`);
 });
 
 // ── SPA routes for shareable compare links ──
@@ -25,19 +25,25 @@ app.get("/compare/share/:token", async (req, res) => {
     const token = req.params.token;
     const file = path.join(ROOT_DIR, "index.html");
     if (!/^[a-f0-9]{64}$/i.test(token)) return res.sendFile(file);
+    const tokenHash = hashCapabilityToken(token);
+    if (!tokenHash) return res.sendFile(file);
 
     const shareRes = await pool.query(
-      `SELECT t.*, u.username as owner_username
+      `SELECT t.*, u.username as owner_username, u.collection_visibility, u.visibility
        FROM compare_share_tokens t
        JOIN users u ON u.id = t.owner_user_id
        WHERE t.token = $1 AND t.revoked_at IS NULL
          AND (t.expires_at IS NULL OR t.expires_at > NOW())
-         AND u.deleted_at IS NULL`,
-      [token]
+         AND u.deleted_at IS NULL
+         AND (u.suspended_until IS NULL OR u.suspended_until <= NOW())`,
+      [tokenHash]
     );
     if (!shareRes.rows.length) return res.sendFile(file);
 
     const share = shareRes.rows[0];
+    // The social card is a public representation of the bearer link. It
+    // must honor a privacy change made after that link was issued.
+    if (getVisibility(share).collection === "private") return res.sendFile(file);
     const ownerCollection = share.collection_visible ? await loadCollectionForShare(share.owner_user_id, share) : {};
     const catalogue = await getServerCompareCatalogItemsCached();
     const result = compareCollectionsServer(
@@ -48,9 +54,8 @@ app.get("/compare/share/:token", async (req, res) => {
 
     const title = `Compare ta collection avec ${escapeHtml(share.owner_username)} — SpriteDex`;
     const description = `Complétion collective : ${result.summary.collectiveCompletionRate}%. Découvre qui manque de quelles variantes sur SpriteDex.`;
-    const host = `${req.protocol}://${req.get("host")}`;
-    const image = `${host}/icon-512.png`;
-    const url = `${host}/compare/share/${token}`;
+    const image = `${APP_URL}/icon-512.png`;
+    const url = `${APP_URL}/compare/share/${token}`;
 
     const html = fs.readFileSync(file, "utf8");
     const meta = `<meta property="og:title" content="${title.replace(/"/g, "&quot;")}">

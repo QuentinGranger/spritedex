@@ -30,6 +30,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Render terminates TLS and is the single trusted proxy hop. Keep this
+      # explicit so a self-hosted/direct deployment does not trust spoofed
+      # X-Forwarded-For headers by default.
+      - key: TRUST_PROXY
+        value: "1"
       # Note: Render auto-injects RENDER_EXTERNAL_URL (the full https URL of this
       # service). server.js uses it as the default OAUTH_REDIRECT_BASE so OAuth +
       # CORS work on first deploy with no manual URL configuration.

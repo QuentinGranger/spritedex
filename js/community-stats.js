@@ -40,7 +40,7 @@ const BASE_SPRITE_RANKING = [
 ];
 
 function formatCommunityPercent(rate) {
-  return (rate).toLocaleString("fr-FR", {
+  return safePercentage(rate, 0).toLocaleString("fr-FR", {
     style: "percent",
     minimumFractionDigits: 1,
     maximumFractionDigits: 2
@@ -181,14 +181,14 @@ function loadCommunityOwnership() {
       return r.json();
     })
     .then((data) => {
-      const total = data.totalActive || 0;
+      const total = safeFiniteNumber(data.totalActive, 0, { min: 0, max: 100000000 });
       const rows = (data.sprites || [])
         .sort((a, b) => (b.ownershipRate || 0) - (a.ownershipRate || 0))
         .map((s) => `
           <tr>
             <td class="community-table__name">${escape(s.name || s.spriteId || "?")}</td>
             <td class="community-table__rate">${formatCommunityPercent(s.ownershipRate || 0)}</td>
-            <td class="community-table__muted">${s.owners ?? 0} / ${total}</td>
+            <td class="community-table__muted">${safeFiniteNumber(s.owners, 0, { min: 0, max: total || 100000000 })} / ${total}</td>
           </tr>
         `).join("");
       detail.innerHTML = `

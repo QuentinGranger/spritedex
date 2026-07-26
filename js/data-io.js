@@ -23,8 +23,15 @@ function importData(file) {
       const payload = JSON.parse(String(reader.result));
       const imported = payload.collection ?? payload;
       if (!imported || typeof imported !== "object") throw new Error("Format invalide");
-      state.collection = imported;
+      state.collection = sanitizeCollection(imported);
       persist();
+      // persist() with no spriteId only writes locally. Importing a JSON file
+      // REPLACES the collection, so push it via replaceCollection() (/import) which
+      // also removes server entries absent from the file — otherwise deletions in
+      // the imported file would silently reappear from the cloud.
+      if (state.userId && typeof replaceCollection === "function") {
+        replaceCollection();
+      }
       buildDeck();
       renderAll();
       toast("Import réussi");
@@ -52,7 +59,7 @@ function copyMissingList() {
     lines.push("");
   }
 
-  const byVariant = {};
+  const byVariant = createSafeRecord();
   for (const item of others) {
     if (!byVariant[item.variant]) byVariant[item.variant] = [];
     byVariant[item.variant].push(item);

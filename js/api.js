@@ -4,7 +4,10 @@ async function loadSpritesFromAPI() {
     if (!res.ok) throw new Error("API sprites failed");
     const data = await res.json();
 
-    SPRITES = data.sprites.map(s => ({
+    const sprites = Array.isArray(data.sprites) ? data.sprites : [];
+    SPRITES = sprites
+      .filter((s) => s && typeof s === "object" && isSafeRecordKey(String(s.id || "")))
+      .map(s => ({
       id: s.id,
       slug: s.slug,
       name: s.name,
@@ -34,29 +37,40 @@ async function loadSpritesFromAPI() {
       addedDate: s.addedDate
     }));
 
-    SPRITE_IMAGES = {};
-    for (const s of data.sprites) {
-      SPRITE_IMAGES[s.id] = s.images;
+    SPRITE_IMAGES = createSafeRecord();
+    for (const s of sprites) {
+      if (!s || !isSafeRecordKey(String(s.id || ""))) continue;
+      const images = createSafeRecord();
+      for (const [variant, image] of Object.entries(s.images || {})) {
+        setSafeRecordValue(images, variant, safeImageUrl(image));
+      }
+      setSafeRecordValue(SPRITE_IMAGES, s.id, images);
     }
 
-    SPRITE_VARIANTS = {};
-    for (const s of data.sprites) {
-      SPRITE_VARIANTS[s.id] = s.variantDetails || {};
+    SPRITE_VARIANTS = createSafeRecord();
+    for (const s of sprites) {
+      if (!s || !isSafeRecordKey(String(s.id || ""))) continue;
+      const variants = createSafeRecord();
+      for (const [variant, detail] of Object.entries(s.variantDetails || {})) {
+        setSafeRecordValue(variants, variant, detail && typeof detail === "object" ? detail : {});
+      }
+      setSafeRecordValue(SPRITE_VARIANTS, s.id, variants);
     }
 
-    SEASONS = {};
-    for (const season of data.seasons || []) {
-      SEASONS[season.id] = season;
+    SEASONS = createSafeRecord();
+    for (const season of (Array.isArray(data.seasons) ? data.seasons : [])) {
+      if (season && isSafeRecordKey(String(season.id || ""))) setSafeRecordValue(SEASONS, season.id, season);
     }
 
-    EVENTS = {};
-    for (const event of data.events || []) {
-      EVENTS[event.id] = event;
+    EVENTS = createSafeRecord();
+    for (const event of (Array.isArray(data.events) ? data.events : [])) {
+      if (event && isSafeRecordKey(String(event.id || ""))) setSafeRecordValue(EVENTS, event.id, event);
     }
 
-    VARIANT_META = {};
-    for (const v of data.variantMeta) {
-      VARIANT_META[v.name] = { label: v.label, bonus: v.bonus };
+    VARIANT_META = createSafeRecord();
+    for (const v of Array.isArray(data.variantMeta) ? data.variantMeta : []) {
+      if (!v || !isSafeRecordKey(String(v.name || ""))) continue;
+      setSafeRecordValue(VARIANT_META, v.name, { label: safeText(v.label), bonus: safeText(v.bonus) });
     }
 
     console.log(`Loaded ${SPRITES.length} sprites from DB`);

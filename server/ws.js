@@ -1,79 +1,328 @@
 // ws.js — extracted from server.js
 
-const { validateSession, canViewCollection } = require("./auth");
+const { validateSession, canViewCollection, hashSessionToken } = require("./auth");
 const { wss } = require("./core");
-const { Pool } = require("pg");
+const { pool, shouldUseSSL } = require("./db");
 const compare = require("./compare");
+const security = require("../security");
 
 // ── WebSocket : client registry ──
 // Maps userId (string) -> Set of ws clients
 const wsClients = new Map();
+// Maps a hashed session token to every socket authenticated with it. Raw
+// bearer tokens are deliberately never retained in a long-lived WS object.
+const sessionSockets = new Map();
+
+const WS_MAX_PAYLOAD_BYTES = 4 * 1024;
+const WS_AUTH_TIMEOUT_MS = 10 * 1000;
+const WS_SESSION_REVALIDATION_MS = 30 * 1000;
+// A browser normally sends only auth/subscription frames on this channel.
+// Bound both the rate and the serial promise queue so a client that floods
+// many individually-valid 4 KiB frames cannot retain an unbounded backlog
+// before the asynchronous handler gets a chance to run.
+const WS_MESSAGE_WINDOW_MS = 10 * 1000;
+const WS_MAX_MESSAGES_PER_WINDOW = 30;
+const WS_MAX_QUEUED_MESSAGES = 16;
+const WS_POLICY_VIOLATION_CLOSE_CODE = 1008;
+const allowedWsOrigins = new Set(security.resolveCorsOrigins());
+
+function isAllowedWebSocketOrigin(origin) {
+  // Browser WebSocket handshakes always carry Origin. Reject missing or
+  // malformed values too: accepting them would create a cross-site endpoint
+  // outside the application's established CORS policy.
+  return typeof origin === "string" && allowedWsOrigins.has(origin);
+}
+
+// `ws` otherwise accepts frames up to 100 MiB and rejects them only after
+// buffering. This module is loaded before server.listen(), so updating the
+// server options here applies to every subsequent upgrade without changing
+// the shared core bootstrap.
+wss.options.maxPayload = WS_MAX_PAYLOAD_BYTES;
+wss.options.verifyClient = ({ origin }) => isAllowedWebSocketOrigin(origin);
+
+function removeSocketFromRegistry(ws) {
+  if (ws._authTimeout) {
+    clearTimeout(ws._authTimeout);
+    ws._authTimeout = null;
+  }
+
+  const userId = ws._userId;
+  if (userId && wsClients.has(userId)) {
+    const sockets = wsClients.get(userId);
+    sockets.delete(ws);
+    if (sockets.size === 0) wsClients.delete(userId);
+  }
+
+  const sessionHash = ws._sessionTokenHash;
+  if (sessionHash && sessionSockets.has(sessionHash)) {
+    const sockets = sessionSockets.get(sessionHash);
+    sockets.delete(ws);
+    if (sockets.size === 0) sessionSockets.delete(sessionHash);
+  }
+
+  ws._userId = null;
+  ws._sessionTokenHash = null;
+  ws._compareTarget = null;
+  if (ws._squadCodes) ws._squadCodes.clear();
+}
+
+function closeWebSocket(ws, reason = "Authorization required") {
+  removeSocketFromRegistry(ws);
+  if (ws.readyState !== 0 && ws.readyState !== 1) return;
+  try {
+    ws.close(WS_POLICY_VIOLATION_CLOSE_CODE, reason);
+  } catch {
+    try { ws.terminate(); } catch {}
+  }
+}
+
+function acceptInboundMessage(ws) {
+  const now = Date.now();
+  if (now - (ws._messageWindowStartedAt || 0) >= WS_MESSAGE_WINDOW_MS) {
+    ws._messageWindowStartedAt = now;
+    ws._messageCount = 0;
+  }
+  ws._messageCount = (ws._messageCount || 0) + 1;
+  if (ws._messageCount > WS_MAX_MESSAGES_PER_WINDOW) return false;
+  if ((ws._pendingMessageCount || 0) >= WS_MAX_QUEUED_MESSAGES) return false;
+  ws._pendingMessageCount = (ws._pendingMessageCount || 0) + 1;
+  return true;
+}
+
+function registerAuthenticatedSocket(ws, userId, token) {
+  // Re-authentication on the same socket used to leave it registered under
+  // the old identity. A connection has one immutable identity instead.
+  if (ws._userId || ws._sessionTokenHash) {
+    closeWebSocket(ws, "Re-authentication is not allowed");
+    return false;
+  }
+
+  const sessionHash = hashSessionToken(token);
+  if (!sessionHash) {
+    closeWebSocket(ws, "Invalid session");
+    return false;
+  }
+
+  ws._userId = String(userId);
+  ws._sessionTokenHash = sessionHash;
+  ws._sessionLastCheckedAt = Date.now();
+  if (ws._authTimeout) {
+    clearTimeout(ws._authTimeout);
+    ws._authTimeout = null;
+  }
+
+  if (!wsClients.has(ws._userId)) wsClients.set(ws._userId, new Set());
+  wsClients.get(ws._userId).add(ws);
+  if (!sessionSockets.has(sessionHash)) sessionSockets.set(sessionHash, new Set());
+  sessionSockets.get(sessionHash).add(ws);
+  return true;
+}
+
+async function isSessionStillValid(sessionHash, userId) {
+  if (!sessionHash || !userId) return false;
+  const result = await pool.query(
+    `SELECT 1
+     FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token = $1
+       AND s.user_id = $2
+       AND s.expires_at > NOW()
+       AND u.deleted_at IS NULL
+       AND (u.suspended_until IS NULL OR u.suspended_until <= NOW())
+     LIMIT 1`,
+    [sessionHash, userId]
+  );
+  return result.rows.length > 0;
+}
+
+async function revalidateSocketAuthorization(ws, { force = false } = {}) {
+  if (!ws._userId || !ws._sessionTokenHash || ws._sessionCheckInFlight) return false;
+  const now = Date.now();
+  if (!force && now - (ws._sessionLastCheckedAt || 0) < WS_SESSION_REVALIDATION_MS) return true;
+
+  ws._sessionCheckInFlight = true;
+  try {
+    const stillValid = await isSessionStillValid(ws._sessionTokenHash, ws._userId);
+    if (!stillValid) {
+      closeWebSocket(ws, "Session expired");
+      return false;
+    }
+    ws._sessionLastCheckedAt = now;
+
+    // Permissions can change after subscription (privacy toggle, block,
+    // leaving/kicking from a squad). Do not keep a formerly valid stream.
+    if (ws._compareTarget && !(await canViewCollection(ws._userId, ws._compareTarget))) {
+      ws._compareTarget = null;
+    }
+    if (ws._squadCodes?.size) {
+      const subscribedCodes = [...ws._squadCodes];
+      const memberResult = await pool.query(
+        `SELECT s.code
+         FROM squad_members sm
+         JOIN squads s ON s.id = sm.squad_id
+         WHERE sm.user_id = $1
+           AND sm.status = 'active'
+           AND s.code = ANY($2::text[])`,
+        [ws._userId, subscribedCodes]
+      );
+      const activeCodes = new Set(memberResult.rows.map(row => row.code));
+      for (const code of subscribedCodes) {
+        if (!activeCodes.has(code)) ws._squadCodes.delete(code);
+      }
+    }
+    return true;
+  } catch (err) {
+    // If the session store cannot be checked, fail closed rather than keep a
+    // possibly revoked bearer session authorized to receive private updates.
+    console.warn("[ws] session revalidation failed:", err.message);
+    closeWebSocket(ws, "Session validation failed");
+    return false;
+  } finally {
+    ws._sessionCheckInFlight = false;
+  }
+}
+
+// Called by the logout/revocation path with the *raw* bearer token. This is
+// intentionally scoped to that session only, so other devices stay connected.
+function revokeSessionSockets(token, reason = "Session revoked") {
+  const sessionHash = hashSessionToken(token);
+  if (!sessionHash) return 0;
+  const sockets = [...(sessionSockets.get(sessionHash) || [])];
+  for (const ws of sockets) closeWebSocket(ws, reason);
+  return sockets.length;
+}
+
+// Used when the account itself is suspended or deleted. Unlike session
+// revocation, this intentionally closes every device/session for that user.
+function revokeUserSockets(userId, reason = "Account access revoked") {
+  if (userId == null) return 0;
+  const sockets = [...(wsClients.get(String(userId)) || [])];
+  for (const ws of sockets) closeWebSocket(ws, reason);
+  return sockets.length;
+}
 
 wss.on("connection", (ws) => {
   ws._userId = null;
+  ws._sessionTokenHash = null;
+  ws._sessionLastCheckedAt = 0;
+  ws._sessionCheckInFlight = false;
   ws._alive = true;
+  ws._messageWindowStartedAt = Date.now();
+  ws._messageCount = 0;
+  ws._pendingMessageCount = 0;
+  // Process inbound messages strictly in order per connection. Without this,
+  // each message ran in its own async IIFE, so a `compare_subscribe` could be
+  // handled before the preceding `auth` finished awaiting validateSession(),
+  // leaving ws._userId still null and defeating the authorization check below.
+  ws._msgQueue = Promise.resolve();
 
-  ws.on("message", (raw) => {
-    // Cap inbound WS message size to avoid memory abuse.
-    if (typeof raw === "string" ? raw.length > 4096 : raw.length > 4096) return;
-    (async () => {
-      try {
-        const msg = JSON.parse(raw);
-        if (msg.type === "auth") {
-          // SECURITY: derive the WS identity from a valid session token, never
-          // from a client-supplied userId. Otherwise anyone could subscribe as
-          // any user and infer their squad activity from update pings.
-          const userId = msg.token ? await validateSession(msg.token) : null;
-          if (!userId) {
-            try { ws.send(JSON.stringify({ type: "auth_error" })); } catch {}
-            return;
-          }
-          ws._userId = String(userId);
-          if (!wsClients.has(ws._userId)) wsClients.set(ws._userId, new Set());
-          wsClients.get(ws._userId).add(ws);
-        } else if (msg.type === "compare_subscribe" && msg.targetUserId) {
-          ws._compareTarget = String(msg.targetUserId);
-        } else if (msg.type === "compare_unsubscribe") {
-          ws._compareTarget = null;
-        } else if (msg.type === "squad_subscribe" && msg.squadCode && ws._userId) {
-          const code = String(msg.squadCode).trim().toUpperCase();
-          const member = await pool.query(
-            `SELECT 1 FROM squad_members sm
-             JOIN squads s ON s.id = sm.squad_id
-             WHERE s.code = $1 AND sm.user_id = $2 AND sm.status = 'active'`,
-            [code, ws._userId]
-          );
-          if (member.rows.length) {
-            if (!ws._squadCodes) ws._squadCodes = new Set();
-            ws._squadCodes.add(code);
-          }
-        } else if (msg.type === "squad_unsubscribe" && msg.squadCode) {
-          if (ws._squadCodes) {
-            ws._squadCodes.delete(String(msg.squadCode).trim().toUpperCase());
-          }
-        }
-      } catch {}
-    })();
+  const authTimeout = setTimeout(() => {
+    if (!ws._userId) closeWebSocket(ws, "Authentication timed out");
+  }, WS_AUTH_TIMEOUT_MS);
+  if (typeof authTimeout.unref === "function") authTimeout.unref();
+  ws._authTimeout = authTimeout;
+
+  async function handleMessage(raw, isBinary) {
+    // `maxPayload` above enforces this before buffering; reject binary frames
+    // as the protocol accepts compact JSON text only.
+    if (isBinary || Buffer.byteLength(raw) > WS_MAX_PAYLOAD_BYTES) {
+      closeWebSocket(ws, "Invalid message");
+      return;
+    }
+    let msg;
+    try { msg = JSON.parse(raw); } catch { return; }
+    if (msg.type === "auth") {
+      // SECURITY: derive the WS identity from a valid session token, never
+      // from a client-supplied userId. Otherwise anyone could subscribe as
+      // any user and infer their squad activity from update pings.
+      const userId = msg.token ? await validateSession(msg.token) : null;
+      const sessionHash = hashSessionToken(msg.token);
+      // A suspension is a live-access freeze, not a session deletion: the
+      // same bearer remains usable for the dedicated unsuspend endpoint, but
+      // cannot establish or retain a private realtime channel.
+      const sessionUsable = userId && sessionHash
+        ? await isSessionStillValid(sessionHash, userId)
+        : false;
+      if (!sessionUsable) {
+        try { ws.send(JSON.stringify({ type: "auth_error" })); } catch {}
+        closeWebSocket(ws, "Invalid or suspended session");
+        return;
+      }
+      registerAuthenticatedSocket(ws, userId, msg.token);
+    } else if (msg.type === "compare_subscribe" && msg.targetUserId) {
+      // SECURITY: live compare updates carry private data (status, priority,
+      // notes). Only authenticated users allowed to view the target's
+      // collection may subscribe — otherwise anyone could stream any user's
+      // private collection changes just by knowing their id.
+      const target = String(msg.targetUserId);
+      if (!ws._userId) {
+        try { ws.send(JSON.stringify({ type: "compare_error", reason: "auth_required" })); } catch {}
+        return;
+      }
+      const allowed = ws._userId === target || await canViewCollection(ws._userId, target);
+      if (!allowed) {
+        ws._compareTarget = null;
+        try { ws.send(JSON.stringify({ type: "compare_error", reason: "forbidden" })); } catch {}
+        return;
+      }
+      ws._compareTarget = target;
+    } else if (msg.type === "compare_unsubscribe") {
+      ws._compareTarget = null;
+    } else if (msg.type === "squad_subscribe" && msg.squadCode && ws._userId) {
+      const code = String(msg.squadCode).trim().toUpperCase();
+      const member = await pool.query(
+        `SELECT 1 FROM squad_members sm
+         JOIN squads s ON s.id = sm.squad_id
+         WHERE s.code = $1 AND sm.user_id = $2 AND sm.status = 'active'`,
+        [code, ws._userId]
+      );
+      if (member.rows.length) {
+        if (!ws._squadCodes) ws._squadCodes = new Set();
+        ws._squadCodes.add(code);
+      }
+    } else if (msg.type === "squad_unsubscribe" && msg.squadCode) {
+      if (ws._squadCodes) {
+        ws._squadCodes.delete(String(msg.squadCode).trim().toUpperCase());
+      }
+    }
+  }
+
+  ws.on("message", (raw, isBinary) => {
+    if (!acceptInboundMessage(ws)) {
+      closeWebSocket(ws, "Message rate limit exceeded");
+      return;
+    }
+    ws._msgQueue = ws._msgQueue
+      .then(() => handleMessage(raw, isBinary))
+      .catch(() => {})
+      .finally(() => {
+        ws._pendingMessageCount = Math.max(0, (ws._pendingMessageCount || 1) - 1);
+      });
   });
 
   ws.on("pong", () => { ws._alive = true; });
 
-  ws.on("close", () => {
-    if (ws._userId && wsClients.has(ws._userId)) {
-      wsClients.get(ws._userId).delete(ws);
-      if (wsClients.get(ws._userId).size === 0) wsClients.delete(ws._userId);
-    }
-  });
+  // Oversized/malformed frames emit `error` in ws. Listening prevents an
+  // attacker from turning the new maxPayload limit into an unhandled error.
+  ws.on("error", () => removeSocketFromRegistry(ws));
+
+  ws.on("close", () => removeSocketFromRegistry(ws));
 });
 
 // Heartbeat every 30s
-setInterval(() => {
+const heartbeatTimer = setInterval(() => {
   wss.clients.forEach((ws) => {
-    if (!ws._alive) return ws.terminate();
+    if (ws.readyState !== 1) return;
+    if (!ws._alive) {
+      removeSocketFromRegistry(ws);
+      return ws.terminate();
+    }
+    revalidateSocketAuthorization(ws).catch(() => {});
     ws._alive = false;
     ws.ping();
   });
 }, 30000);
+if (typeof heartbeatTimer.unref === "function") heartbeatTimer.unref();
 
 // Broadcast squad update to all members of a user's squads
 async function broadcastSquadUpdate(userId) {
@@ -243,44 +492,37 @@ async function broadcastSquadCompletionUpdate(userId) {
   }
 }
 
-// Broadcast a collection update to the user's own sockets and to anyone
-// currently comparing with that user.
-function broadcastCompareUpdate(userId, payload) {
+// Broadcast a collection update to the owner's sockets and to viewers whose
+// collection access is still valid at delivery time. A subscribe-time check
+// alone is insufficient: privacy and friendship/block state can change later.
+async function broadcastCompareUpdate(userId, payload) {
   try {
     const uid = String(userId);
     const data = JSON.stringify({ ...payload, userId: uid });
     if (!wss || !wss.clients) return;
     for (const ws of wss.clients) {
       if (ws.readyState !== 1) continue;
-      if (ws._userId === uid || ws._compareTarget === uid) {
+      if (ws._userId === uid) {
         try { ws.send(data); } catch {}
+        continue;
+      }
+      if (ws._compareTarget !== uid || !ws._userId) continue;
+      try {
+        if (await canViewCollection(ws._userId, uid)) {
+          ws.send(data);
+        } else {
+          ws._compareTarget = null;
+        }
+      } catch {
+        // Never deliver private collection changes if authorization cannot be
+        // checked; a later explicit subscription can retry after recovery.
+        ws._compareTarget = null;
       }
     }
   } catch (e) {
     console.warn("broadcastCompareUpdate error", e);
   }
 }
-
-// Enable TLS for any non-local database (Render, Railway, Neon, Supabase, …).
-// Managed providers use certs not in Node's trust store, so we relax
-// rejectUnauthorized. Disable explicitly with PGSSL=disable if needed.
-function shouldUseSSL(url) {
-  if (!url) return false;
-  if (/localhost|127\.0\.0\.1/.test(url)) return false;
-  if (process.env.PGSSL === "disable") return false;
-  return true;
-}
-
-const pool = process.env.DATABASE_URL
-  ? new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: shouldUseSSL(process.env.DATABASE_URL) ? { rejectUnauthorized: false } : false
-    })
-  : new Pool({
-      database: "spritedex",
-      host: "localhost",
-      port: 5432,
-    });
 
 // Broadcast a goal update to the goal owner and all active squad members.
 async function broadcastGoalUpdate(goal, updateType, squadCode = null) {
@@ -310,13 +552,30 @@ async function broadcastGoalUpdate(goal, updateType, squadCode = null) {
     });
 
     const targetIds = new Set();
+    const activeSquadMemberIds = new Set();
     if (goal.user_id) targetIds.add(String(goal.user_id));
     if (goal.squad_id) {
       const membersRes = await pool.query(
         "SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'",
         [goal.squad_id]
       );
-      for (const row of membersRes.rows) targetIds.add(String(row.user_id));
+      for (const row of membersRes.rows) {
+        const memberId = String(row.user_id);
+        targetIds.add(memberId);
+        activeSquadMemberIds.add(memberId);
+      }
+    } else if (code) {
+      // A caller can provide a squad code even if the goal row has no squad
+      // id. Resolve membership afresh rather than trusting a stale WS
+      // `squad_subscribe` flag.
+      const membersRes = await pool.query(
+        `SELECT sm.user_id
+         FROM squad_members sm
+         JOIN squads s ON s.id = sm.squad_id
+         WHERE s.code = $1 AND sm.status = 'active'`,
+        [code]
+      );
+      for (const row of membersRes.rows) activeSquadMemberIds.add(String(row.user_id));
     }
 
     for (const [uid, sockets] of wsClients) {
@@ -329,7 +588,12 @@ async function broadcastGoalUpdate(goal, updateType, squadCode = null) {
     if (code) {
       for (const ws of wss.clients) {
         if (ws.readyState === 1 && ws._squadCodes && ws._squadCodes.has(code)) {
-          ws.send(payload);
+          if (ws._userId && activeSquadMemberIds.has(ws._userId)) {
+            ws.send(payload);
+          } else {
+            // Membership was revoked after the subscription was created.
+            ws._squadCodes.delete(code);
+          }
         }
       }
     }
@@ -351,4 +615,23 @@ function broadcastNewsUpdate(payload) {
   }
 }
 
-module.exports = { broadcastCompareUpdate, broadcastGoalUpdate, broadcastNewsUpdate, broadcastSquadUpdate, broadcastSquadCompletionUpdate, pool, shouldUseSSL, wsClients };
+module.exports = {
+  WS_AUTH_TIMEOUT_MS,
+  WS_MAX_MESSAGES_PER_WINDOW,
+  WS_MAX_QUEUED_MESSAGES,
+  WS_MAX_PAYLOAD_BYTES,
+  WS_MESSAGE_WINDOW_MS,
+  broadcastCompareUpdate,
+  broadcastGoalUpdate,
+  broadcastNewsUpdate,
+  broadcastSquadCompletionUpdate,
+  broadcastSquadUpdate,
+  isAllowedWebSocketOrigin,
+  pool,
+  revalidateSocketAuthorization,
+  revokeSessionSockets,
+  revokeUserSockets,
+  sessionSockets,
+  shouldUseSSL,
+  wsClients
+};

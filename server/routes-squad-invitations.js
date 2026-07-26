@@ -1,13 +1,14 @@
 // routes-squad-invitations.js — squad invitation context, accept, decline and preview.
 
-const { getRequestingUser, isBlocked, getRelationship, canViewCollection } = require("./auth");
+const { getRequestingUser, isBlocked, getRelationship, canViewCollection, requireNotSuspended } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const analytics = require("../analytics");
 const compare = require("./compare");
 const pushService = require("../push-service");
-const { logSquadMemberJoined, logSquadCompletionMilestone } = require("./squad-activity");
+const { logSquadMemberJoined } = require("./squad-activity");
 const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
+const squadCompletion = require("./notification-squad-completion");
 
 const ACTIVE_FRIEND_STATUSES = ["pending", "accepted", "blocked"];
 
@@ -136,7 +137,13 @@ async function getSquadPreview(squad, reqUser) {
   };
 }
 
-async function refreshSquadStats(squadId) {
+async function refreshSquadStats(squadId, {
+  contributingUserId = null,
+  newVariantIds = []
+} = {}) {
+  await squadCompletion.ensureSquadCompletionTables();
+  const previous = await squadCompletion.readPreviousStats(squadId);
+
   const members = await getSquadActiveMembers(squadId, null);
   const memberIds = members.map(m => m.userId);
   const [completion, recommendationsData] = await Promise.all([
@@ -144,7 +151,11 @@ async function refreshSquadStats(squadId) {
     compare.getSquadRecommendations(memberIds)
   ]);
 
-  await logSquadCompletionMilestone(squadId, completion.collectiveCompletionRate);
+  // `squad_stats` is an internal aggregate used to detect coverage changes.
+  // Do not emit a generic milestone activity from it: a single aggregate is
+  // not viewer-specific and can include a member's private collection.  The
+  // completion notification flow below applies per-recipient visibility checks
+  // before exposing a rate, count or variant.
 
   const immediateRecs = (recommendationsData.immediate || []);
   const recPayload = JSON.stringify(immediateRecs.map(r => ({
@@ -159,14 +170,37 @@ async function refreshSquadStats(squadId) {
     wantedByCount: r.wantedByCount
   })));
   await pool.query(
-    `INSERT INTO squad_stats (squad_id, collective_completion_rate, recommendations, computed_at)
-     VALUES ($1, $2, $3::jsonb, NOW())
+    `INSERT INTO squad_stats
+       (squad_id, collective_completion_rate, covered_count, total_variants, recommendations, computed_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, NOW())
      ON CONFLICT (squad_id)
      DO UPDATE SET collective_completion_rate = EXCLUDED.collective_completion_rate,
+                   covered_count = EXCLUDED.covered_count,
+                   total_variants = EXCLUDED.total_variants,
                    recommendations = EXCLUDED.recommendations,
                    computed_at = EXCLUDED.computed_at`,
-    [squadId, completion.collectiveCompletionRate, recPayload]
+    [
+      squadId,
+      completion.collectiveCompletionRate,
+      completion.ownedCount,
+      completion.totalVariants,
+      recPayload
+    ]
   );
+
+  // Étapes 22–23 — emit only when collective coverage actually increased.
+  if (contributingUserId && newVariantIds.length) {
+    await squadCompletion.emitIfCoverageIncreased(squadId, {
+      contributingUserId,
+      newVariantIds,
+      previousRate: previous.previousRate,
+      previousCoveredCount: previous.previousCoveredCount,
+      newRate: completion.collectiveCompletionRate,
+      newCoveredCount: completion.ownedCount,
+      totalVariants: completion.totalVariants
+    }).catch(err => console.error("[refreshSquadStats] completion emit failed", err));
+  }
+
   return completion.collectiveCompletionRate;
 }
 
@@ -332,58 +366,88 @@ app.get("/api/squad-invitations", async (req, res) => {
 });
 
 async function acceptInvitation(invitationId, reqUser) {
-  const invResult = await pool.query(
-    `SELECT si.*, s.code, s.name FROM squad_invitations si
-     JOIN squads s ON s.id = si.squad_id
-     WHERE si.id = $1 AND si.invitee_id = $2 AND si.status = 'pending'`,
-    [invitationId, reqUser]
-  );
-  if (!invResult.rows.length) {
-    const err = new Error("Invitation introuvable");
-    err.status = 404;
-    throw err;
-  }
-  const invitation = invResult.rows[0];
-  if (invitation.expires_at && new Date(invitation.expires_at) <= new Date()) {
-    await pool.query(
-      "UPDATE squad_invitations SET status = 'expired', responded_at = NOW() WHERE id = $1",
-      [invitationId]
+  const client = await pool.connect();
+  let invitation;
+  let committed = false;
+  try {
+    await client.query("BEGIN");
+    const invResult = await client.query(
+      `SELECT si.*, s.code, s.name FROM squad_invitations si
+       JOIN squads s ON s.id = si.squad_id
+       WHERE si.id = $1 AND si.invitee_id = $2 AND si.status = 'pending'
+       FOR UPDATE OF si`,
+      [invitationId, reqUser]
     );
-    const err = new Error("Invitation expirée");
-    err.status = 400;
-    throw err;
-  }
-  const alreadyMember = await pool.query(
-    "SELECT 1 FROM squad_members WHERE squad_id = $1 AND user_id = $2 AND status = 'active'",
-    [invitation.squad_id, reqUser]
-  );
-  if (alreadyMember.rows.length) {
-    await pool.query(
+    if (!invResult.rows.length) {
+      const err = new Error("Invitation introuvable");
+      err.status = 404;
+      throw err;
+    }
+    invitation = invResult.rows[0];
+    if (invitation.expires_at && new Date(invitation.expires_at) <= new Date()) {
+      await client.query(
+        "UPDATE squad_invitations SET status = 'expired', responded_at = NOW() WHERE id = $1",
+        [invitationId]
+      );
+      await client.query("COMMIT");
+      committed = true;
+      const err = new Error("Invitation expirée");
+      err.status = 400;
+      throw err;
+    }
+    const alreadyMember = await client.query(
+      "SELECT 1 FROM squad_members WHERE squad_id = $1 AND user_id = $2 AND status = 'active'",
+      [invitation.squad_id, reqUser]
+    );
+    if (alreadyMember.rows.length) {
+      await client.query(
+        "UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1",
+        [invitationId]
+      );
+      await client.query("COMMIT");
+      committed = true;
+      return { ok: true, squadCode: invitation.code };
+    }
+
+    // Lock the parent row before counting.  Direct joins take the same lock,
+    // so a COUNT/INSERT sequence cannot allow an eleventh active member.
+    const squadLock = await client.query(
+      "SELECT id FROM squads WHERE id = $1 FOR UPDATE",
+      [invitation.squad_id]
+    );
+    if (!squadLock.rows.length) {
+      const err = new Error("Escouade introuvable");
+      err.status = 404;
+      throw err;
+    }
+    const memberCount = await client.query(
+      "SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'",
+      [invitation.squad_id]
+    );
+    if (parseInt(memberCount.rows[0].count) >= 10) {
+      const err = new Error("Escouade pleine (max 10)");
+      err.status = 400;
+      throw err;
+    }
+    await client.query(
+      `INSERT INTO squad_members (squad_id, user_id, role, status)
+       VALUES ($1, $2, 'member', 'active')
+       ON CONFLICT (squad_id, user_id)
+       DO UPDATE SET status = 'active', left_at = NULL, role = 'member'`,
+      [invitation.squad_id, reqUser]
+    );
+    await client.query(
       "UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1",
       [invitationId]
     );
-    return { ok: true, squadCode: invitation.code };
-  }
-  const memberCount = await pool.query(
-    "SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'",
-    [invitation.squad_id]
-  );
-  if (parseInt(memberCount.rows[0].count) >= 10) {
-    const err = new Error("Escouade pleine (max 10)");
-    err.status = 400;
+    await client.query("COMMIT");
+    committed = true;
+  } catch (err) {
+    if (!committed) await client.query("ROLLBACK").catch(() => {});
     throw err;
+  } finally {
+    client.release();
   }
-  await pool.query(
-    `INSERT INTO squad_members (squad_id, user_id, role, status)
-     VALUES ($1, $2, 'member', 'active')
-     ON CONFLICT (squad_id, user_id)
-     DO UPDATE SET status = 'active', left_at = NULL, role = 'member'`,
-    [invitation.squad_id, reqUser]
-  );
-  await pool.query(
-    "UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1",
-    [invitationId]
-  );
   invalidateSquadAnalysisCache(invitation.squad_id);
 
   const statsRes = await pool.query(
@@ -428,7 +492,7 @@ function handleInvitationError(res, err) {
 }
 
 // ── Accept a squad invitation (canonical path) ──
-app.post("/api/squads/invitations/:invitationId/accept", async (req, res) => {
+app.post("/api/squads/invitations/:invitationId/accept", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -440,7 +504,7 @@ app.post("/api/squads/invitations/:invitationId/accept", async (req, res) => {
 });
 
 // ── Decline a squad invitation (canonical path) ──
-app.post("/api/squads/invitations/:invitationId/decline", async (req, res) => {
+app.post("/api/squads/invitations/:invitationId/decline", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -452,7 +516,7 @@ app.post("/api/squads/invitations/:invitationId/decline", async (req, res) => {
 });
 
 // ── Accept a squad invitation (legacy alias) ──
-app.post("/api/squad-invitations/:id/accept", async (req, res) => {
+app.post("/api/squad-invitations/:id/accept", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
@@ -464,7 +528,7 @@ app.post("/api/squad-invitations/:id/accept", async (req, res) => {
 });
 
 // ── Decline a squad invitation (legacy alias) ──
-app.post("/api/squad-invitations/:id/decline", async (req, res) => {
+app.post("/api/squad-invitations/:id/decline", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {

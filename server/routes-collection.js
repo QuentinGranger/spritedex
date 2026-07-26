@@ -2,7 +2,7 @@
 
 const pushService = require("../push-service");
 const security = require("../security");
-const { areFriends, canViewCollection, getRequestingUser, getVisibility, requireSameUser } = require("./auth");
+const { areFriends, canViewCollection, getRequestingUser, getVisibility, requireNotSuspended, requireSameUser } = require("./auth");
 const { normalizeCollection, normalizeVariantId } = require("./catalog");
 const { invalidateCompareCacheForUser } = require("./compare");
 const { app } = require("./core");
@@ -12,6 +12,9 @@ const { logSquadCollectionEvent } = require("./squad-activity");
 const { refreshSquadStats, scheduleSquadStatsRefresh } = require("./routes-squad-invitations");
 const { checkAffectedGoals } = require("./routes-goals");
 const { invalidateSquadAnalysisCacheForUser } = require("./squad-analysis-cache");
+const { emitDomainEvent, DOMAIN_EVENTS } = require("./event-bus");
+const { isAcquiredFromStatus } = require("./notification-gates");
+const acquisition = require("./notification-acquisition");
 
 // ── Collection : GET all entries for user ──
 app.get("/api/collection/:userId", async (req, res) => {
@@ -37,7 +40,10 @@ app.get("/api/collection/:userId", async (req, res) => {
       "SELECT variant_id, sprite_id, status, note, priority, obtained_at, updated_at FROM sprite_entries WHERE user_id = $1",
       [userId]
     );
-    const collection = {};
+    // variant_id values originate from persisted user data, including older
+    // imports made before key validation existed.  A null-prototype record
+    // keeps a legacy "__proto__" row inert while it is serialized.
+    const collection = Object.create(null);
     for (const row of result.rows) {
       collection[row.variant_id] = {
         spriteId: row.sprite_id,
@@ -55,20 +61,19 @@ app.get("/api/collection/:userId", async (req, res) => {
   }
 });
 
-// ── Notify friends about collection changes ─────────────────────────────
-// Emits friend_collection_updated once per affected friend, plus a
-// friend_priority_match for each owned variant that a friend is looking for.
+// ── Notify friends about generic collection edits ───────────────────────
+// friend_priority_match is replaced by collection.variant_acquired →
+// friend_acquired_missing_variant (Étapes 15–21). This path only emits a
+// coarse friend_collection_updated for non-acquisition edits.
 async function notifyCollectionChanges(ownerId, changes) {
   if (!changes || !changes.length) return;
   try {
     const ownerRes = await pool.query(
-      `SELECT username, visibility FROM users WHERE id = $1::integer AND deleted_at IS NULL`,
+      `SELECT username FROM users WHERE id = $1::integer AND deleted_at IS NULL`,
       [ownerId]
     );
     if (!ownerRes.rows.length) return;
-    const owner = ownerRes.rows[0];
-    const ownerVisibility = getVisibility(owner);
-    const ownerName = owner.username || "Quelqu'un";
+    const ownerName = ownerRes.rows[0].username || "Quelqu'un";
 
     const friendRows = await pool.query(
       `SELECT u.id
@@ -80,15 +85,6 @@ async function notifyCollectionChanges(ownerId, changes) {
       [ownerId]
     );
     if (!friendRows.rows.length) return;
-    const friendIds = friendRows.rows.map(r => r.id);
-
-    const variantIds = changes.map(c => c.variantId);
-    const priorityRes = await pool.query(
-      `SELECT user_id, variant_id FROM sprite_entries
-       WHERE user_id = ANY($1) AND variant_id = ANY($2) AND priority <> 'none'`,
-      [friendIds, variantIds]
-    );
-    const prioritySet = new Set(priorityRes.rows.map(r => `${r.user_id}:${r.variant_id}`));
 
     for (const friend of friendRows.rows) {
       if (!(await areFriends(friend.id, ownerId))) continue;
@@ -102,35 +98,59 @@ async function notifyCollectionChanges(ownerId, changes) {
         message: `${ownerName} a mis à jour sa collection.`,
         url: `/collection/${ownerId}`
       });
-
-      for (const change of changes) {
-        if (change.newStatus !== "owned" || change.oldStatus === "owned") continue;
-        if (prioritySet.has(`${friend.id}:${change.variantId}`)) {
-          pushService.createNotification(pool, {
-            recipientId: friend.id,
-            actorId: ownerId,
-            type: "friend_priority_match",
-            entityId: change.variantId,
-            context: { variantId: change.variantId, ownerId },
-            message: `${ownerName} possède maintenant une variante que vous recherchez.`,
-            url: `/collection/${ownerId}`
-          });
-        }
-      }
     }
   } catch (err) {
     console.error("[notifyCollectionChanges]", err);
   }
 }
 
+// Étape 15 — emit collection.variant_acquired when status becomes owned from
+// a non-owned status in { missing, priority, spotted, unavailable, unknown }.
+async function emitVariantAcquiredEvents(ownerId, changes) {
+  if (!changes || !changes.length) return;
+  for (const change of changes) {
+    if (change.newStatus !== "owned") continue;
+    if (!isAcquiredFromStatus(change.oldStatus)) continue;
+    const names = await acquisition.lookupVariantNames(change.variantId);
+    await emitDomainEvent(DOMAIN_EVENTS.COLLECTION_VARIANT_ACQUIRED, {
+      actorId: ownerId,
+      entityType: "sprite_variant",
+      entityId: change.variantId,
+      context: {
+        previousStatus: change.oldStatus,
+        newStatus: "owned",
+        variantId: change.variantId,
+        variantName: names.variantName,
+        spriteName: names.spriteName
+      }
+    });
+  }
+}
+
+// Collection changes can affect both the squad completion rate and its
+// recommendations (which also depend on priorities).  Keep the persisted
+// squad snapshot in sync for every edit, including removals done by import.
+async function scheduleSquadStatsForUser(userId) {
+  const squads = await pool.query(
+    `SELECT squad_id FROM squad_members
+     WHERE user_id = $1 AND status = 'active'`,
+    [userId]
+  );
+  await Promise.all(squads.rows.map(({ squad_id: squadId }) =>
+    scheduleSquadStatsRefresh(squadId)
+  ));
+}
+
 // ── Collection : UPSERT one entry ──
-app.put("/api/collection/:userId/:spriteId", security.validateBody(security.schemas.collectionEntrySchema), async (req, res) => {
+app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.validateBody(security.schemas.collectionEntrySchema), async (req, res) => {
   const { userId } = req.params;
   let { spriteId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   if (!spriteId || spriteId.length > 120) return res.status(400).json({ error: "spriteId invalide" });
   const { variantId, spriteId: baseSpriteId } = await normalizeVariantId(spriteId);
+  if (!variantId) return res.status(400).json({ error: "spriteId invalide" });
   const { status, note, priority, obtainedAt } = req.validatedBody;
+  const hasObtainedAt = Object.prototype.hasOwnProperty.call(req.validatedBody, "obtainedAt");
   try {
     const prev = await pool.query(
       `SELECT status FROM sprite_entries WHERE user_id = $1 AND variant_id = $2`,
@@ -138,20 +158,31 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
     );
     const prevStatus = prev.rows.length ? prev.rows[0].status : "new";
 
-    await pool.query(
+    const saved = await pool.query(
       `INSERT INTO sprite_entries (user_id, variant_id, sprite_id, status, note, priority, obtained_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, NOW())
+       VALUES ($1, $2, $3, COALESCE($4, 'new'), COALESCE($5, ''), COALESCE($6, 'none'), $7::timestamptz, NOW())
        ON CONFLICT (user_id, variant_id)
        DO UPDATE SET sprite_id = COALESCE(sprite_entries.sprite_id, EXCLUDED.sprite_id),
                      status = COALESCE($4, sprite_entries.status),
                      note = COALESCE($5, sprite_entries.note),
                      priority = COALESCE($6, sprite_entries.priority),
-                     obtained_at = COALESCE($7::timestamptz, sprite_entries.obtained_at),
-                     updated_at = NOW()`,
-      [userId, variantId, baseSpriteId, status || "new", note ?? "", priority || "none", obtainedAt || null]
+                     obtained_at = CASE WHEN $8 THEN $7::timestamptz ELSE sprite_entries.obtained_at END,
+                     updated_at = NOW()
+       RETURNING status, note, priority, obtained_at`,
+      [
+        userId,
+        variantId,
+        baseSpriteId,
+        status ?? null,
+        note ?? null,
+        priority ?? null,
+        hasObtainedAt && obtainedAt !== "" ? obtainedAt : null,
+        hasObtainedAt
+      ]
     );
 
-    const newStatus = status || "new";
+    const savedEntry = saved.rows[0];
+    const newStatus = savedEntry.status;
     if (newStatus !== prevStatus) {
       pool.query(
         `INSERT INTO collection_history (user_id, sprite_id, old_status, new_status) VALUES ($1, $2, $3, $4)`,
@@ -166,28 +197,49 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
     if ((status === "owned") && prevStatus !== "owned") {
       const affectedSquads = await logSquadCollectionEvent(userId, variantId, baseSpriteId, "owned");
       for (const squadId of affectedSquads || []) {
-        try { await refreshSquadStats(squadId); } catch (err) { console.error("[setEntry] refresh squad stats failed", err); }
+        try {
+          // Étape 22 — recompute coverage and emit squad.completion_changed on real gains.
+          await refreshSquadStats(squadId, {
+            contributingUserId: userId,
+            newVariantIds: [variantId]
+          });
+        } catch (err) {
+          console.error("[setEntry] refresh squad stats failed", err);
+        }
       }
+    }
+
+    // A demotion (owned → missing), an import-like edit, or a priority change
+    // must refresh the stored squad stats too.  The owned-gain path above
+    // remains synchronous so coverage notifications retain their exact gain.
+    if (newStatus !== prevStatus || note !== undefined || priority !== undefined || hasObtainedAt) {
+      scheduleSquadStatsForUser(userId).catch(err =>
+        console.error("[setEntry] squad stats refresh failed", err)
+      );
     }
 
     await checkAffectedGoals(userId, variantId);
     res.json({ ok: true });
     broadcastSquadUpdate(userId);
     broadcastSquadCompletionUpdate(userId);
-    notifyCollectionChanges(userId, [{
+    const change = {
       variantId,
       spriteId: baseSpriteId,
       oldStatus: prevStatus,
       newStatus
-    }]);
+    };
+    notifyCollectionChanges(userId, [change]);
+    emitVariantAcquiredEvents(userId, [change]).catch(err =>
+      console.error("[setEntry] variant_acquired emit failed", err)
+    );
     broadcastCompareUpdate(userId, {
       changes: [{
         variantId,
         spriteId: baseSpriteId,
         status: newStatus,
-        priority: priority || "none",
-        note: note ?? "",
-        obtainedAt: obtainedAt || null
+        priority: savedEntry.priority || "none",
+        note: savedEntry.note || "",
+        obtainedAt: savedEntry.obtained_at || null
       }]
     });
   } catch (err) {
@@ -197,7 +249,7 @@ app.put("/api/collection/:userId/:spriteId", security.validateBody(security.sche
 });
 
 // ── Collection : bulk sync ──
-app.post("/api/collection/:userId/sync", security.syncLimiter, security.validateBody(security.schemas.collectionSyncSchema), async (req, res) => {
+app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimiter, security.validateBody(security.schemas.collectionSyncSchema), async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   const { collection } = req.validatedBody;
@@ -268,7 +320,30 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
     broadcastSquadCompletionUpdate(userId);
     invalidateCompareCacheForUser(userId);
     invalidateSquadAnalysisCacheForUser(userId);
+    scheduleSquadStatsForUser(userId).catch(err =>
+      console.error("[sync] squad stats refresh failed", err)
+    );
     notifyCollectionChanges(userId, notifyChanges);
+    emitVariantAcquiredEvents(userId, notifyChanges).catch(err =>
+      console.error("[sync] variant_acquired emit failed", err)
+    );
+    // Étape 22 — refresh squad coverage for newly owned variants.
+    const ownedGains = notifyChanges
+      .filter(c => c.newStatus === "owned" && c.oldStatus !== "owned")
+      .map(c => c.variantId);
+    if (ownedGains.length) {
+      (async () => {
+        for (const variantId of ownedGains) {
+          const squads = await logSquadCollectionEvent(userId, variantId, null, "owned");
+          for (const squadId of squads || []) {
+            await refreshSquadStats(squadId, {
+              contributingUserId: userId,
+              newVariantIds: [variantId]
+            });
+          }
+        }
+      })().catch(err => console.error("[sync] squad completion refresh failed", err));
+    }
     broadcastCompareUpdate(userId, { changes: compareChanges });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -284,7 +359,7 @@ app.post("/api/collection/:userId/sync", security.syncLimiter, security.validate
 // anyone overwrite any user's collection just by knowing their userId. It is
 // unused by the current frontend (which uses /sync instead), but is kept for
 // backward compatibility with the same access control as /sync.
-app.post("/api/collection/:userId/import", security.syncLimiter, security.validateBody(security.schemas.collectionSyncSchema), async (req, res) => {
+app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLimiter, security.validateBody(security.schemas.collectionSyncSchema), async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   const { collection } = req.validatedBody;
@@ -301,6 +376,14 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // Import is a REPLACE, not a merge: the payload is the user's complete
+    // collection (e.g. a restored JSON export), so server entries absent from
+    // it are deletions and must be removed. This is what propagates deletions
+    // across devices — /sync stays a merge to avoid wiping data on login.
+    await client.query(
+      "DELETE FROM sprite_entries WHERE user_id = $1 AND NOT (variant_id = ANY($2))",
+      [userId, variantIds]
+    );
     for (const [variantId, entry] of Object.entries(normalizedCollection)) {
       if (variantId.startsWith("fav_")) continue;
       await client.query(
@@ -353,9 +436,15 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
     res.json({ ok: true, count: Object.keys(normalizedCollection).length });
     invalidateCompareCacheForUser(userId);
     invalidateSquadAnalysisCacheForUser(userId);
+    scheduleSquadStatsForUser(userId).catch(err =>
+      console.error("[import] squad stats refresh failed", err)
+    );
     broadcastSquadUpdate(userId);
     broadcastSquadCompletionUpdate(userId);
     notifyCollectionChanges(userId, notifyChanges);
+    emitVariantAcquiredEvents(userId, notifyChanges).catch(err =>
+      console.error("[import] variant_acquired emit failed", err)
+    );
     broadcastCompareUpdate(userId, { changes: compareChanges });
   } catch (err) {
     await client.query("ROLLBACK");
@@ -367,13 +456,16 @@ app.post("/api/collection/:userId/import", security.syncLimiter, security.valida
 });
 
 // ── Reset ──
-app.delete("/api/collection/:userId", async (req, res) => {
+app.delete("/api/collection/:userId", requireNotSuspended, async (req, res) => {
   if (!(await requireSameUser(req, res, req.params.userId))) return;
   try {
     await pool.query("DELETE FROM sprite_entries WHERE user_id = $1", [req.params.userId]);
     res.json({ ok: true });
     invalidateCompareCacheForUser(req.params.userId);
     invalidateSquadAnalysisCacheForUser(req.params.userId);
+    scheduleSquadStatsForUser(req.params.userId).catch(err =>
+      console.error("[reset collection] squad stats refresh failed", err)
+    );
     broadcastSquadCompletionUpdate(req.params.userId);
     broadcastCompareUpdate(req.params.userId, { type: "compare_reset" });
   } catch (err) {

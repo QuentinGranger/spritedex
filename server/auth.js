@@ -9,24 +9,38 @@ function generateToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
+// Opaque links are bearer capabilities too. Store only this digest, never the
+// value that appears in a URL, so a database read cannot be replayed as a
+// profile/compare link. Callers validate the raw token's context separately.
+function hashCapabilityToken(token) {
+  if (typeof token !== "string" || !/^[a-f0-9]{64}$/i.test(token)) return null;
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function hashSessionToken(token) {
+  const digest = hashCapabilityToken(token);
+  return digest ? `s_${digest}` : null;
+}
+
 async function createSession(userId) {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
   await pool.query(
     "INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)",
-    [userId, token, expiresAt]
+    [userId, hashSessionToken(token), expiresAt]
   );
   return token;
 }
 
 async function validateSession(token) {
-  if (!token) return null;
+  const tokenHash = hashSessionToken(token);
+  if (!tokenHash) return null;
   const result = await pool.query(
     `SELECT s.user_id FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token = $1 AND s.expires_at > NOW()
        AND u.deleted_at IS NULL`,
-    [token]
+    [tokenHash]
   );
   return result.rows.length ? result.rows[0].user_id : null;
 }
@@ -149,16 +163,19 @@ async function canViewCollection(viewerId, ownerId, options = {}) {
   if (await isBlocked(viewerId, ownerId)) return false;
 
   if (shareToken && visibilityKey === "collection") {
-    const tokenRes = await pool.query(
-      `SELECT collection_visible
-       FROM compare_share_tokens
-       WHERE token = $1 AND owner_user_id = $2 AND revoked_at IS NULL
-         AND (expires_at IS NULL OR expires_at > NOW())`,
-      [shareToken, ownerId]
-    );
-    if (tokenRes.rows.length && tokenRes.rows[0].collection_visible) {
-      const ownerVisibility = getVisibility(owner);
-      if (ownerVisibility.collection !== "private") return true;
+    const tokenHash = hashCapabilityToken(shareToken);
+    if (tokenHash) {
+      const tokenRes = await pool.query(
+        `SELECT collection_visible
+         FROM compare_share_tokens
+         WHERE token = $1 AND owner_user_id = $2 AND revoked_at IS NULL
+           AND (expires_at IS NULL OR expires_at > NOW())`,
+        [tokenHash, ownerId]
+      );
+      if (tokenRes.rows.length && tokenRes.rows[0].collection_visible) {
+        const ownerVisibility = getVisibility(owner);
+        if (ownerVisibility.collection !== "private") return true;
+      }
     }
   }
 
@@ -220,6 +237,23 @@ async function isAccountSuspended(userId) {
   return result.rows.length > 0;
 }
 
+// Middleware: reject requests from a suspended account. Identity still resolves
+// (so the user can call /unsuspend, /auth/me and /logout), but any action guarded
+// by this middleware is blocked while the suspension is active. This turns an
+// account suspension into an effective freeze without locking the owner out of
+// the reactivation path.
+async function requireNotSuspended(req, res, next) {
+  try {
+    const reqUser = await getRequestingUser(req);
+    if (reqUser && await isAccountSuspended(reqUser)) {
+      return res.status(403).json({ error: "Compte suspendu" });
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function areFriends(userA, userB) {
   if (!userA || !userB || String(userA) === String(userB)) return false;
   if (await isBlocked(userA, userB)) return false;
@@ -268,21 +302,40 @@ async function checkPrivacyAccess(req, targetUserId, visibility) {
 // the next successful login (see /api/auth/login).
 const PBKDF2_ITERATIONS = 210000;
 const LEGACY_PBKDF2_ITERATIONS = 10000;
+// Fixed dummy material is deliberately not a credential. It only makes the
+// CPU cost of a rejected login independent of whether an account exists.
+const DUMMY_PASSWORD_SALT = "2a1c9fd3b0e84cb79f51a43dce08a6b2";
 
-function hashPassword(password, salt, iterations = PBKDF2_ITERATIONS) {
-  salt = salt || crypto.randomBytes(16).toString("hex");
-  const hash = crypto.pbkdf2Sync(password, salt, iterations, 64, "sha512").toString("hex");
-  return { salt, hash, iterations };
+function derivePassword(password, salt, iterations) {
+  return new Promise((resolve, reject) => {
+    // PBKDF2 is intentionally expensive. Use libuv's asynchronous crypto
+    // worker rather than pbkdf2Sync so a burst of login attempts cannot block
+    // the HTTP/WebSocket event loop for every other user.
+    crypto.pbkdf2(password, salt, iterations, 64, "sha512", (err, derived) => {
+      if (err) return reject(err);
+      resolve(derived);
+    });
+  });
 }
 
-function verifyPassword(password, hash, salt, iterations = LEGACY_PBKDF2_ITERATIONS) {
+async function hashPassword(password, salt, iterations = PBKDF2_ITERATIONS) {
+  const finalSalt = salt || crypto.randomBytes(16).toString("hex");
+  const derived = await derivePassword(password, finalSalt, iterations);
+  return { salt: finalSalt, hash: derived.toString("hex"), iterations };
+}
+
+async function verifyPassword(password, hash, salt, iterations = LEGACY_PBKDF2_ITERATIONS) {
   if (!hash || !salt) return false;
-  const result = crypto.pbkdf2Sync(password, salt, iterations || LEGACY_PBKDF2_ITERATIONS, 64, "sha512").toString("hex");
+  const derived = await derivePassword(password, salt, iterations || LEGACY_PBKDF2_ITERATIONS);
   // Constant-time comparison to avoid leaking hash-match progress via timing.
-  const a = Buffer.from(result, "hex");
+  const a = derived;
   const b = Buffer.from(hash, "hex");
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
+}
+
+async function burnPasswordWork(password, iterations = PBKDF2_ITERATIONS) {
+  await derivePassword(password, DUMMY_PASSWORD_SALT, Math.max(1, iterations));
 }
 
 // SECURITY NOTE: the legacy "/api/auth/quick" (pseudo-only login, no password)
@@ -290,4 +343,4 @@ function verifyPassword(password, hash, salt, iterations = LEGACY_PBKDF2_ITERATI
 // a valid session for that account with zero credentials. It was unused by the
 // current UI (no button called it), so removing it does not affect any feature.
 
-module.exports = { DEFAULT_VISIBILITY, LEGACY_PBKDF2_ITERATIONS, PBKDF2_ITERATIONS, areFriends, canViewCollection, checkPrivacyAccess, createSession, generateToken, getCollectionAccessReason, getRelationship, getRequestingUser, getVisibility, hashPassword, isAccountSuspended, isBlocked, requireSameUser, requireSquadMember, shareActiveSquad, shareSquad, validateSession, verifyPassword };
+module.exports = { DEFAULT_VISIBILITY, LEGACY_PBKDF2_ITERATIONS, PBKDF2_ITERATIONS, areFriends, burnPasswordWork, canViewCollection, checkPrivacyAccess, createSession, generateToken, getCollectionAccessReason, getRelationship, getRequestingUser, getVisibility, hashCapabilityToken, hashPassword, hashSessionToken, isAccountSuspended, isBlocked, requireNotSuspended, requireSameUser, requireSquadMember, shareActiveSquad, shareSquad, validateSession, verifyPassword };

@@ -1,5 +1,6 @@
 // ── SPRITNEX : Security helpers (rate limiting, headers, validation, env checks) ──
 const { z } = require("zod");
+const path = require("path");
 
 // ─────────────────────────────────────────────────────────────────
 // Environment variable validation
@@ -9,7 +10,9 @@ function validateEnv() {
   const warnings = [];
 
   // Required for core app to run
-  if (!process.env.OAUTH_REDIRECT_BASE) missing.push("OAUTH_REDIRECT_BASE");
+  if (!process.env.APP_URL && !process.env.OAUTH_REDIRECT_BASE && !process.env.RENDER_EXTERNAL_URL) {
+    missing.push("APP_URL ou OAUTH_REDIRECT_BASE");
+  }
 
   // OAuth is optional but must be consistent (both id+secret or neither)
   if ((process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_SECRET) ||
@@ -39,8 +42,8 @@ function validateEnv() {
     if (!process.env.CORS_ORIGIN && !process.env.APP_URL) {
       warnings.push("CORS_ORIGIN / APP_URL manquant en production : CORS pourrait rester trop permissif.");
     }
-    if ((process.env.OAUTH_REDIRECT_BASE || "").startsWith("http://")) {
-      warnings.push("OAUTH_REDIRECT_BASE utilise http:// en production : passe en https://.");
+    if ((process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || "").startsWith("http://")) {
+      missing.push("APP_URL / OAUTH_REDIRECT_BASE en HTTPS");
     }
   }
 
@@ -62,9 +65,9 @@ function securityHeaders(req, res, next) {
     [
       "default-src 'self'",
       "script-src 'self'",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' ws: wss:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
@@ -92,24 +95,97 @@ function securityHeaders(req, res, next) {
 const BLOCKED_STATIC = new Set([
   "/server.js",
   "/security.js",
+  "/security-logger.js",
+  "/push-service.js",
+  "/analytics.js",
+  "/sprite-data.js",
   "/seed.js",
   "/migrate-auth.sql",
   "/package.json",
   "/package-lock.json",
+  "/capacitor.config.json",
+  "/render.yaml",
   "/readme.md"
 ]);
 
+// Server-side directories that must never be exposed by the static file handler.
+const BLOCKED_STATIC_PREFIXES = [
+  "/node_modules",
+  "/.git",
+  "/.idea",
+  "/.devin",
+  "/.env",
+  "/android/",
+  "/ios/",
+  "/desktop/",
+  "/server/",
+  "/scripts/",
+  "/test/"
+];
+
+// The app used to serve the repository root. Keep a positive allowlist for
+// actual browser assets so a newly added source/config directory is private by
+// default rather than relying on every sensitive path being remembered here.
+const PUBLIC_STATIC_ROOT_FILES = new Set([
+  "/",
+  "/index.html",
+  "/404.html",
+  "/manifest.json",
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/logoapp.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/icon.svg",
+  "/app-logo.png",
+  "/applogo.png",
+  "/logo.png",
+  "/iconeapplicationmobile.png"
+]);
+const PUBLIC_STATIC_DIRECTORIES = new Map([
+  ["/css/", new Set([".css"])],
+  ["/js/", new Set([".js"])],
+  ["/favicon/", new Set([".png", ".ico", ".svg", ".webmanifest", ".json"])],
+  ["/sprite/", new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"])],
+  ["/personna/", new Set([".png", ".jpg", ".jpeg", ".webp"])],
+  ["/icons/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
+  ["/assets/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
+  ["/logo/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
+]);
+
+function normalizeStaticPath(requestPath) {
+  try {
+    const decoded = decodeURIComponent(requestPath);
+    if (decoded.includes("\0")) return null;
+    return path.posix.normalize(`/${decoded.replace(/\\/g, "/").replace(/^\/+/, "")}`).toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isPublicStaticPath(requestPath) {
+  const p = normalizeStaticPath(requestPath);
+  if (!p || PUBLIC_STATIC_ROOT_FILES.has(p)) return !!p;
+  for (const [prefix, extensions] of PUBLIC_STATIC_DIRECTORIES) {
+    if (!p.startsWith(prefix)) continue;
+    return extensions.has(path.posix.extname(p));
+  }
+  return false;
+}
+
 function blockSensitiveFiles(req, res, next) {
   // Only guard non-API GET/HEAD asset requests; API routes are handled above.
-  const p = req.path.toLowerCase();
+  // Express leaves encoded separators such as %2f untouched in req.path, while
+  // serve-static decodes them later. Decode and normalize first so a request
+  // such as /server%2fcore.js cannot bypass the source-file denylist.
+  const p = normalizeStaticPath(req.path);
+  if (!p) return res.status(404).send("Not found");
   if (
     BLOCKED_STATIC.has(p) ||
-    p.startsWith("/node_modules") ||
-    p.startsWith("/.git") ||
-    p.startsWith("/.devin") ||
-    p.startsWith("/.env") ||
+    BLOCKED_STATIC_PREFIXES.some(prefix => p === prefix.slice(0, -1) || p.startsWith(prefix)) ||
     p.endsWith(".sql") ||
-    p.endsWith(".env")
+    p.endsWith(".env") ||
+    p.endsWith(".md")
   ) {
     return res.status(404).send("Not found");
   }
@@ -119,14 +195,58 @@ function blockSensitiveFiles(req, res, next) {
 // ─────────────────────────────────────────────────────────────────
 // CORS origin resolution
 // ─────────────────────────────────────────────────────────────────
+const NATIVE_CORS_ORIGINS = new Set([
+  "capacitor://localhost",
+  "ionic://localhost",
+  "http://localhost",
+  "https://localhost",
+  "spritedex://app"
+]);
+
+function normalizeCorsOrigin(value) {
+  if (NATIVE_CORS_ORIGINS.has(value)) return value;
+  try {
+    const url = new URL(value);
+    if (!/^https?:$/.test(url.protocol) || url.username || url.password) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 function resolveCorsOrigins() {
   const raw = process.env.CORS_ORIGIN || process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
-  const configured = raw.split(",").map(s => s.trim()).filter(Boolean);
+  const configured = raw.split(",")
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(normalizeCorsOrigin)
+    .filter(Boolean);
+  if (!configured.length) {
+    throw new Error("CORS_ORIGIN invalide : configure une ou plusieurs origines http(s), jamais '*'.");
+  }
   // Native app (Capacitor) webview origins. The mobile app is a first-party
   // client authenticated by Bearer token, so these fixed origins are always
   // allowed for the JSON API (they never carry ambient cookies).
-  const nativeOrigins = ["capacitor://localhost", "ionic://localhost", "http://localhost", "https://localhost"];
-  return [...new Set([...configured, ...nativeOrigins])];
+  return [...new Set([...configured, ...NATIVE_CORS_ORIGINS])];
+}
+
+// Public URLs are used in OAuth callbacks, emails and share links. Never build
+// them from an incoming Host header: proxies can forward attacker-controlled
+// Host values, turning redirects and generated links into phishing vectors.
+function resolvePublicAppUrl({ fallback = "http://localhost:3000" } = {}) {
+  const candidate = process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || fallback;
+  try {
+    const url = new URL(candidate);
+    if (!/^https?:$/.test(url.protocol) ||
+        (process.env.NODE_ENV === "production" && url.protocol !== "https:") ||
+        url.username || url.password ||
+        (url.pathname !== "/" && url.pathname !== "")) {
+      throw new Error("invalid public app URL");
+    }
+    return url.origin;
+  } catch (err) {
+    throw new Error("APP_URL / OAUTH_REDIRECT_BASE invalide : utilise une URL HTTPS en production, sans chemin ni identifiants.");
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -134,6 +254,16 @@ function resolveCorsOrigins() {
 // Not distributed — sufficient for a single-instance deployment.
 // ─────────────────────────────────────────────────────────────────
 const buckets = new Map();
+
+function positiveEnvInteger(name, fallback, { min = 1, max = 100_000 } = {}) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  // Do not let a typo such as "NaN", "0" or "10 requests" silently
+  // disable a sensitive limiter through JavaScript's NaN comparisons.
+  if (!/^\d+$/.test(raw)) return fallback;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value >= min && value <= max ? value : fallback;
+}
 
 setInterval(() => {
   const now = Date.now();
@@ -143,6 +273,9 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 function rateLimit({ windowMs, max, keyPrefix = "rl", message }) {
+  if (!Number.isSafeInteger(windowMs) || windowMs <= 0 || !Number.isSafeInteger(max) || max <= 0) {
+    throw new Error(`Configuration de limite invalide pour ${keyPrefix}`);
+  }
   return (req, res, next) => {
     // Use Express's req.ip, which honors the app's "trust proxy" setting. This
     // avoids trusting a spoofable X-Forwarded-For header unless the deployment
@@ -169,26 +302,30 @@ function rateLimit({ windowMs, max, keyPrefix = "rl", message }) {
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: "login", message: "Trop de tentatives de connexion. Réessaie dans 15 minutes." });
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.REGISTER_RATE_LIMIT_MAX ? parseInt(process.env.REGISTER_RATE_LIMIT_MAX, 10) : (process.env.NODE_ENV === "production" ? 5 : 500),
+  max: positiveEnvInteger("REGISTER_RATE_LIMIT_MAX", process.env.NODE_ENV === "production" ? 5 : 500),
   keyPrefix: "register",
   message: "Trop de comptes créés depuis cette adresse. Réessaie plus tard."
 });
 const passwordResetLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "pwreset", message: "Trop de demandes de réinitialisation. Réessaie plus tard." });
 const squadCreateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: process.env.SQUAD_CREATE_RATE_LIMIT_MAX ? parseInt(process.env.SQUAD_CREATE_RATE_LIMIT_MAX, 10) : (process.env.NODE_ENV === "production" ? 10 : 100),
+  max: positiveEnvInteger("SQUAD_CREATE_RATE_LIMIT_MAX", process.env.NODE_ENV === "production" ? 10 : 100),
   keyPrefix: "squad-create",
   message: "Trop d'escouades créées. Réessaie plus tard."
 });
 const squadJoinLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: process.env.SQUAD_JOIN_RATE_LIMIT_MAX ? parseInt(process.env.SQUAD_JOIN_RATE_LIMIT_MAX, 10) : (process.env.NODE_ENV === "production" ? 20 : 200),
+  max: positiveEnvInteger("SQUAD_JOIN_RATE_LIMIT_MAX", process.env.NODE_ENV === "production" ? 20 : 200),
   keyPrefix: "squad-join",
   message: "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard."
 });
 const squadCodeLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 15, keyPrefix: "squad-code", message: "Trop de régénérations de code. Réessaie plus tard." });
 const syncLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, keyPrefix: "sync", message: "Trop de synchronisations. Ralentis un peu." });
 const emailVerifLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "email-verif", message: "Trop de renvois d'email. Réessaie plus tard." });
+const oauthExchangeLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20, keyPrefix: "oauth-exchange", message: "Trop de tentatives OAuth. Réessaie dans quelques minutes." });
+const capabilityLinkLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 30, keyPrefix: "capability-link", message: "Trop de liens créés. Réessaie plus tard." });
+const pushRegistrationLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 30, keyPrefix: "push-register", message: "Trop d'enregistrements d'appareil. Réessaie plus tard." });
+const analyticsLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: "analytics", message: "Trop d'événements analytiques. Réessaie plus tard." });
 
 // ─────────────────────────────────────────────────────────────────
 // Zod validation schemas
@@ -212,7 +349,7 @@ const displayNameSchema = z.string().trim()
   .regex(DISPLAY_NAME_RE, "Nom affiché invalide");
 
 const emailSchema = z.string().trim().email("Email invalide").max(254);
-const passwordSchema = z.string().min(6, "Mot de passe trop court (min 6)").max(200);
+const passwordSchema = z.string().min(8, "Mot de passe trop court (min 8)").max(200);
 const visibilitySchema = z.enum(["private", "friends", "squad", "public"]);
 const legacyPrivacySchema = z.enum(["private", "friends_only", "squad_only", "public"]);
 const privacySchema = z.enum(["private", "friends_only", "squad_only", "public"]); // kept for backward compatibility
@@ -223,6 +360,69 @@ const prioritySchema = z.enum(["none", "urgent", "important", "medium", "low", "
 const noteSchema = z.string().max(500).optional();
 const squadNameSchema = z.string().trim().min(1).max(50);
 const squadCodeSchema = z.string().trim().min(4).max(30).regex(/^[A-Z0-9\-]+$/i, "Format de code invalide");
+const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+
+// Validate raw JSON before Zod builds its output.  Some object constructors
+// silently discard __proto__, which would otherwise make a malicious payload
+// appear valid while leaving downstream code exposed to unsafe object writes.
+function containsUnsafeObjectKey(value) {
+  if (!value || typeof value !== "object") return false;
+  const seen = new WeakSet();
+  const pending = [value];
+  while (pending.length) {
+    const current = pending.pop();
+    if (!current || typeof current !== "object" || seen.has(current)) continue;
+    seen.add(current);
+    for (const key of Object.keys(current)) {
+      if (UNSAFE_OBJECT_KEYS.has(key)) return true;
+      const child = current[key];
+      if (child && typeof child === "object") pending.push(child);
+    }
+  }
+  return false;
+}
+
+function rejectUnsafeBodyKeys(req, res, next) {
+  if (containsUnsafeObjectKey(req.body)) {
+    return res.status(400).json({ error: "Clé d'objet invalide" });
+  }
+  return next();
+}
+
+function isPrivateOrLocalHostname(value) {
+  const host = String(value || "").toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  if (!host) return true;
+  // Do not make an application client automatically load a literal IP. This
+  // blocks loopback, link-local and private-network probes in addition to
+  // avoiding ambiguous IPv6 handling.
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) return true;
+  return host === "localhost"
+    || host.endsWith(".localhost")
+    || host.endsWith(".local")
+    || host.endsWith(".internal")
+    || host.endsWith(".home")
+    || host.endsWith(".lan")
+    || host.endsWith(".test")
+    || host === "nip.io"
+    || host.endsWith(".nip.io")
+    || host === "sslip.io"
+    || host.endsWith(".sslip.io")
+    || host === "localtest.me"
+    || host.endsWith(".localtest.me");
+}
+
+function isSafeRemoteHttpsUrl(value) {
+  if (typeof value !== "string" || value.length > 500) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && !url.username
+      && !url.password
+      && !isPrivateOrLocalHostname(url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 const registerSchema = z.object({
   email: emailSchema,
@@ -240,11 +440,20 @@ const loginSchema = z.object({
   password: z.string().min(1).max(200)
 });
 
+const forgotPasswordSchema = z.object({
+  email: emailSchema
+}).strict();
+
+const resetPasswordSchema = z.object({
+  token: z.string().regex(/^[a-f0-9]{64}$/i, "Token invalide"),
+  newPassword: passwordSchema
+}).strict();
+
 // Avatars come either from the built-in local picker (Personna/*.png|webp) or
 // from an OAuth provider's https picture URL. Never accept javascript:/data:
 // URIs or arbitrary strings to avoid link-based XSS or open redirect abuse.
 const avatarUrlSchema = z.string().max(500).refine(
-  (val) => val === "" || /^Personna\/[\w\-. ]+\.(png|webp|jpe?g)$/i.test(val) || /^https:\/\/[^\s"'<>]+$/i.test(val),
+  (val) => val === "" || /^Personna\/[\w\-. ]+\.(png|webp|jpe?g)$/i.test(val) || isSafeRemoteHttpsUrl(val),
   { message: "URL d'avatar invalide" }
 );
 
@@ -325,6 +534,9 @@ const friendInviteLinkCreateSchema = z.object({
 
 function validateBody(schema) {
   return (req, res, next) => {
+    if (containsUnsafeObjectKey(req.body)) {
+      return res.status(400).json({ error: "Clé d'objet invalide" });
+    }
     const result = schema.safeParse(req.body || {});
     if (!result.success) {
       const firstIssue = result.error.issues[0];
@@ -339,7 +551,13 @@ module.exports = {
   validateEnv,
   securityHeaders,
   blockSensitiveFiles,
+  isPublicStaticPath,
   resolveCorsOrigins,
+  resolvePublicAppUrl,
+  positiveEnvInteger,
+  isPrivateOrLocalHostname,
+  isSafeRemoteHttpsUrl,
+  rejectUnsafeBodyKeys,
   rateLimit,
   loginLimiter,
   registerLimiter,
@@ -349,10 +567,16 @@ module.exports = {
   squadCodeLimiter,
   syncLimiter,
   emailVerifLimiter,
+  oauthExchangeLimiter,
+  capabilityLinkLimiter,
+  pushRegistrationLimiter,
+  analyticsLimiter,
   validateBody,
   schemas: {
     registerSchema,
     loginSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
     profilePatchSchema,
     profileSuspendSchema,
     collectionEntrySchema,

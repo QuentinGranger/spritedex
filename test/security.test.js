@@ -129,6 +129,22 @@ async function run() {
     assert.strictEqual(res.status, 200);
   });
 
+  await test("prototype-control collection keys are rejected", async () => {
+    const entryRes = await fetch(`${API}/collection/${userA.id}/__proto__`, {
+      method: "PUT", headers: authHeaders(userA.token),
+      body: JSON.stringify({ status: "owned" })
+    });
+    assert.strictEqual(entryRes.status, 400);
+
+    // Build raw JSON so __proto__ remains an own parsed key rather than being
+    // interpreted by JavaScript's object-literal syntax first.
+    const syncRes = await fetch(`${API}/collection/${userA.id}/sync`, {
+      method: "POST", headers: authHeaders(userA.token),
+      body: '{"collection":{"__proto__":{"status":"owned"}}}'
+    });
+    assert.strictEqual(syncRes.status, 400);
+  });
+
   await test("user CANNOT write to another user's collection (403)", async () => {
     const res = await fetch(`${API}/collection/${userB.id}/water::Gold`, {
       method: "PUT", headers: authHeaders(userA.token),
@@ -234,6 +250,16 @@ async function run() {
     assert.ok(/^[a-f0-9]{64}$/.test(shareToken), "token is not a 256-bit hex string");
   });
 
+  await test("share-link status never returns the stored bearer digest", async () => {
+    const res = await fetch(`${API}/profile/${userA.id}/share-link`, {
+      headers: authHeaders(userA.token)
+    });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+    assert.strictEqual(data.active, true);
+    assert.ok(!Object.hasOwn(data, "token"), "stored share credential was exposed");
+  });
+
   await test("another user cannot manage someone else's share link (403)", async () => {
     const res = await fetch(`${API}/profile/${userA.id}/share-link`, {
       method: "POST", headers: authHeaders(userB.token), body: JSON.stringify({})
@@ -272,6 +298,13 @@ async function run() {
   await test(".env is NOT served statically (404)", async () => {
     const res = await fetch(`${BASE}/.env`);
     assert.strictEqual(res.status, 404);
+  });
+
+  await test("encoded paths cannot bypass static source protection", async () => {
+    for (const path of ["/server%2fcore.js", "/scripts%2fbuild-www.js", "/migrate-auth%2esql", "/desktop%2fmain.cjs"]) {
+      const res = await fetch(`${BASE}${path}`);
+      assert.strictEqual(res.status, 404, `${path} should not be served`);
+    }
   });
 
   await test("security headers are present", async () => {
@@ -367,6 +400,225 @@ async function run() {
     const res = await fetch(`${API}/compare/share/${cmpShareToken}`);
     assert.strictEqual(res.status, 403, `expected 403, got ${res.status}`);
   });
+
+  // ── Étape 68 — notification / push security ──
+  const notifOwner = await registerUser();
+  const notifOther = await registerUser();
+  try {
+    await test("user cannot read another user's notifications (Étape 68)", async () => {
+      // Create a friend_request_accepted for notifOwner (requester).
+      let res = await fetch(`${API}/friends/${notifOther.id}/request`, {
+        method: "POST",
+        headers: authHeaders(notifOwner.token)
+      });
+      assert.strictEqual(res.status, 200, `friend request failed: ${await res.text()}`);
+      res = await fetch(`${API}/friends/${notifOwner.id}/accept`, {
+        method: "POST",
+        headers: authHeaders(notifOther.token)
+      });
+      assert.strictEqual(res.status, 200, `accept failed: ${await res.text()}`);
+
+      res = await fetch(`${API}/notifications`, { headers: authHeaders(notifOwner.token) });
+      assert.strictEqual(res.status, 200);
+      const ownerInbox = await res.json();
+      const owned = ownerInbox.notifications.find((n) => n.type === "friend_request_accepted");
+      assert.ok(owned, "owner should have friend_request_accepted");
+      assert.ok(owned.id, "notification id missing");
+
+      res = await fetch(`${API}/notifications`, { headers: authHeaders(notifOther.token) });
+      assert.strictEqual(res.status, 200);
+      const otherInbox = await res.json();
+      assert.ok(
+        !otherInbox.notifications.some((n) => String(n.id) === String(owned.id)),
+        "other user must not see owner's notification"
+      );
+      assert.ok(
+        !otherInbox.notifications.some((n) => n.type === "friend_request_accepted"),
+        "accepter must not receive friend_request_accepted"
+      );
+
+      // Persist for the next IDOR checks.
+      notifOwner._notifId = owned.id;
+      notifOwner._actionUrl = owned.action?.url || owned.data?.actionUrl;
+    });
+
+    await test("guessed notification id does not grant access (Étape 68)", async () => {
+      const ownerId = notifOwner._notifId;
+      assert.ok(ownerId, "missing notification from previous test");
+
+      // Other user tries owner's real id → generic not found (no leak).
+      let res = await fetch(`${API}/notifications/${ownerId}/read`, {
+        method: "POST",
+        headers: authHeaders(notifOther.token),
+        body: JSON.stringify({})
+      });
+      assert.strictEqual(res.status, 404, `expected 404 for foreign id, got ${res.status}`);
+
+      res = await fetch(`${API}/notifications/${ownerId}`, {
+        method: "DELETE",
+        headers: authHeaders(notifOther.token)
+      });
+      assert.strictEqual(res.status, 404, `expected 404 on foreign archive, got ${res.status}`);
+
+      // Guessed / invalid ids
+      for (const guess of ["notification_999999999", "999999999", "notification_abc"]) {
+        res = await fetch(`${API}/notifications/${guess}/read`, {
+          method: "POST",
+          headers: authHeaders(notifOther.token),
+          body: JSON.stringify({})
+        });
+        assert.strictEqual(res.status, 404, `guess ${guess} should be 404, got ${res.status}`);
+      }
+
+      // Owner can still mark their own notification read.
+      res = await fetch(`${API}/notifications/${ownerId}/read`, {
+        method: "POST",
+        headers: authHeaders(notifOwner.token),
+        body: JSON.stringify({ clicked: true })
+      });
+      assert.strictEqual(res.status, 200, `owner read failed: ${await res.text()}`);
+    });
+
+    await test("notification destinations respect live permissions (Étape 68)", async () => {
+      const actionUrl = notifOwner._actionUrl;
+      assert.ok(actionUrl && String(actionUrl).includes(`/compare/${notifOther.id}`),
+        `expected compare action, got ${actionUrl}`);
+
+      // Destination works while friendship + visibility allow it.
+      await fetch(`${API}/profile/${notifOther.id}`, {
+        method: "PATCH",
+        headers: authHeaders(notifOther.token),
+        body: JSON.stringify({ collectionVisibility: "friends" })
+      });
+      let res = await fetch(`${API}/compare/${notifOther.id}`, {
+        headers: authHeaders(notifOwner.token)
+      });
+      assert.strictEqual(res.status, 200, `compare should work before revoke: ${res.status}`);
+
+      // Access becomes forbidden — old notification must not bypass ACL.
+      res = await fetch(`${API}/profile/${notifOther.id}`, {
+        method: "PATCH",
+        headers: authHeaders(notifOther.token),
+        body: JSON.stringify({ collectionVisibility: "private" })
+      });
+      assert.strictEqual(res.status, 200);
+      res = await fetch(`${API}/compare/${notifOther.id}`, {
+        headers: authHeaders(notifOwner.token)
+      });
+      assert.strictEqual(res.status, 403, "private collection must block compare destination");
+
+      // Block also forbids the destination even if the inbox row still exists.
+      res = await fetch(`${API}/users/${notifOwner.id}/block`, {
+        method: "POST",
+        headers: authHeaders(notifOther.token)
+      });
+      assert.strictEqual(res.status, 200, `block failed: ${await res.text()}`);
+      res = await fetch(`${API}/compare/${notifOther.id}`, {
+        headers: authHeaders(notifOwner.token)
+      });
+      assert.ok([403, 404].includes(res.status), `blocked compare should be forbidden, got ${res.status}`);
+    });
+
+    await test("push tokens are owner-scoped and secrets stay off the wire (Étape 68)", async () => {
+      const endpoint = `https://fcm.googleapis.com/fcm/send/sec68-${rnd()}`;
+      const authSecret = `A${"b".repeat(23)}`;
+      const p256dh = `B${"c".repeat(47)}`;
+
+      let res = await fetch(`${API}/push-subscriptions`, {
+        method: "POST",
+        headers: authHeaders(notifOwner.token),
+        body: JSON.stringify({
+          platform: "web",
+          subscription: {
+            endpoint: "https://127.0.0.1/internal",
+            keys: { p256dh, auth: authSecret }
+          }
+        })
+      });
+      assert.strictEqual(res.status, 400, "an untrusted push endpoint must be rejected");
+
+      res = await fetch(`${API}/push-subscriptions`, {
+        method: "POST",
+        headers: authHeaders(notifOwner.token),
+        body: JSON.stringify({
+          platform: "web",
+          subscription: {
+            endpoint,
+            keys: { p256dh, auth: authSecret }
+          }
+        })
+      });
+      const registerText = await res.text();
+      assert.ok([200, 201].includes(res.status), `register failed: ${registerText}`);
+      const registered = JSON.parse(registerText);
+      assert.ok(registered.subscriptionId || registered.id, "subscriptionId missing");
+      const subscriptionId = registered.subscriptionId || registered.id;
+      assert.ok(!registerText.includes(authSecret), "auth secret leaked in register response");
+      assert.ok(!registerText.includes(p256dh), "p256dh key leaked in register response");
+      assert.ok(!/"auth_secret"|privateKey/i.test(registerText), "private key fields leaked in register response");
+
+      res = await fetch(`${API}/push/subscriptions`, { headers: authHeaders(notifOwner.token) });
+      assert.strictEqual(res.status, 200);
+      const listed = await res.json();
+      const mine = (listed.subscriptions || []).find((s) => String(s.id) === String(subscriptionId));
+      assert.ok(mine, "owner should list their device");
+      assert.strictEqual(mine.endpoint, endpoint);
+      assert.ok(!("auth_secret" in mine), "auth_secret exposed in list");
+      assert.ok(!("public_key" in mine) && !("p256dh" in mine) && !("auth" in mine) && !("token" in mine),
+        "push key material exposed in list");
+
+      // Other user cannot deactivate this subscription.
+      res = await fetch(`${API}/push-subscriptions/${subscriptionId}`, {
+        method: "DELETE",
+        headers: authHeaders(notifOther.token)
+      });
+      assert.strictEqual(res.status, 404, `foreign delete should 404, got ${res.status}`);
+
+      // Owner can deactivate.
+      res = await fetch(`${API}/push-subscriptions/${subscriptionId}`, {
+        method: "DELETE",
+        headers: authHeaders(notifOwner.token)
+      });
+      const delText = await res.text();
+      assert.strictEqual(res.status, 200, `owner delete failed: ${delText}`);
+    });
+
+    await test("provider secrets are never exposed to the client (Étape 68)", async () => {
+      const res = await fetch(`${API}/push/vapid-key`);
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.ok(data.publicKey && typeof data.publicKey === "string", "public VAPID key expected");
+      assert.ok(!("privateKey" in data), "VAPID privateKey must not be exposed");
+      assert.ok(!("private_key" in data), "VAPID private_key must not be exposed");
+      const body = JSON.stringify(data);
+      assert.ok(!/BEGIN (EC )?PRIVATE KEY|VAPID_PRIVATE|RESEND_API_KEY|FCM_SERVER_KEY|APNS_KEY/i.test(body),
+        "provider secret material leaked from vapid-key");
+
+      // Common secret paths must stay unreachable.
+      for (const path of ["/.env", "/.env.local", "/vapid.json", "/server/vapid-keys.json"]) {
+        const r = await fetch(`${BASE}${path}`);
+        assert.ok([404, 403].includes(r.status), `${path} should not be served, got ${r.status}`);
+      }
+
+      const prefs = await fetch(`${API}/notification-preferences`, {
+        headers: authHeaders(notifOwner.token)
+      });
+      if (prefs.ok) {
+        const prefBody = await prefs.text();
+        assert.ok(!/VAPID_PRIVATE|RESEND_API_KEY|FCM_SERVER_KEY|APNS_KEY|privateKey/i.test(prefBody),
+          "secrets leaked via notification-preferences");
+      }
+    });
+  } finally {
+    await fetch(`${API}/profile/${notifOwner.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${notifOwner.token}` }
+    }).catch(() => {});
+    await fetch(`${API}/profile/${notifOther.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${notifOther.token}` }
+    }).catch(() => {});
+  }
 
   // ── Cleanup ──
   await fetch(`${API}/profile/${userA.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${userA.token}` } });

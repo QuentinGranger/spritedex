@@ -92,12 +92,27 @@ async function fetchUserSquads(reqUser) {
   );
   const squads = result.rows.map(r => ({ id: r.id, code: r.code, name: r.name, members: r.members || [] }));
   for (const squad of squads) {
-    const visible = await Promise.all(
-      squad.members.map(async (memberId) => ({ memberId, blocked: await isBlocked(reqUser, memberId) }))
+    const memberAccess = await Promise.all(
+      squad.members.map(async (memberId) => ({
+        memberId,
+        blocked: await isBlocked(reqUser, memberId),
+        collectionVisible: String(memberId) === String(reqUser) || await canViewCollection(reqUser, memberId)
+      }))
     );
-    squad.members = visible.filter(v => !v.blocked).map(v => v.memberId);
+    // Squad membership alone is not collection access.  Do not use a hidden
+    // member's ownership to calculate a suggested addition for this viewer.
+    squad.members = memberAccess
+      .filter(member => !member.blocked && member.collectionVisible)
+      .map(member => member.memberId);
   }
   return squads;
+}
+
+function redactCollectionPriorities(collection) {
+  return Object.fromEntries(Object.entries(collection).map(([variantId, entry]) => [
+    variantId,
+    { ...entry, priority: "none" }
+  ]));
 }
 
 function makeEntry(owned, priority) {
@@ -211,10 +226,12 @@ async function getRecommendations(reqUser) {
   for (const row of candidateRows) {
     if (String(row.id) === String(reqUser)) continue;
     if (!(await canViewCollection(reqUser, row.id))) continue;
+    const prioritiesVisible = await canViewCollection(reqUser, row.id, { visibilityKey: "priorities" });
 
     let cCollection = collectionCache.get(String(row.id));
     if (!cCollection) {
       cCollection = await compare.loadServerCompareCollection(row.id);
+      if (!prioritiesVisible) cCollection = redactCollectionPriorities(cCollection);
       collectionCache.set(String(row.id), cCollection);
     }
 

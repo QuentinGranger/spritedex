@@ -3,15 +3,17 @@
 
 require("dotenv").config();
 const { Pool } = require("pg");
+const { databasePoolConfig } = require("../server/db");
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  database: process.env.PGDATABASE || "spritedex",
-  host: process.env.PGHOST || "localhost",
-  port: process.env.PGPORT || 5432,
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
-});
+const pool = new Pool(process.env.DATABASE_URL
+  ? databasePoolConfig(process.env.DATABASE_URL)
+  : {
+      database: process.env.PGDATABASE || "spritedex",
+      host: process.env.PGHOST || "localhost",
+      port: process.env.PGPORT || 5432,
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+    });
 
 function inferSourceType(sourceId) {
   const s = (sourceId || "").toLowerCase();

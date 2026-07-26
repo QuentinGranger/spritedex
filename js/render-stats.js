@@ -3,7 +3,7 @@ function renderBars(container, rows) {
     .map((row) => `
       <div class="bar-row">
         <div class="bar-meta">
-          <span>${row.label}</span>
+          <span>${escapeHtml(row.label)}</span>
           <span>${row.owned}/${row.total} · ${row.percent}%</span>
         </div>
         <div class="bar-track"><div class="bar-fill" style="--bar:${row.percent}%"></div></div>
@@ -73,11 +73,11 @@ function renderStats() {
   if (bestRarity) insights += `
     <div class="insight-card insight-card--best">
       <span class="insight-card__label">Collection la plus avancée</span>
-      <strong class="insight-card__value">${bestRarity.label} — ${bestRarity.percent}%</strong>
+      <strong class="insight-card__value">${escapeHtml(bestRarity.label)} — ${bestRarity.percent}%</strong>
     </div>
     <div class="insight-card insight-card--worst">
       <span class="insight-card__label">Collection la moins avancée</span>
-      <strong class="insight-card__value">${worstRarity.label} — ${worstRarity.percent}%</strong>
+      <strong class="insight-card__value">${escapeHtml(worstRarity.label)} — ${worstRarity.percent}%</strong>
     </div>
   `;
 
@@ -85,14 +85,14 @@ function renderStats() {
     insights += `
       <div class="insight-card insight-card--variant">
         <span class="insight-card__label">Variante la plus manquante</span>
-        <strong class="insight-card__value">${worstVariant.label} — ${worstVariant.owned}/${worstVariant.total}</strong>
+        <strong class="insight-card__value">${escapeHtml(worstVariant.label)} — ${worstVariant.owned}/${worstVariant.total}</strong>
       </div>
     `;
   }
 
   insights += `
     <div class="insight-card insight-card--myth">
-      <span class="insight-card__label">${topRarity} complétés</span>
+      <span class="insight-card__label">${escapeHtml(topRarity)} complétés</span>
       <strong class="insight-card__value">${mythCompleted} / ${mythTotal}</strong>
     </div>
     <div class="insight-card insight-card--full">

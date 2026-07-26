@@ -56,7 +56,8 @@ function renderCard() {
   }
 
   const entry = getEntry(item.id);
-  els.cardAvatar.innerHTML = item.img ? `<img src="${item.img}" alt="${item.spriteName}" class="avatar-img" />` : `<span class="avatar-placeholder">?</span>`;
+  const imageUrl = safeImageUrl(item.img);
+  els.cardAvatar.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="avatar-img" />` : `<span class="avatar-placeholder">?</span>`;
   els.cardRarity.textContent = item.rarity;
   els.cardRarity.setAttribute("data-rarity", item.rarity);
   els.card.setAttribute("data-rarity", item.rarity);
@@ -65,7 +66,7 @@ function renderCard() {
   els.cardEffect.textContent = `${item.effect} ${item.variant !== "Base" ? `Bonus variante : ${item.variantBonus}` : ""}`;
   els.cardStatus.innerHTML = `${statusEmoji(entry.status)} ${statusLabel(entry.status)}`;
   els.cardIndex.textContent = `${state.currentIndex + 1}/${state.currentDeck.length}`;
-  els.card.style.setProperty("--card-color", item.color);
+  els.card.style.setProperty("--card-color", safeCssColor(item.color));
 
   const sprite = SPRITES.find(s => s.id === item.spriteId);
   if (sprite) {

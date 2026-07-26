@@ -1,3 +1,6 @@
+const OAUTH_EXCHANGE_VERIFIER_KEY = "spritedex_oauth_exchange_verifier";
+window.OAUTH_EXCHANGE_VERIFIER_KEY = OAUTH_EXCHANGE_VERIFIER_KEY;
+
 function showApp() {
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("appShell").style.display = "";
@@ -44,7 +47,10 @@ function setupLogin() {
     restoreSquad();
     setupNotifBell();
     checkNewsNotifications();
-    if (window.PushClient) window.PushClient.register();
+    if (window.PushClient) {
+      window.PushClient.register();
+      if (window.PushClient.checkReactivation) window.PushClient.checkReactivation();
+    }
     toast(`Bienvenue ${user.username} !`);
   }
 
@@ -53,10 +59,6 @@ function setupLogin() {
     const password = loginPassword.value;
     if (!email || !password) {
       loginHint.textContent = "Email et mot de passe requis";
-      return;
-    }
-    if (password.length < 6) {
-      loginHint.textContent = "Mot de passe trop court (min 6)";
       return;
     }
     loginHint.textContent = "";
@@ -92,8 +94,8 @@ function setupLogin() {
       loginHint.textContent = "Email et mot de passe requis";
       return;
     }
-    if (password.length < 6) {
-      loginHint.textContent = "Mot de passe trop court (min 6)";
+    if (password.length < 8) {
+      loginHint.textContent = "Mot de passe trop court (min 8)";
       return;
     }
     if (!requireCguAccepted()) return;
@@ -157,7 +159,7 @@ function setupLogin() {
     state.username = "Local";
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { state.collection = JSON.parse(saved); } catch {}
+      try { state.collection = sanitizeCollection(JSON.parse(saved)); } catch { state.collection = createSafeRecord(); }
     }
     showApp();
     setupEvents();
@@ -232,7 +234,7 @@ function setupLogin() {
   document.getElementById("transferNo").addEventListener("click", async () => {
     if (!pendingUser) return;
     localStorage.removeItem(STORAGE_KEY);
-    state.collection = {};
+    state.collection = createSafeRecord();
     await finishLogin(pendingUser);
     toast("Nouvelle collection créée !");
   });
@@ -240,20 +242,46 @@ function setupLogin() {
   document.getElementById("transferLater").addEventListener("click", async () => {
     if (!pendingUser) return;
     // Keep local data but don't sync now — user can sync later from settings
-    state.collection = {};
+    state.collection = createSafeRecord();
     await finishLogin(pendingUser);
   });
 
-  // OAuth — redirect to server-side flow.
-  // On the web: full-page navigation, server redirects back to "/?authToken=…".
-  // On native (Capacitor): open the flow in the system browser with ?return=app;
-  // the server finishes by redirecting to the "spritedex://auth" deep link, which
-  // the app captures (see js/mobile.js) to complete login.
-  function startOAuth(provider) {
-    if (isNativePlatform() && window.Capacitor?.Plugins?.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: `${API_BASE}/auth/oauth/${provider}?return=app` });
-    } else {
-      window.location.href = `${API_BASE}/auth/oauth/${provider}`;
+  // OAuth — use a local high-entropy verifier. The server only receives its
+  // SHA-256 challenge and returns a one-time code, never a bearer token in a
+  // URL or deep link. This also prevents a different mobile app that captures
+  // the custom scheme from redeeming the login result.
+  function toBase64Url(bytes) {
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  }
+
+  async function createOAuthVerifier() {
+    if (!globalThis.crypto?.getRandomValues || !globalThis.crypto?.subtle) {
+      throw new Error("Le navigateur ne prend pas en charge la connexion sécurisée.");
+    }
+    const bytes = new Uint8Array(32);
+    globalThis.crypto.getRandomValues(bytes);
+    const verifier = toBase64Url(bytes);
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+    const challenge = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    return { verifier, challenge };
+  }
+
+  async function startOAuth(provider) {
+    try {
+      const { verifier, challenge } = await createOAuthVerifier();
+      sessionStorage.setItem(OAUTH_EXCHANGE_VERIFIER_KEY, verifier);
+      const params = new URLSearchParams({ exchange_challenge: challenge });
+      if (isNativePlatform() && window.Capacitor?.Plugins?.Browser) {
+        params.set("return", "app");
+        await window.Capacitor.Plugins.Browser.open({ url: `${API_BASE}/auth/oauth/${provider}?${params}` });
+      } else {
+        window.location.href = `${API_BASE}/auth/oauth/${provider}?${params}`;
+      }
+    } catch (err) {
+      console.error("OAuth initialisation failed:", err);
+      loginHint.textContent = err.message || "Impossible de démarrer la connexion sécurisée.";
     }
   }
   document.getElementById("authGoogle").addEventListener("click", () => startOAuth("google"));

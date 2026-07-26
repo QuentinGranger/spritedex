@@ -80,10 +80,15 @@ async function loadSquad(code) {
       return;
     }
     const data = await res.json();
-    state.activeSquad = data.code;
+    state.activeSquad = String(data.code || "");
     state.squadCreatedBy = data.createdBy;
     state.squadJoinOpen = data.joinOpen !== false;
-    state.squadMembers = data.members;
+    state.squadMembers = Array.isArray(data.members)
+      ? data.members.map((member) => ({
+        ...(member && typeof member === "object" ? member : {}),
+        collection: sanitizeCollection(member?.collection)
+      }))
+      : [];
 
     els.squadActiveName.textContent = data.name;
     els.squadActiveCode.textContent = data.code;
@@ -201,7 +206,7 @@ function renderSquadAdmin() {
 
   const joinLabel = state.squadJoinOpen ? "Ouvert" : "Fermé";
   const joinIcon = state.squadJoinOpen ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-  const joinLink = `${webOrigin()}/?joinSquad=${state.activeSquad}`;
+  const joinLink = `${webOrigin()}/?joinSquad=${encodeURIComponent(String(state.activeSquad || ""))}`;
 
   wrap.innerHTML = `
     <div class="squad-admin">
@@ -210,7 +215,7 @@ function renderSquadAdmin() {
         <span class="squad-admin__label">Lien d'invitation</span>
         <button class="ghost-button squad-admin__btn" id="adminCopyLink" title="Copier le lien"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copier</button>
       </div>
-      <div class="squad-admin__link">${joinLink}</div>
+      <div class="squad-admin__link">${escapeHtml(joinLink)}</div>
       <div class="squad-admin__row">
         <span class="squad-admin__label">Accès : ${joinIcon} ${joinLabel}</span>
         <button class="ghost-button squad-admin__btn" id="adminToggleJoin">${state.squadJoinOpen ? "Fermer" : "Ouvrir"}</button>
@@ -694,7 +699,7 @@ function renderSquad() {
 
   if (state.squadMembers.length === 0) {
     els.squadCounter.textContent = "";
-    els.squadTableWrap.innerHTML = `<p class="squad-empty">En attente d'autres joueurs…<br>Partage le code <strong>${state.activeSquad}</strong> à tes amis !</p>`;
+    els.squadTableWrap.innerHTML = `<p class="squad-empty">En attente d'autres joueurs…<br>Partage le code <strong>${escapeHtml(state.activeSquad)}</strong> à tes amis !</p>`;
     return;
   }
 
@@ -755,9 +760,9 @@ function renderSquadTable(rows, players, items) {
     const spriteName = row.item.spriteName;
     if (spriteName !== currentSprite) {
       currentSprite = spriteName;
-      parts.push(`<tr class="squad-table__sprite-header"><td colspan="${colCount + 1}"><span class="squad-table__sprite-name">${spriteName}</span><span class="squad-table__rarity">${row.item.rarity}</span></td></tr>`);
+      parts.push(`<tr class="squad-table__sprite-header"><td colspan="${colCount + 1}"><span class="squad-table__sprite-name">${escapeHtml(spriteName)}</span><span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></td></tr>`);
     }
-    parts.push(`<tr class="squad-table__row"><td class="squad-table__variant">${row.item.variant}</td>`);
+    parts.push(`<tr class="squad-table__row"><td class="squad-table__variant">${escapeHtml(row.item.variant)}</td>`);
     for (const status of row.statuses) {
       const cls = status === "owned" ? "squad-cell--owned" : status === "new" ? "squad-cell--new" : "squad-cell--missing";
       parts.push(`<td class="squad-table__cell ${cls}">${squadIcon(status)}</td>`);
@@ -778,9 +783,9 @@ function renderSquadCards(rows, players, items) {
   for (const row of rows) {
     parts.push(`<div class="squad-card">`);
     parts.push(`<div class="squad-card__header">`);
-    parts.push(`<span class="squad-card__name">${row.item.spriteName}</span>`);
-    parts.push(`<span class="squad-card__variant">${row.item.variant}</span>`);
-    parts.push(`<span class="squad-table__rarity">${row.item.rarity}</span>`);
+    parts.push(`<span class="squad-card__name">${escapeHtml(row.item.spriteName)}</span>`);
+    parts.push(`<span class="squad-card__variant">${escapeHtml(row.item.variant)}</span>`);
+    parts.push(`<span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span>`);
     parts.push(`<span class="squad-card__ratio">${row.ownedCount}/${players.length}</span>`);
     parts.push(`</div>`);
 
@@ -789,7 +794,7 @@ function renderSquadCards(rows, players, items) {
       parts.push(`<span class="squad-card__label">Possédé par</span>`);
       parts.push(`<div class="squad-card__players">`);
       for (const name of row.ownedBy) {
-        parts.push(`<span class="squad-card__player squad-card__player--owned">${name}</span>`);
+        parts.push(`<span class="squad-card__player squad-card__player--owned">${escapeHtml(name)}</span>`);
       }
       parts.push(`</div></div>`);
     }
@@ -799,7 +804,7 @@ function renderSquadCards(rows, players, items) {
       parts.push(`<span class="squad-card__label">Priorité pour</span>`);
       parts.push(`<div class="squad-card__players">`);
       for (const name of row.priorityBy) {
-        parts.push(`<span class="squad-card__player squad-card__player--prio">${name}</span>`);
+        parts.push(`<span class="squad-card__player squad-card__player--prio">${escapeHtml(name)}</span>`);
       }
       parts.push(`</div></div>`);
     }
@@ -809,7 +814,7 @@ function renderSquadCards(rows, players, items) {
       parts.push(`<span class="squad-card__label">Manque à</span>`);
       parts.push(`<div class="squad-card__players">`);
       for (const name of row.missingBy) {
-        parts.push(`<span class="squad-card__player squad-card__player--missing">${name}</span>`);
+        parts.push(`<span class="squad-card__player squad-card__player--missing">${escapeHtml(name)}</span>`);
       }
       parts.push(`</div></div>`);
     }
@@ -848,13 +853,13 @@ function renderSquadHunt(rows, players, items) {
       const isNewSprite = row.item.spriteName !== currentSprite;
       if (isNewSprite) {
         currentSprite = row.item.spriteName;
-        parts.push(`<li class="hunt-list__sprite">${currentSprite} <span class="squad-table__rarity">${row.item.rarity}</span></li>`);
+        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
       }
       const priorityByLabel = escapeHtml(row.priorityBy.join(", "));
       const prioTag = row.priorityBy.length > 0
         ? ` <span class="hunt-prio" title="Priorité pour ${priorityByLabel}"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${priorityByLabel}</span>`
         : "";
-      parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${row.item.variant}</span>${prioTag}</li>`);
+      parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span>${prioTag}</li>`);
     }
     parts.push(`</ul></div>`);
   }
@@ -874,9 +879,9 @@ function renderSquadHunt(rows, players, items) {
       const isNewSprite = row.item.spriteName !== currentSprite;
       if (isNewSprite) {
         currentSprite = row.item.spriteName;
-        parts.push(`<li class="hunt-list__sprite">${currentSprite} <span class="squad-table__rarity">${row.item.rarity}</span></li>`);
+        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
       }
-      parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${row.item.variant}</span><span class="hunt-owners">${escapeHtml(row.ownedBy.join(", "))}</span></li>`);
+      parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span><span class="hunt-owners">${escapeHtml(row.ownedBy.join(", "))}</span></li>`);
     }
     parts.push(`</ul></div>`);
   }
@@ -897,9 +902,9 @@ function renderSquadHunt(rows, players, items) {
       const isNewSprite = row.item.spriteName !== currentSprite;
       if (isNewSprite) {
         currentSprite = row.item.spriteName;
-        parts.push(`<li class="hunt-list__sprite">${currentSprite} <span class="squad-table__rarity">${row.item.rarity}</span></li>`);
+        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
       }
-      parts.push(`<li class="hunt-list__item hunt-list__item--done"><span class="hunt-list__variant">${row.item.variant}</span></li>`);
+      parts.push(`<li class="hunt-list__item hunt-list__item--done"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span></li>`);
     }
     parts.push(`</ul></div>`);
   }
@@ -951,9 +956,9 @@ function renderSquadDuel(rows, players, items) {
       for (const row of sectionRows) {
         if (row.item.spriteName !== currentSprite) {
           currentSprite = row.item.spriteName;
-          parts.push(`<li class="hunt-list__sprite">${currentSprite} <span class="squad-table__rarity">${row.item.rarity}</span></li>`);
+          parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
         }
-        parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${row.item.variant}</span></li>`);
+        parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span></li>`);
       }
       parts.push(`</ul>`);
     }
@@ -961,12 +966,12 @@ function renderSquadDuel(rows, players, items) {
   }
 
   if (onlyA.length > 0) {
-    buildDuelSection(`${pA.name} a, ${pB.name} n'a pas`, "→", "hunt-section__header--partial", onlyA, "à échanger ?");
+    buildDuelSection(`${escapeHtml(pA.name)} a, ${escapeHtml(pB.name)} n'a pas`, "→", "hunt-section__header--partial", onlyA, "à échanger ?");
   }
 
   if (onlyB.length > 0) {
     if (onlyA.length > 0) parts.push(`<div class="hunt-divider"></div>`);
-    buildDuelSection(`${pB.name} a, ${pA.name} n'a pas`, "←", "hunt-section__header--nobody", onlyB, "à échanger ?");
+    buildDuelSection(`${escapeHtml(pB.name)} a, ${escapeHtml(pA.name)} n'a pas`, "←", "hunt-section__header--nobody", onlyB, "à échanger ?");
   }
 
   if (common.length > 0) {
@@ -1021,7 +1026,7 @@ function renderSquadSession(players, items) {
     parts.push(`<ul class="session-list">`);
     for (const r of prioItems.slice(0, 15)) {
       parts.push(`<li class="session-list__item">`);
-      parts.push(`<span class="session-list__name">${r.item.spriteName} <span class="session-list__variant">${r.item.variant}</span></span>`);
+      parts.push(`<span class="session-list__name">${escapeHtml(r.item.spriteName)} <span class="session-list__variant">${escapeHtml(r.item.variant)}</span></span>`);
       parts.push(`<span class="session-list__meta session-list__meta--missing">manque à ${r.missingCount}</span>`);
       parts.push(`</li>`);
     }
@@ -1037,8 +1042,8 @@ function renderSquadSession(players, items) {
     parts.push(`<ul class="session-list">`);
     for (const r of nobodyItems.slice(0, 20)) {
       parts.push(`<li class="session-list__item">`);
-      parts.push(`<span class="session-list__name">${r.item.spriteName} <span class="session-list__variant">${r.item.variant}</span></span>`);
-      parts.push(`<span class="squad-table__rarity">${r.item.rarity}</span>`);
+      parts.push(`<span class="session-list__name">${escapeHtml(r.item.spriteName)} <span class="session-list__variant">${escapeHtml(r.item.variant)}</span></span>`);
+      parts.push(`<span class="squad-table__rarity">${escapeHtml(r.item.rarity)}</span>`);
       parts.push(`</li>`);
     }
     if (nobodyItems.length > 20) {
@@ -1054,7 +1059,7 @@ function renderSquadSession(players, items) {
     for (const r of toCheck.slice(0, 15)) {
       const who = players.filter((_, i) => r.statuses[i] === "unsure" || r.statuses[i] === "spotted").map(p => p.name);
       parts.push(`<li class="session-list__item">`);
-      parts.push(`<span class="session-list__name">${r.item.spriteName} <span class="session-list__variant">${r.item.variant}</span></span>`);
+      parts.push(`<span class="session-list__name">${escapeHtml(r.item.spriteName)} <span class="session-list__variant">${escapeHtml(r.item.variant)}</span></span>`);
       parts.push(`<span class="session-list__meta session-list__meta--check">${escapeHtml(who.join(", "))}</span>`);
       parts.push(`</li>`);
     }
@@ -1089,14 +1094,14 @@ function renderSquadHistoryEntry(e, itemMap) {
     case "friendship":
       return `<strong>${escapeHtml(meta.usernameA || "Quelqu'un")}</strong> et <strong>${escapeHtml(meta.usernameB || "Quelqu'un")}</strong> sont devenus amis.`;
     case "milestone":
-      return `La squad a atteint <strong>${meta.completionRate || meta.threshold || "?"} %</strong> de complétion.`;
+      return `La squad a atteint <strong>${safePercentage(meta.completionRate ?? meta.threshold, 0)} %</strong> de complétion.`;
     case "goal_created":
       return `<strong>${username}</strong> a créé un objectif collectif${meta.goalName ? ` : ${escapeHtml(meta.goalName)}` : ""}.`;
     case "collection_update":
     default: {
       const it = itemMap.get(e.sprite_id);
-      const spriteName = it ? it.spriteName : escapeHtml(meta.spriteName || e.sprite_id);
-      const variant = it ? `<span class="history-list__variant">${it.variant}</span>` : "";
+      const spriteName = it ? escapeHtml(it.spriteName) : escapeHtml(meta.spriteName || e.sprite_id);
+      const variant = it ? `<span class="history-list__variant">${escapeHtml(it.variant)}</span>` : "";
       const suffix = meta.firstInSquad ? " <em>(absent de la squad)</em>" : "";
       return `<strong>${username}</strong> a obtenu ${spriteName} ${variant}${suffix}`;
     }
@@ -1174,14 +1179,18 @@ async function renderSquadRecommendations() {
     const data = await res.json();
     const parts = [];
     parts.push(`<div class="recommendations-view">`);
-    parts.push(`<div class="recommendations-header"><h3 class="recommendations-title">Complémentarité</h3><p class="recommendations-subtitle">Tu possèdes ${data.ownedCount}/${data.totalVariants} variantes actifs (${data.ownedRate}%)</p></div>`);
+    const ownedCount = safeFiniteNumber(data.ownedCount, 0, { min: 0, max: 1000000 });
+    const totalVariants = safeFiniteNumber(data.totalVariants, 0, { min: 0, max: 1000000 });
+    const ownedRate = safePercentage(data.ownedRate, 0);
+    parts.push(`<div class="recommendations-header"><h3 class="recommendations-title">Complémentarité sociale</h3><p class="recommendations-subtitle">Tu possèdes ${ownedCount}/${totalVariants} variantes actifs (${ownedRate}%). Pour les priorités, assignations et simulations de la squad, utilise le Moteur.</p></div>`);
+    parts.push(`<div class="recommendations-engine-cta"><button type="button" class="ghost-button" id="openSquadEngineFromRecs">Ouvrir le Moteur (recommandations)</button></div>`);
 
     if (data.mostComplementary) {
       const m = data.mostComplementary;
       const rarityParts = Object.entries(m.jointCoverageByRarity || {})
         .sort((a, b) => (b[1].coverage || 0) - (a[1].coverage || 0))
         .slice(0, 3)
-        .map(([r, info]) => `<span class="recommendation-rarity">${escapeHtml(r)} : <strong>${info.coverage}%</strong> (${info.owned}/${info.total})</span>`)
+        .map(([r, info]) => `<span class="recommendation-rarity">${escapeHtml(r)} : <strong>${safePercentage(info.coverage, 0)}%</strong> (${safeFiniteNumber(info.owned, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(info.total, 0, { min: 0, max: 1000000 })})</span>`)
         .join(" · ");
       parts.push(`<div class="recommendation-card recommendation-card--highlight">`);
       parts.push(`<div class="recommendation-card__header">`);
@@ -1189,8 +1198,8 @@ async function renderSquadRecommendations() {
       parts.push(`<span class="recommendation-card__badge">Plus complémentaire</span>`);
       parts.push(`</div>`);
       parts.push(`<div class="recommendation-card__body">`);
-      parts.push(`<p>${escapeHtml(m.displayName || m.username)} possède <strong>${m.missingCount}</strong> variantes qui te manquent, dont <strong>${m.priorityMatchCount}</strong> prioritaires.</p>`);
-      parts.push(`<p>Ensemble, vous couvrez <strong>${m.jointCoverage}%</strong> des variantes actives.</p>`);
+      parts.push(`<p>${escapeHtml(m.displayName || m.username)} possède <strong>${safeFiniteNumber(m.missingCount, 0, { min: 0, max: 1000000 })}</strong> variantes qui te manquent, dont <strong>${safeFiniteNumber(m.priorityMatchCount, 0, { min: 0, max: 1000000 })}</strong> prioritaires.</p>`);
+      parts.push(`<p>Ensemble, vous couvrez <strong>${safePercentage(m.jointCoverage, 0)}%</strong> des variantes actives.</p>`);
       if (rarityParts) parts.push(`<p class="recommendation-rarities">${rarityParts}</p>`);
       parts.push(`</div></div>`);
     }
@@ -1202,10 +1211,10 @@ async function renderSquadRecommendations() {
         parts.push(`<div class="recommendation-card">
           <div class="recommendation-card__header">
             <span class="recommendation-card__name">${escapeHtml(f.displayName || f.username)}</span>
-            <span class="recommendation-card__score">score ${f.score}</span>
+            <span class="recommendation-card__score">score ${safeFiniteNumber(f.score, 0, { min: 0, max: 1000000 })}</span>
           </div>
           <div class="recommendation-card__body">
-            <p><strong>${f.missingCount}</strong> variantes te manquent chez lui · <strong>${f.priorityMatchCount}</strong> priorités · couverture commune <strong>${f.jointCoverage}%</strong></p>
+            <p><strong>${safeFiniteNumber(f.missingCount, 0, { min: 0, max: 1000000 })}</strong> variantes te manquent chez lui · <strong>${safeFiniteNumber(f.priorityMatchCount, 0, { min: 0, max: 1000000 })}</strong> priorités · couverture commune <strong>${safePercentage(f.jointCoverage, 0)}%</strong></p>
           </div>
         </div>`);
       }
@@ -1219,10 +1228,10 @@ async function renderSquadRecommendations() {
         parts.push(`<div class="recommendation-card">
           <div class="recommendation-card__header">
             <span class="recommendation-card__name">${escapeHtml(s.name)}</span>
-            <span class="recommendation-card__gain">+${s.gain}%</span>
+            <span class="recommendation-card__gain">+${safePercentage(s.gain, 0)}%</span>
           </div>
           <div class="recommendation-card__body">
-            <p>Ajouter <strong>${escapeHtml(s.candidate.displayName || s.candidate.username)}</strong> ferait passer la couverture de <strong>${s.currentRate}%</strong> à <strong>${s.newRate}%</strong>.</p>
+            <p>Ajouter <strong>${escapeHtml(s.candidate.displayName || s.candidate.username)}</strong> ferait passer la couverture de <strong>${safePercentage(s.currentRate, 0)}%</strong> à <strong>${safePercentage(s.newRate, 0)}%</strong>.</p>
           </div>
         </div>`);
       }
@@ -1231,6 +1240,13 @@ async function renderSquadRecommendations() {
 
     parts.push(`</div>`);
     els.squadTableWrap.innerHTML = parts.join("");
+    const engineCta = document.getElementById("openSquadEngineFromRecs");
+    if (engineCta && typeof showSquadEngine === "function") {
+      engineCta.addEventListener("click", () => {
+        showSquadEngine();
+        if (typeof switchSquadEngineTab === "function") switchSquadEngineTab("recommendations");
+      });
+    }
   } catch (e) {
     console.error("[renderSquadRecommendations]", e);
     els.squadTableWrap.innerHTML = `<p class="squad-empty">Impossible de charger les recommandations.</p>`;
@@ -1285,7 +1301,7 @@ async function renderSquadRecommendedFriends() {
       const btn = c.canInvite
         ? `<button type="button" class="login-btn" data-recommended-id="${encodeURIComponent(c.userId)}" data-action="invite-recommended">Inviter</button>`
         : `<button type="button" class="ghost-button" disabled>Inviter</button>`;
-      const contrib = c.potentialContribution || c.newVariantsForSquad || 0;
+      const contrib = safeFiniteNumber(c.potentialContribution || c.newVariantsForSquad, 0, { min: 0, max: 1000000 });
       const contributionLine = contrib > 0
         ? `<span class="recommended-friend__stat recommended-friend__stat--contribution">${escapeHtml(c.displayName || c.username)} pourrait apporter ${contrib} nouvelle${contrib > 1 ? 's' : ''} variante${contrib > 1 ? 's' : ''} à ${squadName}.</span>`
         : "";
@@ -1293,9 +1309,9 @@ async function renderSquadRecommendedFriends() {
         <div class="recommended-friend__info">
           <span class="recommended-friend__name">${escapeHtml(c.displayName || c.username)}</span>
           <span class="recommended-friend__meta">
-            <span class="recommended-friend__stat">+${c.newVariantsForSquad} variantes nouvelles</span>
-            <span class="recommended-friend__stat">${c.mythicNewVariants} variantes mythiques manquantes</span>
-            <span class="recommended-friend__stat">Score de complémentarité : ${c.complementarityScore}%</span>
+            <span class="recommended-friend__stat">+${safeFiniteNumber(c.newVariantsForSquad, 0, { min: 0, max: 1000000 })} variantes nouvelles</span>
+            <span class="recommended-friend__stat">${safeFiniteNumber(c.mythicNewVariants, 0, { min: 0, max: 1000000 })} variantes mythiques manquantes</span>
+            <span class="recommended-friend__stat">Score de complémentarité : ${safePercentage(c.complementarityScore, 0)}%</span>
             ${contributionLine}
           </span>
         </div>
@@ -1334,7 +1350,7 @@ async function renderSquadComplementaryPairs() {
     for (const p of pairs) {
       parts.push(`<button type="button" class="complementary-pair" data-user-a-id="${encodeURIComponent(p.userAId)}" data-user-a-name="${escapeHtml(p.userAName)}" data-user-b-id="${encodeURIComponent(p.userBId)}" data-user-b-name="${escapeHtml(p.userBName)}">
         <span class="complementary-pair__names">${escapeHtml(p.userAName)} <span class="complementary-pair__cross">×</span> ${escapeHtml(p.userBName)}</span>
-        <span class="complementary-pair__score">${p.complementarityScore}%</span>
+        <span class="complementary-pair__score">${safePercentage(p.complementarityScore, 0)}%</span>
       </button>`);
     }
     parts.push(`</div></div>`);

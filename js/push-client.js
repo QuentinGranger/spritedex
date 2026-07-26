@@ -130,6 +130,31 @@
     });
   }
 
+  // Étape 45 — if the server invalidated all devices, offer to re-enable push.
+  async function maybePromptReactivation() {
+    if (!state?.userId) return;
+    if (sessionStorage.getItem("push_reactivation_prompted")) return;
+    try {
+      const res = await fetch(`${API_BASE}/push/preferences`, { headers: getHeaders() });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.needsReactivation && !data.pushReactivationNeeded) return;
+      sessionStorage.setItem("push_reactivation_prompted", "1");
+      const accept = window.confirm(
+        "Les notifications push ne sont plus actives sur vos appareils. Souhaitez-vous les réactiver ?"
+      );
+      if (accept) {
+        if (isNativePlatform() && window.Capacitor?.Plugins?.PushNotifications) {
+          registerNativePush();
+        } else {
+          await registerWebPush();
+        }
+      }
+    } catch (err) {
+      console.warn("[PUSH] reactivation check failed:", err);
+    }
+  }
+
   // ── Public API ──
   window.PushClient = {
     register: async () => {
@@ -144,7 +169,8 @@
       if (isNativePlatform()) return; // no simple unregister for native in this version
       await unregisterWebPush();
     },
-    syncPreferences: updateServerPreferences
+    syncPreferences: updateServerPreferences,
+    checkReactivation: maybePromptReactivation
   };
 
   // Sync local notification preferences to server whenever they change.

@@ -36,6 +36,7 @@ app.get("/api/friends", async (req, res) => {
     for (const row of result.rows) {
       const commonSquad = await getCommonSquad(reqUser, row.id);
       const canCompare = await canViewCollection(reqUser, row.id);
+      const canViewActivity = await canViewCollection(reqUser, row.id, { visibilityKey: "activity" });
 
       let completionRate = null;
       let lastCollectionUpdate = null;
@@ -53,7 +54,8 @@ app.get("/api/friends", async (req, res) => {
         username: row.username,
         displayName: row.displayName,
         avatarUrl: row.avatar_url,
-        lastActive: row.last_active_at,
+        // Friendship does not override the owner's granular activity setting.
+        lastActive: canViewActivity ? row.last_active_at : null,
         completionRate,
         lastCollectionUpdate,
         friendSince: row.friendSince,

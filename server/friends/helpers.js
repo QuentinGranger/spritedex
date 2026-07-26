@@ -111,6 +111,10 @@ async function getFriendPreviewSummary(reqUser, friendId) {
     result = compare.compareCollectionsServer(userA, userB, catalogue);
     compare.setCachedCompareResult(reqUser, friendId, result);
   }
+  // The shared comparison cache intentionally contains the raw collection
+  // data.  Derive this viewer's preview only after granular priority/note
+  // visibility has been applied, otherwise its score is an inference oracle.
+  result = await compare.applyCollectionVisibilityFilters(result, reqUser);
   return {
     missingFromFriend: result.summary.onlyUserACount,
     missingFromMe: result.summary.onlyUserBCount,

@@ -8,6 +8,8 @@ const { broadcastNewsUpdate } = require("./ws");
 const crypto = require("crypto");
 const puppeteer = require("puppeteer-core");
 const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
+const { classifyAvailabilityStatus } = require("./notification-gates");
+const { emitVariantAvailableForSprite } = require("./notification-variant-available");
 
 // ── News : sprite update system ──
 const SPRITE_KEYWORDS = [
@@ -249,7 +251,13 @@ async function fetchFortniteGGNews() {
     browser = await puppeteer.launch({
       executablePath,
       headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+      // This browser renders content from a third-party site. Never disable
+      // Chromium's OS sandbox here: a renderer exploit in a compromised news
+      // page must not gain the privileges of the application server. Some
+      // minimal containers cannot run Chromium with its sandbox enabled; in
+      // that case this non-essential scrape simply fails and the fixed API
+      // sources continue to supply news.
+      args: ["--disable-dev-shm-usage"]
     });
     const page = await browser.newPage();
     await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
@@ -431,6 +439,7 @@ async function extractAvailabilityFromNews(newsItems) {
       if (!normalizedText.includes(spriteNameLower) && !(shortName.length > 2 && normalizedText.includes(shortName))) continue;
 
       const current = sprite.availability || {};
+      const previousStatus = classifyAvailabilityStatus(current.status);
       const newAvailability = {
         ...current,
         status,
@@ -467,10 +476,27 @@ async function extractAvailabilityFromNews(newsItems) {
              status = COALESCE($5, availability_periods.status),
              confidence = COALESCE($7, availability_periods.confidence),
              data_status = COALESCE($8, availability_periods.data_status),
-             sources = COALESCE($9, availability_periods.sources)`,
+             sources = COALESCE($9, availability_periods.sources),
+             updated_at = NOW()`,
           [periodId, sprite.id, periodStart, newAvailability.endDate, status, null, confidence, "complete", JSON.stringify([item.source])]
         );
       }
+
+      // Étape 28 — reliable catalogue update → available_now triggers notifications.
+      if (status === "available") {
+        await emitVariantAvailableForSprite(sprite.id, {
+          previousStatus,
+          newStatus: "available",
+          confidence,
+          availableFrom: newAvailability.startDate,
+          availableUntil: newAvailability.endDate,
+          availabilityPeriodId: periodId,
+          spriteName: sprite.name
+        }).catch(err => console.error("[AVAILABILITY] variant_available emit failed", err.message));
+      }
+
+      // Keep in-memory status in sync so the same news item doesn't re-emit.
+      sprite.availability = newAvailability;
       updated++;
     }
   }

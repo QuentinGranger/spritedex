@@ -200,6 +200,20 @@ async function run() {
       assert.strictEqual(aliceSeesBob.actions.inviteToSquad, true);
     });
 
+    await test("private activity is not exposed through profiles or the friend list", async () => {
+      const profileRes = await fetch(`${API}/profile/${bob.id}`, { headers: auth(alice.token) });
+      assert.strictEqual(profileRes.status, 200);
+      const profile = await profileRes.json();
+      assert.strictEqual(profile.lastActiveAt, null, "private activity leaked from profile");
+
+      const listRes = await fetch(`${API}/friends`, { headers: auth(alice.token) });
+      assert.strictEqual(listRes.status, 200);
+      const list = await listRes.json();
+      const found = list.friends.find(f => f.id === bob.id);
+      assert.ok(found, "bob not in friend list");
+      assert.strictEqual(found.lastActive, null, "private activity leaked from friend list");
+    });
+
     await test("friend list respects privacy settings", async () => {
       // bob sets privacy to private so alice should not see completion/last update
       let res = await fetch(`${API}/profile/${bob.id}`, {
@@ -694,11 +708,13 @@ async function run() {
     assert.ok(res.ok, `set visibility failed: ${await res.text()}`);
   }
 
-  async function setEntry(token, userId, variantId, status) {
+  async function setEntry(token, userId, variantId, status, priority) {
+    const body = { status };
+    if (priority !== undefined) body.priority = priority;
     const res = await fetch(`${API}/collection/${userId}/${encodeURIComponent(variantId)}`, {
       method: "PUT",
       headers: auth(token),
-      body: JSON.stringify({ status })
+      body: JSON.stringify(body)
     });
     assert.ok(res.ok, `setEntry failed: ${await res.text()}`);
   }
@@ -964,7 +980,7 @@ async function run() {
   const steve = await register(`FrSteve${rnd()}`);
   const tina = await register(`FrTina${rnd()}`);
   try {
-    await test("blocking a squad member hides individual data but preserves global stats", async () => {
+    await test("squad analytics respect priority visibility and blocks", async () => {
       let res = await fetch(`${API}/squads`, {
         method: "POST",
         headers: auth(steve.token),
@@ -992,6 +1008,25 @@ async function run() {
       assert.ok(records.length > 0, "no active variants");
       const variantId = records[0].variantId;
 
+      // A granular private priority must not be visible in either the member
+      // collection payload or the acquisition engine viewed by Tina.
+      await setVisibility(steve, { priorityVisibility: "private" });
+      await setEntry(steve.token, steve.id, variantId, "missing", "urgent");
+      await setEntry(tina.token, tina.id, variantId, "owned");
+
+      let detailsRes = await fetch(`${API}/squads/${squad.code}`, { headers: auth(tina.token) });
+      if (!detailsRes.ok) assert.fail(`squad details failed: ${await detailsRes.text()}`);
+      let details = await detailsRes.json();
+      const steveBeforeBlock = details.members.find(m => String(m.userId) === String(steve.id));
+      assert.strictEqual(steveBeforeBlock?.collection?.[variantId]?.priority, "none", "private priority leaked in squad details");
+
+      const acquisitionRes = await fetch(`${API}/squads/${squad.code}/completion/recommendations`, { headers: auth(tina.token) });
+      if (!acquisitionRes.ok) assert.fail(`squad recommendation engine failed: ${await acquisitionRes.text()}`);
+      const acquisition = await acquisitionRes.json();
+      const priorityRow = (acquisition.priorities || []).find(row => row.variantId === variantId);
+      assert.ok(priorityRow, "priority fixture missing from acquisition engine");
+      assert.strictEqual(priorityRow.priorityCount, 0, "private priority leaked into squad acquisition score");
+
       // Steve owns a variant Tina does not.
       await setEntry(steve.token, steve.id, variantId, "owned");
       await setEntry(tina.token, tina.id, variantId, "missing");
@@ -1008,12 +1043,20 @@ async function run() {
       const blockCompareRes = await fetch(`${API}/comparisons/users/${tina.id}/${steve.id}`, { headers: auth(tina.token) });
       assert.strictEqual(blockCompareRes.status, 403, "comparison should be blocked");
 
-      // Squad global stats still include Steve's contribution, but Steve is hidden from the member list.
+      // A blocked member's collection must not influence aggregate metrics.
       res = await fetch(`${API}/squads/${squad.code}`, { headers: auth(tina.token) });
       if (!res.ok) assert.fail(`squad details failed: ${await res.text()}`);
       const data = await res.json();
-      assert.ok(data.collectiveCompletionRate > 0, "squad global stats should still count blocked member's contribution");
+      assert.strictEqual(data.coveredVariantCount, 0, "blocked member's collection must not contribute to squad coverage");
       assert.ok(!data.members.some(m => String(m.userId) === String(steve.id)), "blocked member should not appear in member list");
+
+      const uniqueRes = await fetch(`${API}/squads/${squad.code}/unique-owners`, { headers: auth(tina.token) });
+      if (!uniqueRes.ok) assert.fail(`unique owner analysis failed: ${await uniqueRes.text()}`);
+      const unique = await uniqueRes.json();
+      assert.ok(
+        !(unique.uniqueVariants || []).some(row => String(row.uniqueOwnerId) === String(steve.id)),
+        "blocked member leaked through unique-owner analytics"
+      );
     });
   } finally {
     await cleanup(steve);
@@ -1028,7 +1071,9 @@ async function run() {
       assert.strictEqual(catRes.status, 200, `catalog failed: ${catRes.status}`);
       const cat = await catRes.json();
       const first = cat.sprites[0];
+      const second = cat.sprites[1] || cat.sprites[0];
       const variantId = (first && first.variantIds && first.variantIds[0]) || (first && first.id) || "sprite_burnt_peanut";
+      const variantId2 = (second && second.variantIds && second.variantIds[0]) || (second && second.id) || variantId;
 
       let res = await fetch(`${API}/friends/${gina.id}/request`, { method: "POST", headers: auth(fred.token) });
       assert.strictEqual(res.status, 200, `request failed: ${res.status}`);
@@ -1042,17 +1087,40 @@ async function run() {
 
       notifRes = await fetch(`${API}/notifications`, { headers: auth(fred.token) });
       notifs = await notifRes.json();
-      assert.ok(notifs.notifications.some(n => n.type === "friend_request_accepted" && n.actor_id === gina.id), "fred missing friend_request_accepted");
+      const accepted = notifs.notifications.find(n => n.type === "friend_request_accepted" && n.actor_id === gina.id);
+      assert.ok(accepted, "fred missing friend_request_accepted");
+      // Étape 13 — content shape
+      assert.ok(accepted.title && accepted.title.includes("a accepté votre invitation"), "title should name the accepter");
+      assert.strictEqual(accepted.body || accepted.message, "Vous pouvez maintenant comparer vos collections.");
+      assert.strictEqual(String(accepted.data.friendId), String(gina.id));
+      assert.ok(accepted.data.friendshipId, "data.friendshipId missing");
+      assert.strictEqual(accepted.data.actionUrl, `/compare/${gina.id}`);
+      assert.strictEqual(accepted.data.actions?.primary?.label, "Comparer nos collections");
+      assert.strictEqual(accepted.data.actions?.secondary?.label, "Voir le profil");
 
-      // Gina prioritizes the variant
+      // Étape 11: accepter (gina) must NOT receive a friend_request_accepted for their own action.
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
+      notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some(n => n.type === "friend_request_accepted"),
+        "accepter should not receive friend_request_accepted"
+      );
+
+      // Gina marks the variant as missing (Étape 16/17 — interest required).
       res = await fetch(`${API}/collection/${gina.id}/${variantId}`, {
         method: "PUT",
         headers: auth(gina.token),
         body: JSON.stringify({ status: "missing", priority: "urgent" })
       });
-      assert.strictEqual(res.status, 200, `gina priority update failed: ${res.status}`);
+      assert.strictEqual(res.status, 200, `gina missing update failed: ${res.status}`);
 
-      // Fred now owns that variant
+      // Étape 15: Fred must transition from a non-owned tracked status → owned.
+      res = await fetch(`${API}/collection/${fred.id}/${variantId}`, {
+        method: "PUT",
+        headers: auth(fred.token),
+        body: JSON.stringify({ status: "missing" })
+      });
+      assert.strictEqual(res.status, 200, `fred missing seed failed: ${res.status}`);
       res = await fetch(`${API}/collection/${fred.id}/${variantId}`, {
         method: "PUT",
         headers: auth(fred.token),
@@ -1060,13 +1128,25 @@ async function run() {
       });
       assert.strictEqual(res.status, 200, `fred owned update failed: ${res.status}`);
 
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 700));
       notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
       notifs = await notifRes.json();
       assert.ok(notifs.notifications.some(n => n.type === "friend_collection_updated" && n.actor_id === fred.id), "gina missing friend_collection_updated");
-      assert.ok(notifs.notifications.some(n => n.type === "friend_priority_match" && n.actor_id === fred.id && n.entity_id === variantId), "gina missing friend_priority_match");
+      const acquired = notifs.notifications.find(
+        n => n.type === "friend_acquired_missing_variant" && n.actor_id === fred.id && String(n.entity_id) === String(variantId)
+      );
+      assert.ok(acquired, "gina missing friend_acquired_missing_variant");
+      assert.strictEqual(acquired.data.recipientCollectionStatus, "missing");
+      assert.ok(String(acquired.data.actionUrl).includes(`/compare/${fred.id}`), "actionUrl should point to compare");
 
-      // Disable collection-related notifications for Gina
+      // Disable collection topic for Gina (Étape 16 — must authorize the notification).
+      res = await fetch(`${API}/notifications/preferences`, {
+        method: "PUT",
+        headers: auth(gina.token),
+        body: JSON.stringify({ categories: { collection: false } })
+      });
+      assert.strictEqual(res.status, 200, `disable collection prefs failed: ${res.status}`);
+      // Also disable legacy coarse collection updates.
       res = await fetch(`${API}/profile/${gina.id}`, {
         method: "PATCH",
         headers: auth(gina.token),
@@ -1078,21 +1158,328 @@ async function run() {
       res = await fetch(`${API}/notifications/read-all`, { method: "POST", headers: auth(gina.token) });
       assert.strictEqual(res.status, 200, `read-all failed: ${res.status}`);
 
-      res = await fetch(`${API}/collection/${fred.id}/${variantId}`, {
+      // Use a different variant so Étape 14/20 dedupe keys don't mask the prefs check.
+      res = await fetch(`${API}/collection/${gina.id}/${variantId2}`, {
+        method: "PUT",
+        headers: auth(gina.token),
+        body: JSON.stringify({ status: "missing" })
+      });
+      assert.strictEqual(res.status, 200, `gina missing v2 failed: ${res.status}`);
+      res = await fetch(`${API}/collection/${fred.id}/${variantId2}`, {
         method: "PUT",
         headers: auth(fred.token),
-        body: JSON.stringify({ status: "new" })
+        body: JSON.stringify({ status: "missing" })
       });
-      assert.strictEqual(res.status, 200, `fred reset failed: ${res.status}`);
+      assert.strictEqual(res.status, 200, `fred missing v2 failed: ${res.status}`);
+      res = await fetch(`${API}/collection/${fred.id}/${variantId2}`, {
+        method: "PUT",
+        headers: auth(fred.token),
+        body: JSON.stringify({ status: "owned" })
+      });
+      assert.strictEqual(res.status, 200, `fred own v2 failed: ${res.status}`);
 
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 700));
       notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
       notifs = await notifRes.json();
       assert.ok(!notifs.notifications.some(n => n.type === "friend_collection_updated" && n.read_at === null), "disabled collection notification created");
-      assert.ok(!notifs.notifications.some(n => n.type === "friend_priority_match" && n.read_at === null), "disabled priority match created");
+      assert.ok(!notifs.notifications.some(n => n.type === "friend_acquired_missing_variant" && n.read_at === null), "disabled acquired notification created");
     } finally {
       await cleanup(fred);
       await cleanup(gina);
+    }
+  });
+
+  await test("friend_request_accepted is skipped when social notifications are disabled (Étape 12)", async () => {
+    const requester = await register(`FrSocOffA${rnd()}`);
+    const accepter = await register(`FrSocOffB${rnd()}`);
+    try {
+      // Recipient (requester) opts out of the social category before the accept.
+      let res = await fetch(`${API}/notifications/preferences`, {
+        method: "PUT",
+        headers: auth(requester.token),
+        body: JSON.stringify({ categories: { social: false } })
+      });
+      assert.strictEqual(res.status, 200, `disable social failed: ${res.status}`);
+
+      res = await fetch(`${API}/friends/${accepter.id}/request`, { method: "POST", headers: auth(requester.token) });
+      assert.strictEqual(res.status, 200, `request failed: ${res.status}`);
+      res = await fetch(`${API}/friends/${requester.id}/accept`, { method: "POST", headers: auth(accepter.token) });
+      assert.strictEqual(res.status, 200, `accept failed: ${res.status}`);
+
+      const notifRes = await fetch(`${API}/notifications`, { headers: auth(requester.token) });
+      assert.strictEqual(notifRes.status, 200);
+      const notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some(n => n.type === "friend_request_accepted"),
+        "social-disabled recipient should not get friend_request_accepted"
+      );
+    } finally {
+      await cleanup(requester);
+      await cleanup(accepter);
+    }
+  });
+
+  // Étape 63 — end-to-end checks for friend_request_accepted
+  await test("friend_request_accepted notification (Étape 63)", async () => {
+    // A) created after accept · requester only · once · opens compare · cancelled on immediate block
+    const requester = await register(`FrE63A${rnd()}`);
+    const accepter = await register(`FrE63B${rnd()}`);
+    try {
+      let res = await fetch(`${API}/friends/${accepter.id}/request`, {
+        method: "POST",
+        headers: auth(requester.token)
+      });
+      assert.strictEqual(res.status, 200, `request failed: ${res.status}`);
+      res = await fetch(`${API}/friends/${requester.id}/accept`, {
+        method: "POST",
+        headers: auth(accepter.token)
+      });
+      assert.strictEqual(res.status, 200, `accept failed: ${res.status}`);
+
+      let notifRes = await fetch(`${API}/notifications`, { headers: auth(requester.token) });
+      assert.strictEqual(notifRes.status, 200);
+      let notifs = await notifRes.json();
+      const accepted = notifs.notifications.filter(
+        (n) => n.type === "friend_request_accepted" && String(n.actor_id || n.actor?.id) === String(accepter.id)
+      );
+      assert.strictEqual(accepted.length, 1, "exactly one friend_request_accepted for requester");
+      const n = accepted[0];
+      const actionUrl = n.action?.url || n.data?.actionUrl || n.data?.actions?.primary?.url;
+      assert.strictEqual(
+        actionUrl,
+        `/compare/${accepter.id}`,
+        "notification must open comparison with the accepter"
+      );
+
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(accepter.token) });
+      notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some((x) => x.type === "friend_request_accepted"),
+        "accepter must not receive friend_request_accepted"
+      );
+
+      // Re-accept must not create a second notification (dedupe / no re-emit).
+      res = await fetch(`${API}/friends/${requester.id}/accept`, {
+        method: "POST",
+        headers: auth(accepter.token)
+      });
+      // Already friends → conflict or no-op; either way inbox stays at one.
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(requester.token) });
+      notifs = await notifRes.json();
+      assert.strictEqual(
+        notifs.notifications.filter((x) => x.type === "friend_request_accepted").length,
+        1,
+        "re-accept must not create a duplicate friend_request_accepted"
+      );
+
+      // Immediate block cancels / removes the social notification from the inbox.
+      res = await fetch(`${API}/users/${accepter.id}/block`, {
+        method: "POST",
+        headers: auth(requester.token)
+      });
+      assert.strictEqual(res.status, 200, `block failed: ${res.status}`);
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(requester.token) });
+      notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some((x) => x.type === "friend_request_accepted"),
+        "friend_request_accepted must be cancelled after immediate block"
+      );
+    } finally {
+      await cleanup(requester);
+      await cleanup(accepter);
+    }
+
+    // B) respects preferences (social category + type-level disable)
+    const prefsRequester = await register(`FrE63PrefA${rnd()}`);
+    const prefsAccepter = await register(`FrE63PrefB${rnd()}`);
+    try {
+      let res = await fetch(`${API}/notifications/preferences`, {
+        method: "PUT",
+        headers: auth(prefsRequester.token),
+        body: JSON.stringify({
+          categories: { social: false },
+          types: { friend_request_accepted: false }
+        })
+      });
+      assert.strictEqual(res.status, 200, `disable prefs failed: ${res.status}`);
+
+      res = await fetch(`${API}/friends/${prefsAccepter.id}/request`, {
+        method: "POST",
+        headers: auth(prefsRequester.token)
+      });
+      assert.strictEqual(res.status, 200, `request failed: ${res.status}`);
+      res = await fetch(`${API}/friends/${prefsRequester.id}/accept`, {
+        method: "POST",
+        headers: auth(prefsAccepter.token)
+      });
+      assert.strictEqual(res.status, 200, `accept failed: ${res.status}`);
+
+      const notifRes = await fetch(`${API}/notifications`, { headers: auth(prefsRequester.token) });
+      assert.strictEqual(notifRes.status, 200);
+      const notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some((x) => x.type === "friend_request_accepted"),
+        "prefs-disabled recipient must not get friend_request_accepted"
+      );
+    } finally {
+      await cleanup(prefsRequester);
+      await cleanup(prefsAccepter);
+    }
+  });
+
+  // Étape 64 — end-to-end checks for friend_acquired_missing_variant
+  await test("friend_acquired_missing_variant notification (Étape 64)", async () => {
+    const actor = await register(`FrE64Act${rnd()}`);
+    const missingFriend = await register(`FrE64Miss${rnd()}`);
+    const priorityFriend = await register(`FrE64Prio${rnd()}`);
+    const unknownFriend = await register(`FrE64Unk${rnd()}`);
+    const outsider = await register(`FrE64Out${rnd()}`);
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    try {
+      const catRes = await fetch(`${API}/sprites`);
+      assert.strictEqual(catRes.status, 200, `catalog failed: ${catRes.status}`);
+      const cat = await catRes.json();
+      const variantIds = [];
+      for (const sprite of cat.sprites || []) {
+        for (const id of sprite.variantIds || [sprite.id]) {
+          if (id && !variantIds.includes(id)) variantIds.push(id);
+          if (variantIds.length >= 3) break;
+        }
+        if (variantIds.length >= 3) break;
+      }
+      assert.ok(variantIds.length >= 3, "need at least 3 catalog variants");
+      const [v1, v2, v3] = variantIds;
+
+      await becomeFriends(actor, missingFriend);
+      await becomeFriends(actor, priorityFriend);
+      await becomeFriends(actor, unknownFriend);
+      await setVisibility(actor, { collectionVisibility: "friends" });
+
+      // Recipient interests on v1 (outsider is not a friend).
+      await setEntry(missingFriend.token, missingFriend.id, v1, "missing");
+      await setEntry(priorityFriend.token, priorityFriend.id, v1, "priority");
+      await setEntry(unknownFriend.token, unknownFriend.id, v1, "unknown");
+      await setEntry(outsider.token, outsider.id, v1, "missing");
+
+      // Owned transition triggers analysis (Étape 15).
+      await setEntry(actor.token, actor.id, v1, "missing");
+      await setEntry(actor.token, actor.id, v1, "owned");
+      await sleep(700);
+
+      let notifRes = await fetch(`${API}/notifications`, { headers: auth(missingFriend.token) });
+      assert.strictEqual(notifRes.status, 200);
+      let notifs = await notifRes.json();
+      const forMissing = notifs.notifications.filter(
+        (n) => n.type === "friend_acquired_missing_variant"
+          && String(n.actor_id || n.actor?.id) === String(actor.id)
+          && String(n.entity_id || n.entity?.id) === String(v1)
+      );
+      assert.strictEqual(forMissing.length, 1, "missing friend should be notified once");
+      assert.ok(
+        /correspondance|manque|possède/i.test(forMissing[0].title || ""),
+        "missing-level wording expected"
+      );
+      assert.notStrictEqual(
+        forMissing[0].data?.priorityLevel,
+        "strong",
+        "simple missing must not be strong priority"
+      );
+
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(priorityFriend.token) });
+      notifs = await notifRes.json();
+      const forPriority = notifs.notifications.filter(
+        (n) => n.type === "friend_acquired_missing_variant"
+          && String(n.actor_id || n.actor?.id) === String(actor.id)
+      );
+      assert.strictEqual(forPriority.length, 1, "priority friend should be notified");
+      assert.ok(
+        /priorit/i.test(forPriority[0].title || forPriority[0].body || ""),
+        "priority must be distinguished from simple missing"
+      );
+      assert.strictEqual(forPriority[0].data?.priorityLevel, "strong");
+      assert.strictEqual(forPriority[0].data?.recipientCollectionStatus, "priority");
+
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(unknownFriend.token) });
+      notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some((n) => n.type === "friend_acquired_missing_variant"),
+        "unknown status must not trigger the alert"
+      );
+
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(outsider.token) });
+      notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some((n) => n.type === "friend_acquired_missing_variant"),
+        "non-friend must not be selected"
+      );
+
+      // Multiple acquisitions for the same friend are grouped in one batch.
+      await fetch(`${API}/notifications/read-all`, {
+        method: "POST",
+        headers: auth(missingFriend.token)
+      });
+      await setEntry(missingFriend.token, missingFriend.id, v2, "missing");
+      await setEntry(missingFriend.token, missingFriend.id, v3, "missing");
+      await setEntry(actor.token, actor.id, v2, "missing");
+      await setEntry(actor.token, actor.id, v2, "owned");
+      await setEntry(actor.token, actor.id, v3, "missing");
+      await setEntry(actor.token, actor.id, v3, "owned");
+      await sleep(700);
+
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(missingFriend.token) });
+      notifs = await notifRes.json();
+      const grouped = notifs.notifications.filter(
+        (n) => n.type === "friend_acquired_missing_variant"
+          && String(n.actor_id || n.actor?.id) === String(actor.id)
+          && n.read_at == null
+      );
+      assert.strictEqual(grouped.length, 1, "multiple acquisitions should flush as one grouped notification");
+      const groupCount = Number(grouped[0].data?.count || grouped[0].data?.group?.eventCount || 0);
+      assert.ok(groupCount >= 2, `grouped count expected >= 2, got ${groupCount}`);
+      assert.ok(
+        Array.isArray(grouped[0].data?.variantIds)
+          && grouped[0].data.variantIds.length >= 2,
+        "grouped payload should list multiple variants"
+      );
+
+      // Private actor collection must not reveal acquisitions.
+      await fetch(`${API}/notifications/read-all`, {
+        method: "POST",
+        headers: auth(missingFriend.token)
+      });
+      let privateVariant = null;
+      for (const sprite of cat.sprites || []) {
+        for (const id of sprite.variantIds || [sprite.id]) {
+          if (id && !variantIds.slice(0, 3).includes(id)) {
+            privateVariant = id;
+            break;
+          }
+        }
+        if (privateVariant) break;
+      }
+      assert.ok(privateVariant, "need a 4th catalog variant for the privacy check");
+
+      await setVisibility(actor, { collectionVisibility: "private" });
+      await setEntry(missingFriend.token, missingFriend.id, privateVariant, "missing");
+      await setEntry(actor.token, actor.id, privateVariant, "missing");
+      await setEntry(actor.token, actor.id, privateVariant, "owned");
+      await sleep(700);
+
+      notifRes = await fetch(`${API}/notifications`, { headers: auth(missingFriend.token) });
+      notifs = await notifRes.json();
+      assert.ok(
+        !notifs.notifications.some(
+          (n) => n.type === "friend_acquired_missing_variant" && n.read_at == null
+        ),
+        "private collections must not reveal acquisitions"
+      );
+    } finally {
+      await cleanup(actor);
+      await cleanup(missingFriend);
+      await cleanup(priorityFriend);
+      await cleanup(unknownFriend);
+      await cleanup(outsider);
     }
   });
 
@@ -1336,7 +1723,7 @@ async function run() {
     }
   });
 
-  await test("deleted account squad activity is anonymised", async () => {
+  await test("deleted account squad activity no longer leaks identity", async () => {
     const carol = await register(`FrDeleteCarol${rnd()}`);
     const dave = await register(`FrDeleteDave${rnd()}`);
     try {
@@ -1345,6 +1732,15 @@ async function run() {
 
       let res = await fetch(`${API}/squads/join`, { method: "POST", headers: auth(dave.token), body: JSON.stringify({ code: squad.code }) });
       await okJson(res, "join squad");
+
+      // The activity is collection-derived, so make it intentionally visible
+      // to the squad before asserting its pre-deletion representation.
+      res = await fetch(`${API}/profile/${dave.id}`, {
+        method: "PATCH",
+        headers: auth(dave.token),
+        body: JSON.stringify({ collectionVisibility: "squad" })
+      });
+      await okJson(res, "set squad collection visibility");
 
       // Dave makes a collection change that emits squad activity.
       const catRes = await fetch(`${API}/sprites`);
@@ -1367,10 +1763,12 @@ async function run() {
       res = await fetch(`${API}/profile/${dave.id}`, { method: "DELETE", headers: auth(dave.token) });
       await okJson(res, "delete dave");
 
-      // His entry is now anonymised.
+      // Deleted collection activity is fail-closed: old rows are detached
+      // from the user and must not reveal either the prior identity or a
+      // concrete private ownership event to the remaining members.
       res = await fetch(`${API}/squads/${squad.code}/history`, { headers: auth(carol.token) });
       history = await okJson(res, "squad history after delete");
-      assert.ok(history.entries.some(e => e.username === "Utilisateur anonyme"), "squad activity not anonymised");
+      assert.ok(!history.entries.some(e => e.username === dave.username), "deleted member identity leaked through squad activity");
     } finally {
       await cleanup(carol);
       await cleanup(dave);

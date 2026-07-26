@@ -2136,3 +2136,75 @@
 .engine-card--warning .engine-card__value {
   color: #ffbe00;
 }
+
+.engine-section__hint {
+  margin: -4px 0 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.engine-list--ranked .engine-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  margin-right: 8px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.engine-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 639px) {
+  .engine-grid--3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.engine-sim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  margin-bottom: 16px;
+}
+
+.engine-sim__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 160px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.engine-sim__field .engine-select {
+  text-transform: none;
+  letter-spacing: normal;
+  width: 100%;
+}
+
+.engine-sim__submit {
+  flex: 0 0 auto;
+}
+
+.engine-sim__delta--up {
+  color: #3ecf8e;
+}
+
+.engine-sim__delta--down {
+  color: #ff6b6b;
+}
+
+.recommendations-engine-cta {
+  margin: 0 0 16px;
+}
