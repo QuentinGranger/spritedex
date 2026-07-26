@@ -377,7 +377,7 @@ function renderEngineRecommendations(r) {
             <div class="engine-assignment__variants">${(a.variants || []).slice(0, 8).map(v => {
               const tip = (v.explanation && v.explanation.join(" ")) || priorityDisplay(v) || "";
               const gain = v.projectedCompletionGain != null ? ` · +${v.projectedCompletionGain}%` : (v.collectiveCoverageDelta != null ? ` · +${v.collectiveCoverageDelta}%` : "");
-              return `<span class="engine-chip" title="${escapeHtml(tip)}">${escapeHtml(v.spriteName || v.variantId)}${gain ? `<small>${escapeHtml(gain)}</small>` : ""}</span>`;
+              return `<button type="button" class="engine-chip engine-chip--action" data-graph-recommendation="assignment" title="${escapeHtml(tip)}">${escapeHtml(v.spriteName || v.variantId)}${gain ? `<small>${escapeHtml(gain)}</small>` : ""}</button>`;
             }).join("")}</div>
           </div>
         `).join("") : `<p class="engine-empty">Aucune assignation.</p>`}
@@ -389,7 +389,7 @@ function renderEngineRecommendations(r) {
         ${priorities.slice(0, 20).map(p => {
           const tip = priorityDisplay(p);
           const delta = p.collectiveCoverageDelta != null ? ` · +${p.collectiveCoverageDelta}%` : "";
-          return `<span class="engine-chip" title="${escapeHtml(tip)}">${escapeHtml(p.spriteName || p.variantId)}${delta ? `<small>${escapeHtml(delta)}</small>` : ""}</span>`;
+          return `<button type="button" class="engine-chip engine-chip--action" data-graph-recommendation="priority" title="${escapeHtml(tip)}">${escapeHtml(p.spriteName || p.variantId)}${delta ? `<small>${escapeHtml(delta)}</small>` : ""}</button>`;
         }).join("")}
       </div>
     </div>
@@ -397,16 +397,25 @@ function renderEngineRecommendations(r) {
       <h4 class="engine-section__title">Objectifs suggérés (${goals.length})</h4>
       <div class="engine-goal-list">
         ${goals.length ? goals.map(g => `
-          <div class="engine-goal-card">
+          <button type="button" class="engine-goal-card engine-goal-card--action" data-graph-recommendation="goal">
             <div class="engine-goal-card__title">${escapeHtml(g.title)}</div>
             <div class="engine-goal-card__meta">${escapeHtml(g.reason || "")}</div>
             <div class="engine-goal-card__gain">Gain collectif : +${safePercentage(g.expectedCollectiveGain, 0)}%</div>
-          </div>
+          </button>
         `).join("") : `<p class="engine-empty">Aucun objectif suggéré.</p>`}
       </div>
     </div>
   `;
 }
+
+document.addEventListener("click", (event) => {
+  const recommendation = event.target.closest("[data-graph-recommendation]");
+  if (!recommendation || typeof trackSpriteGraphInteraction !== "function") return;
+  trackSpriteGraphInteraction("recommendation.clicked", {
+    surface: "squad_engine",
+    recommendationKey: recommendation.dataset.graphRecommendation
+  });
+});
 
 function getEngineSimulateMembers(r) {
   const fromUnique = ((r.analysis && r.analysis.uniqueOwners && r.analysis.uniqueOwners.byMember) || [])

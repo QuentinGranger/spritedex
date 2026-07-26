@@ -1949,6 +1949,21 @@
   color: var(--text);
 }
 
+.engine-chip--action,
+.engine-goal-card--action {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.engine-chip--action:hover,
+.engine-chip--action:focus-visible,
+.engine-goal-card--action:hover,
+.engine-goal-card--action:focus-visible {
+  border-color: var(--accent-2);
+  outline: none;
+}
+
 .engine-empty {
   color: var(--muted);
   font-size: 0.84rem;
@@ -2005,6 +2020,11 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
+}
+
+.engine-goal-card--action {
+  width: 100%;
+  color: inherit;
 }
 
 .engine-goal-card__title {

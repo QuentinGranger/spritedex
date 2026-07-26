@@ -47,6 +47,20 @@ const FUTURE_GRAPH_EVENT_TYPES = Object.freeze({
 });
 
 const GRAPH_EVENT_TYPE_SET = new Set(Object.values(GRAPH_EVENT_TYPES));
+// V1 keeps its eight business events stable. Interaction signals are an
+// additive extension: they are useful for internal product analysis but do
+// not alter completion, ownership or public community calculations.
+const GRAPH_INTERACTION_EVENT_TYPES = Object.freeze({
+  RECOMMENDATION_CLICKED: "recommendation.clicked",
+  COMPARISON_FILTER_APPLIED: FUTURE_GRAPH_EVENT_TYPES.COMPARISON_FILTER_APPLIED,
+  NOTIFICATION_ACTION_CLICKED: FUTURE_GRAPH_EVENT_TYPES.NOTIFICATION_ACTION_CLICKED,
+  NOTIFICATION_CONVERTED: FUTURE_GRAPH_EVENT_TYPES.NOTIFICATION_CONVERTED
+});
+const GRAPH_INTERACTION_EVENT_TYPE_SET = new Set(Object.values(GRAPH_INTERACTION_EVENT_TYPES));
+const GRAPH_RECORDABLE_EVENT_TYPE_SET = new Set([
+  ...GRAPH_EVENT_TYPE_SET,
+  ...GRAPH_INTERACTION_EVENT_TYPE_SET
+]);
 
 /** Étape 26 — goal scope for completion analytics. */
 const GOAL_SCOPES = Object.freeze(["personal", "friends", "squad"]);
@@ -79,7 +93,11 @@ const GRAPH_EVENT_VERSIONS = Object.freeze({
   [GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT]: 2,
   [GRAPH_EVENT_TYPES.SQUAD_JOINED]: 2,
   [GRAPH_EVENT_TYPES.GOAL_COMPLETED]: 3,
-  [GRAPH_EVENT_TYPES.NOTIFICATION_OPENED]: 2
+  [GRAPH_EVENT_TYPES.NOTIFICATION_OPENED]: 2,
+  [GRAPH_INTERACTION_EVENT_TYPES.RECOMMENDATION_CLICKED]: 1,
+  [GRAPH_INTERACTION_EVENT_TYPES.COMPARISON_FILTER_APPLIED]: 1,
+  [GRAPH_INTERACTION_EVENT_TYPES.NOTIFICATION_ACTION_CLICKED]: 1,
+  [GRAPH_INTERACTION_EVENT_TYPES.NOTIFICATION_CONVERTED]: 1
 });
 
 /** Étape 21 — how a friend invitation was initiated. */
@@ -359,7 +377,7 @@ async function recordGraphEvent(db, input = {}, {
 } = {}) {
   const client = db && typeof db.query === "function" ? db : pool;
   const envelope = buildGraphEventEnvelope(input);
-  if (!GRAPH_EVENT_TYPE_SET.has(envelope.eventType)) return null;
+  if (!GRAPH_RECORDABLE_EVENT_TYPE_SET.has(envelope.eventType)) return null;
 
   // Étape 69–70 — abuse / import gates (imports are not penalized).
   if (!skipGovernance) {
@@ -1262,6 +1280,9 @@ module.exports = {
   GRAPH_EVENT_TYPES,
   FUTURE_GRAPH_EVENT_TYPES,
   GRAPH_EVENT_TYPE_SET,
+  GRAPH_INTERACTION_EVENT_TYPES,
+  GRAPH_INTERACTION_EVENT_TYPE_SET,
+  GRAPH_RECORDABLE_EVENT_TYPE_SET,
   GRAPH_SOURCES,
   GRAPH_SOURCE_SET,
   GRAPH_EVENT_VERSIONS,

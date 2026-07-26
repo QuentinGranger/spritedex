@@ -14,6 +14,8 @@ const { pool } = require("../server/db");
 const {
   GRAPH_EVENT_TYPES,
   GRAPH_EVENT_TYPE_SET,
+  GRAPH_INTERACTION_EVENT_TYPES,
+  GRAPH_INTERACTION_EVENT_TYPE_SET,
   GRAPH_SOURCES,
   GRAPH_EVENT_VERSIONS,
   GRAPH_EVENT_COMMON_FIELDS,
@@ -134,6 +136,13 @@ async function main() {
       assert.ok(GRAPH_EVENT_TYPE_SET.has(type), `missing ${type}`);
     }
     assert.strictEqual(GRAPH_EVENT_TYPES.COLLECTION_SPRITE_ADDED, "collection.sprite_added");
+    assert.deepStrictEqual([...GRAPH_INTERACTION_EVENT_TYPE_SET].sort(), [
+      "comparison.filter_applied",
+      "notification.action_clicked",
+      "notification.converted",
+      "recommendation.clicked"
+    ]);
+    assert.strictEqual(GRAPH_INTERACTION_EVENT_TYPES.RECOMMENDATION_CLICKED, "recommendation.clicked");
 
     const doc = fs.readFileSync(path.join(__dirname, "../SPRITE_GRAPH.md"), "utf8");
     assert.ok(doc.includes("Neo4j"));

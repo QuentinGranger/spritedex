@@ -344,6 +344,43 @@ app.post("/api/notifications/:notificationId/read", requireNotSuspended, async (
       { clicked }
     );
     if (!row) return res.status(404).json({ error: "Notification introuvable" });
+    // The read endpoint is the authoritative notification-open signal; the
+    // browser cannot forge another user's notification identifier here.
+    try {
+      const {
+        GRAPH_EVENT_TYPES,
+        GRAPH_INTERACTION_EVENT_TYPES,
+        buildNotificationOpenedContext,
+        recordGraphEventSafe
+      } = require("../sprite-graph");
+      const source = req.get("origin")?.startsWith("capacitor:") ? "ios" : "web";
+      const openedContext = buildNotificationOpenedContext(row, {
+        channel: clicked ? "in_app" : "in_app",
+        openedAt: row.read_at || new Date().toISOString()
+      });
+      recordGraphEventSafe({
+        eventType: GRAPH_EVENT_TYPES.NOTIFICATION_OPENED,
+        actorUserId: reqUser,
+        notificationId: row.id,
+        source,
+        origin: "notifications.read",
+        context: openedContext,
+        deduplicationKey: `${GRAPH_EVENT_TYPES.NOTIFICATION_OPENED}:${row.id}`
+      });
+      if (clicked) {
+        recordGraphEventSafe({
+          eventType: GRAPH_INTERACTION_EVENT_TYPES.NOTIFICATION_ACTION_CLICKED,
+          actorUserId: reqUser,
+          notificationId: row.id,
+          source,
+          origin: "notifications.read",
+          context: { ...openedContext, surface: "notification" },
+          deduplicationKey: `${GRAPH_INTERACTION_EVENT_TYPES.NOTIFICATION_ACTION_CLICKED}:${row.id}`
+        });
+      }
+    } catch (graphErr) {
+      console.error("[sprite-graph] notification interaction:", graphErr.message);
+    }
     res.json({
       ok: true,
       id: row.id,
