@@ -23,31 +23,33 @@ let skipped = 0;
 
 for (const [spriteId, variants] of Object.entries(SPRITE_IMAGES)) {
   const slug = slugFromId(spriteId);
-  const outDir = path.join(OUT_BASE, slug);
-  fs.mkdirSync(outDir, { recursive: true });
+  // L'API peut retourner des paths avec tiret OU underscore selon la source
+  // (catalogue JSON = underscore, slug = tiret). On crée les deux si différents.
+  const slugUnderscore = spriteId.replace(/^sprite_/, "");
+  const outDirs = [path.join(OUT_BASE, slug)];
+  if (slugUnderscore !== slug) outDirs.push(path.join(OUT_BASE, slugUnderscore));
 
-  for (const [variant, srcRelative] of Object.entries(variants)) {
-    const srcAbs = path.join(ROOT, srcRelative);
-    const ext = path.extname(srcRelative); // .webp ou .png
-    const outFile = path.join(outDir, outVariantName(variant) + ".webp");
+  for (const outDir of outDirs) {
+    fs.mkdirSync(outDir, { recursive: true });
 
-    // Si la source est un PNG, on pointe quand même vers elle (pas de conversion)
-    const outFileActual = path.join(outDir, outVariantName(variant) + ext);
+    for (const [variant, srcRelative] of Object.entries(variants)) {
+      const srcAbs = path.join(ROOT, srcRelative);
+      const ext = path.extname(srcRelative); // .webp ou .png
+      const outFileActual = path.join(outDir, outVariantName(variant) + ext);
 
-    if (!fs.existsSync(srcAbs)) {
-      console.warn(`[SKIP] Source manquante : ${srcRelative}`);
-      skipped++;
-      continue;
+      if (!fs.existsSync(srcAbs)) {
+        console.warn(`[SKIP] Source manquante : ${srcRelative}`);
+        skipped++;
+        continue;
+      }
+
+      if (fs.existsSync(outFileActual)) {
+        fs.unlinkSync(outFileActual);
+      }
+      const relSrc = path.relative(outDir, srcAbs);
+      fs.symlinkSync(relSrc, outFileActual);
+      created++;
     }
-
-    // Supprime le lien existant si besoin
-    if (fs.existsSync(outFileActual)) {
-      fs.unlinkSync(outFileActual);
-    }
-    // Symlink relatif
-    const relSrc = path.relative(outDir, srcAbs);
-    fs.symlinkSync(relSrc, outFileActual);
-    created++;
   }
 }
 
