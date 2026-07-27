@@ -10,11 +10,11 @@
     "dataPolicy": "Ne jamais remplacer une information inconnue par une estimation non signalée."
   },
   "summary": {
-    "releasedBaseSprites": 20,
-    "releasedVariantsIncludingBase": 82,
-    "expectedReleasedVariantsIncludingBase": 82,
+    "releasedBaseSprites": 21,
+    "releasedVariantsIncludingBase": 91,
+    "expectedReleasedVariantsIncludingBase": 91,
     "countsMatchPublicCatalogue": true,
-    "unreleasedBaseSpritesTrackedSeparately": 2
+    "unreleasedBaseSpritesTrackedSeparately": 1
   },
   "season": {
     "id": "chapter_7_season_3",
@@ -126,9 +126,15 @@
       "id": "variant_type_cube",
       "nameEn": "Cube",
       "nameFr": "Cube",
-      "extraEffect": null,
-      "globalStatus": "unreleased",
-      "dataStatus": "unverified"
+      "extraEffect": {
+        "type": "overdrive_in_storm",
+        "descriptionEn": "Gain the Overdrive effect while in the Storm.",
+        "descriptionFr": "Accorde l'effet Overdrive tant que le porteur se trouve dans la tempête.",
+        "condition": "inside_storm",
+        "endsWhen": "leave_storm",
+        "valuesByLevel": null
+      },
+      "globalStatus": "partially_released"
     },
     {
       "id": "variant_type_quack",
@@ -375,7 +381,8 @@
         "sprite_earth",
         "sprite_earth_gold",
         "sprite_earth_gummy",
-        "sprite_earth_galaxy"
+        "sprite_earth_galaxy",
+        "sprite_earth_cube"
       ],
       "variants": [
         {
@@ -485,6 +492,31 @@
             "fortnitegg_catalogue_2026_07_18",
             "official_runners_2026"
           ]
+        },
+        {
+          "id": "sprite_earth_cube",
+          "spriteId": "sprite_earth",
+          "variantType": "cube",
+          "name": "Cube Earth Sprite",
+          "slug": "earth-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 2700,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/earth/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -541,7 +573,8 @@
         "sprite_fire_gold",
         "sprite_fire_gummy",
         "sprite_fire_galaxy",
-        "sprite_fire_holofoil"
+        "sprite_fire_holofoil",
+        "sprite_fire_cube"
       ],
       "variants": [
         {
@@ -678,6 +711,31 @@
             "fortnitegg_catalogue_2026_07_18",
             "official_runners_2026"
           ]
+        },
+        {
+          "id": "sprite_fire_cube",
+          "spriteId": "sprite_fire",
+          "variantType": "cube",
+          "name": "Cube Fire Sprite",
+          "slug": "fire-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 2700,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fire/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -1086,7 +1144,8 @@
         "sprite_dream",
         "sprite_dream_gold",
         "sprite_dream_gummy",
-        "sprite_dream_galaxy"
+        "sprite_dream_galaxy",
+        "sprite_dream_cube"
       ],
       "variants": [
         {
@@ -1196,6 +1255,31 @@
             "fortnitegg_catalogue_2026_07_18",
             "official_runners_2026"
           ]
+        },
+        {
+          "id": "sprite_dream_cube",
+          "spriteId": "sprite_dream",
+          "variantType": "cube",
+          "name": "Cube Dream Sprite",
+          "slug": "dream-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 6750,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/dream/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -1411,7 +1495,8 @@
         "sprite_punk",
         "sprite_punk_gold",
         "sprite_punk_gummy",
-        "sprite_punk_galaxy"
+        "sprite_punk_galaxy",
+        "sprite_punk_cube"
       ],
       "variants": [
         {
@@ -1521,6 +1606,31 @@
             "fortnitegg_catalogue_2026_07_18",
             "official_runners_2026"
           ]
+        },
+        {
+          "id": "sprite_punk_cube",
+          "spriteId": "sprite_punk",
+          "variantType": "cube",
+          "name": "Cube Punk Sprite",
+          "slug": "punk-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 6750,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/punk/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -1892,7 +2002,7 @@
           "releaseStatus": "released",
           "firstObservedAt": "2026-06-05",
           "summonCostSpriteDust": 15000,
-          "spriteChestDropChancePct": 4.1e-05,
+          "spriteChestDropChancePct": 0.000041,
           "extraEffectRef": "variant_type_gold",
           "imagePath": null,
           "suggestedImagePath": "/images/sprites/zero_point/gold.webp",
@@ -1919,7 +2029,7 @@
           "releaseStatus": "released",
           "firstObservedAt": "2026-06-05",
           "summonCostSpriteDust": 15000,
-          "spriteChestDropChancePct": 3.1e-05,
+          "spriteChestDropChancePct": 0.000031,
           "extraEffectRef": "variant_type_gummy",
           "imagePath": null,
           "suggestedImagePath": "/images/sprites/zero_point/gummy.webp",
@@ -1946,7 +2056,7 @@
           "releaseStatus": "released",
           "firstObservedAt": "2026-06-05",
           "summonCostSpriteDust": 15000,
-          "spriteChestDropChancePct": 1.6e-05,
+          "spriteChestDropChancePct": 0.000016,
           "extraEffectRef": "variant_type_galaxy",
           "imagePath": null,
           "suggestedImagePath": "/images/sprites/zero_point/galaxy.webp",
@@ -2033,7 +2143,8 @@
         "sprite_fishy",
         "sprite_fishy_gold",
         "sprite_fishy_gummy",
-        "sprite_fishy_galaxy"
+        "sprite_fishy_galaxy",
+        "sprite_fishy_cube"
       ],
       "variants": [
         {
@@ -2147,6 +2258,31 @@
             "official_runners_2026",
             "fortnite_wiki_v4110"
           ]
+        },
+        {
+          "id": "sprite_fishy_cube",
+          "spriteId": "sprite_fishy",
+          "variantType": "cube",
+          "name": "Cube Fishy Sprite",
+          "slug": "fishy-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 2700,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/fishy/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -2572,7 +2708,8 @@
         "sprite_boss",
         "sprite_boss_gold",
         "sprite_boss_gummy",
-        "sprite_boss_galaxy"
+        "sprite_boss_galaxy",
+        "sprite_boss_cube"
       ],
       "variants": [
         {
@@ -2686,6 +2823,31 @@
             "official_runners_2026",
             "fortnite_wiki_v4110"
           ]
+        },
+        {
+          "id": "sprite_boss_cube",
+          "spriteId": "sprite_boss",
+          "variantType": "cube",
+          "name": "Cube Boss Sprite",
+          "slug": "boss-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 6750,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/boss/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -2742,7 +2904,8 @@
         "sprite_grim",
         "sprite_grim_gold",
         "sprite_grim_gummy",
-        "sprite_grim_galaxy"
+        "sprite_grim_galaxy",
+        "sprite_grim_cube"
       ],
       "variants": [
         {
@@ -2856,6 +3019,31 @@
             "official_runners_2026",
             "fortnite_wiki_v4110"
           ]
+        },
+        {
+          "id": "sprite_grim_cube",
+          "spriteId": "sprite_grim",
+          "variantType": "cube",
+          "name": "Cube Grim Sprite",
+          "slug": "grim-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/grim/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -3394,7 +3582,8 @@
         "sprite_batman_gold",
         "sprite_batman_gummy",
         "sprite_batman_galaxy",
-        "sprite_batman_holofoil"
+        "sprite_batman_holofoil",
+        "sprite_batman_cube"
       ],
       "variants": [
         {
@@ -3536,6 +3725,31 @@
             "fortnitegg_catalogue_2026_07_18",
             "official_runners_2026"
           ]
+        },
+        {
+          "id": "sprite_batman_cube",
+          "spriteId": "sprite_batman",
+          "variantType": "cube",
+          "name": "Cube Batman Sprite",
+          "slug": "batman-cube",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-23",
+          "summonCostSpriteDust": 10000,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": "variant_type_cube",
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/batman/cube.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "not_publicly_disclosed",
+          "introducedInUpdate": "v41.20"
         }
       ],
       "sourceIds": [
@@ -3549,29 +3763,102 @@
         "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
         "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
       ]
+    },
+    {
+      "id": "sprite_pollo",
+      "slug": "pollo",
+      "name": "Pollo Sprite",
+      "officialName": "Pollo Sprite",
+      "rarity": "mythic",
+      "seasonId": "chapter_7_season_3",
+      "introducedInUpdate": "v41.20",
+      "firstObservedAt": "2026-07-18",
+      "lastVerifiedAt": "2026-07-27",
+      "ability": {
+        "type": "shield_regeneration_on_elimination",
+        "descriptionEn": "Upon earning an elimination, slowly replenish shield for you and nearby squad members for a duration.",
+        "descriptionFr": "Après avoir obtenu une élimination, régénère progressivement le bouclier du porteur et des membres de l'escouade à proximité pendant une durée déterminée.",
+        "trigger": "holder_elimination",
+        "targets": [
+          "self",
+          "nearby_squad_members"
+        ],
+        "levelValues": [
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "unit": "seconds",
+        "notes": "Vitesse de régénération, rayon et délai interne non publiés."
+      },
+      "acquisition": {
+        "type": "in_game",
+        "descriptionEn": "Available from Sprite Chests and certain standard or Rare Chests. Can also be obtained from an eliminated carrier or through trading. Must be extracted at an Extraction Site or with a Portable Extractor.",
+        "descriptionFr": "Disponible dans les coffres à Sprites et certains coffres standards ou rares. Peut aussi être récupéré sur un joueur éliminé ou obtenu par échange. Doit être extrait à un site d'extraction ou avec un extracteur portable.",
+        "sources": [
+          "sprite_chest",
+          "rare_chest",
+          "player_drop",
+          "trade"
+        ],
+        "unlockCondition": "extract",
+        "extractionMethods": [
+          "extraction_site",
+          "portable_extractor"
+        ],
+        "confidence": "observed"
+      },
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "seasonEndDate": "2026-08-20",
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "baseSummonCostSpriteDust": 6750,
+      "variantIds": [
+        "sprite_pollo"
+      ],
+      "variants": [
+        {
+          "id": "sprite_pollo",
+          "spriteId": "sprite_pollo",
+          "variantType": "base",
+          "name": "Pollo Sprite",
+          "slug": "pollo",
+          "releaseStatus": "released",
+          "firstObservedAt": "2026-07-18",
+          "summonCostSpriteDust": 6750,
+          "spriteChestDropChancePct": null,
+          "extraEffectRef": null,
+          "imagePath": null,
+          "suggestedImagePath": "/images/sprites/pollo/base.webp",
+          "availability": {
+            "status": "available",
+            "startDate": "2026-07-23",
+            "endDate": null,
+            "recurrence": "unknown",
+            "confidence": "observed"
+          },
+          "dataStatus": "observed",
+          "sourceIds": [],
+          "dropChanceStatus": "standard_chest_rate_not_publicly_disclosed",
+          "spriteLocatorDropChancePct": 1.01
+        }
+      ],
+      "sourceIds": [],
+      "dataStatus": "observed",
+      "notes": [],
+      "color": "rgba(229, 208, 67, 0.46)",
+      "spriteLocatorDropChancePct": 1.01,
+      "dropChanceStatus": "standard_chest_rate_not_publicly_disclosed"
     }
   ],
   "unreleasedContent": {
     "baseSprites": [
-      {
-        "id": "sprite_pollo",
-        "slug": "pollo",
-        "name": "Pollo Sprite",
-        "rarity": "mythic",
-        "releaseStatus": "unreleased",
-        "ability": null,
-        "availability": {
-          "status": "unreleased",
-          "startDate": null,
-          "endDate": null,
-          "confidence": "community_database"
-        },
-        "sourceIds": [
-          "fortnitegg_catalogue_2026_07_18"
-        ],
-        "dataStatus": "unverified",
-        "visibleInMainCatalogue": false
-      },
       {
         "id": "sprite_john_wick",
         "slug": "john-wick",

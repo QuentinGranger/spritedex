@@ -831,6 +831,7 @@ async function importCatalog() {
     // We resolve the base by stable id or slug, then make sure the variant exists.
     const entriesRes = await client.query(`SELECT DISTINCT sprite_id FROM sprite_entries`);
     for (const row of entriesRes.rows) {
+      if (!row.sprite_id) continue;
       const parts = row.sprite_id.split("::");
       if (parts.length !== 2) continue;
       const [baseOrSlug, variantName] = parts;
