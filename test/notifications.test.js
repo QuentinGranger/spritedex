@@ -1301,9 +1301,32 @@ async function asyncTest(name, fn) {
         label: "Comparer",
         url: "/compare/7?variantId=sprite_water_gold"
       },
+      imageUrl: "/avatars/lucy.webp",
       isRead: false,
       createdAt: "2026-07-18T20:00:00.000Z"
     });
+
+    const newsNormalized = serialize.normalizeNotification({
+      id: 9,
+      type: "news_article",
+      category: "news",
+      title: "Collecte effrénée",
+      body: "Nouveaux esprits disponibles.",
+      entity_type: "news",
+      entity_id: "news:42",
+      created_at: "2026-07-26T18:00:00.000Z",
+      read_at: null,
+      data: {
+        newsId: 42,
+        newsUrl: "https://fortnite.com/news?lang=fr",
+        image: "https://cdn.fortnite-api.com/news/tile.jpeg"
+      }
+    }, null);
+    assert.strictEqual(
+      newsNormalized.imageUrl,
+      "https://cdn.fortnite-api.com/news/tile.jpeg",
+      "news notifications expose scraped imageUrl"
+    );
   });
 
   await asyncTest("notification API cursor helpers (Étape 59)", () => {

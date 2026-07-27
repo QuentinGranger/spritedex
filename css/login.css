@@ -38,22 +38,14 @@
 }
 
 .login-logo {
-  height: 56px;
-  width: auto;
-  filter: drop-shadow(0 0 20px rgba(0, 225, 255, 0.3));
+  width: min(280px, 78vw);
+  height: auto;
+  margin: 4px 0 8px;
+  filter: drop-shadow(0 0 22px rgba(0, 225, 255, 0.28));
 }
 
 .login-title {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 1.8rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  background: linear-gradient(135deg, #00e1ff, #8d7cff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 4px;
+  display: none;
 }
 
 .login-sub {
@@ -644,8 +636,7 @@
 /* ── Mobile tweaks ── */
 @media (max-height: 700px) {
   .login-card { padding: 24px 20px 20px; gap: 8px; }
-  .login-logo { height: 44px; }
-  .login-title { font-size: 1.5rem; }
+  .login-logo { width: min(220px, 72vw); margin: 0 0 4px; }
   .avatar-picker { max-height: 120px; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .privacy-option { padding: 8px 12px; }
   .onboarding-heading { font-size: 1.1rem; }
@@ -653,7 +644,6 @@
 
 @media (max-height: 550px) {
   .login-card { padding: 16px 16px 14px; border-radius: 18px; }
-  .login-logo { height: 36px; }
-  .login-title { font-size: 1.3rem; }
+  .login-logo { width: min(180px, 68vw); }
   .avatar-picker { max-height: 90px; }
 }

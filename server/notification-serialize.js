@@ -97,6 +97,50 @@ function normalizeAction(row = {}) {
   };
 }
 
+function isPublicImageUrl(value) {
+  if (typeof value !== "string") return false;
+  const raw = value.trim();
+  if (!raw || raw.length > 2048) return false;
+  if (raw.startsWith("/") && !raw.startsWith("//")) return true;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password;
+  } catch {
+    return false;
+  }
+}
+
+/** Prefer scraped/article art, then actor avatar. */
+function resolveImageUrl(row = {}, actorUser = null) {
+  const data = row.data && typeof row.data === "object" ? row.data : {};
+  const candidates = [
+    data.image,
+    data.imageUrl,
+    data.thumbnail,
+    data.tileImage,
+    row.imageUrl,
+    actorUser && (actorUser.avatar_url || actorUser.avatarUrl),
+    data.actorAvatarUrl,
+    data.actor && data.actor.avatarUrl
+  ];
+  for (const candidate of candidates) {
+    if (!isPublicImageUrl(candidate)) continue;
+    return String(candidate).trim().slice(0, 2048);
+  }
+  return null;
+}
+
+function newsIdFromRow(row = {}) {
+  const data = row.data && typeof row.data === "object" ? row.data : {};
+  const fromData = Number(data.newsId);
+  if (Number.isInteger(fromData) && fromData > 0) return fromData;
+  const entityId = String(row.entity_id || data.entityId || "");
+  const match = /^news:(\d+)$/i.exec(entityId);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 /**
  * Pure mapper: row (+ optional actor user row) → normalized notification.
  */
@@ -119,6 +163,7 @@ function normalizeNotification(row, actorUser = null) {
   const translationParams = data.translationParams && typeof data.translationParams === "object"
     ? data.translationParams
     : null;
+  const imageUrl = resolveImageUrl(row, actorUser);
 
   return {
     id: toPublicNotificationId(row.id),
@@ -129,11 +174,29 @@ function normalizeNotification(row, actorUser = null) {
     actor,
     entity: normalizeEntity(row),
     action: normalizeAction(row),
+    imageUrl,
     isRead: !!(row.read_at || row.readAt || row.isRead === true),
     createdAt,
     ...(translationKey ? { translationKey } : {}),
     ...(translationParams ? { translationParams } : {})
   };
+}
+
+async function loadNewsImagesById(pool, newsIds) {
+  const ids = [...new Set((newsIds || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0))];
+  const map = new Map();
+  if (!ids.length || !pool) return map;
+  const res = await pool.query(
+    `SELECT id, image FROM sprite_news
+     WHERE id = ANY($1::int[]) AND image IS NOT NULL AND image <> ''`,
+    [ids]
+  );
+  for (const row of res.rows) {
+    if (isPublicImageUrl(row.image)) map.set(Number(row.id), String(row.image).slice(0, 2048));
+  }
+  return map;
 }
 
 async function loadActorsById(pool, actorIds) {
@@ -154,6 +217,7 @@ async function loadActorsById(pool, actorIds) {
 
 /**
  * Normalize a page of notification rows, batch-loading actors.
+ * News rows missing data.image are enriched from sprite_news.
  */
 async function normalizeNotificationList(pool, rows) {
   const list = Array.isArray(rows) ? rows : [];
@@ -161,9 +225,26 @@ async function normalizeNotificationList(pool, rows) {
     pool,
     list.map((r) => r.actor_id).filter((id) => id != null)
   );
+  const newsIdsNeedingImage = list
+    .filter((row) => row.type === "news_article" && !resolveImageUrl(row))
+    .map((row) => newsIdFromRow(row))
+    .filter((id) => id != null);
+  const newsImages = await loadNewsImagesById(pool, newsIdsNeedingImage);
+
   return list.map((row) => {
     const actor = row.actor_id != null ? actors.get(Number(row.actor_id)) : null;
-    return normalizeNotification(row, actor || null);
+    const newsId = row.type === "news_article" ? newsIdFromRow(row) : null;
+    const scrapedImage = newsId != null ? newsImages.get(newsId) : null;
+    const enriched = scrapedImage && !resolveImageUrl(row)
+      ? {
+          ...row,
+          data: {
+            ...(row.data && typeof row.data === "object" ? row.data : {}),
+            image: scrapedImage
+          }
+        }
+      : row;
+    return normalizeNotification(enriched, actor || null);
   });
 }
 
@@ -176,7 +257,9 @@ module.exports = {
   normalizeActor,
   normalizeEntity,
   normalizeAction,
+  resolveImageUrl,
   normalizeNotification,
   loadActorsById,
+  loadNewsImagesById,
   normalizeNotificationList
 };

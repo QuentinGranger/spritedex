@@ -8,6 +8,7 @@ const http = require("http");
 const path = require("path");
 const { Resend } = require("resend");
 const { WebSocketServer } = require("ws");
+const { localizeErrorResponse } = require("./i18n");
 
 const ROOT_DIR = require("path").join(__dirname, "..");
 
@@ -149,6 +150,9 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
+// Localize JSON error responses before any API route is registered. The
+// client supplies Accept-Language on every request; no geolocation is used.
+app.use(localizeErrorResponse);
 app.use(security.securityHeaders);
 app.use(cookieParser());
 app.use(express.json({ limit: "200kb" }));

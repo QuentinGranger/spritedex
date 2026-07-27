@@ -6,6 +6,7 @@ const { app } = require("./core");
 const { pool } = require("./db");
 const { broadcastNewsUpdate } = require("./ws");
 const crypto = require("crypto");
+const fs = require("fs");
 const puppeteer = require("puppeteer-core");
 const { invalidateSquadAnalysisCache } = require("./squad-analysis-cache");
 const { classifyAvailabilityStatus } = require("./notification-gates");
@@ -188,6 +189,146 @@ function safeIsoDate(value) {
   return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString();
 }
 
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function htmlText(value) {
+  return decodeHtmlEntities(String(value || "")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim());
+}
+
+function htmlAttribute(fragment, name) {
+  const quoted = new RegExp(`\\b${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, "i").exec(fragment);
+  if (quoted) return decodeHtmlEntities(quoted[2]).trim();
+  const bare = new RegExp(`\\b${name}\\s*=\\s*([^\\s>]+)`, "i").exec(fragment);
+  return bare ? decodeHtmlEntities(bare[1]).trim() : "";
+}
+
+function firstHtmlTagText(fragment, selector) {
+  const match = new RegExp(`<${selector}\\b[^>]*>([\\s\\S]*?)<\\/${selector}>`, "i").exec(fragment);
+  return match ? htmlText(match[1]) : "";
+}
+
+function resolveAbsoluteUrl(raw, base = "https://fortnite.gg") {
+  const value = String(raw || "").trim();
+  if (!value || value.startsWith("data:") || value.startsWith("javascript:")) return null;
+  try {
+    const parsed = new URL(value, base);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    if (parsed.username || parsed.password) return null;
+    return parsed.href.slice(0, 2048);
+  } catch {
+    return null;
+  }
+}
+
+/** Pick the largest candidate from a srcset / data-srcset attribute. */
+function pickBestSrcsetUrl(srcset, base = "https://fortnite.gg") {
+  const parts = String(srcset || "").split(",").map((part) => part.trim()).filter(Boolean);
+  let bestUrl = null;
+  let bestScore = -1;
+  for (const part of parts) {
+    const bits = part.split(/\s+/);
+    const url = resolveAbsoluteUrl(bits[0], base);
+    if (!url) continue;
+    const descriptor = bits[1] || "";
+    let score = 1;
+    const width = /^(\d+)w$/i.exec(descriptor);
+    const density = /^(\d+(?:\.\d+)?)x$/i.exec(descriptor);
+    if (width) score = Number(width[1]);
+    else if (density) score = Number(density[1]) * 1000;
+    if (score >= bestScore) {
+      bestScore = score;
+      bestUrl = url;
+    }
+  }
+  return bestUrl;
+}
+
+function extractImageFromHtmlBlock(block, base = "https://fortnite.gg") {
+  const source = String(block || "");
+  const imgTags = source.match(/<img\b[^>]*>/gi) || [];
+  const scored = [];
+  for (const tag of imgTags) {
+    const attrs = tag.slice(4, -1);
+    const srcsetBest = pickBestSrcsetUrl(
+      htmlAttribute(attrs, "srcset") || htmlAttribute(attrs, "data-srcset"),
+      base
+    );
+    const candidates = [
+      { url: srcsetBest, score: 3000 },
+      { url: resolveAbsoluteUrl(htmlAttribute(attrs, "data-src"), base), score: 2000 },
+      { url: resolveAbsoluteUrl(htmlAttribute(attrs, "data-lazy-src"), base), score: 1900 },
+      { url: resolveAbsoluteUrl(htmlAttribute(attrs, "data-original"), base), score: 1800 },
+      { url: resolveAbsoluteUrl(htmlAttribute(attrs, "data-url"), base), score: 1700 },
+      { url: resolveAbsoluteUrl(htmlAttribute(attrs, "src"), base), score: 1000 }
+    ];
+    for (const candidate of candidates) {
+      const url = candidate.url;
+      if (!url) continue;
+      if (/sprite|1x1|pixel|blank|placeholder|data:image\/gif/i.test(url)) continue;
+      scored.push({ url, score: candidate.score + Math.min(url.length, 200) });
+    }
+  }
+  if (scored.length) {
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0].url;
+  }
+  const bg = /background-image\s*:\s*url\(\s*['"]?([^)'"]+)['"]?\s*\)/i.exec(source);
+  if (bg) return resolveAbsoluteUrl(bg[1], base);
+  return null;
+}
+
+// Render-free fallback for platforms such as Render where puppeteer-core does
+// not ship a Chromium binary. It intentionally extracts only plain text and
+// never evaluates third-party scripts.
+function parseFortniteGGNewsHtml(html) {
+  const source = String(html || "");
+  const blocks = source.match(/<article\b[^>]*>[\s\S]*?<\/article>/gi)
+    || source.match(/<(?:li|div)\b[^>]*class=["'][^"']*(?:news|article)[^"']*["'][^>]*>[\s\S]*?<\/(?:li|div)>/gi)
+    || [];
+  const seen = new Set();
+  const entries = [];
+  for (const block of blocks.slice(0, 80)) {
+    const title = firstHtmlTagText(block, "h2") || firstHtmlTagText(block, "h3") || "";
+    if (!title || title.length > 300) continue;
+    const key = title.toLocaleLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const description = firstHtmlTagText(block, "p").slice(0, 500);
+    const timeMatch = /<time\b([^>]*)>([\s\S]*?)<\/time>/i.exec(block);
+    const date = timeMatch ? (htmlAttribute(timeMatch[1], "datetime") || htmlText(timeMatch[2])) : "";
+    const image = extractImageFromHtmlBlock(block, "https://fortnite.gg");
+    entries.push({ title, desc: description, date, img: image || null });
+  }
+  return entries;
+}
+
+async function fetchFortniteGGNewsViaHtml() {
+  const response = await fetch("https://fortnite.gg/news", {
+    headers: {
+      "user-agent": "Mozilla/5.0 (compatible; sprite-index-news/1.0; +https://sprite-index.app)",
+      accept: "text/html,application/xhtml+xml"
+    },
+    signal: AbortSignal.timeout(30_000)
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const html = await response.text();
+  if (html.length > 3_000_000) throw new Error("HTML trop volumineux");
+  return parseFortniteGGNewsHtml(html);
+}
+
 async function fetchFortniteAPINews() {
   const results = [];
   try {
@@ -202,7 +343,8 @@ async function fetchFortniteAPINews() {
           source: "fortnite-api",
           title: item.title || "News Fortnite",
           description: item.body || "",
-          image: item.image || null,
+          // tileImage is the compact card art used in the in-game news rail.
+          image: item.tileImage || item.image || null,
           date: new Date().toISOString(),
           link: "https://fortnite.com/news?lang=fr",
           hash: newsHash("fortnite-api", item.title || "", item.id || "")
@@ -229,7 +371,7 @@ async function fetchFortniteAPINewsEN() {
           source: "fortnite-api-en",
           title: item.title || "Fortnite News",
           description: item.body || "",
-          image: item.image || null,
+          image: item.tileImage || item.image || null,
           date: new Date().toISOString(),
           link: "https://fortnite.com/news?lang=en",
           hash: newsHash("fortnite-api-en", item.title || "", item.id || "")
@@ -246,8 +388,38 @@ async function fetchFortniteGGNews() {
   const results = [];
   let browser = null;
   try {
-    const executablePath = process.env.CHROME_PATH ||
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    // Most deployments do not contain a browser binary. Prefer the safe HTML
+    // fetch, then use puppeteer only when the operator explicitly provides a
+    // verified executable (local development / a Chromium-enabled worker).
+    let directItems = [];
+    try {
+      directItems = await fetchFortniteGGNewsViaHtml();
+    } catch (error) {
+      console.warn(`[NEWS][fortnite.gg] Fallback HTML indisponible : ${error.message}`);
+    }
+    for (const item of directItems) {
+      const text = `${item.title} ${item.desc}`;
+      if (!matchesSpriteKeywords(text)) continue;
+      results.push({
+        source: "fortnite.gg",
+        title: item.title,
+        description: item.desc.slice(0, 300),
+        image: item.img,
+        date: safeIsoDate(item.date),
+        link: "https://fortnite.gg/news",
+        hash: newsHash("fortnite.gg", item.title, item.date || "")
+      });
+    }
+    if (results.length) {
+      console.log(`Fortnite.gg fetched: ${directItems.length} items, ${results.length} matched`);
+      return results;
+    }
+
+    const executablePath = String(process.env.CHROME_PATH || "").trim();
+    if (!executablePath || !fs.existsSync(executablePath)) {
+      console.warn("[NEWS][fortnite.gg] Aucun Chromium configuré ; fallback HTML sans résultat.");
+      return results;
+    }
     browser = await puppeteer.launch({
       executablePath,
       headless: "new",
@@ -264,6 +436,20 @@ async function fetchFortniteGGNews() {
     await page.goto("https://fortnite.gg/news", { waitUntil: "networkidle2", timeout: 30000 });
 
     const items = await page.evaluate(() => {
+      const pickImg = (el) => {
+        const img = el.querySelector("img");
+        if (!img) {
+          const styled = el.querySelector("[style*='background-image']");
+          const bg = styled && /url\(\s*['"]?([^)'"]+)['"]?\s*\)/i.exec(styled.getAttribute("style") || "");
+          return bg ? bg[1] : null;
+        }
+        return img.currentSrc
+          || img.src
+          || img.getAttribute("data-src")
+          || img.getAttribute("data-lazy-src")
+          || img.getAttribute("data-original")
+          || null;
+      };
       const entries = [];
       const articles = document.querySelectorAll("article, .news-item, [class*='news']");
       if (articles.length > 0) {
@@ -271,7 +457,7 @@ async function fetchFortniteGGNews() {
           const title = (el.querySelector("h2, h3, .title, [class*='title']") || {}).textContent || "";
           const desc = (el.querySelector("p, .desc, .description, [class*='desc']") || {}).textContent || "";
           const date = (el.querySelector("time, .date, [class*='date']") || {}).textContent || "";
-          const img = (el.querySelector("img") || {}).src || null;
+          const img = pickImg(el);
           if (title.trim()) entries.push({ title: title.trim(), desc: desc.trim(), date: date.trim(), img });
         });
       }
@@ -577,11 +763,19 @@ async function refreshNews() {
         `INSERT INTO sprite_news (hash, source, title, description, image, link, news_date)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (hash) DO NOTHING
-         RETURNING id, title`,
+         RETURNING id`,
         [item.hash, item.source, item.title, item.description.slice(0, 500), item.image, item.link, item.date]
       );
       if (result.rows.length > 0) {
-        insertedItems.push(item);
+        insertedItems.push({ ...item, newsId: result.rows[0].id });
+      } else if (item.image) {
+        // Backfill scraped art onto older rows that were stored without an image.
+        await pool.query(
+          `UPDATE sprite_news
+           SET image = $1
+           WHERE hash = $2 AND (image IS NULL OR image = '')`,
+          [item.image, item.hash]
+        );
       }
     } catch (err) {
       // duplicate or error, skip
@@ -589,8 +783,28 @@ async function refreshNews() {
   }
   if (insertedItems.length > 0) {
     console.log(`News: ${insertedItems.length} new items inserted`);
+    await persistNewsInInbox(insertedItems);
     notifyNewsSubscribers(insertedItems);
   }
+
+  // Mirror scraped thumbnails onto existing inbox rows that were stored without art.
+  try {
+    await pool.query(
+      `UPDATE notifications n
+       SET data = jsonb_set(COALESCE(n.data, '{}'::jsonb), '{image}', to_jsonb(sn.image), true)
+       FROM sprite_news sn
+       WHERE n.type = 'news_article'
+         AND n.entity_id = ('news:' || sn.id::text)
+         AND sn.image IS NOT NULL AND sn.image <> ''
+         AND COALESCE(n.data->>'image', '') = ''`
+    );
+  } catch (err) {
+    console.warn("[NEWS] notification image backfill skipped:", err.message);
+  }
+
+  // Existing items are restored after deployment as already read: users get a
+  // useful feed without an unexpected unread badge or external push burst.
+  await backfillRecentNewsInbox();
 
   // Extract events, availability and recurrence from scraped news (existing + newly inserted)
   const existingNews = await pool.query(
@@ -621,6 +835,69 @@ async function refreshNews() {
     extractedEventCount: eventExtraction.count,
     timestamp: new Date().toISOString()
   });
+}
+
+// The notification dropdown reads the contextual inbox, not sprite_news.
+// Mirror each newly persisted article into that inbox once per active user.
+// A partial unique index in schema.js makes this idempotent across retries and
+// concurrent refresh workers. External push delivery remains opt-in and is
+// deliberately handled separately by notifyNewsSubscribers().
+async function persistNewsInInbox(items, { markRead = false } = {}) {
+  let created = 0;
+  for (const item of items) {
+    const newsId = Number(item.newsId);
+    if (!Number.isInteger(newsId) || newsId <= 0) continue;
+    const entityId = `news:${newsId}`;
+    const data = {
+      newsId,
+      source: String(item.source || "unknown").slice(0, 80),
+      newsUrl: String(item.link || "https://fortnite.gg/news").slice(0, 2048),
+      image: item.image ? String(item.image).slice(0, 2048) : null
+    };
+    try {
+      const result = await pool.query(
+        `INSERT INTO notifications
+           (recipient_id, type, category, title, body, entity_type, entity_id, data, status, read_at)
+         SELECT u.id, 'news_article', 'news', $1, $2, 'news', $3, $4::jsonb, 'created',
+                CASE WHEN $5::boolean THEN NOW() ELSE NULL END
+         FROM users u
+         WHERE u.deleted_at IS NULL
+         ON CONFLICT (recipient_id, entity_id) WHERE type = 'news_article' DO NOTHING`,
+        [
+          String(item.title || "Nouvelle actualité Sprite Index").slice(0, 500),
+          String(item.description || "").slice(0, 500),
+          entityId,
+          JSON.stringify(data),
+          markRead
+        ]
+      );
+      created += result.rowCount || 0;
+    } catch (error) {
+      console.error(`[NEWS] inbox persistence failed for ${entityId}:`, error.message);
+    }
+  }
+  if (created > 0) {
+    console.log(`[NEWS] ${created} notification${created === 1 ? "" : "s"} in-app créée${created === 1 ? "" : "s"}`);
+  }
+  return created;
+}
+
+async function backfillRecentNewsInbox({ limit = 10 } = {}) {
+  const count = Math.max(1, Math.min(20, Number(limit) || 10));
+  try {
+    const result = await pool.query(
+      `SELECT id AS "newsId", source, title, description, image, link, news_date AS date
+       FROM sprite_news
+       ORDER BY news_date DESC NULLS LAST, created_at DESC
+       LIMIT $1`,
+      [count]
+    );
+    if (!result.rows.length) return 0;
+    return persistNewsInInbox(result.rows, { markRead: true });
+  } catch (error) {
+    console.error("[NEWS] inbox backfill failed:", error.message);
+    return 0;
+  }
 }
 
 async function notifyNewsSubscribers(items) {
@@ -674,4 +951,4 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
-module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, detectEventInfo, extractAvailabilityFromNews, extractEventsFromNews, extractRecurrenceFromNews, fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews, matchesSpriteKeywords, newsHash, newsInterval, notifyNewsSubscribers, refreshNews, startNewsCron };
+module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, detectEventInfo, extractAvailabilityFromNews, extractEventsFromNews, extractRecurrenceFromNews, fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews, matchesSpriteKeywords, newsHash, newsInterval, notifyNewsSubscribers, parseFortniteGGNewsHtml, persistNewsInInbox, backfillRecentNewsInbox, refreshNews, startNewsCron };

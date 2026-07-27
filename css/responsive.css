@@ -123,7 +123,8 @@
   }
 
   .topbar-logo {
-    height: 40px;
+    height: 36px;
+    max-width: min(180px, 48vw);
   }
 
   .squad-stat {

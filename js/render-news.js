@@ -9,6 +9,7 @@ const notifItemsById = new Map();
 
 const NOTIF_FILTER_LABELS = {
   all: "Toutes",
+  news: "Actualités",
   social: "Social",
   collection: "Collections",
   squads: "Squads",
@@ -17,6 +18,7 @@ const NOTIF_FILTER_LABELS = {
 };
 
 const NOTIF_CATEGORY_LABELS = {
+  news: "Actualités",
   social: "Social",
   collection: "Collections",
   alerts: "Alertes",
@@ -24,6 +26,7 @@ const NOTIF_CATEGORY_LABELS = {
 };
 
 const NOTIF_ICONS = {
+  news: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22.5v-17Z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>`,
   social: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   collection: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
   squads: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
@@ -65,11 +68,17 @@ async function checkNewsNotifications() {
   } catch { /* silent */ }
 }
 
+function syncNotifBellExpanded() {
+  const bell = document.getElementById("notifBell");
+  if (bell) bell.setAttribute("aria-expanded", notifDropdownOpen ? "true" : "false");
+}
+
 function toggleNotifDropdown() {
   const dropdown = document.getElementById("notifDropdown");
   if (!dropdown) return;
   notifDropdownOpen = !notifDropdownOpen;
   dropdown.style.display = notifDropdownOpen ? "flex" : "none";
+  syncNotifBellExpanded();
   if (notifDropdownOpen) {
     resetAndLoadNotifications();
   }
@@ -79,6 +88,7 @@ function closeNotifDropdown() {
   const dropdown = document.getElementById("notifDropdown");
   if (dropdown) dropdown.style.display = "none";
   notifDropdownOpen = false;
+  syncNotifBellExpanded();
 }
 
 function resetAndLoadNotifications() {
@@ -106,6 +116,7 @@ function setNotifFilter(filter) {
 function notifDisplayCategory(item) {
   const type = String(item.type || "");
   if (type === "squad_completion_increased" || type.startsWith("squad_")) return "squads";
+  if (type === "news_article" || item.category === "news") return "news";
   if (item.category === "social" || item.category === "alerts" || item.category === "collection") {
     return item.category;
   }
@@ -140,6 +151,8 @@ function getNotificationUrl(item) {
   }
   if (data.actionUrl) return data.actionUrl;
   switch (item.type) {
+    case "news_article":
+      return data.newsUrl || data.actionUrl || null;
     case "friend_request_accepted": {
       const friendId = data.friendId || item.actor_id;
       return friendId ? `/compare/${encodeURIComponent(friendId)}` : null;
@@ -194,6 +207,7 @@ function getNotifPrimaryAction(item) {
     return { label: primary.label, url };
   }
   const defaults = {
+    news_article: "Lire l’actualité",
     friend_request_accepted: "Comparer avec l'ami",
     friend_acquired_missing_variant: "Comparer la variante",
     squad_completion_increased: "Squad Completion Engine",
@@ -204,6 +218,52 @@ function getNotifPrimaryAction(item) {
     label: defaults[item.type] || "Ouvrir",
     url
   };
+}
+
+function safeExternalNewsUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const allowed = host === "fortnite.gg" || host.endsWith(".fortnite.gg")
+      || host === "fortnite.com" || host.endsWith(".fortnite.com");
+    return url.protocol === "https:" && allowed ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+async function openExternalNews(url) {
+  const safeUrl = safeExternalNewsUrl(url);
+  if (!safeUrl) return false;
+  try {
+    if (window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins?.Browser?.open) {
+      await window.Capacitor.Plugins.Browser.open({ url: safeUrl });
+      return true;
+    }
+  } catch (error) {
+    console.warn("[news] native browser open failed", error);
+  }
+  const opened = window.open(safeUrl, "_blank", "noopener,noreferrer");
+  return !!opened;
+}
+
+function getNotifImageUrl(item) {
+  const data = item.data || item.context || {};
+  const candidates = [
+    item.imageUrl,
+    data.image,
+    data.imageUrl,
+    data.thumbnail,
+    data.tileImage,
+    item.actor && item.actor.avatarUrl,
+    data.actorAvatarUrl
+  ];
+  for (const candidate of candidates) {
+    const safe = typeof safeImageUrl === "function" ? safeImageUrl(candidate) : "";
+    if (safe) return safe;
+  }
+  return "";
 }
 
 function renderNotifItem(item) {
@@ -221,14 +281,18 @@ function renderNotifItem(item) {
   // delegated click handler).
   const url = safeAppPath(action.url, `#notif-${encodeURIComponent(String(item.id || ""))}`);
   const readLabel = isUnread ? "Non lu" : "Lu";
+  const imageUrl = getNotifImageUrl(item);
+  const media = imageUrl
+    ? `<img class="notif-item__img${catKey === "news" ? " notif-item__img--news" : ""}" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" decoding="async" />`
+    : `<div class="notif-item__icon notif-item__icon--${catKey}" aria-hidden="true">${icon}</div>`;
 
   return `
-    <a class="notif-item${isUnread ? " notif-item--unread" : ""}" href="${escapeHtml(url)}" data-notif-id="${escapeHtml(String(item.id))}" data-notif-type="${escapeHtml(String(item.type || ""))}" data-unread="${isUnread ? "1" : "0"}">
-      <div class="notif-item__icon notif-item__icon--${catKey}" aria-hidden="true">${icon}</div>
+    <a class="notif-item${isUnread ? " notif-item--unread" : ""}${imageUrl ? " notif-item--media" : ""}${catKey === "news" ? " notif-item--news" : ""}" href="${escapeHtml(url)}" data-notif-id="${escapeHtml(String(item.id))}" data-notif-type="${escapeHtml(String(item.type || ""))}" data-unread="${isUnread ? "1" : "0"}">
+      ${media}
       <div class="notif-item__body">
         <div class="notif-item__top">
           <p class="notif-item__title">${escapeHtml(title)}</p>
-          <span class="notif-item__state${isUnread ? " notif-item__state--unread" : ""}">${readLabel}</span>
+          <span class="notif-item__state${isUnread ? " notif-item__state--unread" : ""}" aria-label="${readLabel}" title="${readLabel}"></span>
         </div>
         ${body ? `<p class="notif-item__desc">${escapeHtml(body)}</p>` : ""}
         <div class="notif-item__meta">
@@ -273,7 +337,9 @@ async function loadMoreNews() {
     if (loaderEl) loaderEl.remove();
 
     if (!res.ok) {
-      if (notifOffset === 0) list.innerHTML = `<p class="notif-dropdown__empty">Erreur.</p>`;
+      if (notifOffset === 0) {
+        list.innerHTML = notifEmptyMarkup("Impossible de charger", "Réessayez dans un instant.");
+      }
       notifLoading = false;
       return;
     }
@@ -285,12 +351,15 @@ async function loadMoreNews() {
     notifHasMore = notifications.length === 20;
 
     if (notifications.length === 0 && notifOffset === 0) {
-      const emptyLabel = notifFilter === "unread"
-        ? "Aucune notification non lue."
+      const emptyTitle = notifFilter === "unread"
+        ? "Tout est à jour"
+        : "Aucune notification";
+      const emptyHint = notifFilter === "unread"
+        ? "Vous avez lu toutes vos notifications."
         : notifFilter === "all"
-          ? "Aucune notification."
-          : `Aucune notification · ${NOTIF_FILTER_LABELS[notifFilter] || ""}.`;
-      list.innerHTML = `<p class="notif-dropdown__empty">${emptyLabel}</p>`;
+          ? "Les nouveautés apparaîtront ici."
+          : `Rien pour le filtre « ${NOTIF_FILTER_LABELS[notifFilter] || ""} ».`;
+      list.innerHTML = notifEmptyMarkup(emptyTitle, emptyHint);
       notifLoading = false;
       return;
     }
@@ -300,10 +369,12 @@ async function loadMoreNews() {
     notifOffset += notifications.length;
 
     if (!notifHasMore && notifications.length > 0) {
-      list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__end">Fin</p>`);
+      list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__end">Fin de la liste</p>`);
     }
   } catch (e) {
-    if (notifOffset === 0) list.innerHTML = `<p class="notif-dropdown__empty">Erreur réseau.</p>`;
+    if (notifOffset === 0) {
+      list.innerHTML = notifEmptyMarkup("Erreur réseau", "Vérifiez votre connexion puis réessayez.");
+    }
   }
   notifLoading = false;
 }
@@ -314,9 +385,22 @@ function paintNotifItemRead(itemEl) {
   itemEl.dataset.unread = "0";
   const stateEl = itemEl.querySelector(".notif-item__state");
   if (stateEl) {
-    stateEl.textContent = "Lu";
+    stateEl.textContent = "";
     stateEl.classList.remove("notif-item__state--unread");
+    stateEl.setAttribute("aria-label", "Lu");
+    stateEl.setAttribute("title", "Lu");
   }
+}
+
+function notifEmptyMarkup(title, hint = "") {
+  return `
+    <div class="notif-dropdown__empty">
+      <div class="notif-dropdown__empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <p class="notif-dropdown__empty-title">${escapeHtml(title)}</p>
+      ${hint ? `<p class="notif-dropdown__empty-hint">${escapeHtml(hint)}</p>` : ""}
+    </div>`;
 }
 
 /** Étape 47 — mark read; pass clicked:true when the user opens the notification. */
@@ -491,6 +575,12 @@ async function openNotificationDestination(item) {
       data.eventId || item.entity_id,
       data.remainingPriorityVariantIds || data.variantIds
     );
+  }
+
+  if (type === "news_article") {
+    const opened = await openExternalNews(data.newsUrl || data.actionUrl);
+    if (!opened && typeof toast === "function") toast("Actualité indisponible.");
+    return opened;
   }
 
   // Legacy / unknown types: resolve via deep link, but never "/".

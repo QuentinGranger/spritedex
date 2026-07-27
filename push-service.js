@@ -1087,7 +1087,12 @@ async function getNotifications(pool, userId, {
   // Attach legacy fields so older clients keep working during the transition.
   const notifications = normalized.map((item, idx) => {
     const row = page[idx];
-    const data = row.data || {};
+    const rawData = row.data || {};
+    // Keep legacy `data.image` in sync with the normalized scraped imageUrl so
+    // older clients (and the dropdown) can render news art without a second hop.
+    const data = item.imageUrl && !rawData.image
+      ? { ...rawData, image: item.imageUrl }
+      : rawData;
     return {
       ...item,
       // Legacy aliases

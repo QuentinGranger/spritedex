@@ -574,33 +574,25 @@
   .desktop-rail__brand {
     display: flex;
     align-items: center;
-    gap: 13px;
+    min-height: 78px;
   }
 
-  .desktop-rail__brand img {
-    width: 70px;
-    height: 70px;
-    object-fit: contain;
-    filter: drop-shadow(0 0 18px rgba(0, 225, 255, 0.32));
-  }
-
-  .desktop-rail__brand strong,
-  .desktop-rail__brand span,
-  .desktop-rail__collection span,
-  .desktop-rail__collection small {
+  .desktop-rail__logo {
     display: block;
+    width: 100%;
+    height: auto;
+    max-height: 72px;
+    object-fit: contain;
+    object-position: left center;
+    filter: drop-shadow(0 0 14px rgba(0, 225, 255, 0.28));
   }
 
-  .desktop-rail__brand strong {
-    color: var(--text);
-    font-size: 0.88rem;
-    letter-spacing: -0.01em;
+  .desktop-rail__logo-frame {
+    display: none;
   }
 
-  .desktop-rail__brand span {
-    margin-top: 3px;
-    color: var(--muted);
-    font-size: 0.72rem;
+  .desktop-rail__brand-copy {
+    display: none;
   }
 
   .desktop-rail__section-label {

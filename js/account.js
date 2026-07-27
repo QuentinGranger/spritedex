@@ -2,6 +2,20 @@ function setupAccountPanel() {
   const panel = document.getElementById("accountPanel");
   const openBtn = document.getElementById("accountBtn");
   const closeBtn = document.getElementById("accountClose");
+  const dashboard = document.getElementById("accountProfileOverview");
+  const hero = dashboard?.querySelector(".profile-hero");
+  const passport = document.getElementById("collectorPassport");
+  const quickNav = document.querySelector(".account-section-nav");
+  const profileActions = document.querySelector(".profile-actions");
+
+  // Keep the source markup simple for the mobile flow, then compose the
+  // desktop dashboard around the same, real controls. No action is cloned.
+  if (hero && profileActions && profileActions.parentElement !== hero) {
+    hero.append(profileActions);
+  }
+  if (dashboard && quickNav && passport && quickNav.parentElement !== dashboard) {
+    dashboard.insertBefore(quickNav, passport);
+  }
 
   function openAccount() {
     panel.style.display = "";
@@ -29,6 +43,47 @@ function setupAccountPanel() {
 
   openBtn.addEventListener("click", openAccount);
   closeBtn.addEventListener("click", closeAccount);
+  document.getElementById("accountHeaderEdit")?.addEventListener("click", () => {
+    document.getElementById("accountEditUsernameBtn")?.click();
+  });
+
+  // The desktop profile uses this compact navigation as a quick way to reach
+  // the real settings below.  It does not duplicate or hide any preference:
+  // every control stays available and keyboard reachable in the same panel.
+  document.querySelectorAll("[data-account-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = document.getElementById(button.dataset.accountTarget);
+      if (!target) return;
+      if (target.id === "collectorPassport" || target.id === "notifSettingsSection") {
+        target.hidden = false;
+      }
+      if (target.id === "accountProfileOverview") {
+        document.getElementById("collectorPassport").hidden = true;
+      }
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.querySelectorAll("[data-account-target]").forEach((item) => {
+        const active = item === button;
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-current", active ? "page" : "false");
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-account-overview-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.accountOverviewAction;
+      if (action === "collection") {
+        document.getElementById("accountGoCollection")?.click();
+      } else if (action === "history") {
+        closeAccount();
+        if (typeof activateMainView === "function") activateMainView("history", { force: true });
+      } else if (action === "passport") {
+        document.querySelector('[data-account-target="collectorPassport"]')?.click();
+      } else if (action === "notifications") {
+        document.querySelector('[data-account-target="notifSettingsSection"]')?.click();
+      }
+    });
+  });
 
   // ── Email verification banner ──
   const emailBanner = document.getElementById("emailBanner");
@@ -73,6 +128,7 @@ function setupAccountPanel() {
     const ownedVariants = entries.filter(e => e.status === "owned").length;
     const totalVariants = SPRITES.reduce((sum, s) => sum + (Object.keys(s.variantDetails || {}).length || (Array.isArray(s.variants) ? s.variants.length : 1)), 0);
     const percent = totalVariants ? Math.round((ownedVariants / totalVariants) * 100) : 0;
+    panel.style.setProperty("--account-progress", `${Math.min(100, Math.max(0, percent))}%`);
 
     // Sprites completed = sprites where ALL variants are owned
     const spriteVariantMap = {};
@@ -126,6 +182,130 @@ function setupAccountPanel() {
     refreshShareState();
     loadCollectorPassport();
     loadNotificationSettings();
+  }
+
+  function setAccountOverviewValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  }
+
+  function renderAccountOverview(data) {
+    const collection = data?.collection || {};
+    const catalogue = data?.catalogue || {};
+    const social = data?.social || {};
+    const reliability = collection.reliability || {};
+    const released = Math.max(0, Number(catalogue.releasedVariantCount) || 0);
+    const owned = Math.max(0, Number(collection.ownedVariantCount) || 0);
+    const completion = collection.completionRateDisplay != null
+      ? Number(collection.completionRateDisplay)
+      : (released ? (owned / released) * 100 : 0);
+    const isEnglish = typeof window.appLocale === "function" && window.appLocale() === "en";
+    const rate = Math.max(0, Math.min(100, Number.isFinite(completion) ? completion : 0));
+    const rateLabel = `${rate.toLocaleString(isEnglish ? "en-US" : "fr-FR", { maximumFractionDigits: 1 })}%`;
+    const ring = document.getElementById("accountOverviewRing");
+    if (ring) {
+      ring.style.setProperty("--account-overview-progress", `${rate}%`);
+      ring.setAttribute("aria-label", `Progression de la collection : ${rateLabel}`);
+    }
+    setAccountOverviewValue("accountOverviewPercent", rateLabel);
+    setAccountOverviewValue("accountOverviewOwned", `${owned} / ${released}`);
+    const remaining = Math.max(0, released - owned);
+    setAccountOverviewValue("accountOverviewRemaining", released
+      ? (isEnglish
+        ? `${remaining} variant${remaining === 1 ? "" : "s"} left to discover`
+        : `${remaining} variante${remaining === 1 ? "" : "s"} à découvrir`)
+      : "Catalogue indisponible");
+
+    const badges = Array.isArray(data?.badgeProgress) && data.badgeProgress.length
+      ? data.badgeProgress
+      : (Array.isArray(data?.badges) ? data.badges.map((badge) => ({ ...badge, status: "unlocked" })) : []);
+    const unlockedBadges = badges.filter((badge) => !badge.status || badge.status === "unlocked");
+    const primarySquad = data?.primarySquad;
+    setAccountOverviewValue("accountHeroBadges", String(unlockedBadges.length));
+    setAccountOverviewValue("accountHeroSquad", primarySquad?.name ? String(primarySquad.memberCount || 1) : "0");
+    setAccountOverviewValue("accountHeroReliability", `${Math.round(Math.max(0, Math.min(100, Number(reliability.rate) || 0)))}%`);
+
+    const events = data?.events || {};
+    const completedEvents = Array.isArray(events.completed) ? events.completed : [];
+    const inProgressEvents = Array.isArray(events.inProgress) ? events.inProgress : [];
+    const activity = Array.isArray(data?.recentActivity) ? data.recentActivity : [];
+    const addedVariants = activity.reduce((total, item) => {
+      if ((item.activityType || item.type) !== "variants_owned") return total;
+      return total + Math.max(1, Number(item.data?.count) || 1);
+    }, 0);
+    setAccountOverviewValue("accountOverviewEventsCompleted", String(completedEvents.length));
+    setAccountOverviewValue("accountOverviewEventsInProgress", String(inProgressEvents.length));
+    setAccountOverviewValue("accountOverviewNewBadges", String(unlockedBadges.length));
+    setAccountOverviewValue("accountOverviewAddedVariants", String(addedVariants));
+
+    const activityList = document.getElementById("accountOverviewActivityList");
+    if (activityList) {
+      activityList.replaceChildren();
+      const recent = activity.slice(0, 3);
+      if (!recent.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "Aucun événement récent.";
+        activityList.append(empty);
+      } else {
+        const list = document.createElement("ul");
+        recent.forEach((item) => {
+          const row = document.createElement("li");
+          const label = document.createElement("span");
+          label.textContent = passportActivityLabel(item);
+          const time = document.createElement("time");
+          time.textContent = passportActivityDayLabel(item.createdAt || item.occurredAt);
+          row.append(label, time);
+          list.append(row);
+        });
+        activityList.append(list);
+      }
+    }
+
+    const badgePreview = document.getElementById("accountBadgePreview");
+    if (badgePreview) {
+      badgePreview.replaceChildren();
+      const preview = unlockedBadges.slice(0, 4);
+      if (!preview.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "Aucun badge débloqué.";
+        badgePreview.append(empty);
+      } else {
+        preview.forEach((badge) => {
+          const card = document.createElement("div");
+          card.className = "account-badge-preview__item";
+          card.dataset.badgeCategory = badge.uiCategory || "progression";
+          card.title = badge.label || badge.badgeCode || "Badge";
+          const icon = document.createElement("span");
+          icon.textContent = String(badge.label || badge.badgeCode || "?").trim().slice(0, 1).toUpperCase();
+          const label = document.createElement("small");
+          label.textContent = badge.label || badge.badgeCode || "Badge";
+          card.append(icon, label);
+          badgePreview.append(card);
+        });
+      }
+      if (unlockedBadges.length > 4) {
+        const rest = document.createElement("span");
+        rest.className = "account-badge-preview__more";
+        rest.textContent = `+${unlockedBadges.length - 4}`;
+        badgePreview.append(rest);
+      }
+    }
+
+    const squadLabel = primarySquad?.name
+      ? `${primarySquad.name} · ${Number(primarySquad.memberCount) || 1} membre${Number(primarySquad.memberCount) === 1 ? "" : "s"}`
+      : "Aucune squad principale";
+    document.getElementById("accountHeroSquad")?.setAttribute("title", squadLabel);
+    document.getElementById("accountHeroBadges")?.setAttribute("title", `${unlockedBadges.length} badge(s) obtenu(s)`);
+    document.getElementById("accountHeroReliability")?.setAttribute("title", `${Math.round(Math.max(0, Math.min(100, Number(reliability.rate) || 0)))} % de la collection renseignée`);
+    document.getElementById("accountHeroVariants")?.setAttribute("title", `${owned} variantes possédées`);
+    void social;
+  }
+
+  function refreshAccountQuickPreferences() {
+    const value = (enabled) => enabled ? "Activé" : "Désactivé";
+    setAccountOverviewValue("accountQuickPush", value(!!document.getElementById("notifChannelPush")?.checked));
+    setAccountOverviewValue("accountQuickEmail", value(!!document.getElementById("notifChannelEmail")?.checked));
+    setAccountOverviewValue("accountQuickFriends", value(!!document.querySelector('[data-notif-in-app="friend_request_accepted"]')?.checked));
   }
 
   function passportDate(value, fallback = "—", { withTime = true } = {}) {
@@ -1075,6 +1255,7 @@ function setupAccountPanel() {
         reliabilityEl.textContent = passportReliabilityLabel(reliability);
         reliabilityEl.className = `collector-passport__status collector-passport__status--${escapeHtml(reliability.level || "insufficient")}`;
       }
+      renderAccountOverview(data);
       content.innerHTML = renderCollectorPassportBody(data);
       wirePassportActions(actionsEl, data, { isSelf: true });
       await loadCollectorPassportSettings(content);
@@ -1738,9 +1919,11 @@ function setupAccountPanel() {
       if (!res.ok) throw new Error("load failed");
       const prefs = await res.json();
       applyNotificationSettings(prefs);
+      refreshAccountQuickPreferences();
       notifSettingsReady = true;
       setNotifSettingsStatus("");
     } catch {
+      refreshAccountQuickPreferences();
       notifSettingsReady = true;
       setNotifSettingsStatus("Impossible de charger les préférences.", "err");
     }
@@ -1805,6 +1988,7 @@ function setupAccountPanel() {
       if (!res.ok) throw new Error("save failed");
       const prefs = await res.json();
       applyNotificationSettings(prefs);
+      refreshAccountQuickPreferences();
       setNotifSettingsStatus("Préférences enregistrées.", "ok");
       if (payload.pushEnabled && window.PushClient && typeof window.PushClient.register === "function") {
         window.PushClient.register();

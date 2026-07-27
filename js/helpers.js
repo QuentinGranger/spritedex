@@ -103,7 +103,8 @@ function safeImageUrl(value) {
       && (current.protocol === "capacitor:" || current.protocol === "file:");
     const isBundledSpriteAsset = parsed.pathname.startsWith("/Sprite/")
       || parsed.pathname.startsWith("/Favicon/")
-      || parsed.pathname === "/LogoApp.png";
+      || parsed.pathname === "/LogoApp.png"
+      || parsed.pathname === "/MainLogo.png";
     if (isBundledAppOrigin && isBundledSpriteAsset) return parsed.href;
   } catch {
     // Invalid URLs are rendered as the normal image placeholder.
@@ -336,7 +337,8 @@ function statusLabel(status) {
     spotted: "Rare trouvé",
     new: "Non classé"
   };
-  return labels[status] ?? "Non classé";
+  const label = labels[status] ?? "Non classé";
+  return typeof t === "function" ? t(label) : label;
 }
 
 function statusEmoji(status) {
@@ -354,7 +356,7 @@ function statusEmoji(status) {
 }
 
 function toast(message) {
-  els.toast.textContent = message;
+  els.toast.textContent = typeof t === "function" ? t(message) : message;
   els.toast.classList.add("show");
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => els.toast.classList.remove("show"), 1800);
@@ -365,13 +367,13 @@ function toast(message) {
 // confirmer, sans masquer les informations manquantes ni faire passer une
 // estimation pour une donnée officielle.
 
-// Formate une date ISO en français long : "18 juillet 2026". Renvoie null si
-// la date est inconnue/invalide (l'appelant affichera alors « inconnue »).
+// Uses the active application locale so dates follow the same language as the
+// rest of the interface.
 function formatDateFr(iso) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
 // Traduit un niveau de confiance en libellé honnête.
@@ -390,7 +392,8 @@ function confidenceLabel(confidence) {
     estimated: "Estimation",
     unknown: "À confirmer",
   };
-  return map[c] || "À confirmer";
+  const label = map[c] || "À confirmer";
+  return typeof t === "function" ? t(label) : label;
 }
 
 // Classe CSS associée au niveau de confiance (pour distinguer visuellement

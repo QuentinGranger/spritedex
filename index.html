@@ -41,8 +41,7 @@
   <body>
     <div class="login-screen" id="loginScreen">
       <div class="login-card">
-        <img src="LogoApp.png" alt="SPRITE-INDEX" class="login-logo" />
-        <h1 class="login-title">SPRITE-INDEX</h1>
+        <img src="MainLogo.png" alt="Sprite-Index" class="login-logo" />
 
         <!-- Step 1: Inscription -->
         <div class="onboarding-step active" id="onboardingStep1">
@@ -237,11 +236,7 @@
     <div class="app-shell" id="appShell" style="display:none">
       <aside class="desktop-rail" aria-label="Espace collectionneur">
         <div class="desktop-rail__brand">
-          <img src="Favicon/android-chrome-512x512.png" alt="SPRITE-INDEX" />
-          <div>
-            <strong>Sprite Collection</strong>
-            <span>Édition Ultime</span>
-          </div>
+          <img src="MainLogo.png" alt="Sprite-Index" class="desktop-rail__logo" />
         </div>
         <div class="desktop-rail__section-label">Navigation</div>
         <div class="desktop-rail__collection" aria-label="Progression de votre collection">
@@ -254,7 +249,7 @@
 
       <header class="topbar">
         <div class="topbar-brand">
-          <img src="LogoApp.png" alt="Fortnite Runner SPRITE-INDEX" class="topbar-logo" />
+          <img src="MainLogo.png" alt="Sprite-Index" class="topbar-logo" />
         </div>
         <div class="desktop-page-heading">
           <span class="desktop-page-heading__icon" aria-hidden="true">
@@ -269,7 +264,7 @@
         </label>
         <div class="topbar-actions">
           <div class="notif-wrap" id="notifWrap">
-            <button class="notif-bell" id="notifBell" aria-label="Notifications">
+            <button class="notif-bell" id="notifBell" aria-label="Notifications" aria-expanded="false" aria-haspopup="dialog" aria-controls="notifDropdown">
               <svg class="notif-bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               <span class="notif-bell__badge" id="notifBadge" style="display:none">0</span>
             </button>
@@ -283,6 +278,7 @@
               </div>
               <div class="notif-center__filters" id="notifFilters" role="tablist" aria-label="Filtres">
                 <button type="button" class="notif-filter active" data-notif-filter="all">Toutes</button>
+                <button type="button" class="notif-filter" data-notif-filter="news">Actualités</button>
                 <button type="button" class="notif-filter" data-notif-filter="social">Social</button>
                 <button type="button" class="notif-filter" data-notif-filter="collection">Collections</button>
                 <button type="button" class="notif-filter" data-notif-filter="squads">Squads</button>
@@ -290,7 +286,13 @@
                 <button type="button" class="notif-filter" data-notif-filter="unread">Non lues</button>
               </div>
               <div class="notif-dropdown__list" id="notifList">
-                <p class="notif-dropdown__empty">Aucune notification.</p>
+                <div class="notif-dropdown__empty">
+                  <div class="notif-dropdown__empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  </div>
+                  <p class="notif-dropdown__empty-title">Aucune notification</p>
+                  <p class="notif-dropdown__empty-hint">Les nouveautés apparaîtront ici.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -310,10 +312,20 @@
       <!-- Account Panel -->
       <div class="account-panel" id="accountPanel" style="display:none">
         <header class="account-panel__header">
-          <h2 class="account-panel__title">Mon compte</h2>
-          <button class="account-panel__close" id="accountClose">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+          <div>
+            <p class="account-panel__eyebrow">Espace collectionneur</p>
+            <h2 class="account-panel__title">Mon compte</h2>
+            <p class="account-panel__subtitle">Gérez votre profil, vos préférences et votre expérience de collection.</p>
+          </div>
+          <div class="account-panel__header-actions">
+            <button class="account-panel__edit" id="accountHeaderEdit" type="button">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Modifier mon profil
+            </button>
+            <button class="account-panel__close" id="accountClose" aria-label="Fermer mon compte">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
         </header>
 
         <!-- Email verification banner -->
@@ -323,36 +335,41 @@
           <button class="email-banner__btn" id="resendVerification">Renvoyer</button>
         </div>
 
+        <div class="account-profile-dashboard" id="accountProfileOverview">
         <!-- Profile hero -->
         <div class="profile-hero">
           <div class="profile-hero__avatar" id="accountAvatarDisplay">
             <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </div>
-          <h2 class="profile-hero__name" id="accountUsername">—</h2>
-          <span class="profile-hero__since" id="accountSince">Membre depuis —</span>
-        </div>
+          <div class="profile-hero__identity">
+            <h2 class="profile-hero__name" id="accountUsername">—</h2>
+            <p class="profile-hero__tagline">Votre passeport, vos variantes et vos squads en un seul endroit.</p>
+            <span class="profile-hero__since" id="accountSince">Membre depuis —</span>
+          </div>
 
-        <!-- Profile stats -->
-        <div class="profile-stats">
+          <!-- Profile stats -->
+          <div class="profile-stats">
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountPercent">0%</span>
             <span class="profile-stat__label">Progression</span>
+            <span class="profile-stat__detail" id="accountVariants">0 / 0 variantes</span>
           </div>
           <div class="profile-stat">
-            <span class="profile-stat__value" id="accountCompleted">0 / 0</span>
-            <span class="profile-stat__label">Sprites complétés</span>
+            <span class="profile-stat__value" id="accountHeroBadges">—</span>
+            <span class="profile-stat__label">Badges obtenus</span>
           </div>
           <div class="profile-stat">
-            <span class="profile-stat__value" id="accountVariants">0 / 0</span>
-            <span class="profile-stat__label">Variantes possédées</span>
+            <span class="profile-stat__value" id="accountHeroSquad">—</span>
+            <span class="profile-stat__label">Squad principale</span>
           </div>
           <div class="profile-stat">
-            <span class="profile-stat__value" id="accountPriorities">0</span>
-            <span class="profile-stat__label">Priorités</span>
+            <span class="profile-stat__value" id="accountHeroReliability">—</span>
+            <span class="profile-stat__label">Fiabilité</span>
+          </div>
           </div>
         </div>
 
-        <section class="collector-passport" id="collectorPassport" aria-labelledby="collectorPassportTitle">
+        <section class="collector-passport" id="collectorPassport" aria-labelledby="collectorPassportTitle" hidden>
           <div class="collector-passport__header">
             <div>
               <p class="collector-passport__eyebrow">sprite-index</p>
@@ -392,6 +409,63 @@
             Désactiver le lien de partage
           </button>
         </div>
+        </div>
+
+        <nav class="account-section-nav" aria-label="Navigation du compte">
+          <button class="account-section-nav__item is-active" type="button" data-account-target="accountProfileOverview">Aperçu</button>
+          <button class="account-section-nav__item" type="button" data-account-target="collectorPassport">Badges</button>
+          <button class="account-section-nav__item" type="button" data-account-target="accountPrivacySection">Confidentialité</button>
+          <button class="account-section-nav__item" type="button" data-account-target="notifSettingsSection">Notifications</button>
+          <button class="account-section-nav__item" type="button" data-account-target="accountSecuritySection">Sécurité</button>
+        </nav>
+
+        <section class="account-overview-grid" id="accountOverviewDashboard" aria-label="Aperçu du compte">
+          <article class="account-overview-card account-overview-card--collection">
+            <header class="account-overview-card__header"><h3>Ma collection</h3></header>
+            <div class="account-collection-overview">
+              <div class="account-overview-ring" id="accountOverviewRing" role="img" aria-label="Progression de la collection"><strong id="accountOverviewPercent">0%</strong></div>
+              <div class="account-overview-collection-copy">
+                <strong id="accountOverviewOwned">0 / 0</strong>
+                <span>variantes possédées</span>
+                <small id="accountOverviewRemaining">Aucune donnée de collection</small>
+              </div>
+            </div>
+            <div class="account-overview-insight">
+              <span>Sprites complétés <strong id="accountCompleted">0 / 0</strong></span>
+              <span>Priorités <strong id="accountPriorities">0</strong></span>
+            </div>
+            <button class="account-overview-card__action" type="button" data-account-overview-action="collection">Voir ma collection complète <span aria-hidden="true">›</span></button>
+          </article>
+
+          <article class="account-overview-card account-overview-card--activity">
+            <header class="account-overview-card__header"><h3>Activité</h3><span class="account-overview-card__period">Récent</span></header>
+            <div class="account-activity-kpis">
+              <span><strong id="accountOverviewEventsCompleted">0</strong> Événements terminés</span>
+              <span><strong id="accountOverviewEventsInProgress">0</strong> En cours</span>
+              <span><strong id="accountOverviewNewBadges">0</strong> Nouveaux badges</span>
+              <span><strong id="accountOverviewAddedVariants">0</strong> Variantes ajoutées</span>
+            </div>
+            <div class="account-overview-activity-list" id="accountOverviewActivityList"><p>Aucun événement récent.</p></div>
+            <button class="account-overview-card__action" type="button" data-account-overview-action="history">Voir mon historique <span aria-hidden="true">›</span></button>
+          </article>
+
+          <div class="account-overview-side">
+            <article class="account-overview-card account-overview-card--badges">
+              <header class="account-overview-card__header"><h3>Aperçu des badges</h3><button class="account-overview-card__link" type="button" data-account-overview-action="passport">Voir tout</button></header>
+              <div class="account-badge-preview" id="accountBadgePreview"><p>Aucun badge débloqué.</p></div>
+            </article>
+
+            <article class="account-overview-card account-overview-card--preferences">
+              <header class="account-overview-card__header"><h3>Préférences rapides</h3></header>
+              <div class="account-quick-preferences">
+                <span>Notifications push <strong id="accountQuickPush">—</strong></span>
+                <span>E-mails <strong id="accountQuickEmail">—</strong></span>
+                <span>Invitations d’amis <strong id="accountQuickFriends">—</strong></span>
+              </div>
+              <button class="account-overview-card__action" type="button" data-account-overview-action="notifications">Configurer les notifications <span aria-hidden="true">›</span></button>
+            </article>
+          </div>
+        </section>
 
         <div class="account-panel__sections">
           <!-- Edit pseudo (hidden by default) -->
@@ -404,7 +478,7 @@
           </div>
 
           <!-- Confidentialité -->
-          <div class="account-section">
+          <div class="account-section" id="accountPrivacySection">
             <h3 class="account-section__title">Confidentialité</h3>
             <div class="account-row">
               <span class="account-row__label">Visibilité</span>
@@ -422,7 +496,7 @@
           </div>
 
           <!-- Notifications (Étape 49) -->
-          <div class="account-section" id="notifSettingsSection">
+          <div class="account-section" id="notifSettingsSection" hidden>
             <h3 class="account-section__title">Notifications</h3>
             <div class="notif-settings" id="notifSettings">
               <div class="notif-settings__group">
@@ -589,7 +663,7 @@
           </div>
 
           <!-- Sauvegarde -->
-          <div class="account-section">
+          <div class="account-section" id="accountCloudSection">
             <h3 class="account-section__title">Sauvegarde cloud</h3>
             <div class="account-row">
               <span class="account-row__label">Dernière sync</span>
@@ -599,14 +673,14 @@
           </div>
 
           <!-- Sécurité -->
-          <div class="account-section account-section--danger">
+          <div class="account-section account-section--danger" id="accountSecuritySection">
             <h3 class="account-section__title">Sécurité</h3>
             <button class="account-action-btn" id="accountLogout">Déconnexion</button>
             <button class="account-action-btn account-action-btn--danger" id="accountDeleteOpen">Supprimer mon compte</button>
           </div>
 
           <!-- Informations et confidentialité -->
-          <div class="account-section">
+          <div class="account-section" id="accountInfoSection">
             <h3 class="account-section__title">Informations et confidentialité</h3>
             <div class="legal-menu">
               <button class="legal-menu__item" type="button" data-legal-doc="mentions-legales">
@@ -1382,6 +1456,7 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <script src="js/i18n.js"></script>
     <script src="js/config.js"></script>
     <script src="js/state.js"></script>
     <script src="js/helpers.js"></script>

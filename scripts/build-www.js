@@ -9,7 +9,7 @@ const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "www");
 
-const FILES = ["index.html", "404.html", "manifest.json", "sw.js", "LogoApp.png", "icon-192.png", "icon-512.png"];
+const FILES = ["index.html", "404.html", "manifest.json", "sw.js", "LogoApp.png", "MainLogo.png", "icon-192.png", "icon-512.png"];
 const DIRS = ["css", "js", "Favicon", "icons", "Sprite"];
 
 fs.rmSync(OUT, { recursive: true, force: true });
