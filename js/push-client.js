@@ -165,9 +165,7 @@
       const data = await res.json();
       if (!data.needsReactivation && !data.pushReactivationNeeded) return;
       sessionStorage.setItem("push_reactivation_prompted", "1");
-      const accept = window.confirm(
-        "Les notifications push ne sont plus actives sur vos appareils. Souhaitez-vous les réactiver ?"
-      );
+      const accept = window.confirm(t("push.reactivate"));
       if (accept) {
         if (isNativePlatform() && window.Capacitor?.Plugins?.PushNotifications) {
           await registerNativePush();

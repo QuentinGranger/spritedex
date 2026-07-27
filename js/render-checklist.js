@@ -58,14 +58,15 @@ function announceChecklistResults(filtered) {
   const status = document.getElementById("checklistResultsStatus");
   if (!status) return;
   const count = filtered.length;
+  const plural = count > 1 ? "s" : "";
   const hasPassportFocus = Array.isArray(state.passportMissingVariantIds) && state.passportMissingVariantIds.length > 0;
   const activeChip = els.filterChipsBar?.querySelector(".filter-chip.active");
   const context = hasPassportFocus
-    ? "variantes ciblées"
+    ? t("checklist.contextPassport")
     : activeChip && activeChip.dataset.filter !== "all"
-      ? `filtre ${activeChip.textContent.trim()}`
-      : "tous les filtres";
-  status.textContent = `${count} sprite${count > 1 ? "s" : ""} affiché${count > 1 ? "s" : ""} — ${context}.`;
+      ? t("checklist.contextFilter", { filter: activeChip.textContent.trim() })
+      : t("checklist.contextAll");
+  status.textContent = t("checklist.results", { count, plural, context });
 }
 
 function focusChecklistSprite(spriteId) {
@@ -166,7 +167,7 @@ function renderChecklist() {
   updateChecklistFilterControls();
   announceChecklistResults(filtered);
   if (!filtered.length) {
-    els.checklistList.innerHTML = `<p class="empty-state">Aucun résultat avec ce filtre.</p>`;
+    els.checklistList.innerHTML = `<p class="empty-state">${escapeHtml(t("checklist.empty"))}</p>`;
     return;
   }
 
@@ -199,38 +200,39 @@ function renderChecklist() {
 
     return `
       <article class="cl-sprite ${isExpanded ? "cl-sprite--open" : ""}" style="--card-color:${safeCssColor(sprite.color)}" data-sprite-id="${escapeHtml(String(sprite.id || ""))}" data-rarity="${escapeHtml(sprite.rarity)}" aria-labelledby="checklist-sprite-${escapeHtml(String(sprite.id || ""))}">
-        <div class="cl-sprite__header" data-toggle="${escapeHtml(String(sprite.id || ""))}" role="button" tabindex="0" aria-expanded="${isExpanded ? "true" : "false"}" aria-controls="checklist-sprite-body-${escapeHtml(String(sprite.id || ""))}" aria-label="${isExpanded ? "Réduire" : "Développer"} ${escapeHtml(sprite.name)}">
+        <div class="cl-sprite__header" data-toggle="${escapeHtml(String(sprite.id || ""))}" role="button" tabindex="0" aria-expanded="${isExpanded ? "true" : "false"}" aria-controls="checklist-sprite-body-${escapeHtml(String(sprite.id || ""))}" aria-label="${escapeHtml(t(isExpanded ? "checklist.collapseSprite" : "checklist.expandSprite", { name: sprite.name }))}">
           <div class="cl-sprite__avatar">${baseImg ? `<img src="${escapeHtml(baseImg)}" alt="${escapeHtml(sprite.name)}" class="cl-sprite__img" />` : `<span class="avatar-placeholder">?</span>`}</div>
           <div class="cl-sprite__info">
             <h3 class="cl-sprite__name" id="checklist-sprite-${escapeHtml(String(sprite.id || ""))}">${escapeHtml(sprite.name)}</h3>
-            <p class="cl-sprite__meta"><span class="cl-sprite__rarity" data-rarity="${escapeHtml(sprite.rarity)}">${escapeHtml(sprite.rarity)}</span>${priorityVariant ? `<span class="cl-sprite__priority">★ Prioritaire</span>` : ""}${highestMastery === 5 ? `<span class="cl-sprite__master">♛ Master</span>` : ""}</p>
-            <p class="cl-sprite__effect">${escapeHtml(sprite.effect || "Aucun effet renseigné.")}</p>
+            <p class="cl-sprite__meta"><span class="cl-sprite__rarity" data-rarity="${escapeHtml(sprite.rarity)}">${escapeHtml(sprite.rarity)}</span>${priorityVariant ? `<span class="cl-sprite__priority">${escapeHtml(t("checklist.priorityBadge"))}</span>` : ""}${highestMastery === 5 ? `<span class="cl-sprite__master">${escapeHtml(t("checklist.masterBadge"))}</span>` : ""}</p>
+            <p class="cl-sprite__effect">${escapeHtml(sprite.effect || t("checklist.noEffect"))}</p>
           </div>
           <div class="cl-sprite__progress">
-            <span><strong>${owned} / ${total}</strong> variantes</span>
+            <span><strong>${escapeHtml(t("checklist.variantsCount", { owned, total }))}</strong></span>
             <div class="cl-sprite__bar"><div class="cl-sprite__bar-fill" style="width:${pct}%"></div></div>
           </div>
-          <div class="cl-sprite__inline-actions" role="group" aria-label="Actions rapides pour ${escapeHtml(sprite.name)}">
-          <button type="button" class="cl-sprite__detail" data-sprite-detail="${escapeHtml(String(sprite.id || ""))}" title="Ouvrir la fiche complète" aria-label="Ouvrir la fiche complète">
+          <div class="cl-sprite__inline-actions" role="group" aria-label="${escapeHtml(t("checklist.quickActions", { name: sprite.name }))}">
+          <button type="button" class="cl-sprite__detail" data-sprite-detail="${escapeHtml(String(sprite.id || ""))}" title="${escapeHtml(t("checklist.openDetail"))}" aria-label="${escapeHtml(t("checklist.openDetail"))}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
-          ${quickVariant ? `<button type="button" class="cl-sprite__quick cl-sprite__quick--priority ${priorityVariant ? "is-active" : ""}" data-quick-status="priority" data-id="${escapeHtml(String(quickVariant.id || ""))}" title="Marquer la prochaine variante prioritaire" aria-label="Marquer la prochaine variante prioritaire"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/></svg></button>` : ""}
-          ${quickVariant ? `<button type="button" class="cl-sprite__quick cl-sprite__quick--owned ${owned === total && total ? "is-active" : ""}" data-quick-status="owned" data-id="${escapeHtml(String(quickVariant.id || ""))}" title="Marquer la prochaine variante possédée" aria-label="Marquer la prochaine variante possédée"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>` : ""}
+          ${quickVariant ? `<button type="button" class="cl-sprite__quick cl-sprite__quick--priority ${priorityVariant ? "is-active" : ""}" data-quick-status="priority" data-id="${escapeHtml(String(quickVariant.id || ""))}" title="${escapeHtml(t("checklist.quickPriority"))}" aria-label="${escapeHtml(t("checklist.quickPriority"))}"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.1 8.3 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 8.9 8.3"/></svg></button>` : ""}
+          ${quickVariant ? `<button type="button" class="cl-sprite__quick cl-sprite__quick--owned ${owned === total && total ? "is-active" : ""}" data-quick-status="owned" data-id="${escapeHtml(String(quickVariant.id || ""))}" title="${escapeHtml(t("checklist.quickOwned"))}" aria-label="${escapeHtml(t("checklist.quickOwned"))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>` : ""}
           <svg class="cl-sprite__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
         ${isExpanded ? `
-        <div class="cl-sprite__body" id="checklist-sprite-body-${escapeHtml(String(sprite.id || ""))}" role="region" aria-label="Variantes de ${escapeHtml(sprite.name)}">
+        <div class="cl-sprite__body" id="checklist-sprite-body-${escapeHtml(String(sprite.id || ""))}" role="region" aria-label="${escapeHtml(t("checklist.variantsOf", { name: sprite.name }))}">
           ${displayedVariants.map(v => {
             const vPrio = v.entry.priority || "none";
             const masteryLevel = masteryLevelFor(v.entry);
             const masteryControls = masteryLevel > 0
               ? `<div class="cl-variant__mastery ${masteryLevel === 5 ? "cl-variant__mastery--master" : ""}" aria-label="${escapeHtml(masteryLabel(masteryLevel))}">
-                  <span class="cl-variant__mastery-label">${masteryLevel === 5 ? "♛ Master" : `Niv. ${masteryLevel}/5`}</span>
-                  <div class="cl-variant__mastery-levels" role="group" aria-label="Niveau de maîtrise de ${escapeHtml(v.name)}">
+                  <span class="cl-variant__mastery-label">${escapeHtml(masteryLevel === 5 ? t("checklist.masteryMaster") : t("checklist.masteryLevel", { level: masteryLevel }))}</span>
+                  <div class="cl-variant__mastery-levels" role="group" aria-label="${escapeHtml(t("checklist.masteryOf", { name: v.name }))}">
                     ${Array.from({ length: 5 }, (_, index) => {
                       const level = index + 1;
-                      return `<button type="button" class="cl-mastery-btn ${level <= masteryLevel ? "is-active" : ""} ${level === 5 ? "is-master" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-mastery-level="${level}" title="${level === 5 ? "Niveau Master" : `Niveau ${level}`}" aria-label="${level === 5 ? "Niveau Master" : `Niveau ${level}`}" aria-pressed="${level === masteryLevel}">${level === 5 ? "♛" : level}</button>`;
+                      const levelTitle = level === 5 ? t("mastery.masterTitle") : t("mastery.level", { level });
+                      return `<button type="button" class="cl-mastery-btn ${level <= masteryLevel ? "is-active" : ""} ${level === 5 ? "is-master" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-mastery-level="${level}" title="${escapeHtml(levelTitle)}" aria-label="${escapeHtml(levelTitle)}" aria-pressed="${level === masteryLevel}">${level === 5 ? "♛" : level}</button>`;
                     }).join("")}
                   </div>
                 </div>`
@@ -246,17 +248,17 @@ function renderChecklist() {
               </div>
               <div class="cl-variant__status">${statusEmoji(v.entry.status)} <span>${statusLabel(v.entry.status)}</span></div>
               ${masteryControls}
-              <div class="cl-variant__actions" role="group" aria-label="Statut de ${escapeHtml(`${sprite.name} — ${v.name}`)}">
-                <button type="button" class="cl-btn cl-btn--owned ${v.entry.status === "owned" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="owned" title="Possédé" aria-label="Marquer ${escapeHtml(v.name)} comme possédé" aria-pressed="${v.entry.status === "owned"}">
+              <div class="cl-variant__actions" role="group" aria-label="${escapeHtml(t("checklist.statusOf", { name: `${sprite.name} — ${v.name}` }))}">
+                <button type="button" class="cl-btn cl-btn--owned ${v.entry.status === "owned" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="owned" title="${escapeHtml(t("status.owned"))}" aria-label="${escapeHtml(t("checklist.markOwned", { name: v.name }))}" aria-pressed="${v.entry.status === "owned"}">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </button>
-                <button type="button" class="cl-btn cl-btn--missing ${v.entry.status === "missing" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="missing" title="Manquant" aria-label="Marquer ${escapeHtml(v.name)} comme manquant" aria-pressed="${v.entry.status === "missing"}">
+                <button type="button" class="cl-btn cl-btn--missing ${v.entry.status === "missing" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="missing" title="${escapeHtml(t("status.missing"))}" aria-label="${escapeHtml(t("checklist.markMissing", { name: v.name }))}" aria-pressed="${v.entry.status === "missing"}">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
-                <button type="button" class="cl-btn cl-btn--priority ${v.entry.status === "priority" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="priority" title="Prioritaire" aria-label="Marquer ${escapeHtml(v.name)} comme prioritaire" aria-pressed="${v.entry.status === "priority"}">
+                <button type="button" class="cl-btn cl-btn--priority ${v.entry.status === "priority" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="priority" title="${escapeHtml(t("status.priority"))}" aria-label="${escapeHtml(t("checklist.markPriority", { name: v.name }))}" aria-pressed="${v.entry.status === "priority"}">
                   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 </button>
-                <button type="button" class="cl-btn cl-btn--unsure ${v.entry.status === "unsure" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="unsure" title="À vérifier" aria-label="Marquer ${escapeHtml(v.name)} comme à vérifier" aria-pressed="${v.entry.status === "unsure"}">
+                <button type="button" class="cl-btn cl-btn--unsure ${v.entry.status === "unsure" ? "active" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-status="unsure" title="${escapeHtml(t("status.unsure"))}" aria-label="${escapeHtml(t("checklist.markUnsure", { name: v.name }))}" aria-pressed="${v.entry.status === "unsure"}">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
                 </button>
               </div>

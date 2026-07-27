@@ -12,7 +12,7 @@ function exportData() {
   a.download = `sprite-index-export-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast("Export JSON téléchargé");
+  toast(t("io.exportOk"));
 }
 
 function importData(file) {
@@ -34,9 +34,9 @@ function importData(file) {
       }
       buildDeck();
       renderAll();
-      toast("Import réussi");
+      toast(t("io.importOk"));
     } catch (error) {
-      toast("Import impossible : fichier JSON invalide");
+      toast(t("io.importInvalid"));
     }
   };
   reader.readAsText(file);
@@ -51,10 +51,10 @@ function copyMissingList() {
   const priority = notOwned.filter(item => getEntry(item.id).status === "priority");
   const others = notOwned.filter(item => getEntry(item.id).status !== "priority");
 
-  let lines = [`Il me manque ${notOwned.length} variantes.\n`];
+  let lines = [t("io.missingHeader", { count: notOwned.length })];
 
   if (priority.length) {
-    lines.push("PRIORITÉ HAUTE :");
+    lines.push(t("io.highPriorityHeader"));
     priority.forEach(item => lines.push(`- ${item.spriteName} ${item.variant}`));
     lines.push("");
   }
@@ -65,14 +65,14 @@ function copyMissingList() {
     byVariant[item.variant].push(item);
   }
   for (const [v, items] of Object.entries(byVariant)) {
-    lines.push(`${v.toUpperCase()} MANQUANTES :`);
+    lines.push(t("io.missingVariantHeader", { variant: v.toUpperCase() }));
     items.forEach(item => lines.push(`- ${item.spriteName} ${item.variant}`));
     lines.push("");
   }
 
   const text = lines.join("\n");
   navigator.clipboard?.writeText(text).then(
-    () => toast("Liste copiée"),
-    () => toast("Copie impossible sur ce navigateur")
+    () => toast(t("io.copyOk")),
+    () => toast(t("io.copyUnsupported"))
   );
 }

@@ -266,24 +266,23 @@ async function maybeNotifyCatalogueCompletionDrop(userId, previous, summary, cat
         (summary.releasedVariantCount || 0) - (previous.releasedVariantCount || 0)
       );
 
-    const title = added === 1
-      ? "Une nouvelle variante a été ajoutée"
-      : "Le catalogue a été mis à jour";
-    const body = `Votre complétion passe de ${fromLabel} % à ${toLabel} %. Renseignez les nouvelles variantes.`;
-
     await pushService.createNotification(pool, {
       recipientId: userId,
       type: "passport_catalogue_updated",
       category: "collection",
-      title,
-      body,
       entityType: "catalogue",
       entityId: summary.catalogueVersion,
-      actionUrl: "/?view=checklist",
-      actionLabel: "Mettre à jour ma collection",
+      context: {
+        fromRate: fromLabel,
+        toRate: toLabel,
+        previousCompletionRate: previous.completionRate,
+        completionRate: summary.completionRate,
+        catalogueVersion: summary.catalogueVersion,
+        addedVariantCount: added
+      },
+      url: "/?view=checklist",
       data: {
         actionUrl: "/?view=checklist",
-        actionLabel: "Mettre à jour ma collection",
         previousCompletionRate: previous.completionRate,
         completionRate: summary.completionRate,
         catalogueVersion: summary.catalogueVersion,

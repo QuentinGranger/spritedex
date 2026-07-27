@@ -50,13 +50,11 @@ app.post("/api/friends/:friendId/request", requireNotSuspended, async (req, res)
   const outcome = await applyFriendAction(reqUser, friendId, "request", inviteOpts);
   if (outcome.error) return res.status(outcome.error).json({ error: outcome.message });
 
-  const reqUserRecord = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
   await pushService.createNotification(pool, {
     recipientId: friendId,
     actorId: reqUser,
     type: "friend_request_received",
     context: { friendId: reqUser },
-    message: `${reqUserRecord.rows[0]?.username || "Quelqu'un"} vous a envoyé une demande d'ami.`,
     url: "/friends"
   });
 
@@ -87,13 +85,11 @@ app.post("/api/friends/requests", requireNotSuspended, security.validateBody(sec
 
   const row = await getActiveFriendship(reqUser, friendId);
 
-  const reqUserRecord = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
   await pushService.createNotification(pool, {
     recipientId: friendId,
     actorId: reqUser,
     type: "friend_request_received",
     context: { friendId: reqUser },
-    message: `${reqUserRecord.rows[0]?.username || "Quelqu'un"} vous a envoyé une demande d'ami.`,
     url: "/friends"
   });
 
@@ -297,13 +293,11 @@ app.post("/api/friends/:friendId/remove", requireNotSuspended, async (req, res) 
   compare.invalidateCompareCacheForUser(reqUser);
   compare.invalidateCompareCacheForUser(friendId);
 
-  const reqUserRecord = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
   await pushService.createNotification(pool, {
     recipientId: friendId,
     actorId: reqUser,
     type: "friend_removed",
     context: { friendId: reqUser },
-    message: `${reqUserRecord.rows[0]?.username || "Quelqu'un"} a supprimé votre amitié.`,
     url: "/friends"
   });
 
@@ -320,13 +314,11 @@ app.delete("/api/friends/:friendId", requireNotSuspended, async (req, res) => {
   compare.invalidateCompareCacheForUser(reqUser);
   compare.invalidateCompareCacheForUser(friendId);
 
-  const reqUserRecord = await pool.query("SELECT username FROM users WHERE id = $1", [reqUser]);
   await pushService.createNotification(pool, {
     recipientId: friendId,
     actorId: reqUser,
     type: "friend_removed",
     context: { friendId: reqUser },
-    message: `${reqUserRecord.rows[0]?.username || "Quelqu'un"} a supprimé votre amitié.`,
     url: "/friends"
   });
 

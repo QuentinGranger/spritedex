@@ -304,7 +304,11 @@ async function finalizeQueuedWantedEventNotification(created, {
     timeZone,
     timezone: timeZone
   };
-  const rendered = catalog.renderNotification(TYPE, context, catalog.DEFAULT_LANGUAGE);
+  const rendered = catalog.renderNotification(
+    TYPE,
+    context,
+    created.data?.lang || catalog.DEFAULT_LANGUAGE
+  );
   const nextData = {
     ...(created.data || {}),
     ...(rendered?.data || {}),

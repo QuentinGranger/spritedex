@@ -8,6 +8,7 @@ const { APP_URL, app, resend, sendPasswordResetEmail, sendVerificationEmail } = 
 const { pool } = require("./db");
 const { revokeSessionSockets, revokeUserSockets } = require("./ws");
 const { normalizeCookieConsent } = require("./consent");
+const { resolveLocale } = require("./i18n");
 const crypto = require("crypto");
 const http = require("http");
 const path = require("path");
@@ -69,7 +70,7 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
     );
     const user = result.rows[0];
     const token = await createSession(user.id);
-    sendVerificationEmail(email.toLowerCase(), emailToken);
+    sendVerificationEmail(email.toLowerCase(), emailToken, resolveLocale(req.get("accept-language")));
     secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "register", status: "ok" });
     res.json({ id: user.id, username: user.username, displayName: user.display_name, usernameNormalized: user.username.toLowerCase(), token, emailVerified: false, created_at: user.created_at });
   } catch (err) {
@@ -118,7 +119,7 @@ app.post("/api/auth/resend-verification", security.emailVerifLimiter, async (req
       "UPDATE users SET email_verify_token = $1, email_verify_token_expires = $2 WHERE id = $3",
       [hashOpaqueToken(emailToken), new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS), reqUser]
     );
-    sendVerificationEmail(user.rows[0].email, emailToken);
+    sendVerificationEmail(user.rows[0].email, emailToken, resolveLocale(req.get("accept-language")));
     res.json({ ok: true, message: "Email de vérification renvoyé" });
   } catch (err) {
     console.error(err);
@@ -148,7 +149,7 @@ app.post("/api/auth/forgot-password", security.passwordResetLimiter, security.va
     if (updated.rows.length) {
       const user = updated.rows[0];
       setImmediate(() => {
-        sendPasswordResetEmail(user.email, resetToken);
+        sendPasswordResetEmail(user.email, resetToken, resolveLocale(req.get("accept-language")));
         secLog.logSecurityEvent(pool, { req, userId: user.id, email: user.email, event: "password_reset_request", status: "ok" });
       });
     }
@@ -577,6 +578,10 @@ app.get("/api/auth/me", async (req, res) => {
       return res.status(401).json({ error: "Session expirée" });
     }
     pool.query("UPDATE users SET last_active_at = NOW() WHERE id = $1", [result.rows[0].id]).catch(() => {});
+    // Keep notification language aligned with the device Accept-Language.
+    // No account language setting yet — the client locale is the source of truth.
+    const { rememberPreferredLanguage } = require("./i18n");
+    rememberPreferredLanguage(pool, result.rows[0].id, req.get("accept-language")).catch(() => {});
     const row = result.rows[0];
     const isSuspended = row.suspended_until && new Date(row.suspended_until) > new Date();
     res.json({ ...row, suspended: !!isSuspended, suspendedUntil: isSuspended ? row.suspended_until : null });

@@ -1173,6 +1173,22 @@ async function asyncTest(name, fn) {
       "Water"
     );
 
+    const appI18n = require("../server/i18n");
+    assert.strictEqual(appI18n.resolveNotificationLanguage("en", null), "en");
+    assert.strictEqual(appI18n.resolveNotificationLanguage("fr", null), "fr");
+    assert.strictEqual(appI18n.resolveNotificationLanguage("en", "fr"), "fr", "explicit lang wins");
+    assert.strictEqual(appI18n.resolveNotificationLanguage(null, null), "fr");
+    assert.strictEqual(appI18n.resolveLocale("en-US,en;q=0.9"), "en");
+    assert.strictEqual(appI18n.resolveLocale("fr-FR"), "fr");
+
+    const catalog = require("../server/notification-catalog");
+    const enAccept = catalog.renderNotification(
+      catalog.NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED,
+      { friendId: "7", friendName: "Lucy" },
+      appI18n.resolveNotificationLanguage("en", null)
+    );
+    assert.match(enAccept.title, /accepted your friend request/i);
+
     const fr = i18n.renderTranslatedMessage(
       "friend_request_accepted",
       { friendName: "Lucy" },

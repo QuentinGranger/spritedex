@@ -96,18 +96,18 @@ function setupAccountPanel() {
 
   resendBtn.addEventListener("click", async () => {
     resendBtn.disabled = true;
-    resendBtn.textContent = "Envoi...";
+    resendBtn.textContent = t("account.sendingVerification");
     try {
       await fetch(`${API_BASE}/auth/resend-verification`, {
         method: "POST",
         headers: authHeadersOnly()
       });
-      toast("Email de vérification renvoyé !");
+      toast(t("account.verificationSent"));
     } catch {
-      toast("Erreur, réessaie plus tard.");
+      toast(t("account.errorRetryLater"));
     }
     resendBtn.disabled = false;
-    resendBtn.textContent = "Renvoyer";
+    resendBtn.textContent = t("account.resend");
   });
 
   // ── Populate all profile data ──
@@ -164,7 +164,7 @@ function setupAccountPanel() {
     const lastSync = localStorage.getItem("sprite-index_last_sync");
     document.getElementById("accountLastSync").textContent = lastSync
       ? new Date(lastSync).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
-      : "Jamais";
+      : t("account.neverSynced");
 
     // Member since
     const userRaw = localStorage.getItem(USER_KEY);
@@ -173,7 +173,7 @@ function setupAccountPanel() {
         const u = JSON.parse(userRaw);
         if (u.created_at) {
           document.getElementById("accountSince").textContent =
-            "Membre depuis " + new Date(u.created_at).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+            t("account.memberSince", { date: new Date(u.created_at).toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) });
         }
       } catch {}
     }
@@ -205,16 +205,14 @@ function setupAccountPanel() {
     const ring = document.getElementById("accountOverviewRing");
     if (ring) {
       ring.style.setProperty("--account-overview-progress", `${rate}%`);
-      ring.setAttribute("aria-label", `Progression de la collection : ${rateLabel}`);
+      ring.setAttribute("aria-label", t("account.collectionProgressAria", { rate: rateLabel }));
     }
     setAccountOverviewValue("accountOverviewPercent", rateLabel);
     setAccountOverviewValue("accountOverviewOwned", `${owned} / ${released}`);
     const remaining = Math.max(0, released - owned);
     setAccountOverviewValue("accountOverviewRemaining", released
-      ? (isEnglish
-        ? `${remaining} variant${remaining === 1 ? "" : "s"} left to discover`
-        : `${remaining} variante${remaining === 1 ? "" : "s"} à découvrir`)
-      : "Catalogue indisponible");
+      ? (remaining === 1 ? t("account.remainingVariantsOne") : t("account.remainingVariantsMany", { count: remaining }))
+      : t("account.noCollectionData"));
 
     const badges = Array.isArray(data?.badgeProgress) && data.badgeProgress.length
       ? data.badgeProgress
@@ -244,7 +242,7 @@ function setupAccountPanel() {
       const recent = activity.slice(0, 3);
       if (!recent.length) {
         const empty = document.createElement("p");
-        empty.textContent = "Aucun événement récent.";
+        empty.textContent = t("account.noRecentActivity");
         activityList.append(empty);
       } else {
         const list = document.createElement("ul");
@@ -267,7 +265,7 @@ function setupAccountPanel() {
       const preview = unlockedBadges.slice(0, 4);
       if (!preview.length) {
         const empty = document.createElement("p");
-        empty.textContent = "Aucun badge débloqué.";
+        empty.textContent = t("account.noBadge");
         badgePreview.append(empty);
       } else {
         preview.forEach((badge) => {
@@ -295,14 +293,14 @@ function setupAccountPanel() {
       ? `${primarySquad.name} · ${Number(primarySquad.memberCount) || 1} membre${Number(primarySquad.memberCount) === 1 ? "" : "s"}`
       : "Aucune squad principale";
     document.getElementById("accountHeroSquad")?.setAttribute("title", squadLabel);
-    document.getElementById("accountHeroBadges")?.setAttribute("title", `${unlockedBadges.length} badge(s) obtenu(s)`);
-    document.getElementById("accountHeroReliability")?.setAttribute("title", `${Math.round(Math.max(0, Math.min(100, Number(reliability.rate) || 0)))} % de la collection renseignée`);
-    document.getElementById("accountHeroVariants")?.setAttribute("title", `${owned} variantes possédées`);
+    document.getElementById("accountHeroBadges")?.setAttribute("title", t("account.badgesObtainedTitle", { count: unlockedBadges.length }));
+    document.getElementById("accountHeroReliability")?.setAttribute("title", t("account.reliabilityTitle", { percent: Math.round(Math.max(0, Math.min(100, Number(reliability.rate) || 0))) }));
+    document.getElementById("accountHeroVariants")?.setAttribute("title", t("account.variantsOwnedTitle", { count: owned }));
     void social;
   }
 
   function refreshAccountQuickPreferences() {
-    const value = (enabled) => enabled ? "Activé" : "Désactivé";
+    const value = (enabled) => enabled ? t("account.enabled") : t("account.disabled");
     setAccountOverviewValue("accountQuickPush", value(!!document.getElementById("notifChannelPush")?.checked));
     setAccountOverviewValue("accountQuickEmail", value(!!document.getElementById("notifChannelEmail")?.checked));
     setAccountOverviewValue("accountQuickFriends", value(!!document.querySelector('[data-notif-in-app="friend_request_accepted"]')?.checked));
@@ -318,7 +316,7 @@ function setupAccountPanel() {
   }
 
   function passportRelativeUpdate(value) {
-    if (!value) return "jamais";
+    if (!value) return t("account.never");
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "—";
     const now = new Date();
@@ -326,29 +324,29 @@ function setupAccountPanel() {
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
     const time = date.toLocaleTimeString("fr-FR", { hour: "numeric", minute: "2-digit" }).replace(":", " h ");
-    if (sameDay) return `aujourd’hui à ${time}`;
-    if (date.toDateString() === yesterday.toDateString()) return `hier à ${time}`;
+    if (sameDay) return t("account.todayAt", { time });
+    if (date.toDateString() === yesterday.toDateString()) return t("account.yesterdayAt", { time });
     return passportDate(value);
   }
 
   function passportReliabilityLabel(reliability) {
     const level = reliability && reliability.level;
-    if (level === "complete") return "Collection complète";
-    if (level === "usable") return "Collection exploitable";
-    return "Collection à compléter";
+    if (level === "complete") return t("account.collectionComplete");
+    if (level === "usable") return t("account.collectionUsable");
+    return t("account.collectionToComplete");
   }
 
   function passportSinceMonth(value) {
-    if (!value) return "Date d’inscription masquée";
+    if (!value) return t("account.joinDateHidden");
     const start = new Date(value);
     if (Number.isNaN(start.getTime())) return "—";
     const monthYear = start.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-    return `Collectionneur depuis ${monthYear}`;
+    return t("account.collectorSince", { monthYear });
   }
 
   function passportAvatarHtml(avatarUrl, username = "") {
     const url = typeof safeImageUrl === "function" ? safeImageUrl(avatarUrl) : "";
-    const alt = username ? `Avatar de ${username}` : "Avatar du collectionneur";
+    const alt = username ? t("account.passport.avatarOf", { username }) : t("account.passport.avatarDefault");
     if (!url) {
       return `<div class="collector-passport__avatar collector-passport__avatar--empty" role="img" aria-label="${escapeHtml(alt)}"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>`;
     }
@@ -374,7 +372,7 @@ function setupAccountPanel() {
     }
     const label = badge.label || badge.badgeCode || "Badge";
     const unlocked = !badge.status || badge.status === "unlocked";
-    return `Badge ${label}, ${unlocked ? "débloqué" : "verrouillé"}`;
+    return unlocked ? t("account.badge.accessibleUnlocked", { label }) : t("account.badge.accessibleLocked", { label });
   }
 
   function logPassportAnalytics(event, details = {}) {
@@ -396,16 +394,16 @@ function setupAccountPanel() {
   }
 
   function passportSeniority(value) {
-    if (!value) return "Date d’inscription masquée";
+    if (!value) return t("account.joinDateHidden");
     const start = new Date(value);
     if (Number.isNaN(start.getTime())) return "—";
     const now = new Date();
     let months = (now.getFullYear() - start.getFullYear()) * 12 + now.getMonth() - start.getMonth();
     if (now.getDate() < start.getDate()) months--;
-    if (months < 1) return "Collectionneur depuis moins d’un mois";
-    if (months < 12) return `Collectionneur depuis ${months} mois`;
+    if (months < 1) return t("account.seniorityLessThanMonth");
+    if (months < 12) return t("account.seniorityMonths", { months });
     const years = Math.floor(months / 12);
-    return `Collectionneur depuis ${years} an${years > 1 ? "s" : ""}`;
+    return years > 1 ? t("account.seniorityYears", { years }) : t("account.seniorityYear", { years });
   }
 
   function passportActivityLabel(item) {
@@ -415,32 +413,34 @@ function setupAccountPanel() {
       case "variants_owned": {
         const count = Number(data.count) || 1;
         if (data.label || data.variantName) {
-          return `${data.label || data.variantName} ajouté${count > 1 ? "s" : ""} à la collection.`;
+          return count > 1
+            ? t("account.activity.variantsAddedNamed", { label: data.label || data.variantName })
+            : t("account.activity.variantAddedNamed", { label: data.label || data.variantName });
         }
         return count > 1
-          ? `A ajouté ${count} variantes à sa collection.`
-          : "Variante ajoutée à la collection.";
+          ? t("account.activity.variantsAdded", { count })
+          : t("account.activity.variantAdded");
       }
       case "badge_unlocked":
-        return data.label ? `Badge ${data.label} débloqué.` : "Badge débloqué.";
+        return data.label ? t("account.activity.badgeUnlockedLabel", { label: data.label }) : t("account.activity.badgeUnlocked");
       case "event_completed":
-        return data.eventName ? `Événement complété : ${data.eventName}.` : "Événement complété.";
+        return data.eventName ? t("account.activity.eventCompletedName", { name: data.eventName }) : t("account.activity.eventCompleted");
       case "squad_joined":
-        return data.squadName ? `A rejoint la squad ${data.squadName}.` : "Squad rejointe.";
+        return data.squadName ? t("account.activity.squadJoined", { name: data.squadName }) : t("account.activity.squadJoinedDefault");
       case "squad_created":
-        return data.squadName ? `A créé la squad ${data.squadName}.` : "Squad créée.";
+        return data.squadName ? t("account.activity.squadCreated", { name: data.squadName }) : t("account.activity.squadCreatedDefault");
       case "completion_milestone":
-        return data.percent != null ? `Palier ${data.percent} % atteint.` : "Palier de complétion.";
+        return data.percent != null ? t("account.activity.milestonePercent", { percent: data.percent }) : t("account.activity.milestone");
       case "collective_goal_completed":
         return data.goalTitle
-          ? `${data.squadName || "La squad"} a atteint un objectif : ${data.goalTitle}.`
+          ? t("account.activity.goalReached", { squad: data.squadName || "La squad", goal: data.goalTitle })
           : (data.squadName
-            ? `${data.squadName} a progressé collectivement.`
-            : "Objectif collectif complété.");
+            ? t("account.activity.squadProgress", { squad: data.squadName })
+            : t("account.activity.goalCompleted"));
       case "account_created":
-        return "Inscription à sprite-index.";
+        return t("account.activity.accountCreated");
       default:
-        return type || "Activité";
+        return type || t("account.activity.default");
     }
   }
 
@@ -451,8 +451,8 @@ function setupAccountPanel() {
     const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startThat = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const diffDays = Math.round((startToday - startThat) / 86400000);
-    if (diffDays === 0) return "Aujourd’hui";
-    if (diffDays === 1) return "Hier";
+    if (diffDays === 0) return t("account.today");
+    if (diffDays === 1) return t("account.yesterday");
     return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: startThat.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
   }
 
@@ -476,22 +476,22 @@ function setupAccountPanel() {
 
   function passportVerificationLabel(status) {
     const map = {
-      declared: "Déclaré",
-      system_confirmed: "Confirmé système",
-      community_verified: "Vérifié communauté",
-      officially_verified: "Vérifié officiel"
+      declared: t("account.verification.declared"),
+      system_confirmed: t("account.verification.systemConfirmed"),
+      community_verified: t("account.verification.communityVerified"),
+      officially_verified: t("account.verification.officiallyVerified")
     };
     return map[status] || status || "—";
   }
 
   function passportBadgeCategoryLabel(cat) {
     return ({
-      progression: "Progression",
-      social: "Social",
-      squads: "Squads",
-      events: "Événements",
-      historique: "Historique"
-    })[cat] || "Progression";
+      progression: t("account.badgeCategory.progression"),
+      social: t("account.badgeCategory.social"),
+      squads: t("account.badgeCategory.squads"),
+      events: t("account.badgeCategory.events"),
+      historique: t("account.badgeCategory.historique")
+    })[cat] || t("account.badgeCategory.progression");
   }
 
   function openPassportCollectionFilter(filter) {
@@ -526,7 +526,7 @@ function setupAccountPanel() {
       bar.querySelectorAll(".filter-chip").forEach((chip) => chip.classList.remove("active"));
     }
     if (typeof renderChecklist === "function") renderChecklist();
-    if (ids.length) toast(`${ids.length} variante${ids.length > 1 ? "s" : ""} manquante${ids.length > 1 ? "s" : ""}`);
+    if (ids.length) toast(ids.length === 1 ? t("account.missingVariant", { count: ids.length }) : t("account.missingVariants", { count: ids.length }));
   }
 
   function passportEventEndLabel(ev) {
@@ -535,8 +535,8 @@ function setupAccountPanel() {
     if (days == null) {
       return `Fin : ${passportDate(ev.endDate, "—", { withTime: false })}`;
     }
-    if (days <= 0) return "Se termine aujourd’hui";
-    return `Se termine dans ${days} jour${days > 1 ? "s" : ""}`;
+    if (days <= 0) return t("account.event.endsToday");
+    return days > 1 ? t("account.event.endsInDaysPlural", { days }) : t("account.event.endsInDays", { days });
   }
 
   function renderCollectorPassportBody(data) {
@@ -553,7 +553,7 @@ function setupAccountPanel() {
     const releasedSprites = safeFiniteNumber(cat.releasedSpriteCount, 0, { min: 0, max: 1000000 });
     const discovered = safeFiniteNumber(c.discoveredSpriteCount, 0, { min: 0, max: 1000000 });
     const reliabilityWarning = reliability.level === "insufficient"
-      ? `<p class="collector-passport__warning">Cette collection n’est renseignée qu’à ${safePercentage(reliability.rate, 0)} %. Certaines statistiques peuvent être incomplètes.</p>`
+      ? `<p class="collector-passport__warning">${t("account.passport.reliabilityWarning", { rate: safePercentage(reliability.rate, 0) })}</p>`
       : "";
     const statsHidden = !data.collection;
     const owned = safeFiniteNumber(c.ownedVariantCount, 0, { min: 0, max: 1000000 });
@@ -580,20 +580,22 @@ function setupAccountPanel() {
     const specialVariant = c.rarestSpecialVariant || null;
     const rarityLabel = officialRarity
       ? officialRarity.label
-      : (c.highestRarity || "Aucune rareté débloquée");
+      : (c.highestRarity || t("account.passport.noRarityUnlocked"));
     const rarityCount = officialRarity && officialRarity.ownedCountAtRarity
       ? (() => {
           const n = safeFiniteNumber(officialRarity.ownedCountAtRarity, 0, { min: 0, max: 1000000 });
           const key = String(officialRarity.key || "").toLowerCase();
           const adjective = {
-            common: "communes",
-            uncommon: "peu communes",
-            rare: "rares",
-            epic: "épiques",
-            legendary: "légendaires",
-            mythic: "mythiques"
+            common: t("account.passport.rarityAdj.common"),
+            uncommon: t("account.passport.rarityAdj.uncommon"),
+            rare: t("account.passport.rarityAdj.rare"),
+            epic: t("account.passport.rarityAdj.epic"),
+            legendary: t("account.passport.rarityAdj.legendary"),
+            mythic: t("account.passport.rarityAdj.mythic")
           }[key] || String(officialRarity.label || "").toLowerCase();
-          return `${n} variante${n > 1 ? "s" : ""} ${adjective} possédée${n > 1 ? "s" : ""}`;
+          return n === 1
+            ? t("account.passport.rarityCountOne", { adjective })
+            : t("account.passport.rarityCountMany", { count: n, adjective });
         })()
       : "";
     const isSelf = !!(data.user && data.user.isSelf);
@@ -601,11 +603,11 @@ function setupAccountPanel() {
     const displayName = identity.displayName || (data.user && data.user.displayName) || username;
     const avatarUrl = identity.avatarUrl || (data.user && data.user.avatarUrl) || "";
     const primarySquad = data.primarySquad;
-    let primarySquadLine = "Aucune squad principale";
-    let primarySquadHtml = "Aucune squad principale";
+    let primarySquadLine = t("account.passport.noSquad");
+    let primarySquadHtml = t("account.passport.noSquad");
     if (primarySquad && primarySquad.private) {
-      primarySquadLine = "Squad privée";
-      primarySquadHtml = "Squad privée";
+      primarySquadLine = t("account.passport.privateSquad");
+      primarySquadHtml = t("account.passport.privateSquad");
     } else if (primarySquad && primarySquad.name) {
       primarySquadLine = primarySquad.name;
       const members = safeFiniteNumber(primarySquad.memberCount, 0, { min: 0, max: 1000000 });
@@ -614,28 +616,28 @@ function setupAccountPanel() {
         : null;
       const meta = [
         members ? `${members} membre${members === 1 ? "" : "s"}` : null,
-        collective != null ? `${collective} % de complétion collective` : null,
+        collective != null ? t("account.passport.collectiveCompletion", { rate: collective }) : null,
         primarySquad.role || null
       ].filter(Boolean).join(" · ");
       primarySquadHtml = `${escapeHtml(primarySquad.name)}${meta ? `<br><small>${escapeHtml(meta)}</small>` : ""}`;
     } else if (isSelf) {
-      primarySquadHtml = `Aucune squad principale<br><button type="button" class="ghost-button collector-passport__choose-squad" data-passport-action="choose-squad">Choisir une squad</button>`;
+      primarySquadHtml = `${t("account.passport.noSquad")}<br><button type="button" class="ghost-button collector-passport__choose-squad" data-passport-action="choose-squad">${t("account.passport.chooseSquad")}</button>`;
     }
     const comparisonCount = social.comparisonCount;
     const distinctCompared = social.distinctCollectorsCompared;
-    let comparisonsHtml = "Masqué";
+    let comparisonsHtml = t("account.passport.hidden");
     if (comparisonCount != null) {
       const n = safeFiniteNumber(comparisonCount, 0, { min: 0, max: 1000000 });
       const distinct = distinctCompared == null
         ? null
         : safeFiniteNumber(distinctCompared, 0, { min: 0, max: 1000000 });
-      comparisonsHtml = `${n} comparaison${n === 1 ? "" : "s"} réalisée${n === 1 ? "" : "s"}`;
+      comparisonsHtml = n === 1 ? t("account.passport.comparisonsOne") : t("account.passport.comparisonsMany", { count: n });
       if (distinct != null) {
-        comparisonsHtml += `<br><small>${distinct} collectionneur${distinct === 1 ? "" : "s"} différent${distinct === 1 ? "" : "s"} comparé${distinct === 1 ? "" : "s"}</small>`;
+        comparisonsHtml += `<br><small>${distinct === 1 ? t("account.passport.distinctCollectorsOne") : t("account.passport.distinctCollectorsMany", { count: distinct })}</small>`;
       }
     }
     const ownerId = data.user && data.user.id;
-    const compareLabel = isSelf ? "Comparer un joueur" : "Comparer nos collections";
+    const compareLabel = isSelf ? t("account.action.comparePlayer") : t("account.action.compareCollections");
     const compareAction = isSelf
       ? `data-passport-action="compare"`
       : `data-passport-action="compare-user" data-id="${escapeHtml(String(ownerId))}" data-name="${escapeHtml(displayName || username)}"`;
@@ -655,21 +657,21 @@ function setupAccountPanel() {
           : null);
       const endLabel = kind === "progress" ? passportEventEndLabel(ev) : "";
       const missingAction = kind === "progress" && Array.isArray(ev.missingVariantIds) && ev.missingVariantIds.length
-        ? `<button type="button" class="collector-passport__link-btn" data-passport-action="event-missing" data-missing="${escapeHtml(ev.missingVariantIds.join(","))}">Voir les variantes manquantes</button>`
+        ? `<button type="button" class="collector-passport__link-btn" data-passport-action="event-missing" data-missing="${escapeHtml(ev.missingVariantIds.join(","))}">${t("account.passport.viewMissing")}</button>`
         : "";
       if (kind === "completed" || kind === "historical") {
         return `<li>
           <div>
             <strong>${escapeHtml(ev.eventName || ev.eventId)}</strong>
-            <span>${safeFiniteNumber(ev.ownedCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(ev.requiredCount, 0, { min: 0, max: 1000000 })} variantes</span>
-            <small>Complété le ${escapeHtml(passportDate(ev.completedAt, "—", { withTime: false }))}${ev.catalogueVersion ? ` · catalogue ${escapeHtml(ev.catalogueVersion)}` : ""}${ev.version ? ` · v${escapeHtml(String(ev.version))}` : ""}</small>
+            <span>${t("account.passport.variantCount", { owned: safeFiniteNumber(ev.ownedCount, 0, { min: 0, max: 1000000 }), total: safeFiniteNumber(ev.requiredCount, 0, { min: 0, max: 1000000 }) })}</span>
+            <small>${t("account.passport.completedOn", { date: escapeHtml(passportDate(ev.completedAt, "—", { withTime: false })) })}${ev.catalogueVersion ? ` · catalogue ${escapeHtml(ev.catalogueVersion)}` : ""}${ev.version ? ` · v${escapeHtml(String(ev.version))}` : ""}</small>
           </div>
         </li>`;
       }
       return `<li>
         <div>
           <strong>${escapeHtml(ev.eventName || ev.eventId)}</strong>
-          <span>${safeFiniteNumber(ev.ownedCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(ev.requiredCount, 0, { min: 0, max: 1000000 })} variantes${rate != null ? ` · ${rate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : ""}</span>
+          <span>${t("account.passport.variantCount", { owned: safeFiniteNumber(ev.ownedCount, 0, { min: 0, max: 1000000 }), total: safeFiniteNumber(ev.requiredCount, 0, { min: 0, max: 1000000 }) })}${rate != null ? ` · ${rate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : ""}</span>
           <small>${endLabel || `Plus que ${safeFiniteNumber(ev.remainingCount, 0, { min: 0, max: 1000000 })}`}</small>
           ${missingAction}
         </div>
@@ -693,31 +695,31 @@ function setupAccountPanel() {
       let progressLine = "";
       if (unlocked) {
         const historical = b.isHistoricalProgression && threshold != null
-          ? `${threshold} % atteint le ${passportDate(b.unlockedAt, "—", { withTime: false })}${releasedAt != null ? ` · Catalogue de ${releasedAt} variante${releasedAt === 1 ? "" : "s"}` : ""}`
+          ? `${t("account.badge.thresholdDate", { threshold, date: passportDate(b.unlockedAt, "—", { withTime: false }) })}${releasedAt != null ? ` · ${releasedAt === 1 ? t("account.badge.catalogueOfOne", { count: releasedAt }) : t("account.badge.catalogueOfMany", { count: releasedAt })}` : ""}`
           : "";
-        progressLine = historical || (b.unlockedAt ? `Obtenu le ${passportDate(b.unlockedAt, "—", { withTime: false })}` : "Débloqué");
+        progressLine = historical || (b.unlockedAt ? t("account.badge.obtainedOn", { date: passportDate(b.unlockedAt, "—", { withTime: false }) }) : t("account.badge.unlocked"));
       } else if (progressValue != null && targetValue != null) {
         progressLine = [
           progressRate != null ? `${progressRate.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %` : null,
           `${progressValue} / ${targetValue}`,
-          remaining != null && remaining > 0 ? `${remaining} restante${remaining === 1 ? "" : "s"}` : null
+          remaining != null && remaining > 0 ? (remaining === 1 ? t("account.badge.remainingOne") : t("account.badge.remainingMany", { count: remaining })) : null
         ].filter(Boolean).join(" · ");
       }
       const pinBtn = isSelf && unlocked && b.badgeId
-        ? `<button type="button" class="collector-passport__pin" data-passport-action="pin-badge" data-badge-id="${escapeHtml(String(b.badgeId))}" aria-pressed="${isFeatured ? "true" : "false"}">${isFeatured ? "Épinglé" : "Épingler"}</button>`
+        ? `<button type="button" class="collector-passport__pin" data-passport-action="pin-badge" data-badge-id="${escapeHtml(String(b.badgeId))}" aria-pressed="${isFeatured ? "true" : "false"}">${isFeatured ? t("account.badge.pinned") : t("account.badge.pin")}</button>`
         : "";
       const iconChar = escapeHtml(String(b.label || b.badgeCode || "?").slice(0, 1).toUpperCase());
       const a11yName = formatBadgeAccessibleName(b);
-      const statusLabel = unlocked ? "Débloqué" : "Verrouillé";
+      const statusLabel = unlocked ? t("account.badge.unlocked") : t("account.badge.locked");
       return `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}${isFeatured ? " collector-passport__badge-card--featured" : ""}" tabindex="0" role="listitem" aria-label="${escapeHtml(a11yName)}" data-passport-action="badge-open" data-badge-code="${escapeHtml(b.badgeCode || "")}" data-badge-status="${unlocked ? "unlocked" : "locked"}" data-badge-category="${escapeHtml(uiCat)}">
         <div class="collector-passport__badge-icon" aria-hidden="true">${iconChar}</div>
         <div class="collector-passport__badge-body">
           <strong>${escapeHtml(b.label || b.badgeCode || b.id)}</strong>
-          <span class="collector-passport__badge-status">${statusLabel}${isFeatured ? " · Épinglé" : ""}</span>
+          <span class="collector-passport__badge-status">${statusLabel}${isFeatured ? t("account.badge.pinnedSuffix") : ""}</span>
           <p>${escapeHtml(b.description || "")}</p>
-          <small>${escapeHtml(progressLine || (unlocked ? "Débloqué" : "Verrouillé"))}</small>
-          <small class="collector-passport__badge-verify">Vérification : ${escapeHtml(passportVerificationLabel(b.verificationStatus || (unlocked ? "declared" : "—")))}</small>
-          <small class="collector-passport__badge-declared">Calculé à partir de la collection déclarée</small>
+          <small>${escapeHtml(progressLine || (unlocked ? t("account.badge.unlocked") : t("account.badge.locked")))}</small>
+          <small class="collector-passport__badge-verify">${t("account.badge.verificationPrefix")}${escapeHtml(passportVerificationLabel(b.verificationStatus || (unlocked ? "declared" : "—")))}</small>
+          <small class="collector-passport__badge-declared">${t("account.badge.declaredCalc")}</small>
           ${pinBtn}
         </div>
       </article>`;
@@ -731,95 +733,95 @@ function setupAccountPanel() {
 
     return `
       <section class="collector-passport__section collector-passport__section--identity" aria-labelledby="passport-identity-heading">
-        <h4 id="passport-identity-heading">Identité</h4>
+        <h4 id="passport-identity-heading">${t("account.passport.identity")}</h4>
         <div class="collector-passport__identity">
           ${passportAvatarHtml(avatarUrl, username || displayName)}
           <div class="collector-passport__identity-text">
             <p class="collector-passport__username">${escapeHtml(username || "—")}</p>
             ${displayName && displayName !== username ? `<p class="collector-passport__displayname">${escapeHtml(displayName)}</p>` : ""}
             <p class="collector-passport__since">${escapeHtml(sinceExact)}${sinceDuration && createdAt ? `<br><small>${escapeHtml(sinceDuration)}</small>` : ""}</p>
-            <p class="collector-passport__identity-meta">Squad principale : <strong>${escapeHtml(primarySquadLine)}</strong>${isSelf && !(primarySquad && primarySquad.name) && !(primarySquad && primarySquad.private) ? ` <button type="button" class="ghost-button collector-passport__choose-squad" data-passport-action="choose-squad">Choisir</button>` : ""}</p>
-            <p class="collector-passport__identity-meta">Badge épinglé : <strong>${escapeHtml((featuredBadge && featuredBadge.label) || "Aucun")}</strong></p>
+            <p class="collector-passport__identity-meta">${t("account.passport.mainSquadLabel", { name: escapeHtml(primarySquadLine) })}${isSelf && !(primarySquad && primarySquad.name) && !(primarySquad && primarySquad.private) ? ` <button type="button" class="ghost-button collector-passport__choose-squad" data-passport-action="choose-squad">${t("account.passport.chooseSquadShort")}</button>` : ""}</p>
+            <p class="collector-passport__identity-meta">${t("account.passport.featuredBadgeLabel", { label: escapeHtml((featuredBadge && featuredBadge.label) || t("account.passport.noneM")) })}</p>
             <button type="button" class="collector-passport__compare-btn" ${compareAction}>${escapeHtml(compareLabel)}</button>
           </div>
         </div>
       </section>
 
-      ${statsHidden ? `<p class="collector-passport__empty" role="status">Les statistiques de ce passeport sont masquées.</p>` : `
+      ${statsHidden ? `<p class="collector-passport__empty" role="status">${t("account.passport.statsHidden")}</p>` : `
       <section class="collector-passport__section collector-passport__section--progress" aria-labelledby="passport-progress-heading">
-        <h4 id="passport-progress-heading">Progression</h4>
+        <h4 id="passport-progress-heading">${t("account.passport.progress")}</h4>
         <div class="collector-passport__grid collector-passport__grid--progress">
-          <div><strong>${discovered} / ${releasedSprites}</strong><span>Sprites découverts</span></div>
-          <div><strong>${owned} / ${released}</strong><span>Variantes possédées</span></div>
-          <div><strong>${displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} %</strong><span>Complétion</span></div>
+          <div><strong>${discovered} / ${releasedSprites}</strong><span>${t("account.passport.spritesDiscovered")}</span></div>
+          <div><strong>${owned} / ${released}</strong><span>${t("account.passport.variantsOwned")}</span></div>
+          <div><strong>${displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} %</strong><span>${t("account.passport.completion")}</span></div>
         </div>
         <div class="collector-passport__progress">
           <div class="collector-passport__progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${escapeHtml(String(barWidth))}" aria-valuetext="${escapeHtml(formatCollectionProgressText(owned, released, displayRate))}" aria-describedby="passport-progress-text">
             <div class="collector-passport__progress-fill" style="width:${barWidth}%"></div>
           </div>
           <p id="passport-progress-text" class="collector-passport__progress-text">${escapeHtml(formatCollectionProgressText(owned, released, displayRate))}</p>
-          ${showPeak ? `<p class="collector-passport__progress-peak">Record personnel : ${Number(peak.completionRateDisplay).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} % · Taux actuel : ${displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} %</p>` : `<p class="collector-passport__progress-peak">Taux actuel : ${displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} %</p>`}
+          ${showPeak ? `<p class="collector-passport__progress-peak">${t("account.passport.peakRecord", { peak: Number(peak.completionRateDisplay).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }), current: displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) })}</p>` : `<p class="collector-passport__progress-peak">${t("account.passport.currentRate", { current: displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) })}</p>`}
           ${nextStep ? `<p class="collector-passport__progress-next">${escapeHtml(nextStep.label)}</p>` : ""}
-          <p class="collector-passport__progress-meta">Mise à jour : ${escapeHtml(passportRelativeUpdate(c.lastUpdatedAt))} · Qualité : ${escapeHtml(qualityLabel)} (${safePercentage(reliability.rate, 0)} %)</p>
+          <p class="collector-passport__progress-meta">${t("account.passport.lastUpdate", { date: escapeHtml(passportRelativeUpdate(c.lastUpdatedAt)), quality: escapeHtml(qualityLabel), rate: safePercentage(reliability.rate, 0) })}</p>
         </div>
         ${reliabilityWarning}
       </section>
 
       <section class="collector-passport__section collector-passport__section--collection" aria-labelledby="passport-collection-heading">
-        <h4 id="passport-collection-heading">Collection</h4>
+        <h4 id="passport-collection-heading">${t("account.passport.collection")}</h4>
         <div class="collector-passport__breakdown">
-          <h5>Raretés</h5>
+          <h5>${t("account.passport.rarities")}</h5>
           <ul class="collector-passport__filter-list">${rarityBreakdown.length ? rarityBreakdown.map((row) => `
             <li><button type="button" class="collector-passport__filter-row" data-passport-action="open-filter" data-filter="${escapeHtml(row.filter)}">
               <span>${escapeHtml(row.label)}</span>
-              <strong>${safeFiniteNumber(row.ownedCount, 0, { min: 0, max: 1000000 })} variante${safeFiniteNumber(row.ownedCount, 0) === 1 ? "" : "s"}</strong>
-            </button></li>`).join("") : "<li><em>Aucune rareté pour le moment.</em></li>"}</ul>
-          <h5>Types de variantes</h5>
+              <strong>${safeFiniteNumber(row.ownedCount, 0, { min: 0, max: 1000000 })} ${t("account.passport.variantsSuffix")}</strong>
+            </button></li>`).join("") : `<li><em>${t("account.passport.noRarities")}</em></li>`}</ul>
+          <h5>${t("account.passport.variantTypes")}</h5>
           <ul class="collector-passport__filter-list">${variantTypeBreakdown.length ? variantTypeBreakdown.map((row) => `
             <li><button type="button" class="collector-passport__filter-row" data-passport-action="open-filter" data-filter="${escapeHtml(row.filter)}">
               <span>${escapeHtml(row.label)}</span>
               <strong>${safeFiniteNumber(row.ownedCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(row.releasedCount, 0, { min: 0, max: 1000000 })}</strong>
-            </button></li>`).join("") : "<li><em>Aucun type pour le moment.</em></li>"}</ul>
+            </button></li>`).join("") : `<li><em>${t("account.passport.noTypes")}</em></li>`}</ul>
         </div>
         <dl class="collector-passport__details">
-          <div><dt>Rareté la plus élevée</dt><dd>${escapeHtml(rarityLabel)}${rarityCount ? `<br><small>${escapeHtml(rarityCount)}</small>` : ""}</dd></div>
-          <div><dt>Variante spéciale la plus rare</dt><dd>${escapeHtml((specialVariant && specialVariant.label) || "Aucune")}</dd></div>
-          <div><dt>Squad principale</dt><dd>${primarySquadHtml}</dd></div>
-          <div><dt>Activité sociale</dt><dd>${safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 })} ami${safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s"} · ${safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 })} squad${safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s"}</dd></div>
-          <div><dt>Comparaisons</dt><dd>${comparisonsHtml}</dd></div>
-          <div><dt>Fiabilité</dt><dd>${safePercentage(reliability.rate, 0)} % (${safeFiniteNumber(reliability.explicitVariantCount, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(reliability.totalVariantCount, 0, { min: 0, max: 1000000 })})</dd></div>
+          <div><dt>${t("account.passport.highestRarity")}</dt><dd>${escapeHtml(rarityLabel)}${rarityCount ? `<br><small>${escapeHtml(rarityCount)}</small>` : ""}</dd></div>
+          <div><dt>${t("account.passport.rarestSpecial")}</dt><dd>${escapeHtml((specialVariant && specialVariant.label) || t("account.passport.noneF"))}</dd></div>
+          <div><dt>${t("account.passport.mainSquad")}</dt><dd>${primarySquadHtml}</dd></div>
+          <div><dt>${t("account.passport.socialActivity")}</dt><dd>${safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 })} ami${safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s"} · ${safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 })} squad${safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s"}</dd></div>
+          <div><dt>${t("account.passport.comparisons")}</dt><dd>${comparisonsHtml}</dd></div>
+          <div><dt>${t("account.passport.reliability")}</dt><dd>${safePercentage(reliability.rate, 0)} % (${safeFiniteNumber(reliability.explicitVariantCount, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(reliability.totalVariantCount, 0, { min: 0, max: 1000000 })})</dd></div>
         </dl>
-        <p class="collector-passport__footnote">Collection calculée sur ${released} variante${released === 1 ? "" : "s"} sortie${released === 1 ? "" : "s"}${c.catalogueVersion || cat.version ? ` · catalogue ${escapeHtml(c.catalogueVersion || cat.version)}` : ""}.</p>
-        <p class="collector-passport__disclaimer">Collection déclarée par l’utilisateur</p>
+        <p class="collector-passport__footnote">${released === 1 ? t("account.passport.footnoteOne") : t("account.passport.footnoteMany", { count: released })}${c.catalogueVersion || cat.version ? ` · catalogue ${escapeHtml(c.catalogueVersion || cat.version)}` : ""}.</p>
+        <p class="collector-passport__disclaimer">${t("account.passport.userDeclared")}</p>
       </section>
 
       <section class="collector-passport__section collector-passport__section--events" aria-labelledby="passport-events-heading">
-        <h4 id="passport-events-heading">Événements</h4>
-        <p class="collector-passport__events-summary"><strong>${safeFiniteNumber(data.eventsCompleted != null ? data.eventsCompleted : completedEvents.length, 0, { min: 0, max: 1000000 })}</strong> événement${safeFiniteNumber(data.eventsCompleted != null ? data.eventsCompleted : completedEvents.length, 0) === 1 ? "" : "s"} terminé${safeFiniteNumber(data.eventsCompleted != null ? data.eventsCompleted : completedEvents.length, 0) === 1 ? "" : "s"}</p>
+        <h4 id="passport-events-heading">${t("account.passport.events")}</h4>
+        <p class="collector-passport__events-summary">${(() => { const _n = safeFiniteNumber(data.eventsCompleted != null ? data.eventsCompleted : completedEvents.length, 0, { min: 0, max: 1000000 }); return _n === 1 ? `<strong>1</strong> ${t("account.passport.eventsCompletedOne").replace("1 ", "")}` : `<strong>${_n}</strong> ${t("account.passport.eventsCompletedMany", { count: _n }).replace(`${_n} `, "")}`; })()}</p>
         <div class="collector-passport__block">
-          <h5>Terminés récemment</h5>
-          <ul class="collector-passport__events">${recentlyCompleted.length ? recentlyCompleted.map((ev) => renderEventItem(ev, "completed")).join("") : "<li><em>Aucun événement terminé récemment.</em></li>"}</ul>
+          <h5>${t("account.passport.recentlyCompleted")}</h5>
+          <ul class="collector-passport__events">${recentlyCompleted.length ? recentlyCompleted.map((ev) => renderEventItem(ev, "completed")).join("") : `<li><em>${t("account.passport.noRecentEvents")}</em></li>`}</ul>
         </div>
         <div class="collector-passport__block">
-          <h5>En cours (${inProgressEvents.length})</h5>
-          <ul class="collector-passport__events">${inProgressEvents.length ? inProgressEvents.map((ev) => renderEventItem(ev, "progress")).join("") : "<li><em>Aucun événement en cours.</em></li>"}</ul>
+          <h5>${t("account.passport.inProgress", { count: inProgressEvents.length })}</h5>
+          <ul class="collector-passport__events">${inProgressEvents.length ? inProgressEvents.map((ev) => renderEventItem(ev, "progress")).join("") : `<li><em>${t("account.passport.noEventsInProgress")}</em></li>`}</ul>
         </div>
         <div class="collector-passport__block">
-          <h5>Historiques (${historicalEvents.length})</h5>
-          <ul class="collector-passport__events">${historicalEvents.length ? historicalEvents.map((ev) => renderEventItem(ev, "historical")).join("") : "<li><em>Aucun accomplissement sur une ancienne version.</em></li>"}</ul>
+          <h5>${t("account.passport.historical", { count: historicalEvents.length })}</h5>
+          <ul class="collector-passport__events">${historicalEvents.length ? historicalEvents.map((ev) => renderEventItem(ev, "historical")).join("") : `<li><em>${t("account.passport.noHistoricalEvents")}</em></li>`}</ul>
         </div>
       </section>`}
 
       <section class="collector-passport__section collector-passport__section--badges" aria-labelledby="passport-badges-heading">
-        <h4 id="passport-badges-heading">Badges (${unlockedBadges.length})</h4>
-        <div class="collector-passport__badge-filters" role="toolbar" aria-label="Filtres badges">
+        <h4 id="passport-badges-heading">${t("account.passport.badgesCount", { count: unlockedBadges.length })}</h4>
+        <div class="collector-passport__badge-filters" role="toolbar" aria-label="${t("account.passport.badgeFiltersLabel")}">
           ${[
-            ["all", "Tous"],
-            ["unlocked", "Débloqués"],
-            ["locked", "À débloquer"],
-            ["progression", "Progression"],
-            ["social", "Social"],
-            ["events", "Événements"]
+            ["all", t("account.badge.filterAll")],
+            ["unlocked", t("account.badge.filterUnlocked")],
+            ["locked", t("account.badge.filterLocked")],
+            ["progression", passportBadgeCategoryLabel("progression")],
+            ["social", passportBadgeCategoryLabel("social")],
+            ["events", passportBadgeCategoryLabel("events")]
           ].map(([value, label], i) =>
             `<button type="button" class="collector-passport__badge-filter${i === 0 ? " is-active" : ""}" data-passport-action="badge-filter" data-badge-filter="${value}" aria-pressed="${i === 0 ? "true" : "false"}">${label}</button>`
           ).join("")}
@@ -829,19 +831,19 @@ function setupAccountPanel() {
             <div class="collector-passport__badge-group" data-badge-group="${escapeHtml(group.cat)}">
               <h5>${escapeHtml(group.label)}</h5>
               <div class="collector-passport__badge-cards" role="presentation">${group.items.map(renderBadgeCard).join("")}</div>
-            </div>`).join("") : "<em>Aucun badge pour le moment.</em>"}
+            </div>`).join("") : `<em>${t("account.passport.noBadges")}</em>`}
         </div>
       </section>
 
       <section class="collector-passport__section collector-passport__section--activity" aria-labelledby="passport-activity-heading">
-        <h4 id="passport-activity-heading">Activité récente</h4>
+        <h4 id="passport-activity-heading">${t("account.passport.recentActivity")}</h4>
         ${activityGroups.length ? activityGroups.map((group) => `
           <div class="collector-passport__activity-day">
             <h5>${escapeHtml(group.label)}</h5>
             <ul class="collector-passport__activity">${group.items.map((a) =>
               `<li><span>${escapeHtml(passportActivityLabel(a))}</span></li>`
             ).join("")}</ul>
-          </div>`).join("") : "<p class=\"collector-passport__empty\" role=\"status\">Aucune activité récente.</p>"}
+          </div>`).join("") : `<p class="collector-passport__empty" role="status">${t("account.passport.noRecentActivity")}</p>`}
       </section>
     `;
   }
@@ -854,17 +856,17 @@ function setupAccountPanel() {
         ? ["edit_profile", "manage_privacy", "choose_primary_squad", "pin_badge", "share_passport", "update_collection"]
         : []);
     const labels = {
-      edit_profile: "Modifier mon profil",
-      manage_privacy: "Gérer la confidentialité",
-      choose_primary_squad: "Choisir ma squad principale",
-      pin_badge: "Épingler un badge",
-      share_passport: "Partager mon passeport",
-      update_collection: "Mettre à jour ma collection",
-      compare_collections: "Comparer nos collections",
-      invite_to_squad: "Inviter dans une squad",
-      create_shared_goal: "Créer un objectif commun",
-      view_public_collection: "Voir la collection publique",
-      add_friend: "Ajouter comme ami"
+      edit_profile: t("account.action.editProfile"),
+      manage_privacy: t("account.action.managePrivacy"),
+      choose_primary_squad: t("account.action.chooseSquad"),
+      pin_badge: t("account.action.pinBadge"),
+      share_passport: t("account.action.sharePassport"),
+      update_collection: t("account.action.updateCollection"),
+      compare_collections: t("account.action.compareCollections"),
+      invite_to_squad: t("account.action.inviteToSquad"),
+      create_shared_goal: t("account.action.createGoal"),
+      view_public_collection: t("account.action.viewPublicCollection"),
+      add_friend: t("account.action.addFriend")
     };
     actionsEl.innerHTML = actions
       .filter((key) => labels[key])
@@ -872,7 +874,7 @@ function setupAccountPanel() {
       .join("");
 
     const ownerId = data.user && data.user.id;
-    const ownerName = (data.user && (data.user.displayName || data.user.username)) || "Joueur";
+    const ownerName = (data.user && (data.user.displayName || data.user.username)) || t("account.player");
     const username = data.user && data.user.username;
 
     actionsEl.querySelectorAll("[data-passport-action]").forEach((btn) => {
@@ -914,9 +916,9 @@ function setupAccountPanel() {
           if (pinBtn) {
             pinBtn.scrollIntoView({ behavior: "smooth", block: "center" });
             pinBtn.focus();
-            toast("Choisis un badge à épingler dans la grille.");
+            toast(t("account.pinBadgePrompt"));
           } else {
-            toast("Aucun badge à épingler pour le moment.");
+            toast(t("account.noBadgeToPin"));
           }
           return;
         }
@@ -948,7 +950,7 @@ function setupAccountPanel() {
           if (typeof openSquadInviteDialog === "function" && ownerId) {
             await openSquadInviteDialog(ownerId, ownerName);
           } else {
-            toast("Connecte-toi et crée une squad pour inviter.");
+            toast(t("account.inviteNeedSquad"));
           }
           return;
         }
@@ -957,7 +959,7 @@ function setupAccountPanel() {
           closeAccount();
           if (typeof activateMainView === "function") activateMainView("social");
           if (typeof setSocialTab === "function") setSocialTab("squad");
-          toast("Crée un objectif collectif dans une squad commune.");
+          toast(t("account.createGoalInSquad"));
           return;
         }
         if (action === "view_public_collection") {
@@ -971,7 +973,7 @@ function setupAccountPanel() {
         }
         if (action === "add_friend") {
           if (!state.userId) {
-            toast("Connecte-toi pour ajouter un ami.");
+            toast(t("account.loginToAddFriend"));
             return;
           }
           if (typeof sendFriendRequest === "function" && ownerId) {
@@ -1008,23 +1010,23 @@ function setupAccountPanel() {
     }
     if (opts.showCompletion && card.completionRateDisplay != null) {
       const rate = String(card.completionRateDisplay).replace(".", ",");
-      lines.push({ kind: "stat", text: `${rate} % de complétion` });
+      lines.push({ kind: "stat", text: t("account.share.completionRate", { rate }) });
     }
     if (opts.showCompletion && card.ownedVariantCount != null && card.releasedVariantCount != null) {
-      lines.push({ kind: "stat", text: `${card.ownedVariantCount} variantes sur ${card.releasedVariantCount}` });
+      lines.push({ kind: "stat", text: t("account.share.variantsOf", { owned: card.ownedVariantCount, total: card.releasedVariantCount }) });
     }
     if (opts.showEvents && card.completedEventCount != null) {
       const n = Number(card.completedEventCount) || 0;
-      lines.push({ kind: "stat", text: `${n} événement${n > 1 ? "s" : ""} complété${n > 1 ? "s" : ""}` });
+      lines.push({ kind: "stat", text: n === 1 ? t("account.passport.eventsShareOne") : t("account.passport.eventsShareMany", { count: n }) });
     }
     if (opts.showBadges && card.featuredBadgeLabel) {
-      lines.push({ kind: "meta", text: `Badge : ${card.featuredBadgeLabel}` });
+      lines.push({ kind: "meta", text: t("account.share.badge", { label: card.featuredBadgeLabel }) });
     }
     if (opts.showSquad && card.primarySquadName) {
-      lines.push({ kind: "meta", text: `Squad : ${card.primarySquadName}` });
+      lines.push({ kind: "meta", text: t("account.share.squad", { name: card.primarySquadName }) });
     }
     if (opts.showJoinedAt && card.joinedAt) {
-      lines.push({ kind: "meta", text: `Inscrit le ${formatPassportJoinDate(card.joinedAt)}` });
+      lines.push({ kind: "meta", text: t("account.share.joinedOn", { date: formatPassportJoinDate(card.joinedAt) }) });
     }
     return lines;
   }
@@ -1036,7 +1038,7 @@ function setupAccountPanel() {
         ${lines.map((l) => `<li class="passport-share-preview__${escapeHtml(l.kind)}">${escapeHtml(l.text)}</li>`).join("")}
       </ul>
       <p class="passport-share-preview__url">${escapeHtml((card.publicUrl && `${webOrigin()}${card.publicUrl}`) || "")}</p>
-      <p class="passport-share-preview__note">Jamais inclus : e-mail, notes, amis, données privées, activité masquée.</p>
+      <p class="passport-share-preview__note">${t("account.passportShareNote")}</p>
     `;
   }
 
@@ -1045,14 +1047,14 @@ function setupAccountPanel() {
       headers: authHeadersOnly()
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Carte indisponible");
+    if (!res.ok) throw new Error(data.error || t("account.cardUnavailable"));
     return data;
   }
 
   function openPassportSharePreview(passportData) {
     const username = passportData.user && passportData.user.username;
     if (!username) {
-      toast("Pseudo manquant pour le partage");
+      toast(t("account.missingUsername"));
       return;
     }
     const dialog = document.getElementById("passportShareDialog");
@@ -1060,7 +1062,7 @@ function setupAccountPanel() {
     const generateBtn = document.getElementById("passportShareGenerate");
     if (!dialog || !preview) return;
 
-    preview.innerHTML = `<p class="collector-passport__empty">Chargement de l’aperçu…</p>`;
+    preview.innerHTML = `<p class="collector-passport__empty">${t("account.sharePreviewLoading")}</p>`;
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
 
@@ -1108,14 +1110,14 @@ function setupAccountPanel() {
           try {
             await generateAndSharePassportCard(card, opts, format);
           } catch (err) {
-            toast(err.message || "Impossible de générer la carte");
+            toastError(err, "account.cantGenerateCard");
           } finally {
             generateBtn.disabled = false;
           }
         };
       }
     }).catch((err) => {
-      preview.innerHTML = `<p class="collector-passport__empty">${escapeHtml(err.message || "Aperçu indisponible")}</p>`;
+      preview.innerHTML = `<p class="collector-passport__empty">${escapeHtml(err.message ? t(err.message) : t("account.sharePreviewUnavailable"))}</p>`;
     });
   }
 
@@ -1146,7 +1148,7 @@ function setupAccountPanel() {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas indisponible");
+    if (!ctx) throw new Error("Canvas unavailable");
 
     const grad = ctx.createLinearGradient(0, 0, w, h);
     grad.addColorStop(0, "#0b1220");
@@ -1166,7 +1168,7 @@ function setupAccountPanel() {
 
     ctx.fillStyle = "#9ec5ff";
     ctx.font = `600 ${Math.round(bodySize * 0.85)}px system-ui, sans-serif`;
-    ctx.fillText("sprite-index · Passeport", padX, y - bodySize * 1.6);
+    ctx.fillText(t("passport.canvasBrand"), padX, y - bodySize * 1.6);
 
     for (const line of lines) {
       if (line.kind === "title") {
@@ -1198,7 +1200,7 @@ function setupAccountPanel() {
     ctx.fillText(url, padX, h * 0.9);
 
     const blob = await new Promise((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Export image échoué"))), "image/png");
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("account.cardExportFailed")))), "image/png");
     });
     const fileName = `sprite-index-passeport-${card.username || "carte"}-${w}x${h}.png`;
     const file = new File([blob], fileName, { type: "image/png" });
@@ -1207,8 +1209,8 @@ function setupAccountPanel() {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
-          title: `Passeport ${card.displayName || card.username}`,
-          text: "Mon passeport collectionneur sprite-index",
+          title: t("passport.shareNativeTitle", { name: card.displayName || card.username }),
+          text: t("passport.shareNativeText"),
           url: shareUrl,
           files: [file]
         });
@@ -1227,17 +1229,17 @@ function setupAccountPanel() {
     if (navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(shareUrl);
-        toast("Carte téléchargée · lien copié");
+        toast(t("account.cardDownloadedLinkCopied"));
         return;
       } catch {}
     }
-    toast("Carte téléchargée");
+    toast(t("account.cardDownloaded"));
   }
 
   async function fetchCollectorPassport(userId) {
     const res = await fetch(`${API_BASE}/profile/${encodeURIComponent(userId)}/passport`, { headers: authHeadersOnly() });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Passeport indisponible");
+    if (!res.ok) throw new Error(data.error || t("account.passportUnavailable"));
     return data;
   }
 
@@ -1246,7 +1248,7 @@ function setupAccountPanel() {
     const reliabilityEl = document.getElementById("passportReliability");
     const actionsEl = document.getElementById("collectorPassportActions");
     if (!content || !state.userId) return;
-    content.innerHTML = `<p class="collector-passport__empty">Calcul du passeport…</p>`;
+    content.innerHTML = `<p class="collector-passport__empty">${t("account.passportLoading")}</p>`;
     if (actionsEl) actionsEl.innerHTML = "";
     try {
       const data = await fetchCollectorPassport(state.userId);
@@ -1261,8 +1263,8 @@ function setupAccountPanel() {
       await loadCollectorPassportSettings(content);
       wirePassportBodyActions(content, data);
     } catch (error) {
-      if (reliabilityEl) reliabilityEl.textContent = "Indisponible";
-      content.innerHTML = `<p class="collector-passport__empty">Impossible de charger le passeport.</p>`;
+      if (reliabilityEl) reliabilityEl.textContent = t("account.unavailable");
+      content.innerHTML = `<p class="collector-passport__empty">${t("account.passportLoadError")}</p>`;
       console.error("[collector-passport]", error);
     }
   }
@@ -1274,8 +1276,8 @@ function setupAccountPanel() {
     const actionsEl = document.getElementById("passportDialogActions");
     const titleEl = document.getElementById("passportDialogTitle");
     if (!dialog || !content || !userId) return;
-    if (titleEl) titleEl.textContent = displayName ? `Passeport · ${displayName}` : "Passeport du collectionneur";
-    content.innerHTML = `<p class="collector-passport__empty">Calcul du passeport…</p>`;
+    if (titleEl) titleEl.textContent = displayName ? t("account.passportTitleUser", { name: displayName }) : t("account.passportTitle");
+    content.innerHTML = `<p class="collector-passport__empty">${t("account.passportLoading")}</p>`;
     if (actionsEl) actionsEl.innerHTML = "";
     if (reliabilityEl) {
       reliabilityEl.textContent = "—";
@@ -1295,7 +1297,7 @@ function setupAccountPanel() {
       wirePassportActions(actionsEl, data, { isSelf });
       wirePassportBodyActions(content, data);
     } catch (error) {
-      content.innerHTML = `<p class="collector-passport__empty">${escapeHtml(error.message || "Passeport indisponible")}</p>`;
+      content.innerHTML = `<p class="collector-passport__empty">${escapeHtml(error.message || t("account.passportUnavailable"))}</p>`;
     }
   }
 
@@ -1305,7 +1307,7 @@ function setupAccountPanel() {
     if (!content) return;
     const passportData = data || {};
     const ownerId = passportData.user && passportData.user.id;
-    const name = (passportData.user && (passportData.user.displayName || passportData.user.username)) || "Joueur";
+    const name = (passportData.user && (passportData.user.displayName || passportData.user.username)) || t("account.player");
 
     content.querySelectorAll('[data-passport-action="choose-squad"]').forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1393,12 +1395,12 @@ function setupAccountPanel() {
           );
           if (!save.ok) {
             const err = await save.json().catch(() => ({}));
-            throw new Error(err.error || "Impossible d’épingler ce badge");
+            throw new Error(err.error || t("account.badgePinError"));
           }
-          toast(nextId ? "Badge épinglé" : "Badge retiré de la mise en avant");
+          toast(nextId ? t("account.badgePinned") : t("account.badgeUnpinned"));
           loadCollectorPassport();
         } catch (err) {
-          toast(err.message || "Impossible d’épingler ce badge");
+          toastError(err, "account.badgePinError");
           btn.disabled = false;
         }
       });
@@ -1452,27 +1454,32 @@ function setupAccountPanel() {
       const res = await fetch(`${API_BASE}/profile/${encodeURIComponent(state.userId)}/passport/settings`, { headers: authHeadersOnly() });
       if (!res.ok) return;
       const settings = await res.json();
-      const options = (selected) => ["private", "friends", "squad", "public"].map(value => `<option value="${value}" ${selected === value ? "selected" : ""}>${({ private: "Privé", friends: "Amis", squad: "Squad", public: "Public" })[value]}</option>`).join("");
-      const squadOptions = [`<option value="">Aucune</option>`, ...((settings.availableSquads || []).map(s => `<option value="${escapeHtml(String(s.id))}" ${String(settings.primarySquadId) === String(s.id) ? "selected" : ""}>${escapeHtml(s.name)}</option>`))].join("");
+      const options = (selected) => ["private", "friends", "squad", "public"].map(value => `<option value="${value}" ${selected === value ? "selected" : ""}>${({
+          private: t("account.passport.settings.private"),
+          friends: t("account.passport.settings.friends"),
+          squad: t("account.passport.settings.squad"),
+          public: t("account.passport.settings.public")
+        })[value]}</option>`).join("");
+      const squadOptions = [`<option value="">${t("account.passport.settings.noSquad")}</option>`, ...((settings.availableSquads || []).map(s => `<option value="${escapeHtml(String(s.id))}" ${String(settings.primarySquadId) === String(s.id) ? "selected" : ""}>${escapeHtml(s.name)}</option>`))].join("");
       const featuredOptions = [
-        `<option value="">Aucun</option>`,
+        `<option value="">${t("account.passport.settings.noBadge")}</option>`,
         ...((settings.availableFeaturedBadges || []).map((b) =>
           `<option value="${escapeHtml(String(b.id))}" ${String(settings.featuredBadgeId) === String(b.id) ? "selected" : ""}>${escapeHtml(b.label || b.code)}</option>`
         ))
       ].join("");
       content.insertAdjacentHTML("beforeend", `
-        <details class="collector-passport__settings"><summary>Réglages de visibilité</summary>
-          <p>Chaque section est filtrée par le serveur avant son envoi.</p>
-          <label>Squad principale<select data-passport-setting="primarySquadId">${squadOptions}</select></label>
-          <label>Badge épinglé<select data-passport-setting="featuredBadgeId">${featuredOptions}</select></label>
-          <label>Passeport général<select data-passport-setting="passportVisibility">${options(settings.passportVisibility)}</select></label>
-          <label>Statistiques<select data-passport-setting="statisticsVisibility">${options(settings.statisticsVisibility)}</select></label>
-          <label>Badges<select data-passport-setting="badgesVisibility">${options(settings.badgesVisibility)}</select></label>
-          <label>Activité récente<select data-passport-setting="activityVisibility">${options(settings.activityVisibility)}</select></label>
-          <label>Comparaisons<select data-passport-setting="comparisonsVisibility">${options(settings.comparisonsVisibility)}</select></label>
-          <label class="collector-passport__check"><input type="checkbox" data-passport-setting="showJoinDate" ${settings.showJoinDate ? "checked" : ""}> Afficher la date d’inscription</label>
-          <label class="collector-passport__check"><input type="checkbox" data-passport-setting="showLastActivity" ${settings.showLastActivity ? "checked" : ""}> Afficher l’activité récente</label>
-          <button type="button" class="account-save-btn" id="passportSaveSettings">Enregistrer</button>
+        <details class="collector-passport__settings"><summary>${t("account.passport.settings.title")}</summary>
+          <p>${t("account.passport.settings.note")}</p>
+          <label>${t("account.passport.settings.mainSquad")}<select data-passport-setting="primarySquadId">${squadOptions}</select></label>
+          <label>${t("account.passport.settings.featuredBadge")}<select data-passport-setting="featuredBadgeId">${featuredOptions}</select></label>
+          <label>${t("account.passport.settings.passport")}<select data-passport-setting="passportVisibility">${options(settings.passportVisibility)}</select></label>
+          <label>${t("account.passport.settings.statistics")}<select data-passport-setting="statisticsVisibility">${options(settings.statisticsVisibility)}</select></label>
+          <label>${t("account.passport.settings.badges")}<select data-passport-setting="badgesVisibility">${options(settings.badgesVisibility)}</select></label>
+          <label>${t("account.passport.settings.activity")}<select data-passport-setting="activityVisibility">${options(settings.activityVisibility)}</select></label>
+          <label>${t("account.passport.settings.comparisons")}<select data-passport-setting="comparisonsVisibility">${options(settings.comparisonsVisibility)}</select></label>
+          <label class="collector-passport__check"><input type="checkbox" data-passport-setting="showJoinDate" ${settings.showJoinDate ? "checked" : ""}> ${t("account.passport.settings.showJoinDate")}</label>
+          <label class="collector-passport__check"><input type="checkbox" data-passport-setting="showLastActivity" ${settings.showLastActivity ? "checked" : ""}> ${t("account.passport.settings.showLastActivity")}</label>
+          <button type="button" class="account-save-btn" id="passportSaveSettings">${t("account.passport.settings.save")}</button>
         </details>
       `);
       const saveBtn = content.querySelector("#passportSaveSettings");
@@ -1492,10 +1499,10 @@ function setupAccountPanel() {
         try {
           const save = await fetch(`${API_BASE}/profile/${encodeURIComponent(state.userId)}/passport/settings`, { method: "PATCH", headers: authHeaders(), body: JSON.stringify(payload) });
           if (!save.ok) throw new Error();
-          toast("Réglages du passeport enregistrés");
+          toast(t("account.passportSaved"));
           loadCollectorPassport();
         } catch {
-          toast("Impossible d’enregistrer les réglages");
+          toast(t("account.passportSaveError"));
           saveBtn.disabled = false;
         }
       });
@@ -1518,20 +1525,20 @@ function setupAccountPanel() {
 
   document.getElementById("accountRevokeShare").addEventListener("click", async () => {
     if (!state.userId) return;
-    if (!confirm("Désactiver le lien de partage ? Les liens existants cesseront de fonctionner.")) return;
+    if (!confirm(t("account.revokeShareConfirm"))) return;
     try {
       const res = await fetch(`${API_BASE}/profile/${state.userId}/share-link`, {
         method: "DELETE",
         headers: authHeadersOnly()
       });
       if (res.ok) {
-        toast("Lien de partage désactivé");
+        toast(t("account.shareRevoked"));
         document.getElementById("accountRevokeShare").style.display = "none";
       } else {
-        toast("Erreur");
+        toast(t("account.error"));
       }
     } catch {
-      toast("Erreur réseau");
+      toast(t("account.networkError"));
     }
   });
 
@@ -1567,15 +1574,13 @@ function setupAccountPanel() {
       });
       if (!res.ok) {
         ev.target.checked = !optIn;
-        toast("Impossible d'enregistrer le consentement");
+        toast(t("account.consentSaveError"));
         return;
       }
-      toast(optIn
-        ? "Participation aux stats communautaires activée"
-        : "Participation aux stats communautaires désactivée");
+      toast(optIn ? t("account.statsOptInOn") : t("account.statsOptInOff"));
     } catch {
       ev.target.checked = !optIn;
-      toast("Erreur de sauvegarde");
+      toast(t("account.savingError"));
     }
   });
 
@@ -1585,7 +1590,7 @@ function setupAccountPanel() {
     const username = document.getElementById("accountEditUsername").value.trim();
     const privacy = document.getElementById("accountPrivacy").value;
     if (!username || username.length < 2) {
-      toast("Pseudo trop court (min 2)");
+      toast(t("account.usernameTooShort"));
       return;
     }
     try {
@@ -1602,10 +1607,10 @@ function setupAccountPanel() {
         localStorage.setItem("sprite-index_privacy", privacy);
         document.getElementById("accountUsername").textContent = data.username;
         document.getElementById("accountEditSection").style.display = "none";
-        toast("Profil mis à jour !");
+        toast(t("account.profileUpdated"));
       }
     } catch {
-      toast("Erreur de sauvegarde");
+      toast(t("account.savingError"));
     }
   });
 
@@ -1634,10 +1639,10 @@ function setupAccountPanel() {
           renderAvatar(avatarDisplay, avatarUrl);
           updateTopbarAvatar();
           avatarModal.style.display = "none";
-          toast("Avatar mis à jour !");
+          toast(t("account.avatarUpdated"));
         }
       } catch {
-        toast("Erreur lors du changement d'avatar");
+        toast(t("account.avatarError"));
       }
     });
   });
@@ -1659,7 +1664,7 @@ function setupAccountPanel() {
   // Generates (and rotates) an opaque, unguessable share token server-side and
   // shares a /?share=<token> link, instead of exposing the sequential user id.
   document.getElementById("accountShare").addEventListener("click", async () => {
-    if (!state.userId) { toast("Connecte-toi d'abord"); return; }
+    if (!state.userId) { toast(t("account.loginFirst")); return; }
     let token;
     try {
       const res = await fetch(`${API_BASE}/profile/${state.userId}/share-link`, {
@@ -1667,12 +1672,12 @@ function setupAccountPanel() {
         headers: authHeaders(),
         body: JSON.stringify({})
       });
-      if (!res.ok) { toast("Impossible de générer le lien"); return; }
+      if (!res.ok) { toast(t("account.shareLinkError")); return; }
       token = (await res.json()).token;
       const revokeBtn = document.getElementById("accountRevokeShare");
       if (revokeBtn) revokeBtn.style.display = "";
     } catch {
-      toast("Erreur réseau");
+      toast(t("account.networkError"));
       return;
     }
     const url = `${webOrigin()}/?share=${token}`;
@@ -1680,7 +1685,7 @@ function setupAccountPanel() {
       try { await navigator.share({ title: `Profil de ${state.username}`, url }); } catch {}
     } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(url);
-      toast("Lien de partage copié !");
+      toast(t("account.shareLinkCopied"));
     }
   });
 
@@ -1691,12 +1696,12 @@ function setupAccountPanel() {
 
   // ── Force sync ──
   document.getElementById("accountForceSync").addEventListener("click", async () => {
-    if (!state.userId) { toast("Connecte-toi d'abord"); return; }
+    if (!state.userId) { toast(t("account.loginFirst")); return; }
     await fullSync();
     localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     document.getElementById("accountLastSync").textContent =
       new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-    toast("Synchronisation terminée !");
+    toast(t("account.syncDone"));
   });
 
   // ── Logout ──
@@ -1746,9 +1751,9 @@ function setupAccountPanel() {
       a.download = `sprite-index_export_${data.profile?.username || state.username || "user"}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      toast("Export téléchargé !");
+      toast(t("account.exportDone"));
     } catch (e) {
-      toast("Impossible d'exporter tes données. Réessaie.");
+      toast(t("account.exportError"));
     }
   });
 
@@ -1756,7 +1761,7 @@ function setupAccountPanel() {
   deleteBtn.addEventListener("click", async () => {
     if (deleteInput.value.trim().toUpperCase() !== "SUPPRIMER") return;
     deleteBtn.disabled = true;
-    deleteBtn.textContent = "Suppression...";
+    deleteBtn.textContent = t("account.deleting");
     try {
       await fetch(`${API_BASE}/profile/${state.userId}`, {
         method: "DELETE",
@@ -1802,7 +1807,7 @@ function setupAccountPanel() {
     if (!selectEl || selectEl.options.length) return;
     const off = document.createElement("option");
     off.value = "";
-    off.textContent = "Désactivé";
+    off.textContent = t("account.disabled");
     selectEl.appendChild(off);
     for (let h = 0; h < 24; h++) {
       const opt = document.createElement("option");
@@ -1925,7 +1930,7 @@ function setupAccountPanel() {
     } catch {
       refreshAccountQuickPreferences();
       notifSettingsReady = true;
-      setNotifSettingsStatus("Impossible de charger les préférences.", "err");
+      setNotifSettingsStatus(t("account.notif.loadError"), "err");
     }
   }
 
@@ -1977,7 +1982,7 @@ function setupAccountPanel() {
   async function saveNotificationSettings() {
     if (!notifSettingsReady || notifSettingsSaving || !state.userId) return;
     notifSettingsSaving = true;
-    setNotifSettingsStatus("Enregistrement…");
+    setNotifSettingsStatus(t("account.notif.saving"));
     const payload = collectNotificationSettingsPayload();
     try {
       const res = await fetch(`${API_BASE}/notifications/preferences`, {
@@ -1989,7 +1994,7 @@ function setupAccountPanel() {
       const prefs = await res.json();
       applyNotificationSettings(prefs);
       refreshAccountQuickPreferences();
-      setNotifSettingsStatus("Préférences enregistrées.", "ok");
+      setNotifSettingsStatus(t("account.notif.saved"), "ok");
       if (payload.pushEnabled && window.PushClient && typeof window.PushClient.register === "function") {
         window.PushClient.register();
       }
@@ -1997,7 +2002,7 @@ function setupAccountPanel() {
         window.PushClient.syncPreferences({ enabled: payload.pushEnabled });
       }
     } catch {
-      setNotifSettingsStatus("Erreur lors de l'enregistrement.", "err");
+      setNotifSettingsStatus(t("account.notif.saveError"), "err");
     }
     notifSettingsSaving = false;
   }
@@ -2037,7 +2042,7 @@ async function openCollectorPassportByUsername(username, displayName = "") {
       headers: typeof authHeadersOnly === "function" ? authHeadersOnly() : {}
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Passeport non accessible");
+    if (!res.ok) throw new Error(data.error || t("passport.notAccessible"));
     const userId = data.user && (data.user.numericId || data.user.id);
     const name = displayName || (data.user && (data.user.displayName || data.user.username)) || username;
     if (state.userId && userId && String(userId).match(/^\d+$/) && typeof window.openCollectorPassport === "function") {
@@ -2046,7 +2051,7 @@ async function openCollectorPassportByUsername(username, displayName = "") {
     }
     renderPublicPassportOverlay(data);
   } catch (err) {
-    toast(err.message || "Passeport indisponible");
+    toastError(err, "passport.unavailable");
     renderPublicPassportError(err.message);
   }
 }
@@ -2074,9 +2079,9 @@ function renderPublicPassportOverlay(normalized) {
       <div class="shared-view__header">
         <div class="shared-view__id">
           <p class="collector-passport__eyebrow">sprite-index</p>
-          <h1 class="shared-view__name">${escapeHtml(u.displayName || u.username || "Joueur")}</h1>
-          <p class="shared-view__sub">@${escapeHtml(u.username || "")} · Passeport public</p>
-          <p class="collector-passport__disclaimer">Collection déclarée par l’utilisateur</p>
+          <h1 class="shared-view__name">${escapeHtml(u.displayName || u.username || t("shared.defaultPlayer"))}</h1>
+          <p class="shared-view__sub">@${escapeHtml(u.username || "")} · ${t("account.passport.publicPassport")}</p>
+          <p class="collector-passport__disclaimer">${t("account.passport.userDeclared")}</p>
         </div>
       </div>
       <div class="shared-view__overall">
@@ -2084,22 +2089,22 @@ function renderPublicPassportOverlay(normalized) {
           <span class="shared-view__overall-pct">${rate != null ? `${escapeHtml(String(rate))} %` : "—"}</span>
           <span class="shared-view__overall-count">${
             stats.ownedVariantCount != null && stats.releasedVariantCount != null
-              ? `${stats.ownedVariantCount} / ${stats.releasedVariantCount} variantes`
+              ? t("account.passport.variantCount", { owned: stats.ownedVariantCount, total: stats.releasedVariantCount })
               : ""
           }</span>
         </div>
       </div>
       <div class="shared-view__section">
-        ${squad ? `<p>Squad : ${escapeHtml(squad)}</p>` : ""}
-        ${badge ? `<p>Badge : ${escapeHtml(badge)}</p>` : ""}
-        ${stats.completedEventCount != null ? `<p>${stats.completedEventCount} événements complétés</p>` : ""}
+        ${squad ? `<p>${t("account.passport.squadLine", { name: escapeHtml(squad) })}</p>` : ""}
+        ${badge ? `<p>${t("account.passport.badgeLine", { label: escapeHtml(badge) })}</p>` : ""}
+        ${stats.completedEventCount != null ? `<p>${Number(stats.completedEventCount) === 1 ? t("account.passport.eventsShareOne") : t("account.passport.eventsShareMany", { count: stats.completedEventCount })}</p>` : ""}
       </div>
       <div class="collector-passport__actions public-passport-view__actions">
         ${actions.filter((a) => actionLabels[a]).map((a) =>
           `<button type="button" class="ghost-button" data-public-passport-action="${escapeHtml(a)}">${actionLabels[a]}</button>`
         ).join("")}
       </div>
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir sprite-index</a>
+      <a href="${webOrigin()}/" class="shared-view__cta">${t("account.passport.openApp")}</a>
     </div>`;
   document.body.appendChild(overlay);
   overlay.querySelectorAll("[data-public-passport-action]").forEach((btn) => {
@@ -2107,15 +2112,15 @@ function renderPublicPassportOverlay(normalized) {
       const action = btn.dataset.publicPassportAction;
       const id = u.numericId;
       if (action === "add_friend") {
-        if (!state.userId) { toast("Connecte-toi pour ajouter un ami."); return; }
+        if (!state.userId) { toast(t("account.loginToAddFriend")); return; }
         if (typeof sendFriendRequest === "function" && id) await sendFriendRequest(id);
       } else if (action === "compare_collections") {
-        if (!state.userId) { toast("Connecte-toi pour comparer."); return; }
+        if (!state.userId) { toast(t("account.loginToCompare")); return; }
         if (typeof compareWithFriend === "function" && id) {
           await compareWithFriend(id, u.displayName || u.username, { source: "passport" });
         }
       } else if (action === "view_public_collection") {
-        toast("Collection visible via le passeport public.");
+        toast(t("account.visibleViaPassport"));
       }
     });
   });
@@ -2127,9 +2132,9 @@ function renderPublicPassportError(message) {
   overlay.className = "shared-view public-passport-view";
   overlay.innerHTML = `
     <div class="shared-view__card shared-view__card--error">
-      <h1 class="shared-view__name">Passeport indisponible</h1>
-      <p class="shared-view__sub">${escapeHtml(message || "Ce passeport n’est pas accessible.")}</p>
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir sprite-index</a>
+      <h1 class="shared-view__name">${escapeHtml(t("passport.unavailable"))}</h1>
+      <p class="shared-view__sub">${escapeHtml(message ? t(message) : t("passport.notAccessibleBody"))}</p>
+      <a href="${webOrigin()}/" class="shared-view__cta">${t("account.passport.openApp")}</a>
     </div>`;
   document.body.appendChild(overlay);
 }

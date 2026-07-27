@@ -7,19 +7,59 @@
 const { canViewCollection, getVisibility } = require("./auth");
 const { pool } = require("./db");
 const pushService = require("../push-service");
+const notifI18n = require("./notification-i18n");
+const { resolveNotificationLanguage } = require("./i18n");
 
 const PUBLIC_SQUAD_PROFILE = new Set(["public", "squad", "squad_only"]);
+
+function buildSquadPushPayload(lang, params = {}) {
+  const locale = resolveNotificationLanguage(lang, null);
+  const title = notifI18n.tNotif("notifications.squad_activity.title", {}, locale)
+    || (locale === "en" ? "SPRITE-INDEX — Squad" : "SPRITE-INDEX — Escouade");
+  const template = params.activityTemplate || "default";
+  const bodyKey = `notifications.squad_activity.${template}.body`;
+  const localized = {
+    ...params,
+    template,
+    activityTemplate: template,
+    actionLabel: locale === "en"
+      ? (params.actionLabelEn || params.actionLabel)
+      : (params.actionLabelFr || params.actionLabel),
+    spriteName: locale === "en"
+      ? (params.spriteNameEn || params.spriteName)
+      : (params.spriteNameFr || params.spriteName),
+    friendName: params.friendName
+      || notifI18n.tNotif("notifications.fallback.player", {}, locale)
+      || (locale === "en" ? "A player" : "Un joueur")
+  };
+  const interpolateParams = notifI18n.buildInterpolateParams("squad_activity", localized, locale);
+  const body = notifI18n.tNotif(bodyKey, interpolateParams, locale) || "";
+  return {
+    title,
+    body,
+    icon: "/icons/icon-192x192.png",
+    url: params.url || (params.squadId ? `/?squad=${params.squadId}` : "/")
+  };
+}
+
+async function preferredLanguageForUser(userId) {
+  const res = await pool.query(
+    "SELECT preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL",
+    [userId]
+  );
+  return resolveNotificationLanguage(res.rows[0]?.preferred_language, null);
+}
 
 // `notifySquadMembers` is intentionally broad for non-collection activity.
 // Collection activity, however, must only reach members that can currently
 // view the actor's collection.  Sending selected recipients directly keeps the
 // existing push preference gates while avoiding a broad squad notification.
-async function notifySelectedSquadMembers(squadId, recipientIds, message) {
+async function notifySelectedSquadMembers(squadId, recipientIds, messageParams) {
   const ids = [...new Set((recipientIds || []).map(Number).filter(Number.isInteger))];
-  if (!squadId || !ids.length || !message) return;
+  if (!squadId || !ids.length || !messageParams) return;
 
   const recipients = await pool.query(
-    `SELECT sm.user_id
+    `SELECT sm.user_id, u.preferred_language
      FROM squad_members sm
      JOIN users u ON u.id = sm.user_id
      WHERE sm.squad_id = $1
@@ -31,13 +71,50 @@ async function notifySelectedSquadMembers(squadId, recipientIds, message) {
     [squadId, ids]
   );
 
-  await Promise.all(recipients.rows.map(({ user_id: recipientId }) =>
-    pushService.sendNotificationToUser(pool, recipientId, message)
-      .catch(err => console.error("[squad-activity] selected push failed:", err))
-  ));
+  await Promise.all(recipients.rows.map(async ({ user_id: recipientId, preferred_language: preferredLanguage }) => {
+    const payload = buildSquadPushPayload(preferredLanguage, {
+      ...messageParams,
+      squadId
+    });
+    return pushService.sendNotificationToUser(pool, recipientId, payload)
+      .catch(err => console.error("[squad-activity] selected push failed:", err));
+  }));
 }
 
-async function logSquadEvent({ squadId, userId, type, action, spriteId, metadata = {}, message, url, recipientIds = null }) {
+async function notifySquadMembersLocalized(squadId, excludeUserId, messageParams) {
+  const result = await pool.query(
+    `SELECT sm.user_id, u.preferred_language
+     FROM squad_members sm
+     JOIN users u ON u.id = sm.user_id
+     WHERE sm.squad_id = $1
+       AND sm.status = 'active'
+       AND sm.user_id <> $2
+       AND u.deleted_at IS NULL
+       AND u.push_enabled = TRUE
+       AND u.push_pref_squad_activity = TRUE`,
+    [squadId, excludeUserId || 0]
+  );
+  await Promise.all(result.rows.map(({ user_id: recipientId, preferred_language: preferredLanguage }) => {
+    const payload = buildSquadPushPayload(preferredLanguage, {
+      ...messageParams,
+      squadId
+    });
+    return pushService.sendNotificationToUser(pool, recipientId, payload)
+      .catch(err => console.error("[squad-activity] push failed:", err));
+  }));
+}
+
+async function logSquadEvent({
+  squadId,
+  userId,
+  type,
+  action,
+  spriteId,
+  metadata = {},
+  messageParams = null,
+  url,
+  recipientIds = null
+}) {
   if (!squadId || !type) return;
   try {
     await pool.query(
@@ -46,16 +123,15 @@ async function logSquadEvent({ squadId, userId, type, action, spriteId, metadata
       [squadId, userId || null, spriteId || null, type, action || null, JSON.stringify(metadata || {})]
     );
 
-    if (message) {
-      const payload = {
-        title: "SPRITE-INDEX — Escouade",
-        body: message,
-        icon: "/icons/icon-192x192.png",
-        url: url || `/?squad=${squadId}`
+    if (messageParams) {
+      const params = {
+        ...messageParams,
+        url: url || messageParams.url || `/?squad=${squadId}`,
+        squadId
       };
       const send = Array.isArray(recipientIds)
-        ? notifySelectedSquadMembers(squadId, recipientIds, payload)
-        : pushService.notifySquadMembers(pool, squadId, userId, payload);
+        ? notifySelectedSquadMembers(squadId, recipientIds, params)
+        : notifySquadMembersLocalized(squadId, userId, params);
       send.catch(err => console.error("[squad-activity] push failed:", err));
     }
   } catch (err) {
@@ -75,12 +151,11 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
       "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
       [userId]
     );
-    const username = userResult.rows[0]?.username || "Un joueur";
+    const username = userResult.rows[0]?.username || null;
 
-    const spriteResult = await pool.query("SELECT name FROM sprites WHERE id = $1", [spriteId]);
-    const spriteName = spriteResult.rows[0]?.name || spriteId;
-
-    const actionLabel = action === "owned" ? "a obtenu" : "a repéré";
+    const spriteResult = await pool.query("SELECT name, official_name FROM sprites WHERE id = $1", [spriteId]);
+    const spriteNameFr = spriteResult.rows[0]?.name || spriteId;
+    const spriteNameEn = spriteResult.rows[0]?.official_name || spriteNameFr;
 
     for (const row of squads.rows) {
       const squadId = row.squad_id;
@@ -100,23 +175,27 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
       const metadata = {
         variantId,
         spriteId,
-        spriteName,
-        source: action === "owned" ? "owned" : "spotted"
+        action,
+        username
       };
-
-      // Do not expose whether other members own the variant: that is a
-      // collective statistic and may be derived from collections hidden from
-      // an otherwise-authorized recipient.
-      const message = `${username} ${actionLabel} ${spriteName}`;
 
       await logSquadEvent({
         squadId,
         userId,
         type: "collection_update",
         action,
-        spriteId: variantId,
+        spriteId,
         metadata,
-        message,
+        messageParams: {
+          activityTemplate: "collection",
+          friendName: username,
+          spriteName: spriteNameFr,
+          // Recipients re-resolve actionLabel by lang in buildSquadPushPayload via params:
+          actionLabelFr: action === "owned" ? "a obtenu" : "a repéré",
+          actionLabelEn: action === "owned" ? "obtained" : "spotted",
+          spriteNameFr,
+          spriteNameEn
+        },
         url: `/?squad=${squadId}`,
         recipientIds: visibleRecipientIds
       });
@@ -133,14 +212,17 @@ async function logSquadMemberJoined(squadId, userId) {
     "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
     [userId]
   );
-  const username = userResult.rows[0]?.username || "Un joueur";
+  const username = userResult.rows[0]?.username || null;
   await logSquadEvent({
     squadId,
     userId,
     type: "member_joined",
     action: "joined",
     metadata: {},
-    message: `${username} a rejoint la squad.`,
+    messageParams: {
+      activityTemplate: "member_joined",
+      friendName: username
+    },
     url: `/?squad=${squadId}`
   });
 }
@@ -181,7 +263,11 @@ async function logSquadFriendship(userA, userB) {
           usernameA: uA.username,
           usernameB: uB.username
         },
-        message: `${uA.username} et ${uB.username} sont devenus amis.`,
+        messageParams: {
+          activityTemplate: "friendship",
+          usernameA: uA.username,
+          usernameB: uB.username
+        },
         url: `/?squad=${row.squad_id}`
       });
     }
@@ -208,7 +294,10 @@ async function logSquadCompletionMilestone(squadId, newRate) {
           type: "milestone",
           action: "completion",
           metadata: { completionRate: newRate, threshold },
-          message: `La squad a atteint ${threshold} % de complétion.`,
+          messageParams: {
+            activityTemplate: "milestone",
+            threshold
+          },
           url: `/?squad=${squadId}`
         });
         // Log only the highest newly crossed threshold per update.
@@ -225,14 +314,18 @@ async function logSquadGoalCreated(squadId, userId, goalName) {
     "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
     [userId]
   );
-  const username = userResult.rows[0]?.username || "Un joueur";
+  const username = userResult.rows[0]?.username || null;
   await logSquadEvent({
     squadId,
     userId,
     type: "goal_created",
     action: "created",
     metadata: { goalName },
-    message: `${username} a créé un objectif collectif${goalName ? ` : ${goalName}` : ""}.`,
+    messageParams: {
+      activityTemplate: "goal_created",
+      friendName: username,
+      goalTitle: goalName || null
+    },
     url: `/?squad=${squadId}`
   });
 }
@@ -242,7 +335,7 @@ async function logSquadGoalCompleted(squadId, userId, goalName, variantId) {
     "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
     [userId]
   );
-  const username = userResult.rows[0]?.username || "Un joueur";
+  const username = userResult.rows[0]?.username || null;
   const members = await pool.query(
     `SELECT sm.user_id
      FROM squad_members sm
@@ -266,7 +359,11 @@ async function logSquadGoalCompleted(squadId, userId, goalName, variantId) {
     type: "goal_completed",
     action: "completed",
     metadata: { goalName, variantId },
-    message: `Objectif collectif${goalName ? ` : ${goalName}` : ""} atteint par ${username}.`,
+    messageParams: {
+      activityTemplate: "goal_completed",
+      friendName: username,
+      goalTitle: goalName || null
+    },
     url: `/?squad=${squadId}`,
     recipientIds
   });
@@ -279,5 +376,6 @@ module.exports = {
   logSquadFriendship,
   logSquadCompletionMilestone,
   logSquadGoalCreated,
-  logSquadGoalCompleted
+  logSquadGoalCompleted,
+  buildSquadPushPayload
 };

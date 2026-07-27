@@ -26,17 +26,17 @@ const COMMUNITY_DROP_TABLE = [
 ];
 
 const UNRELEASED_SPRITES = [
-  { name: "Pollo Sprite", rarity: "Mythique", rate: "0 %", status: "Non sorti selon le catalogue actuel" },
-  { name: "John Wick Sprite", rarity: "Mythique", rate: "0 %", status: "Non sorti" }
+  { name: "Pollo Sprite", rarity: "Mythique", rate: "0 %", statusKey: "community.statusUnreleased" },
+  { name: "John Wick Sprite", rarity: "Mythique", rate: "0 %", statusKey: "community.statusUnreleasedSimple" }
 ];
 
 const BASE_SPRITE_RANKING = [
-  { rank: 1, label: "le plus rare", name: "Zero Point Sprite", rate: "0,00093 %" },
+  { rank: 1, labelKey: "community.rankRarest", name: "Zero Point Sprite", rate: "0,00093 %" },
   { rank: 2, name: "Grim Sprite", rate: "0,09 %" },
   { rank: 3, name: "Batman Sprite", rate: "2,23 %" },
-  { rank: 4, label: "ex æquo", names: ["Dream Sprite", "Punk Sprite", "Boss Sprite", "Seven Sprite"], rate: "6,98 %" },
-  { rank: 4, label: "ex æquo", names: ["Aura Sprite", "Striker Sprite"], rate: "6,98 %" },
-  { rank: 5, label: "ex æquo", names: ["Duck Sprite", "Ghost Sprite", "Demon Sprite", "King Sprite"], rate: "9 %" }
+  { rank: 4, labelKey: "community.rankTied", names: ["Dream Sprite", "Punk Sprite", "Boss Sprite", "Seven Sprite"], rate: "6,98 %" },
+  { rank: 4, labelKey: "community.rankTied", names: ["Aura Sprite", "Striker Sprite"], rate: "6,98 %" },
+  { rank: 5, labelKey: "community.rankTied", names: ["Duck Sprite", "Ghost Sprite", "Demon Sprite", "King Sprite"], rate: "9 %" }
 ];
 
 function formatCommunityPercent(rate) {
@@ -70,7 +70,7 @@ function renderCommunityStats() {
       <td class="community-table__name">${escape(row.name)}</td>
       <td>${escape(row.rarity)}</td>
       <td class="community-table__rate">${escape(row.rate)}</td>
-      <td>${escape(row.status)}</td>
+      <td>${escape(t(row.statusKey))}</td>
     </tr>
   `).join("");
 
@@ -78,7 +78,8 @@ function renderCommunityStats() {
     const names = row.names
       ? row.names.map((n) => escape(n)).join("<br>")
       : escape(row.name);
-    const label = row.label ? ` — ${escape(row.label)}` : "";
+    const labelText = row.labelKey ? t(row.labelKey) : "";
+    const label = labelText ? ` — ${escape(labelText)}` : "";
     return `
       <tr>
         <td class="community-table__rank">${row.rank}${label}</td>
@@ -90,13 +91,13 @@ function renderCommunityStats() {
 
   container.innerHTML = `
     <div class="stats-module community-module">
-      <h3 class="stats-module__title">Tous les Sprites et leurs variantes sorties</h3>
+      <h3 class="stats-module__title">${escape(t("community.dropTableTitle"))}</h3>
       <div class="community-table-wrapper">
         <table class="community-table">
           <thead>
             <tr>
               <th>Sprite</th>
-              <th>Rareté de base</th>
+              <th>${escape(t("community.thBaseRarity"))}</th>
               <th>Base</th>
               <th>Gold</th>
               <th>Gummy</th>
@@ -111,25 +112,25 @@ function renderCommunityStats() {
       </div>
 
       <div class="community-legend">
-        <p><strong>Légende importante</strong></p>
+        <p><strong>${escape(t("community.legendTitle"))}</strong></p>
         <ul>
-          <li><span class="community-legend__dash">—</span> : variante non sortie pour ce Sprite.</li>
-          <li><span class="community-legend__zero">0 %*</span> : le Sprite ou la variante est sorti, mais Fortnite.GG n’affiche actuellement aucun taux mesuré dans ce tableau.</li>
-          <li>Un taux de 0 % ne signifie donc pas forcément que le Sprite est impossible à obtenir.</li>
-          <li>Les taux peuvent correspondre aux Sprite Chests et ne couvrent pas forcément les apparitions dans le monde, les Relic Chests, les quêtes, les boss ou les événements.</li>
-          <li>Pour les variantes Gold, Gummy, Galaxy et Holofoil, le pourcentage est celui de la variante elle-même, pas une probabilité conditionnelle après avoir trouvé le Sprite de base.</li>
+          <li><span class="community-legend__dash">—</span>${escape(t("community.legendDash"))}</li>
+          <li><span class="community-legend__zero">0 %*</span>${escape(t("community.legendZero"))}</li>
+          <li>${escape(t("community.legendZeroNote"))}</li>
+          <li>${escape(t("community.legendRates"))}</li>
+          <li>${escape(t("community.legendVariants"))}</li>
         </ul>
       </div>
 
-      <h4 class="community-subtitle">Sprites répertoriés, mais pas encore sortis</h4>
+      <h4 class="community-subtitle">${escape(t("community.unreleasedTitle"))}</h4>
       <div class="community-table-wrapper">
         <table class="community-table community-table--unreleased">
           <thead>
             <tr>
               <th>Sprite</th>
-              <th>Rareté</th>
-              <th>Taux</th>
-              <th>Statut</th>
+              <th>${escape(t("community.thRarity"))}</th>
+              <th>${escape(t("community.thRate"))}</th>
+              <th>${escape(t("community.thStatus"))}</th>
             </tr>
           </thead>
           <tbody>
@@ -140,14 +141,14 @@ function renderCommunityStats() {
     </div>
 
     <div class="stats-module community-module">
-      <h3 class="stats-module__title">Classement des Sprites de base avec un taux connu</h3>
+      <h3 class="stats-module__title">${escape(t("community.rankingTitle"))}</h3>
       <div class="community-table-wrapper">
         <table class="community-table community-table--ranking">
           <thead>
             <tr>
-              <th>Rang</th>
+              <th>${escape(t("community.thRank"))}</th>
               <th>Sprite</th>
-              <th>Taux observé</th>
+              <th>${escape(t("community.thObservedRate"))}</th>
             </tr>
           </thead>
           <tbody>
@@ -158,9 +159,9 @@ function renderCommunityStats() {
     </div>
 
     <div class="stats-module community-module community-ownership">
-      <h3 class="stats-module__title">Taux de possession SPRITE-INDEX</h3>
+      <h3 class="stats-module__title">${escape(t("community.ownershipTitle"))}</h3>
       <div id="communityOwnershipDetail">
-        <p class="community-ownership__note">Chargement des statistiques SPRITE-INDEX…</p>
+        <p class="community-ownership__note">${escape(t("community.ownershipLoading"))}</p>
       </div>
     </div>
   `;
@@ -195,24 +196,24 @@ function loadCommunityOwnership() {
           </tr>
         `).join("");
       detail.innerHTML = `
-        <p class="community-ownership__note">Collections SPRITE-INDEX actives : ${total}</p>
+        <p class="community-ownership__note">${escape(t("community.ownershipActive", { count: total }))}</p>
         <div class="community-table-wrapper">
           <table class="community-table">
             <thead>
               <tr>
                 <th>Sprite</th>
-                <th>Possédé par</th>
-                <th>Collections</th>
+                <th>${escape(t("community.thOwnedBy"))}</th>
+                <th>${escape(t("community.thCollections"))}</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
-        <p class="community-ownership__note">SPRITE-INDEX ne dispose pas des données de l’ensemble des joueurs Fortnite.</p>
+        <p class="community-ownership__note">${escape(t("community.ownershipDisclaimer"))}</p>
       `;
     })
     .catch((err) => {
-      detail.innerHTML = `<p class="community-ownership__note">Impossible de charger les statistiques SPRITE-INDEX.</p>`;
+      detail.innerHTML = `<p class="community-ownership__note">${escape(t("community.ownershipError"))}</p>`;
       console.error("[community-ownership]", err);
     });
 }

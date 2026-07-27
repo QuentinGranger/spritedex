@@ -58,7 +58,91 @@ const TRANSLATIONS = Object.freeze({
     "notifications.wanted_event_ending_soon.body":
       "Il vous manque encore {remainingCount} {remainingLabel}.",
     "notifications.wanted_event_ending_soon.empty.body":
-      "Il vous manque encore des variantes prioritaires."
+      "Il vous manque encore des variantes prioritaires.",
+
+    "notifications.friend_request_received.title":
+      "Nouvelle demande d'ami",
+    "notifications.friend_request_received.body":
+      "{friendName} vous a envoyé une demande d'ami.",
+
+    "notifications.friend_removed.title":
+      "Amitié terminée",
+    "notifications.friend_removed.body":
+      "{friendName} a supprimé votre amitié.",
+
+    "notifications.friend_collection_updated.title":
+      "Collection mise à jour",
+    "notifications.friend_collection_updated.body":
+      "{friendName} a mis à jour sa collection.",
+
+    "notifications.squad_member_joined.title":
+      "Nouveau membre",
+    "notifications.squad_member_joined.body":
+      "{friendName} a rejoint l'escouade {squadName}.",
+
+    "notifications.goal_completed.title":
+      "Objectif atteint",
+    "notifications.goal_completed.body":
+      "Objectif{goalTitleSuffix} atteint par {friendName}.",
+    "notifications.goal_completed.titled.body":
+      "Objectif : {goalTitle} atteint par {friendName}.",
+
+    "notifications.badge_unlocked.title":
+      "Nouveau badge débloqué",
+    "notifications.badge_unlocked.body":
+      "{badgeLabel}",
+    "notifications.badge_unlocked.batch.title":
+      "Nouveaux badges débloqués",
+    "notifications.badge_unlocked.batch.body":
+      "Vous avez débloqué {count} badges : {badgeList}.",
+
+    "notifications.passport_catalogue_updated.title":
+      "Le catalogue a été mis à jour",
+    "notifications.passport_catalogue_updated.body":
+      "Votre complétion passe de {fromRate} % à {toRate} %. Renseignez les nouvelles variantes.",
+    "notifications.passport_catalogue_updated.single.title":
+      "Une nouvelle variante a été ajoutée",
+    "notifications.passport_catalogue_updated.single.body":
+      "Votre complétion passe de {fromRate} % à {toRate} %. Renseignez les nouvelles variantes.",
+
+    "notifications.news_article.title":
+      "Nouvelle actu SPRITE-INDEX",
+    "notifications.news_article.body":
+      "{articleTitle}",
+    "notifications.news_article.batch.title":
+      "{count} nouvelles actus",
+    "notifications.news_article.batch.body":
+      "{articleTitle}",
+
+    "notifications.squad_activity.title":
+      "SPRITE-INDEX — Escouade",
+    "notifications.squad_activity.member_joined.body":
+      "{friendName} a rejoint la squad.",
+    "notifications.squad_activity.friendship.body":
+      "{usernameA} et {usernameB} sont devenus amis.",
+    "notifications.squad_activity.milestone.body":
+      "La squad a atteint {threshold} % de complétion.",
+    "notifications.squad_activity.goal_created.body":
+      "{friendName} a créé un objectif collectif{goalTitleSuffix}.",
+    "notifications.squad_activity.goal_completed.body":
+      "Objectif collectif{goalTitleSuffix} atteint par {friendName}.",
+    "notifications.squad_activity.collection.body":
+      "{friendName} {actionLabel} {spriteName}.",
+
+    "notifications.actions.compare": "Comparer",
+    "notifications.actions.open": "Ouvrir",
+    "notifications.actions.view": "Voir",
+    "notifications.actions.viewPassport": "Voir mon passeport",
+    "notifications.actions.updateCollection": "Mettre à jour ma collection",
+    "notifications.actions.viewFriends": "Voir les amis",
+    "notifications.fallback.someone": "Quelqu'un",
+    "notifications.fallback.member": "Un membre",
+    "notifications.fallback.player": "Un joueur",
+    "notifications.fallback.article": "Un article vient d'être ajouté",
+    "notifications.fallback.articles": "{count} articles sur les sprites",
+    "notifications.action.obtained": "a obtenu",
+    "notifications.action.spotted": "a repéré",
+    "notifications.hidden.title": "Notification masquée",
   }),
 
   en: Object.freeze({
@@ -109,7 +193,91 @@ const TRANSLATIONS = Object.freeze({
     "notifications.wanted_event_ending_soon.body":
       "You still need {remainingCount} {remainingLabel}.",
     "notifications.wanted_event_ending_soon.empty.body":
-      "You still need priority variants from this event."
+      "You still need priority variants from this event.",
+
+    "notifications.friend_request_received.title":
+      "New friend request",
+    "notifications.friend_request_received.body":
+      "{friendName} sent you a friend request.",
+
+    "notifications.friend_removed.title":
+      "Friendship ended",
+    "notifications.friend_removed.body":
+      "{friendName} removed your friendship.",
+
+    "notifications.friend_collection_updated.title":
+      "Collection updated",
+    "notifications.friend_collection_updated.body":
+      "{friendName} updated their collection.",
+
+    "notifications.squad_member_joined.title":
+      "New member",
+    "notifications.squad_member_joined.body":
+      "{friendName} joined the squad {squadName}.",
+
+    "notifications.goal_completed.title":
+      "Goal completed",
+    "notifications.goal_completed.body":
+      "Goal{goalTitleSuffix} completed by {friendName}.",
+    "notifications.goal_completed.titled.body":
+      "Goal: {goalTitle} completed by {friendName}.",
+
+    "notifications.badge_unlocked.title":
+      "New badge unlocked",
+    "notifications.badge_unlocked.body":
+      "{badgeLabel}",
+    "notifications.badge_unlocked.batch.title":
+      "New badges unlocked",
+    "notifications.badge_unlocked.batch.body":
+      "You've unlocked {count} badges: {badgeList}.",
+
+    "notifications.passport_catalogue_updated.title":
+      "The catalogue was updated",
+    "notifications.passport_catalogue_updated.body":
+      "Your completion went from {fromRate}% to {toRate}%. Fill in the new variants.",
+    "notifications.passport_catalogue_updated.single.title":
+      "A new variant was added",
+    "notifications.passport_catalogue_updated.single.body":
+      "Your completion went from {fromRate}% to {toRate}%. Fill in the new variants.",
+
+    "notifications.news_article.title":
+      "New SPRITE-INDEX news",
+    "notifications.news_article.body":
+      "{articleTitle}",
+    "notifications.news_article.batch.title":
+      "{count} new articles",
+    "notifications.news_article.batch.body":
+      "{articleTitle}",
+
+    "notifications.squad_activity.title":
+      "SPRITE-INDEX — Squad",
+    "notifications.squad_activity.member_joined.body":
+      "{friendName} joined the squad.",
+    "notifications.squad_activity.friendship.body":
+      "{usernameA} and {usernameB} became friends.",
+    "notifications.squad_activity.milestone.body":
+      "The squad reached {threshold}% completion.",
+    "notifications.squad_activity.goal_created.body":
+      "{friendName} created a collective goal{goalTitleSuffix}.",
+    "notifications.squad_activity.goal_completed.body":
+      "Collective goal{goalTitleSuffix} completed by {friendName}.",
+    "notifications.squad_activity.collection.body":
+      "{friendName} {actionLabel} {spriteName}.",
+
+    "notifications.actions.compare": "Compare",
+    "notifications.actions.open": "Open",
+    "notifications.actions.view": "View",
+    "notifications.actions.viewPassport": "View my passport",
+    "notifications.actions.updateCollection": "Update my collection",
+    "notifications.actions.viewFriends": "View friends",
+    "notifications.fallback.someone": "Someone",
+    "notifications.fallback.member": "A member",
+    "notifications.fallback.player": "A player",
+    "notifications.fallback.article": "A new article was added",
+    "notifications.fallback.articles": "{count} sprite articles",
+    "notifications.action.obtained": "obtained",
+    "notifications.action.spotted": "spotted",
+    "notifications.hidden.title": "Hidden notification",
   })
 });
 
@@ -234,7 +402,8 @@ function pct(value) {
 function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
   const p = rawParams && typeof rawParams === "object" ? { ...rawParams } : {};
   const locale = String(lang || "fr").toLowerCase().slice(0, 2);
-  const friendName = p.friendName || FALLBACK_NAME[locale] || FALLBACK_NAME.fr;
+  const friendName = p.friendName || p.actorName || p.ownerName || p.joinerName
+    || FALLBACK_NAME[locale] || FALLBACK_NAME.fr;
   const variantLabel = formatVariantDisplay(p, locale);
 
   const out = {
@@ -250,8 +419,22 @@ function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
     totalVariants: p.totalVariants != null ? Number(p.totalVariants) : undefined,
     remainingCount: p.remainingCount != null ? Number(p.remainingCount) : undefined,
     availableUntil: p.availableUntilFormatted || p.availableUntil || undefined,
-    when: p.when || undefined
+    when: p.when || undefined,
+    goalTitle: p.goalTitle || undefined,
+    goalTitleSuffix: p.goalTitle ? (locale === "en" ? `: ${p.goalTitle}` : ` : ${p.goalTitle}`) : "",
+    badgeLabel: p.badgeLabel || (Array.isArray(p.badgeLabels) ? p.badgeLabels[0] : null) || undefined,
+    badgeList: p.badgeList || (Array.isArray(p.badgeLabels) ? p.badgeLabels.join(", ") : undefined),
+    fromRate: p.fromRate != null ? String(p.fromRate).replace(".", ",") : undefined,
+    toRate: p.toRate != null ? String(p.toRate).replace(".", ",") : undefined,
+    articleTitle: p.articleTitle || undefined,
+    usernameA: p.usernameA || undefined,
+    usernameB: p.usernameB || undefined,
+    threshold: p.threshold != null ? String(p.threshold) : undefined,
+    actionLabel: p.actionLabel || undefined,
+    spriteName: p.spriteName || undefined
   };
+  if (locale === "en" && out.fromRate) out.fromRate = String(p.fromRate);
+  if (locale === "en" && out.toRate) out.toRate = String(p.toRate);
 
   if (type === "wanted_event_ending_soon") {
     const count = Number(out.remainingCount) || 0;
@@ -267,7 +450,6 @@ function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
 
 function resolveTemplate(type, params = {}) {
   if (params.template && params.template !== "default") return params.template;
-  // Infer from params when template omitted.
   if (type === "friend_acquired_missing_variant") {
     if (Number(params.count) > 1) return "batch";
     if (params.priorityLevel === "strong" || params.recipientCollectionStatus === "priority") {
@@ -284,6 +466,11 @@ function resolveTemplate(type, params = {}) {
   if (type === "wanted_event_ending_soon" && !(Number(params.remainingCount) > 0)) {
     return "empty";
   }
+  if (type === "badge_unlocked" && Number(params.count) > 1) return "batch";
+  if (type === "passport_catalogue_updated" && Number(params.addedVariantCount) === 1) return "single";
+  if (type === "news_article" && Number(params.count) > 1) return "batch";
+  if (type === "goal_completed" && params.goalTitle) return "titled";
+  if (type === "squad_activity" && params.activityTemplate) return params.activityTemplate;
   return "default";
 }
 
@@ -340,6 +527,13 @@ async function enrichParamsWithLocalizedCatalog(pool, translationParams = {}, la
   return params;
 }
 
+function tNotif(key, params = {}, lang = "fr") {
+  const dict = getTranslations(lang);
+  const tpl = dict[key];
+  if (tpl == null) return null;
+  return interpolate(tpl, params);
+}
+
 module.exports = {
   TRANSLATIONS,
   getTranslations,
@@ -351,5 +545,6 @@ module.exports = {
   buildInterpolateParams,
   resolveTemplate,
   renderTranslatedMessage,
+  tNotif,
   enrichParamsWithLocalizedCatalog
 };

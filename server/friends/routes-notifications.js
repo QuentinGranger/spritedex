@@ -17,6 +17,7 @@ const notifPrefs = require("../notification-preferences");
 const squadCompletion = require("../notification-squad-completion");
 const catalog = require("../notification-catalog");
 const security = require("../../security");
+const { resolveLocale, rememberPreferredLanguage } = require("../i18n");
 
 const notificationPreferenceLimiter = security.rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -215,13 +216,18 @@ app.get("/api/notifications", async (req, res) => {
       return res.status(400).json({ error: "cursor invalide" });
     }
 
+    const acceptLanguage = req.get("accept-language");
+    const lang = resolveLocale(acceptLanguage);
+    await rememberPreferredLanguage(pool, reqUser, acceptLanguage).catch(() => null);
+
     const page = await pushService.getNotifications(pool, reqUser, {
       limit,
       offset,
       cursor: cursor || null,
       unreadOnly,
       category: category || null,
-      filter: filter || null
+      filter: filter || null,
+      lang
     });
 
     res.json({

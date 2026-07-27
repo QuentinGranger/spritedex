@@ -1,12 +1,26 @@
 const MAIN_VIEWS = ["swipe", "checklist", "missing", "stats", "history", "social"];
 const DESKTOP_VIEW_COPY = {
-  swipe: ["Swipe", "Explorez, classez et complétez votre collection de sprites."],
-  checklist: ["Checklist", "Affinez votre collection, variante par variante."],
-  missing: ["Manquants", "Organisez les sprites et variantes à trouver."],
-  stats: ["Statistiques", "Suivez votre progression et vos collections."],
-  history: ["Historique", "Retrouvez les évolutions de votre collection."],
-  social: ["Social", "Comparez, partagez et jouez avec votre squad."]
+  swipe: ["nav.swipe", "view.swipeSubtitle"],
+  checklist: ["nav.checklist", "view.checklistSubtitle"],
+  missing: ["nav.missing", "view.missingSubtitle"],
+  stats: ["view.statsTitle", "view.statsSubtitle"],
+  history: ["nav.history", "view.historySubtitle"],
+  social: ["nav.social", "view.socialSubtitle"]
 };
+
+function renderDesktopViewHeading(view) {
+  const copy = DESKTOP_VIEW_COPY[view] || DESKTOP_VIEW_COPY.swipe;
+  const title = document.getElementById("desktopViewTitle");
+  const subtitle = document.getElementById("desktopViewSubtitle");
+  if (title) {
+    title.dataset.i18n = copy[0];
+    title.textContent = t(copy[0]);
+  }
+  if (subtitle) {
+    subtitle.dataset.i18n = copy[1];
+    subtitle.textContent = t(copy[1]);
+  }
+}
 
 function renderAll() {
   renderSummary();
@@ -31,14 +45,6 @@ function scrollActiveTabIntoView() {
   if (tabRect.left < navRect.left + 8 || tabRect.right > navRect.right - 8) {
     tab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }
-}
-
-function renderDesktopViewHeading(view) {
-  const copy = DESKTOP_VIEW_COPY[view] || DESKTOP_VIEW_COPY.swipe;
-  const title = document.getElementById("desktopViewTitle");
-  const subtitle = document.getElementById("desktopViewSubtitle");
-  if (title) title.textContent = copy[0];
-  if (subtitle) subtitle.textContent = copy[1];
 }
 
 function activateMainView(view, opts = {}) {
@@ -240,7 +246,7 @@ function setupEvents() {
       const masteryLevel = Number(control.dataset.cardMastery);
       if (!Number.isInteger(masteryLevel) || masteryLevel < 1 || masteryLevel > 5) return;
       setEntry(item.id, { masteryLevel });
-      toast(masteryLevel === 5 ? "♛ Niveau Master atteint" : `Niveau de maîtrise ${masteryLevel} enregistré`);
+      toast(masteryLevel === 5 ? t("mastery.masterReached") : t("mastery.saved", { level: masteryLevel }));
     });
   }
   els.deckFilter.addEventListener("change", () => {
@@ -327,7 +333,7 @@ function setupEvents() {
       const masteryLevel = Number(masteryButton.dataset.masteryLevel);
       if (id && getEntry(id).status === "owned" && Number.isInteger(masteryLevel) && masteryLevel >= 1 && masteryLevel <= 5) {
         setEntry(id, { masteryLevel });
-        toast(masteryLevel === 5 ? "♛ Niveau Master atteint" : `Niveau de maîtrise ${masteryLevel} enregistré`);
+        toast(masteryLevel === 5 ? t("mastery.masterReached") : t("mastery.saved", { level: masteryLevel }));
       }
       return;
     }
@@ -339,7 +345,7 @@ function setupEvents() {
         const patch = { status };
         if (status === "owned" && !getEntry(id).obtainedAt) patch.obtainedAt = new Date().toISOString();
         setEntry(id, patch);
-        toast(status === "owned" ? "Variante marquée possédée" : "Variante ajoutée aux priorités");
+        toast(status === "owned" ? t("checklist.markedOwned") : t("checklist.addedPriority"));
       }
       return;
     }
@@ -394,7 +400,7 @@ function setupEvents() {
         setEntry(id, { masteryLevel });
         const item = getAllItems().find(i => i.id === id);
         if (item) openSpriteDetail(item.spriteId);
-        toast(masteryLevel === 5 ? "♛ Niveau Master atteint" : `Niveau de maîtrise ${masteryLevel} enregistré`);
+        toast(masteryLevel === 5 ? t("mastery.masterReached") : t("mastery.saved", { level: masteryLevel }));
       }
       return;
     }
@@ -411,7 +417,7 @@ function setupEvents() {
       const id = dateBtn.dataset.id;
       const entry = getEntry(id);
       const current = entry.obtainedAt ? new Date(entry.obtainedAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
-      const input = prompt("Date d'obtention (AAAA-MM-JJ) :", current);
+      const input = prompt(t("dialog.dateObtainedPrompt"), current);
       if (input) {
         setEntry(id, { obtainedAt: new Date(input).toISOString() });
         const item = getAllItems().find(i => i.id === id);
@@ -433,7 +439,7 @@ function setupEvents() {
     document.querySelectorAll("#dialogPriorityBar .prio-chip").forEach(c => c.classList.remove("active"));
     chip.classList.add("active");
     setEntry(state.activeDetailId, { priority: prio });
-    toast(`Priorité : ${priorityLabel(prio)}`);
+    toast(t("swipe.priorityToast", { label: priorityLabel(prio) }));
   });
 
   $("#dialogOwned").addEventListener("click", () => setEntry(state.activeDetailId, { status: "owned", note: els.dialogNote.value }));
@@ -446,7 +452,7 @@ function setupEvents() {
   els.exportData.addEventListener("click", exportData);
   els.importData.addEventListener("change", (event) => importData(event.target.files[0]));
   els.resetData.addEventListener("click", async () => {
-    const ok = confirm("Réinitialiser toute ta checklist SPRITE-INDEX ?");
+    const ok = confirm(t("checklist.resetConfirm"));
     if (!ok) return;
     state.collection = createSafeRecord();
     localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
@@ -455,7 +461,7 @@ function setupEvents() {
     }
     buildDeck();
     renderAll();
-    toast("Checklist réinitialisée");
+    toast(t("checklist.resetDone"));
   });
   els.copyMissing.addEventListener("click", () => {
     if (typeof copyCurrentMissingList === "function") copyCurrentMissingList();
@@ -517,7 +523,7 @@ function setupEvents() {
       const entry = getEntry(id);
       const isPriority = typeof isMissingPriority === "function" && isMissingPriority(entry);
       setEntry(id, isPriority ? { status: "missing", priority: "none" } : { status: "priority", priority: "medium" });
-      toast(isPriority ? "Retiré des priorités" : "Ajouté aux priorités");
+      toast(isPriority ? t("missing.removedPriority") : t("missing.addedPriority"));
       return;
     }
     const btn = event.target.closest("[data-status]");
@@ -579,7 +585,7 @@ function setupEvents() {
   });
   els.squadCopyCode.addEventListener("click", () => {
     if (state.activeSquad) {
-      navigator.clipboard.writeText(state.activeSquad).then(() => toast("Code copié !"));
+      navigator.clipboard.writeText(state.activeSquad).then(() => toast(t("squad.codeCopied")));
     }
   });
   if (els.squadShareBtn) {

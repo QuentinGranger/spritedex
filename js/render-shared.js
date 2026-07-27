@@ -44,7 +44,7 @@ function renderSharedProfile(data) {
           <span class="shared-card__name">${escapeHtml(i.spriteName)}</span>
           <span class="shared-card__variant">${escapeHtml(i.variant)}</span>
         </div>`).join("")
-    : `<p class="shared-view__empty">Aucun sprite possédé pour le moment.</p>`;
+    : `<p class="shared-view__empty">${t("shared.empty")}</p>`;
 
   const overlay = document.createElement("div");
   overlay.className = "shared-view";
@@ -53,8 +53,8 @@ function renderSharedProfile(data) {
       <div class="shared-view__header">
         ${avatar}
         <div class="shared-view__id">
-          <h1 class="shared-view__name">${escapeHtml(data.username || "Joueur")}</h1>
-          <p class="shared-view__sub">Collection partagée · lecture seule</p>
+          <h1 class="shared-view__name">${escapeHtml(data.username || t("shared.defaultPlayer"))}</h1>
+          <p class="shared-view__sub">${t("shared.subtitle")}</p>
         </div>
       </div>
 
@@ -67,17 +67,17 @@ function renderSharedProfile(data) {
       </div>
 
       <div class="shared-view__section">
-        <h2 class="shared-view__section-title">Par rareté</h2>
+        <h2 class="shared-view__section-title">${t("shared.byRarity")}</h2>
         ${rarityBars}
       </div>
 
       <div class="shared-view__section">
-        <h2 class="shared-view__section-title">Sprites possédés (${ownedItems.length})</h2>
+        <h2 class="shared-view__section-title">${t("shared.ownedSprites", { count: ownedItems.length })}</h2>
         <div class="shared-view__grid">${grid}</div>
       </div>
 
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SPRITE-INDEX</a>
-      <p class="legal-disclaimer">SPRITE-INDEX est une application non officielle. Non affiliée à Epic Games. Fortnite est une marque d'Epic Games.</p>
+      <a href="${webOrigin()}/" class="shared-view__cta">${t("shared.openApp")}</a>
+      <p class="legal-disclaimer">${t("shared.disclaimerShort")}</p>
     </div>`;
 
   document.body.appendChild(overlay);
@@ -88,9 +88,9 @@ function renderSharedError() {
   overlay.className = "shared-view";
   overlay.innerHTML = `
     <div class="shared-view__card shared-view__card--error">
-      <h1 class="shared-view__name">Lien indisponible</h1>
-      <p class="shared-view__sub">Ce lien de partage est invalide ou a été révoqué par son propriétaire.</p>
-      <a href="${webOrigin()}/" class="shared-view__cta">Ouvrir SPRITE-INDEX</a>
+      <h1 class="shared-view__name">${t("shared.errorTitle")}</h1>
+      <p class="shared-view__sub">${t("shared.errorBody")}</p>
+      <a href="${webOrigin()}/" class="shared-view__cta">${t("shared.openApp")}</a>
     </div>`;
   document.body.appendChild(overlay);
 }

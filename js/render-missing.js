@@ -77,23 +77,29 @@ function renderMissing() {
     chip.classList.toggle("active", active);
     chip.setAttribute("aria-pressed", String(active));
   });
-  if (status) status.textContent = `${notOwned.length} variante${notOwned.length > 1 ? "s" : ""} affichée${notOwned.length > 1 ? "s" : ""}${notOwned.length !== allMissing.length ? ` sur ${allMissing.length} à obtenir` : " à obtenir"}.`;
+  if (status) {
+    const plural = notOwned.length > 1 ? "s" : "";
+    const extra = notOwned.length !== allMissing.length
+      ? t("missing.resultsExtra", { total: allMissing.length })
+      : t("missing.resultsSuffix");
+    status.textContent = t("missing.results", { count: notOwned.length, plural, extra });
+  }
 
   if (!notOwned.length) {
     const title = eventFilter
-      ? "Aucune priorité manquante pour cet événement."
+      ? t("missing.emptyEvent")
       : allMissing.length
-        ? "Aucun résultat avec ces filtres."
-        : "Collection terminée : aucune variante à farmer.";
+        ? t("missing.emptyFilters")
+        : t("missing.emptyDone");
     els.missingList.innerHTML = `
       <div class="missing-empty" role="status">
         <span class="missing-empty__icon" aria-hidden="true">${allMissing.length ? "⌕" : "✓"}</span>
         <h3>${escapeHtml(title)}</h3>
-        <p>${allMissing.length ? "Essaie une autre recherche ou réinitialise tes filtres." : "Les prochaines variantes à sortir apparaîtront ici."}</p>
+        <p>${escapeHtml(allMissing.length ? t("missing.emptyHintFilters") : t("missing.emptyHintDone"))}</p>
         <div class="missing-empty__actions">
-          ${eventFilter ? '<button type="button" class="ghost-button" data-missing-action="clear-event">Voir tous les manquants</button>' : ""}
-          ${hasControls ? '<button type="button" class="ghost-button" data-missing-action="reset">Réinitialiser les filtres</button>' : ""}
-          ${!allMissing.length ? '<button type="button" class="ghost-button" data-missing-action="checklist">Voir la checklist</button>' : ""}
+          ${eventFilter ? `<button type="button" class="ghost-button" data-missing-action="clear-event">${escapeHtml(t("missing.seeAll"))}</button>` : ""}
+          ${hasControls ? `<button type="button" class="ghost-button" data-missing-action="reset">${escapeHtml(t("missing.resetFilters"))}</button>` : ""}
+          ${!allMissing.length ? `<button type="button" class="ghost-button" data-missing-action="checklist">${escapeHtml(t("missing.seeChecklist"))}</button>` : ""}
         </div>
       </div>`;
     return;
@@ -114,12 +120,13 @@ function renderMissing() {
   const total = allItems.length;
   const owned = allItems.filter(item => getEntry(item.id).status === "owned").length;
   const eventName = eventFilter && eventFilter.eventId && typeof EVENTS !== "undefined" ? (EVENTS[eventFilter.eventId]?.name || eventFilter.eventId) : null;
-  let html = eventFilter ? `<div class="farm-event-filter" id="missingEventFilterBanner"><div class="farm-event-filter__text">Priorités manquantes${eventName ? ` · ${escapeHtml(eventName)}` : " pour l'événement"}</div><button type="button" class="ghost-button" data-missing-action="clear-event">Tout afficher</button></div>` : "";
-  html += `<div class="farm-summary"><div class="farm-summary__count"><strong>${notOwned.length}</strong> ${eventFilter ? "priorités à farmer" : "variantes affichées"}</div><div class="farm-summary__bar" aria-label="Progression de collection : ${total ? Math.round((owned / total) * 100) : 0}%"><div class="farm-summary__fill" style="width:${total ? Math.round((owned / total) * 100) : 0}%"></div></div><p class="farm-summary__pct">${owned}/${total} collectés · ${total ? Math.round((owned / total) * 100) : 0}%${notOwned.length !== allMissing.length ? ` · ${allMissing.length} à obtenir au total` : ""}</p></div>`;
+  const pct = total ? Math.round((owned / total) * 100) : 0;
+  let html = eventFilter ? `<div class="farm-event-filter" id="missingEventFilterBanner"><div class="farm-event-filter__text">${escapeHtml(t("missing.eventBanner"))}${eventName ? ` · ${escapeHtml(eventName)}` : escapeHtml(t("missing.eventBannerFor"))}</div><button type="button" class="ghost-button" data-missing-action="clear-event">${escapeHtml(t("missing.showAll"))}</button></div>` : "";
+  html += `<div class="farm-summary"><div class="farm-summary__count"><strong>${notOwned.length}</strong> ${escapeHtml(eventFilter ? t("missing.prioritiesToFarm") : t("missing.variantsShown"))}</div><div class="farm-summary__bar" aria-label="${escapeHtml(t("missing.progressAria", { pct }))}"><div class="farm-summary__fill" style="width:${pct}%"></div></div><p class="farm-summary__pct">${escapeHtml(t("missing.progressText", { owned, total, pct }))}${notOwned.length !== allMissing.length ? escapeHtml(t("missing.progressTotal", { total: allMissing.length })) : ""}</p></div>`;
 
-  [["Urgent — À farmer maintenant", "urgent", urgent], ["Important — À récupérer bientôt", "important", important], ["Moyen — À planifier", "medium", mediumPrio], ["Faible — Bonus", "low", lowPrio], ["Rares trouvés (vus mais pas obtenus)", "spotted", spotted]].forEach(([title, type, items]) => { if (items.length) html += renderMissingSection(title, type, items); });
-  Object.keys(VARIANT_META).forEach((name) => { if (variantGroups[name]?.length) { html += renderMissingSection(`Variantes ${VARIANT_META[name]?.label || name} manquantes`, name.toLowerCase(), variantGroups[name]); delete variantGroups[name]; } });
-  Object.entries(variantGroups).forEach(([name, items]) => { if (items.length) html += renderMissingSection(`Variantes ${name} manquantes`, "other", items); });
+  [[t("missing.section.urgent"), "urgent", urgent], [t("missing.section.important"), "important", important], [t("missing.section.medium"), "medium", mediumPrio], [t("missing.section.low"), "low", lowPrio], [t("missing.section.spotted"), "spotted", spotted]].forEach(([title, type, items]) => { if (items.length) html += renderMissingSection(title, type, items); });
+  Object.keys(VARIANT_META).forEach((name) => { if (variantGroups[name]?.length) { html += renderMissingSection(t("missing.section.variants", { name: VARIANT_META[name]?.label || name }), name.toLowerCase(), variantGroups[name]); delete variantGroups[name]; } });
+  Object.entries(variantGroups).forEach(([name, items]) => { if (items.length) html += renderMissingSection(t("missing.section.variants", { name }), "other", items); });
   els.missingList.innerHTML = html;
 }
 
@@ -127,7 +134,7 @@ function renderMissingSection(title, type, items) {
   const safeType = /^[a-z0-9_-]{1,40}$/i.test(type) ? type : "other";
   const sectionId = `missing-section-${safeType}`;
   const collapsed = Boolean(state.missingCollapsedSections[sectionId]);
-  return `<section class="farm-section farm-section--${safeType}"><h3 class="farm-section__title"><button type="button" class="farm-section__toggle" data-missing-section="${safeType}" aria-expanded="${!collapsed}" aria-controls="${sectionId}">${escapeHtml(title)} <span class="farm-section__count">${items.length}</span><span class="sr-only">${collapsed ? "Développer" : "Réduire"} cette section</span></button></h3><div class="farm-section__list" id="${sectionId}" ${collapsed ? "hidden" : ""}>${items.map(renderMissingItem).join("")}</div></section>`;
+  return `<section class="farm-section farm-section--${safeType}"><h3 class="farm-section__title"><button type="button" class="farm-section__toggle" data-missing-section="${safeType}" aria-expanded="${!collapsed}" aria-controls="${sectionId}">${escapeHtml(title)} <span class="farm-section__count">${items.length}</span><span class="sr-only">${escapeHtml(collapsed ? t("missing.expandSection") : t("missing.collapseSection"))}</span></button></h3><div class="farm-section__list" id="${sectionId}" ${collapsed ? "hidden" : ""}>${items.map(renderMissingItem).join("")}</div></section>`;
 }
 
 function renderMissingItem(item) {
@@ -136,7 +143,7 @@ function renderMissingItem(item) {
   const priority = missingPriorityValue(entry);
   const prioBadge = priority !== "none" ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(priority)}">${escapeHtml(priorityLabel(priority))}</span>` : "";
   const label = `${item.spriteName} · ${item.variant}`;
-  return `<article class="farm-item" data-id="${escapeHtml(String(item.id || ""))}"><div class="farm-item__avatar">${img ? `<img src="${escapeHtml(img)}" class="farm-item__img" alt="" />` : "<span aria-hidden=\"true\">?</span>"}</div><div class="farm-item__info"><span class="farm-item__name">${escapeHtml(item.spriteName)}</span><span class="farm-item__variant">${escapeHtml(item.variant)} ${prioBadge}</span></div><span class="farm-item__rarity">${escapeHtml(item.rarity)}</span><div class="farm-item__status" aria-label="Statut : ${escapeHtml(statusLabel(entry.status))}">${statusEmoji(entry.status)}</div><div class="farm-item__actions"><button class="farm-item__detail" type="button" data-missing-detail="${escapeHtml(String(item.id || ""))}" aria-label="Voir la fiche de ${escapeHtml(label)}">Détails</button><button class="farm-item__priority" type="button" data-missing-priority="${escapeHtml(String(item.id || ""))}" aria-pressed="${priority !== "none"}" title="${priority === "none" ? "Ajouter aux priorités" : "Retirer des priorités"}">${priority === "none" ? "☆" : "★"}<span class="sr-only">${priority === "none" ? "Ajouter" : "Retirer"} ${escapeHtml(label)} des priorités</span></button><button class="farm-item__mark" type="button" data-id="${escapeHtml(String(item.id || ""))}" data-status="owned" title="Marquer ${escapeHtml(label)} comme possédé" aria-label="Marquer ${escapeHtml(label)} comme possédé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></article>`;
+  return `<article class="farm-item" data-id="${escapeHtml(String(item.id || ""))}"><div class="farm-item__avatar">${img ? `<img src="${escapeHtml(img)}" class="farm-item__img" alt="" />` : "<span aria-hidden=\"true\">?</span>"}</div><div class="farm-item__info"><span class="farm-item__name">${escapeHtml(item.spriteName)}</span><span class="farm-item__variant">${escapeHtml(item.variant)} ${prioBadge}</span></div><span class="farm-item__rarity">${escapeHtml(item.rarity)}</span><div class="farm-item__status" aria-label="${escapeHtml(t("status.row", { status: statusLabel(entry.status) }))}">${statusEmoji(entry.status)}</div><div class="farm-item__actions"><button class="farm-item__detail" type="button" data-missing-detail="${escapeHtml(String(item.id || ""))}" aria-label="${escapeHtml(t("missing.viewDetail", { name: label }))}">${escapeHtml(t("common.details"))}</button><button class="farm-item__priority" type="button" data-missing-priority="${escapeHtml(String(item.id || ""))}" aria-pressed="${priority !== "none"}" title="${escapeHtml(priority === "none" ? t("missing.addPriority") : t("missing.removePriority"))}">${priority === "none" ? "☆" : "★"}<span class="sr-only">${escapeHtml(priority === "none" ? t("missing.addPrioritySr", { name: label }) : t("missing.removePrioritySr", { name: label }))}</span></button><button class="farm-item__mark" type="button" data-id="${escapeHtml(String(item.id || ""))}" data-status="owned" title="${escapeHtml(t("missing.markOwned", { name: label }))}" aria-label="${escapeHtml(t("missing.markOwned", { name: label }))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></article>`;
 }
 
 function resetMissingControls() {
@@ -148,13 +155,14 @@ function resetMissingControls() {
 
 function copyCurrentMissingList() {
   const items = getVisibleMissingItems();
-  const lines = [`Liste Sprite Index — ${items.length} variante${items.length > 1 ? "s" : ""} à obtenir`, "", ...items.map((item) => `- ${item.spriteName} · ${item.variant}${isMissingPriority(getEntry(item.id)) ? ` (${priorityLabel(missingPriorityValue(getEntry(item.id)))})` : ""}`)];
+  const plural = items.length > 1 ? "s" : "";
+  const lines = [t("missing.copyHeader", { count: items.length, plural }), "", ...items.map((item) => `- ${item.spriteName} · ${item.variant}${isMissingPriority(getEntry(item.id)) ? ` (${priorityLabel(missingPriorityValue(getEntry(item.id)))})` : ""}`)];
   if (!navigator.clipboard?.writeText) {
-    toast("Copie impossible sur ce navigateur");
+    toast(t("missing.copyUnsupported"));
     return;
   }
   navigator.clipboard.writeText(lines.join("\n")).then(
-    () => toast("Liste visible copiée"),
-    () => toast("Copie impossible sur ce navigateur")
+    () => toast(t("missing.copyOk")),
+    () => toast(t("missing.copyUnsupported"))
   );
 }

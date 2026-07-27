@@ -584,6 +584,47 @@ async function notifyNewsSubscribers(pool, message) {
   return results;
 }
 
+/** Localize news push chrome per recipient preferred_language. */
+async function notifyNewsSubscribersLocalized(pool, { render, icon, url } = {}) {
+  if (typeof render !== "function") {
+    return notifyNewsSubscribers(pool, { title: "SPRITE-INDEX", body: "", icon, url });
+  }
+  const targets = await getNewsSubscriberTokens(pool);
+  // Attach preferred_language
+  const userIds = [...new Set(targets.map(t => t.user_id).filter(Boolean))];
+  const langByUser = new Map();
+  if (userIds.length) {
+    const { resolveNotificationLanguage } = require("./server/i18n");
+    const langRes = await pool.query(
+      `SELECT id, preferred_language FROM users WHERE id = ANY($1::integer[])`,
+      [userIds]
+    );
+    for (const row of langRes.rows) {
+      langByUser.set(Number(row.id), resolveNotificationLanguage(row.preferred_language, null));
+    }
+  }
+  const results = [];
+  for (const target of targets) {
+    const lang = langByUser.get(Number(target.user_id)) || "fr";
+    const message = render(lang) || {};
+    const payload = buildNotificationPayload({
+      title: message.title,
+      body: message.body,
+      icon: message.icon || icon,
+      url: message.url || url
+    });
+    let result;
+    try {
+      result = await dispatchNotification({ pool, target, payload });
+    } catch (err) {
+      result = { ok: false, error: err.message, endpoint: target.endpoint };
+    }
+    result = await handleDispatchResult(pool, target, result);
+    results.push({ platform: target.platform, ok: result.ok, error: result.error, permanent: !!result.permanent });
+  }
+  return results;
+}
+
 // ── Notification status lifecycle ──
 // Moves a notification to a new status and stamps the matching timestamp
 // column. Timestamps are only set the first time (COALESCE) so we keep the
@@ -618,7 +659,9 @@ async function createNotification(pool, {
   category, entityType, entityId,
   context = {}, data, title, body, message, url,
   status = "created",
-  lang = notificationCatalog.DEFAULT_LANGUAGE,
+  // null/undefined → resolve from recipient.preferred_language (client Accept-Language).
+  // Pass an explicit lang only when a caller must force wording.
+  lang = null,
   allowPush = true,
   // When true, persist the row (typically status='queued') but do not push/email
   // yet — callers revalidate then deliver or cancel (Étape 38).
@@ -641,7 +684,7 @@ async function createNotification(pool, {
 
     const userRes = await pool.query(
       `SELECT email, push_enabled, push_pref_friend_collection_updates, push_pref_friend_priority_matches,
-              push_quiet_start, push_quiet_end, push_max_per_day, timezone
+              push_quiet_start, push_quiet_end, push_max_per_day, timezone, preferred_language
        FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [recipientId]
     );
@@ -650,6 +693,9 @@ async function createNotification(pool, {
 
     if (type === "friend_collection_updated" && user.push_pref_friend_collection_updates === false) return null;
     if (type === "friend_priority_match" && user.push_pref_friend_priority_matches === false) return null;
+
+    const { resolveNotificationLanguage } = require("./server/i18n");
+    const resolvedLang = resolveNotificationLanguage(user.preferred_language, lang);
 
     // Étape 40 — render with the user's timezone; keep instants as UTC ISO in data.
     const { normalizeTimeZone, toUtcIso } = require("./server/timezone");
@@ -665,12 +711,44 @@ async function createNotification(pool, {
     baseContext.timeZone = baseContext.timeZone || baseContext.timezone || timeZone;
     baseContext.timezone = baseContext.timeZone;
 
+    // Enrich actor display name for localized templates when missing.
+    if (actorId && !baseContext.actorName && !baseContext.friendName && !baseContext.ownerName && !baseContext.joinerName) {
+      const actorRes = await pool.query(
+        "SELECT username, display_name FROM users WHERE id = $1 AND deleted_at IS NULL",
+        [actorId]
+      );
+      const actorRow = actorRes.rows[0];
+      if (actorRow) {
+        baseContext.actorName = actorRow.display_name || actorRow.username || null;
+        if (!baseContext.friendName) baseContext.friendName = baseContext.actorName;
+      }
+    }
+    if (actorId && baseContext.actorId == null) baseContext.actorId = String(actorId);
+
+    // Localize badge labels for the recipient language.
+    if (type === "badge_unlocked") {
+      try {
+        const badges = require("./server/passport-badges");
+        const codes = Array.isArray(baseContext.badgeCodes) ? baseContext.badgeCodes : [];
+        if (codes.length) {
+          baseContext.badgeLabels = codes.map((code) => badges.labelForBadgeCode(code, resolvedLang) || code);
+          baseContext.count = baseContext.badgeLabels.length;
+        }
+      } catch (_err) { /* keep provided labels */ }
+    }
+
     // Étape 40/62 — render with timezone-aware context and localized catalog names.
     const rendered = notificationCatalog.isKnownType(type)
-      ? await notificationCatalog.renderNotificationLocalized(pool, type, baseContext, lang)
+      ? await notificationCatalog.renderNotificationLocalized(pool, type, baseContext, resolvedLang)
       : null;
-    const finalTitle = title || (rendered && rendered.title) || "SPRITE-INDEX";
-    const finalBody = body || message || (rendered && rendered.body) || "";
+    // Prefer catalog copy for known types so callers cannot freeze French strings.
+    const finalTitle = (rendered && rendered.title)
+      || title
+      || "SPRITE-INDEX";
+    const finalBody = (rendered && rendered.body)
+      || body
+      || message
+      || "";
     const finalUrl = url || (rendered ? rendered.url : "/");
 
     // `data` holds everything needed to render/navigate later: caller context,
@@ -695,6 +773,7 @@ async function createNotification(pool, {
       ...baseData,
       ...catalogData,
       timeZone,
+      lang: resolvedLang,
       sendPriority,
       sendPriorityLevel,
       ...(actorId ? { actorId: String(actorId) } : {}),
@@ -840,10 +919,19 @@ async function createNotification(pool, {
 // then email on the resolved channels and flips the row to 'delivered'/'failed'.
 // Only a genuine send counts as an attempt: an empty push token set or an email
 // skipped for lack of configuration leaves the row as-is (in-app only).
-async function deliverExternalChannels(pool, { notificationId, recipientId, user = {}, targetChannels = [], title, body, url }) {
+async function deliverExternalChannels(pool, { notificationId, recipientId, user = {}, targetChannels = [], title, body, url, lang = null }) {
   let externalAttempted = false;
   let externalDelivered = false;
   const deliveries = require("./server/notification-deliveries");
+  let emailLang = lang;
+  if (!emailLang) {
+    try {
+      const { resolveNotificationLanguage } = require("./server/i18n");
+      emailLang = resolveNotificationLanguage(user.preferred_language, null);
+    } catch (_err) {
+      emailLang = "fr";
+    }
+  }
 
   if (targetChannels.includes("push")) {
     await deliveries.markDeliveryAttempt(pool, notificationId, "push", { provider: "web_push" }).catch(() => {});
@@ -881,7 +969,7 @@ async function deliverExternalChannels(pool, { notificationId, recipientId, user
       await deliveries.markDeliveryAttempt(pool, notificationId, "email", { provider: "resend" }).catch(() => {});
       // Lazy require avoids a require cycle with core at load time.
       const { sendNotificationEmail } = require("./server/core");
-      const emailResult = await sendNotificationEmail(user.email, { title, body, url });
+      const emailResult = await sendNotificationEmail(user.email, { title, body, url, lang: emailLang });
       if (emailResult && emailResult.ok) {
         externalAttempted = true;
         externalDelivered = true;
@@ -1031,7 +1119,8 @@ async function getNotifications(pool, userId, {
   cursor = null,
   unreadOnly = false,
   category = null,
-  filter = null
+  filter = null,
+  lang = null
 } = {}) {
   const { conditions, args } = buildNotificationInboxFilters(userId, {
     unreadOnly,
@@ -1080,10 +1169,23 @@ async function getNotifications(pool, userId, {
   const page = hasMore ? rows.slice(0, pageSize) : rows;
   // Étape 60 — normalized API shape (id/actor/entity/action/isRead/createdAt).
   const serialize = require("./server/notification-serialize");
+  let resolvedLang = lang;
+  if (!resolvedLang) {
+    try {
+      const { resolveNotificationLanguage } = require("./server/i18n");
+      const langRes = await pool.query(
+        "SELECT preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL",
+        [userId]
+      );
+      resolvedLang = resolveNotificationLanguage(langRes.rows[0]?.preferred_language, null);
+    } catch (_err) {
+      resolvedLang = "fr";
+    }
+  }
   const normalized = await serialize.normalizeNotificationList(pool, page.map((row) => ({
     ...row,
     data: row.data || {}
-  })));
+  })), resolvedLang);
   // Attach legacy fields so older clients keep working during the transition.
   const notifications = normalized.map((item, idx) => {
     const row = page[idx];
@@ -1324,6 +1426,8 @@ module.exports = {
   sendNotificationToUser,
   notifySquadMembers,
   notifyNewsSubscribers,
+  notifyNewsSubscribersLocalized,
+  getNewsSubscriberTokens,
   createNotification,
   setNotificationStatus,
   deliverExternalChannels,

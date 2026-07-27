@@ -256,7 +256,7 @@ function getAllItems() {
         color: safeCssColor(sprite.color),
         effect: variant.effect || sprite.effect,
         variant: variantType,
-        variantBonus: VARIANT_META[variantType]?.bonus ?? "Variante spéciale."
+        variantBonus: VARIANT_META[variantType]?.bonus ?? t("helpers.variantSpecial")
       };
     });
   });
@@ -296,7 +296,7 @@ function masteryLevelFor(entry) {
 }
 
 function masteryLabel(level) {
-  return level >= 5 ? "Master" : `Niveau ${Math.max(1, Number(level) || 1)}`;
+  return level >= 5 ? t("mastery.master") : t("mastery.level", { level: Math.max(1, Number(level) || 1) });
 }
 
 function setEntry(itemId, patch) {
@@ -328,18 +328,17 @@ function classifyStatus(status) {
 }
 
 function statusLabel(status) {
-  const labels = {
-    owned: "Possédé",
-    missing: "Manquant",
-    priority: "Prioritaire",
-    unsure: "À vérifier",
-    unknown: "Inconnu",
-    unavailable: "Non disponible",
-    spotted: "Rare trouvé",
-    new: "Non classé"
+  const keys = {
+    owned: "status.owned",
+    missing: "status.missing",
+    priority: "status.priority",
+    unsure: "status.unsure",
+    unknown: "status.unknown",
+    unavailable: "status.unavailable",
+    spotted: "status.spotted",
+    new: "status.new"
   };
-  const label = labels[status] ?? "Non classé";
-  return typeof t === "function" ? t(label) : label;
+  return t(keys[status] || "status.new");
 }
 
 function statusEmoji(status) {
@@ -357,10 +356,22 @@ function statusEmoji(status) {
 }
 
 function toast(message) {
-  els.toast.textContent = typeof t === "function" ? t(message) : message;
+  const raw = message == null || message === "" ? "common.error" : message;
+  els.toast.textContent = typeof t === "function" ? t(raw) : String(raw);
   els.toast.classList.add("show");
   clearTimeout(toast.timer);
   toast.timer = setTimeout(() => els.toast.classList.remove("show"), 1800);
+}
+
+/** Toast an API/network error: prefers server `error` text (via t()), else a keyed fallback. */
+function toastError(error, fallbackKey = "common.error") {
+  let msg = null;
+  if (typeof error === "string" && error.trim()) msg = error.trim();
+  else if (error && typeof error === "object") {
+    if (typeof error.error === "string" && error.error.trim()) msg = error.error.trim();
+    else if (typeof error.message === "string" && error.message.trim()) msg = error.message.trim();
+  }
+  toast(msg || fallbackKey);
 }
 
 // ── Étape 20 — Formulations honnêtes des incertitudes ──────────────────────
@@ -381,20 +392,19 @@ function formatDateFr(iso) {
 function confidenceLabel(confidence) {
   const c = (confidence || "").toLowerCase();
   const map = {
-    official: "Information officielle",
-    confirmed: "Information officielle",
-    primary: "Information officielle",
-    observed: "Observation directe",
-    in_game: "Observation directe",
-    community_database: "Information communautaire",
-    community: "Information communautaire",
-    secondary: "Information communautaire",
-    tertiary: "Information communautaire",
-    estimated: "Estimation",
-    unknown: "À confirmer",
+    official: "helpers.confidenceOfficial",
+    confirmed: "helpers.confidenceOfficial",
+    primary: "helpers.confidenceOfficial",
+    observed: "helpers.confidenceObserved",
+    in_game: "helpers.confidenceObserved",
+    community_database: "helpers.confidenceCommunity",
+    community: "helpers.confidenceCommunity",
+    secondary: "helpers.confidenceCommunity",
+    tertiary: "helpers.confidenceCommunity",
+    estimated: "helpers.confidenceEstimated",
+    unknown: "helpers.confidenceUnknown",
   };
-  const label = map[c] || "À confirmer";
-  return typeof t === "function" ? t(label) : label;
+  return t(map[c] || "helpers.confidenceUnknown");
 }
 
 // Classe CSS associée au niveau de confiance (pour distinguer visuellement
@@ -413,7 +423,7 @@ function confidenceClass(confidence) {
 function endDateDisclaimer(confidence) {
   const conf = confidenceClass(confidence);
   if (conf === "official") return null;
-  return "Fin estimée, non confirmée par Epic Games.";
+  return t("helpers.endDateDisclaimer");
 }
 
 function formatEndDateLine(availability) {
@@ -421,12 +431,12 @@ function formatEndDateLine(availability) {
   const endDateFr = formatDateFr(a.endDate);
   const disclaimer = endDateDisclaimer(a.confidence);
   if (!endDateFr) {
-    return disclaimer || "Date de fin : inconnue";
+    return disclaimer || t("helpers.endDateUnknown");
   }
   if (disclaimer) {
-    return `Date de fin : ${endDateFr} — ${disclaimer}`;
+    return t("helpers.endDateWithDisclaimer", { date: endDateFr, disclaimer });
   }
-  return `Date de fin : ${endDateFr}`;
+  return t("helpers.endDate", { date: endDateFr });
 }
 
 // Phrase honnête décrivant la disponibilité, en fonction du statut et de la
@@ -437,20 +447,20 @@ function availabilityPhrase(availability) {
   const conf = confidenceClass(a.confidence);
   switch (status) {
     case "available":
-      if (conf === "official") return "Disponible (information officielle)";
-      if (conf === "observed") return "Disponible selon une observation récente";
-      if (conf === "community") return "Disponible selon des informations communautaires";
-      return "Disponible (à confirmer)";
+      if (conf === "official") return t("helpers.availOfficial");
+      if (conf === "observed") return t("helpers.availObserved");
+      if (conf === "community") return t("helpers.availCommunity");
+      return t("helpers.availUnconfirmed");
     case "upcoming":
-      return "À venir";
+      return t("helpers.availUpcoming");
     case "ended":
-      return "Plus disponible";
+      return t("helpers.availEnded");
     case "not_observed":
-      return "Non observé récemment";
+      return t("helpers.availNotObserved");
     case "unreleased":
-      return "Pas encore sortie";
+      return t("helpers.availUnreleased");
     default:
-      return "Disponibilité inconnue";
+      return t("helpers.availUnknown");
   }
 }
 
@@ -461,34 +471,34 @@ function acquisitionPhrase(acquisition) {
   const conf = confidenceClass(a.confidence);
   if (type === "unknown" || conf === "unknown") {
     return a.description
-      ? `${a.description} (méthode à confirmer)`
-      : "Méthode d'obtention à confirmer";
+      ? t("helpers.acquireUnconfirmedDesc", { desc: a.description })
+      : t("helpers.acquireUnconfirmed");
   }
   const base = a.description || {
-    quest: "Obtenu via une quête",
-    event: "Obtenu lors d'un événement",
-    exploration: "Trouvé en explorant",
-    interaction: "Obtenu via une interaction",
-    reward: "Obtenu en récompense",
-    challenge: "Obtenu via un défi",
-    purchase: "Obtenu par achat",
-    automatic: "Obtenu automatiquement",
-  }[type] || "Méthode d'obtention connue";
-  if (conf === "observed") return `${base} (observation directe)`;
-  if (conf === "community") return `${base} (information communautaire)`;
-  if (conf === "official") return `${base} (information officielle)`;
-  return `${base} (à confirmer)`;
+    quest: t("helpers.acquireQuest"),
+    event: t("helpers.acquireEvent"),
+    exploration: t("helpers.acquireExploration"),
+    interaction: t("helpers.acquireInteraction"),
+    reward: t("helpers.acquireReward"),
+    challenge: t("helpers.acquireChallenge"),
+    purchase: t("helpers.acquirePurchase"),
+    automatic: t("helpers.acquireAutomatic"),
+  }[type] || t("helpers.acquireKnown");
+  if (conf === "observed") return t("helpers.acquireObservedSuffix", { base });
+  if (conf === "community") return t("helpers.acquireCommunitySuffix", { base });
+  if (conf === "official") return t("helpers.acquireOfficialSuffix", { base });
+  return t("helpers.acquireUnconfirmedSuffix", { base });
 }
 
 // Phrase honnête décrivant la récurrence (retour du sprite).
 function recurrencePhrase(recurrence) {
   const r = recurrence || {};
   const status = (r.status || "unknown").toLowerCase();
-  if (status === "confirmed_recurring" && r.officiallyConfirmed) return "Retour confirmé par Epic Games";
-  if (status === "confirmed_recurring") return "Retour probable (non officiel)";
-  if (status === "possible_return") return "Retour possible, non confirmé";
-  if (status === "not_confirmed") return "Retour non confirmé";
-  return "Récurrence inconnue";
+  if (status === "confirmed_recurring" && r.officiallyConfirmed) return t("helpers.recConfirmedOfficial");
+  if (status === "confirmed_recurring") return t("helpers.recProbable");
+  if (status === "possible_return") return t("helpers.recPossible");
+  if (status === "not_confirmed") return t("helpers.recNotConfirmed");
+  return t("helpers.recUnknown");
 }
 
 // Libellé honnête de fiabilité d'une source.
@@ -496,11 +506,11 @@ function sourceReliabilityLabel(source) {
   const s = source || {};
   const type = (s.type || "").toLowerCase();
   const rel = (s.reliability || "").toLowerCase();
-  if (type === "official" || rel === "primary") return "Information officielle";
-  if (type === "in_game") return "Observation en jeu";
-  if (type === "creator") return "Information de créateur";
-  if (type === "community" || type === "database" || rel === "secondary" || rel === "tertiary") return "Information communautaire";
-  return "Source à confirmer";
+  if (type === "official" || rel === "primary") return t("helpers.sourceOfficial");
+  if (type === "in_game") return t("helpers.sourceInGame");
+  if (type === "creator") return t("helpers.sourceCreator");
+  if (type === "community" || type === "database" || rel === "secondary" || rel === "tertiary") return t("helpers.sourceCommunity");
+  return t("helpers.sourceUnconfirmed");
 }
 
 function getStats(items = getAllItems()) {

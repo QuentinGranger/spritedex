@@ -103,8 +103,7 @@ async function notifyCollectionChanges(ownerId, changes) {
         recipientId: friend.id,
         actorId: ownerId,
         type: "friend_collection_updated",
-        context: { ownerId },
-        message: `${ownerName} a mis à jour sa collection.`,
+        context: { ownerId, ownerName, actorName: ownerName },
         url: `/collection/${ownerId}`
       });
     }

@@ -1,7 +1,7 @@
 // ── Squad : Create ──
 async function createSquad() {
-  if (!state.userId) { toast("Connecte-toi d'abord"); return; }
-  const name = els.squadNameInput.value.trim() || "Mon escouade";
+  if (!state.userId) { toast(t("squad.loginFirst")); return; }
+  const name = els.squadNameInput.value.trim() || t("squad.defaultName");
   try {
     const res = await fetch(`${API_BASE}/squads`, {
       method: "POST",
@@ -10,24 +10,24 @@ async function createSquad() {
     });
     if (!res.ok) {
       const err = await res.json();
-      toast(err.error || "Erreur création");
+      toastError(err, "squad.createError");
       return;
     }
     const squad = await res.json();
     state.activeSquad = squad.code;
     localStorage.setItem("sprite-index_squad", squad.code);
-    toast(`Escouade créée ! Code : ${squad.code}`);
+    toast(t("squad.created", { code: squad.code }));
     await loadSquad(squad.code);
   } catch (e) {
-    toast("Erreur réseau");
+    toast(t("common.networkError"));
   }
 }
 
 // ── Squad : Join ──
 async function joinSquad() {
-  if (!state.userId) { toast("Connecte-toi d'abord"); return; }
+  if (!state.userId) { toast(t("squad.loginFirst")); return; }
   const code = els.squadCodeInput.value.trim().toUpperCase();
-  if (!code) { toast("Entre un code d'escouade"); return; }
+  if (!code) { toast(t("squad.enterCode")); return; }
   try {
     const res = await fetch(`${API_BASE}/squads/join`, {
       method: "POST",
@@ -36,16 +36,16 @@ async function joinSquad() {
     });
     if (!res.ok) {
       const err = await res.json();
-      toast(err.error || "Erreur");
+      toastError(err, "squad.joinError");
       return;
     }
     const squad = await res.json();
     state.activeSquad = squad.code;
     localStorage.setItem("sprite-index_squad", squad.code);
-    toast(`Rejoint : ${squad.name}`);
+    toast(t("squad.joined", { name: squad.name }));
     await loadSquad(squad.code);
   } catch (e) {
-    toast("Erreur réseau");
+    toast(t("common.networkError"));
   }
 }
 
@@ -64,7 +64,7 @@ async function leaveSquad() {
   state.squadMembers = [];
   localStorage.removeItem("sprite-index_squad");
   showSquadLobby();
-  toast("Tu as quitté l'escouade");
+  toast(t("squad.left"));
 }
 
 // ── Squad : Load from server ──
@@ -73,7 +73,7 @@ async function loadSquad(code) {
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}`, { headers: authHeaders() });
     if (!res.ok) {
-      toast("Escouade introuvable");
+      toast(t("squad.notFound"));
       state.activeSquad = null;
       localStorage.removeItem("sprite-index_squad");
       showSquadLobby();
@@ -98,7 +98,7 @@ async function loadSquad(code) {
     renderSquadRecommendedFriends();
     renderSquadComplementaryPairs();
   } catch (e) {
-    toast("Erreur réseau");
+    toast(t("common.networkError"));
   }
 }
 
@@ -204,33 +204,33 @@ function renderSquadAdmin() {
   const isCreator = String(state.squadCreatedBy) === String(state.userId);
   if (!isCreator) { wrap.innerHTML = ""; return; }
 
-  const joinLabel = state.squadJoinOpen ? "Ouvert" : "Fermé";
+  const joinLabel = state.squadJoinOpen ? t("squad.joinOpen") : t("squad.joinClosed");
   const joinIcon = state.squadJoinOpen ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
   const joinLink = `${webOrigin()}/?joinSquad=${encodeURIComponent(String(state.activeSquad || ""))}`;
 
   wrap.innerHTML = `
     <div class="squad-admin">
-      <h4 class="squad-admin__title"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Admin squad</h4>
+      <h4 class="squad-admin__title"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> ${t("squad.adminTitle")}</h4>
       <div class="squad-admin__row">
-        <span class="squad-admin__label">Lien d'invitation</span>
-        <button class="ghost-button squad-admin__btn" id="adminCopyLink" title="Copier le lien"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copier</button>
+        <span class="squad-admin__label">${t("squad.inviteLink")}</span>
+        <button class="ghost-button squad-admin__btn" id="adminCopyLink" title="${t('squad.copyBtn')}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> \${t("squad.copyBtn")}</button>
       </div>
       <div class="squad-admin__link">${escapeHtml(joinLink)}</div>
       <div class="squad-admin__row">
-        <span class="squad-admin__label">Accès : ${joinIcon} ${joinLabel}</span>
-        <button class="ghost-button squad-admin__btn" id="adminToggleJoin">${state.squadJoinOpen ? "Fermer" : "Ouvrir"}</button>
+        <span class="squad-admin__label">\${t("squad.access")} ${joinIcon} ${joinLabel}</span>
+        <button class="ghost-button squad-admin__btn" id="adminToggleJoin">${state.squadJoinOpen ? t("squad.closeJoin") : t("squad.openJoin")}</button>
       </div>
       <div class="squad-admin__row">
-        <span class="squad-admin__label">Code actuel</span>
-        <button class="ghost-button squad-admin__btn squad-admin__btn--warn" id="adminRegenCode">↻ Régénérer</button>
+        <span class="squad-admin__label">${t("squad.currentCode")}</span>
+        <button class="ghost-button squad-admin__btn squad-admin__btn--warn" id="adminRegenCode">${t("squad.regenBtn")}</button>
       </div>
       <div class="squad-admin__row">
-        <button class="ghost-button squad-admin__btn squad-admin__btn--danger" id="adminDeleteSquad">Supprimer la squad</button>
+        <button class="ghost-button squad-admin__btn squad-admin__btn--danger" id="adminDeleteSquad">${t("squad.deleteBtn")}</button>
       </div>
     </div>`;
 
   document.getElementById("adminCopyLink").addEventListener("click", () => {
-    navigator.clipboard.writeText(joinLink).then(() => toast("Lien copié !"));
+    navigator.clipboard.writeText(joinLink).then(() => toast(t("squad.linkCopied")));
   });
   document.getElementById("adminToggleJoin").addEventListener("click", toggleSquadJoin);
   document.getElementById("adminRegenCode").addEventListener("click", regenerateSquadCode);
@@ -246,13 +246,13 @@ async function toggleSquadJoin() {
     if (res.ok) {
       state.squadJoinOpen = data.joinOpen;
       renderSquadAdmin();
-      toast(data.joinOpen ? "Escouade ouverte" : "Escouade fermée");
-    } else { toast(data.error); }
-  } catch (e) { toast("Erreur réseau"); }
+      toast(data.joinOpen ? t("squad.opened") : t("squad.closed"));
+    } else { toastError(data, "common.error"); }
+  } catch (e) { toast(t("common.networkError")); }
 }
 
 async function regenerateSquadCode() {
-  if (!confirm("Régénérer le code ? L'ancien lien ne fonctionnera plus.")) return;
+  if (!confirm(t("squad.confirmRegen"))) return;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/regenerate`, {
       method: "POST", headers: authHeaders()
@@ -263,13 +263,13 @@ async function regenerateSquadCode() {
       localStorage.setItem("sprite-index_squad", data.code);
       els.squadActiveCode.textContent = data.code;
       renderSquadAdmin();
-      toast(`Nouveau code : ${data.code}`);
-    } else { toast(data.error); }
-  } catch (e) { toast("Erreur réseau"); }
+      toast(t("squad.newCode", { code: data.code }));
+    } else { toastError(data, "common.error"); }
+  } catch (e) { toast(t("common.networkError")); }
 }
 
 async function deleteSquad() {
-  if (!confirm("Supprimer l'escouade ? Cette action est irréversible.")) return;
+  if (!confirm(t("squad.confirmDelete"))) return;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}`, {
       method: "DELETE", headers: authHeaders()
@@ -279,29 +279,29 @@ async function deleteSquad() {
       state.squadMembers = [];
       localStorage.removeItem("sprite-index_squad");
       showSquadLobby();
-      toast("Escouade supprimée");
+      toast(t("squad.deleted"));
     } else {
       const data = await res.json();
-      toast(data.error);
+      toastError(data, "common.error");
     }
-  } catch (e) { toast("Erreur réseau"); }
+  } catch (e) { toast(t("common.networkError")); }
 }
 
 async function kickSquadMember(targetUserId) {
-  if (!confirm("Retirer ce membre de l'escouade ?")) return;
+  if (!confirm(t("squad.confirmKick"))) return;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/kick`, {
       method: "POST", headers: authHeaders(),
       body: JSON.stringify({ targetUserId })
     });
     if (res.ok) {
-      toast("Membre retiré");
+      toast(t("squad.memberKicked"));
       await loadSquad(state.activeSquad);
     } else {
       const data = await res.json();
-      toast(data.error);
+      toastError(data, "common.error");
     }
-  } catch (e) { toast("Erreur réseau"); }
+  } catch (e) { toast(t("common.networkError")); }
 }
 
 // ── Squad : Populate dynamic variant filter options ──
@@ -406,39 +406,39 @@ function squadIcon(status) {
 
 // ── Squad : Render members chips ──
 function timeAgo(dateStr) {
-  if (!dateStr) return "jamais sync";
+  if (!dateStr) return t("squad.neverSynced");
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "à l'instant";
-  if (mins < 60) return `il y a ${mins}min`;
+  if (mins < 1) return t("squad.justNow");
+  if (mins < 60) return t("squad.timeAgoMins", { mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `il y a ${hrs}h`;
+  if (hrs < 24) return t("squad.timeAgoHours", { hrs });
   const days = Math.floor(hrs / 24);
-  return `il y a ${days}j`;
+  return t("squad.timeAgoDays", { days });
 }
 
 function membershipSince(joinedAt) {
-  if (!joinedAt) return "Membre récemment";
+  if (!joinedAt) return t("squad.memberRecent");
   const days = Math.floor((Date.now() - new Date(joinedAt).getTime()) / 86400000);
-  if (days === 0) return "Membre aujourd'hui";
-  if (days === 1) return "Membre depuis 1 jour";
-  return `Membre depuis ${days} jours`;
+  if (days === 0) return t("squad.memberToday");
+  if (days === 1) return t("squad.memberOneDay");
+  return t("squad.memberDaysAgo", { days: days });
 }
 
 function relationBadge(m) {
   const isMe = String(m.userId) === String(state.userId);
   if (isMe) {
-    return { label: "Moi", class: "squad-chip__badge--me" };
+    return { label: t("squad.me"), class: "squad-chip__badge--me" };
   }
   switch (m.friendshipStatus) {
     case "accepted":
-      return { label: "Ami", class: "squad-chip__badge--friend" };
+      return { label: t("squad.friend"), class: "squad-chip__badge--friend" };
     case "pending":
-      return { label: "Invitation en attente", class: "squad-chip__badge--pending" };
+      return { label: t("squad.pendingInvite"), class: "squad-chip__badge--pending" };
     case "blocked":
-      return { label: "Bloqué", class: "squad-chip__badge--blocked" };
+      return { label: t("squad.blockedBadge"), class: "squad-chip__badge--blocked" };
     default:
-      return { label: "Membre uniquement", class: "squad-chip__badge--member" };
+      return { label: t("squad.memberOnly"), class: "squad-chip__badge--member" };
   }
 }
 
@@ -447,10 +447,10 @@ function renderSquadFriendAction(m) {
   const status = m.friendshipStatus;
   const direction = m.friendRequestDirection;
   if (status === "pending" && direction === "received") {
-    return `<button class="squad-chip__add squad-chip__add--accept" data-accept-friend="${encodeURIComponent(m.userId)}" title="Accepter la demande">Accepter</button>`;
+    return `<button class="squad-chip__add squad-chip__add--accept" data-accept-friend="${encodeURIComponent(m.userId)}" title="${t('squad.acceptRequest')}">${t("squad.acceptBtn")}</button>`;
   }
   if (status === "none" && m.canReceiveFriendRequest) {
-    return `<button class="squad-chip__add" data-add-friend="${encodeURIComponent(m.userId)}" title="Ajouter comme ami">+</button>`;
+    return `<button class="squad-chip__add" data-add-friend="${encodeURIComponent(m.userId)}" title="${t('squad.addFriendTitle')}">+</button>`;
   }
   return "";
 }
@@ -492,15 +492,15 @@ function renderSquadMembers() {
   }
 
   if (els.squadMemberSummary) {
-    const summaryParts = [`${total} membre${total > 1 ? "s" : ""}`];
+    const summaryParts = [t("squad.memberCount", { count: total, s: total !== 1 ? "s" : "" })];
     if (state.squadMemberFilter === "all" || state.squadMemberFilter === "friends") {
-      summaryParts.push(`${friendCount} ami${friendCount > 1 ? "s" : ""}`);
+      summaryParts.push(t("squad.friendCount", { count: friendCount, s: friendCount !== 1 ? "s" : "" }));
     }
     if (state.squadMemberFilter === "all" || state.squadMemberFilter === "nonfriends") {
-      summaryParts.push(`${nonFriendCount} autre${nonFriendCount > 1 ? "s" : ""}`);
+      summaryParts.push(t("squad.otherCount", { count: nonFriendCount, s: nonFriendCount !== 1 ? "s" : "" }));
     }
     if (state.squadMemberFilter === "all" || state.squadMemberFilter === "admins") {
-      summaryParts.push(`${adminCount} admin${adminCount > 1 ? "s" : ""}`);
+      summaryParts.push(t("squad.adminCount", { count: adminCount }));
     }
     els.squadMemberSummary.textContent = summaryParts.join(" · ");
   }
@@ -510,24 +510,24 @@ function renderSquadMembers() {
     const action = renderSquadFriendAction(m);
     const isMe = String(m.userId) === String(state.userId);
     const compare = !isMe
-      ? `<button class="squad-chip__compare" data-compare-user="${encodeURIComponent(m.username || m.userId)}" title="Comparer nos collections">⇄</button>`
+      ? `<button class="squad-chip__compare" data-compare-user="${encodeURIComponent(m.username || m.userId)}" title="${t('squad.compareCollections')}">⇄</button>`
       : "";
     const kick = isCreator && !isMe
-      ? `<button class="squad-chip__kick" data-kick="${encodeURIComponent(m.userId)}" title="Retirer">✕</button>`
+      ? `<button class="squad-chip__kick" data-kick="${encodeURIComponent(m.userId)}" title="${t('squad.kickBtn')}">✕</button>`
       : "";
     const menu = !isMe
-      ? `<button class="squad-chip__menu" data-member-menu="${encodeURIComponent(m.userId)}" data-member-name="${encodeURIComponent(m.username || "Membre")}" title="Actions">⋯</button>`
+      ? `<button class="squad-chip__menu" data-member-menu="${encodeURIComponent(m.userId)}" data-member-name="${encodeURIComponent(m.username || t("squad.memberFallback"))}" title="Actions">⋯</button>`
       : "";
-    const incomplete = (m.entryCount || 0) === 0 ? `<span class="squad-chip__warn" title="Checklist vide">?</span>` : "";
+    const incomplete = (m.entryCount || 0) === 0 ? `<span class="squad-chip__warn" title="${t('squad.checklistEmpty')}">?</span>` : "";
     const stale = m.lastUpdated
-      ? `<span class="squad-chip__time" title="Dernière MAJ : ${timeAgo(m.lastUpdated)}">${timeAgo(m.lastUpdated)}</span>`
-      : `<span class="squad-chip__time squad-chip__time--stale">jamais sync</span>`;
+      ? `<span class="squad-chip__time" title="${t('squad.lastUpdateTitle', { time: timeAgo(m.lastUpdated) })}">${timeAgo(m.lastUpdated)}</span>`
+      : `<span class="squad-chip__time squad-chip__time--stale">${t('squad.neverSynced')}</span>`;
 
     return `
       <div class="squad-chip ${isMe ? 'squad-chip--me' : ''}" data-member-id="${encodeURIComponent(m.userId)}">
         <div class="squad-chip__info">
           <div class="squad-chip__name-row">
-            <span class="squad-chip__name">${escapeHtml(m.username || "Membre")}${incomplete}</span>
+            <span class="squad-chip__name">${escapeHtml(m.username || t("squad.memberFallback"))}${incomplete}</span>
           </div>
           <div class="squad-chip__meta-row">
             <span class="squad-chip__since">${membershipSince(m.joinedAt)}</span>
@@ -541,7 +541,7 @@ function renderSquadMembers() {
   };
 
   if (filtered.length === 0) {
-    els.squadMembers.innerHTML = `<p class="squad-empty">Aucun membre dans cette catégorie.</p>`;
+    els.squadMembers.innerHTML = `<p class="squad-empty">${t("squad.emptyCategory")}</p>`;
     return;
   }
   els.squadMembers.innerHTML = filtered.map(renderChip).join("");
@@ -554,25 +554,25 @@ function openMemberActionsDialog(userId, username) {
 
   state.pendingMemberAction = { userId, username: username || m.username };
   if (els.memberActionsTitle) {
-    els.memberActionsTitle.textContent = `Actions · ${escapeHtml(m.username || "Membre")}`;
+    els.memberActionsTitle.textContent = `Actions · ${escapeHtml(m.username || t("squad.memberFallback"))}`;
   }
 
   const items = [];
-  items.push({ action: "compare", label: "Comparer nos collections", icon: "⇄" });
+  items.push({ action: "compare", label: t("squad.compareCollections"), icon: "⇄" });
 
   if (m.friendshipStatus === "none" && m.canReceiveFriendRequest) {
-    items.push({ action: "add-friend", label: "Ajouter comme ami", icon: "+" });
+    items.push({ action: "add-friend", label: t("squad.addFriendTitle"), icon: "+" });
   }
 
   if (m.friendshipStatus === "accepted") {
-    items.push({ action: "invite-squad", label: "Inviter dans une autre escouade", icon: "⚑" });
-    items.push({ action: "priorities", label: "Voir ses priorités", icon: "★" });
+    items.push({ action: "invite-squad", label: t("squad.inviteToSquad"), icon: "⚑" });
+    items.push({ action: "priorities", label: t("squad.viewPriorities"), icon: "★" });
   } else if (m.friendshipStatus !== "blocked") {
-    items.push({ action: "priorities", label: "Voir ses priorités", icon: "★" });
+    items.push({ action: "priorities", label: t("squad.viewPriorities"), icon: "★" });
   }
 
-  items.push({ action: "block", label: "Bloquer", icon: "🚫", danger: true });
-  items.push({ action: "report", label: "Signaler", icon: "⚠", danger: true });
+  items.push({ action: "block", label: t("friends.block"), icon: "🚫", danger: true });
+  items.push({ action: "report", label: t("squad.report"), icon: "⚠", danger: true });
 
   els.memberActionsList.innerHTML = items.map(it => `
     <button type="button" class="member-action ${it.danger ? 'member-action--danger' : ''}" data-member-action="${it.action}">
@@ -586,14 +586,14 @@ function openMemberActionsDialog(userId, username) {
 
 async function handleMemberAction(action, userId, username) {
   const m = state.squadMembers.find(x => String(x.userId) === String(userId));
-  const name = username || (m && m.username) || "Membre";
+  const name = username || (m && m.username) || t("squad.memberFallback");
 
   switch (action) {
     case "compare":
       if (typeof compareWithUser === "function") {
         await compareWithUser(userId);
       } else {
-        toast("Fonction de comparaison indisponible.");
+        toast(t("squad.compareUnavailable"));
       }
       break;
     case "add-friend":
@@ -610,23 +610,23 @@ async function handleMemberAction(action, userId, username) {
       await showMemberPriorities(userId, name);
       break;
     case "block":
-      if (!confirm(`Bloquer ${escapeHtml(name)} ?`)) return;
+      if (!confirm(t("squad.confirmBlock", { name: escapeHtml(name) }))) return;
       try {
         const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/block`, { method: "POST", headers: authHeaders() });
         if (res.ok) {
-          toast(`${escapeHtml(name)} a été bloqué.`);
+          toast(t("squad.memberBlockedToast", { name: escapeHtml(name) }));
           if (state.activeSquad) await loadSquad(state.activeSquad);
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible de bloquer.");
+          toastError(data, "squad.blockFailed");
         }
       } catch (e) {
-        toast("Erreur réseau.");
+        toast(t("common.networkError"));
       }
       break;
     case "report":
       {
-        const reason = prompt(`Signaler ${escapeHtml(name)}. Décris le motif :`);
+        const reason = prompt(t("squad.confirmReport", { name: escapeHtml(name) }));
         if (!reason || !reason.trim()) return;
         try {
           const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/report`, {
@@ -635,13 +635,13 @@ async function handleMemberAction(action, userId, username) {
             body: JSON.stringify({ reason: reason.trim() })
           });
           if (res.ok) {
-            toast("Signalement envoyé.");
+            toast(t("squad.reportSent"));
           } else {
             const data = await res.json().catch(() => ({}));
-            toast(data.error || "Impossible de signaler.");
+            toastError(data, "squad.reportFailed");
           }
         } catch (e) {
-          toast("Erreur réseau.");
+          toast(t("common.networkError"));
         }
       }
       break;
@@ -653,14 +653,14 @@ async function handleMemberAction(action, userId, username) {
 async function showMemberPriorities(userId, username) {
   try {
     const res = await fetch(`${API_BASE}/collection/${encodeURIComponent(userId)}`, { headers: authHeaders() });
-    if (!res.ok) { toast("Collection non accessible."); return; }
+    if (!res.ok) { toast(t("squad.collectionPrivate")); return; }
     const collection = await res.json();
     const priorityIds = Object.entries(collection)
       .filter(([, entry]) => entry.priority && entry.priority !== "none")
       .map(([variantId]) => variantId);
 
     if (priorityIds.length === 0) {
-      toast(`${escapeHtml(username)} n'a défini aucune priorité.`);
+      toast(t("squad.prioritiesNone", { name: escapeHtml(username) }));
       return;
     }
 
@@ -669,7 +669,7 @@ async function showMemberPriorities(userId, username) {
       await compareWithUser(userId);
     }
   } catch (e) {
-    toast("Erreur lors du chargement des priorités.");
+    toast(t("squad.prioritiesError"));
   }
 }
 
@@ -699,7 +699,7 @@ function renderSquad() {
 
   if (state.squadMembers.length === 0) {
     els.squadCounter.textContent = "";
-    els.squadTableWrap.innerHTML = `<p class="squad-empty">En attente d'autres joueurs…<br>Partage le code <strong>${escapeHtml(state.activeSquad)}</strong> à tes amis !</p>`;
+    els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.waitingPlayers", { code: escapeHtml(state.activeSquad) })}</p>`;
     return;
   }
 
@@ -709,7 +709,7 @@ function renderSquad() {
   }
 
   const items = getAllItems();
-  const me = state.username || "Moi";
+  const me = state.username || t("squad.me");
   const players = [
     { name: me, collection: state.collection, lastUpdated: new Date().toISOString(), entryCount: Object.keys(state.collection).length },
     ...state.squadMembers.map(m => ({ name: m.username, collection: m.collection, lastUpdated: m.lastUpdated, entryCount: m.entryCount || 0 }))
@@ -719,10 +719,10 @@ function renderSquad() {
 
   const rows = computeSquadDiffs(items, players, filter, query);
 
-  els.squadCounter.innerHTML = `<span class="squad-counter__text">${rows.length} variante${rows.length > 1 ? "s" : ""}</span>`;
+  els.squadCounter.innerHTML = t("squad.varianteCount", { count: rows.length });
 
   if (rows.length === 0) {
-    els.squadTableWrap.innerHTML = `<p class="squad-empty">Aucun résultat pour ce filtre.</p>`;
+    els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.emptyFilter")}</p>`;
     return;
   }
 
@@ -748,7 +748,7 @@ function renderSquad() {
 function renderSquadTable(rows, players, items) {
   const colCount = players.length;
   const parts = [];
-  parts.push(`<table class="squad-table"><thead><tr><th class="squad-table__sprite">Variante</th>`);
+  parts.push(`<table class="squad-table"><thead><tr><th class="squad-table__sprite">${t("squad.variantHeader")}</th>`);
   for (const p of players) {
     const shortName = escapeHtml(p.name.length > 8 ? p.name.slice(0, 7) + "…" : p.name);
     parts.push(`<th class="squad-table__player" title="${escapeHtml(p.name)}">${shortName}</th>`);
@@ -791,7 +791,7 @@ function renderSquadCards(rows, players, items) {
 
     if (row.ownedBy.length > 0) {
       parts.push(`<div class="squad-card__group squad-card__group--owned">`);
-      parts.push(`<span class="squad-card__label">Possédé par</span>`);
+      parts.push(`<span class="squad-card__label">${t("squad.ownedByLabel")}</span>`);
       parts.push(`<div class="squad-card__players">`);
       for (const name of row.ownedBy) {
         parts.push(`<span class="squad-card__player squad-card__player--owned">${escapeHtml(name)}</span>`);
@@ -801,7 +801,7 @@ function renderSquadCards(rows, players, items) {
 
     if (row.priorityBy.length > 0) {
       parts.push(`<div class="squad-card__group squad-card__group--prio">`);
-      parts.push(`<span class="squad-card__label">Priorité pour</span>`);
+      parts.push(`<span class="squad-card__label">${t("squad.priorityFor2")}</span>`);
       parts.push(`<div class="squad-card__players">`);
       for (const name of row.priorityBy) {
         parts.push(`<span class="squad-card__player squad-card__player--prio">${escapeHtml(name)}</span>`);
@@ -811,7 +811,7 @@ function renderSquadCards(rows, players, items) {
 
     if (row.missingBy.length > 0) {
       parts.push(`<div class="squad-card__group squad-card__group--missing">`);
-      parts.push(`<span class="squad-card__label">Manque à</span>`);
+      parts.push(`<span class="squad-card__label">${t("squad.missingByLabel")}</span>`);
       parts.push(`<div class="squad-card__players">`);
       for (const name of row.missingBy) {
         parts.push(`<span class="squad-card__player squad-card__player--missing">${escapeHtml(name)}</span>`);
@@ -820,7 +820,7 @@ function renderSquadCards(rows, players, items) {
     }
 
     if (row.nobodyHasIt) {
-      parts.push(`<div class="squad-card__nobody">Personne ne l'a</div>`);
+      parts.push(`<div class="squad-card__nobody">${t("squad.filterMissingAll")}</div>`);
     }
 
     parts.push(`</div>`);
@@ -843,8 +843,8 @@ function renderSquadHunt(rows, players, items) {
     parts.push(`<div class="hunt-section">`);
     parts.push(`<div class="hunt-section__header hunt-section__header--nobody">`);
     parts.push(`<span class="hunt-section__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></span>`);
-    parts.push(`<div><h3 class="hunt-section__title">Personne ne l'a</h3>`);
-    parts.push(`<p class="hunt-section__sub">${nobodyRows.length} variante${nobodyRows.length > 1 ? "s" : ""} à chercher ensemble</p></div>`);
+    parts.push(`<div><h3 class="hunt-section__title">${t("squad.filterMissingAll")}</h3>`);
+    parts.push(t("squad.huntNobody", { count: nobodyRows.length }));
     parts.push(`</div>`);
 
     let currentSprite = "";
@@ -857,7 +857,7 @@ function renderSquadHunt(rows, players, items) {
       }
       const priorityByLabel = escapeHtml(row.priorityBy.join(", "));
       const prioTag = row.priorityBy.length > 0
-        ? ` <span class="hunt-prio" title="Priorité pour ${priorityByLabel}"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${priorityByLabel}</span>`
+        ? ` <span class="hunt-prio" title="${t('squad.priorityFor', { name: priorityByLabel })}"><svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${priorityByLabel}</span>`
         : "";
       parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span>${prioTag}</li>`);
     }
@@ -869,8 +869,8 @@ function renderSquadHunt(rows, players, items) {
     parts.push(`<div class="hunt-section">`);
     parts.push(`<div class="hunt-section__header hunt-section__header--partial">`);
     parts.push(`<span class="hunt-section__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20" fill="currentColor"/></svg></span>`);
-    parts.push(`<div><h3 class="hunt-section__title">Certains l'ont</h3>`);
-    parts.push(`<p class="hunt-section__sub">${partialRows.length} variante${partialRows.length > 1 ? "s" : ""} — demandez aux autres !</p></div>`);
+    parts.push(`<div><h3 class="hunt-section__title">${t("squad.huntSomeHave")}</h3>`);
+    parts.push(t("squad.huntPartial", { count: partialRows.length }));
     parts.push(`</div>`);
 
     let currentSprite = "";
@@ -891,8 +891,8 @@ function renderSquadHunt(rows, players, items) {
     parts.push(`<div class="hunt-section hunt-section--collapsed" id="huntEveryoneSection">`);
     parts.push(`<div class="hunt-section__header hunt-section__header--done hunt-section__toggle" data-toggle="huntEveryoneList">`);
     parts.push(`<span class="hunt-section__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>`);
-    parts.push(`<div><h3 class="hunt-section__title">Tout le monde l'a</h3>`);
-    parts.push(`<p class="hunt-section__sub">${everyoneRows.length} variante${everyoneRows.length > 1 ? "s" : ""} — rien à faire ici</p></div>`);
+    parts.push(`<div><h3 class="hunt-section__title">${t("squad.filterEveryone")}</h3>`);
+    parts.push(t("squad.huntEveryone", { count: everyoneRows.length }));
     parts.push(`<span class="hunt-section__chevron">›</span>`);
     parts.push(`</div>`);
 
@@ -910,7 +910,7 @@ function renderSquadHunt(rows, players, items) {
   }
 
   if (nobodyRows.length === 0 && partialRows.length === 0 && everyoneRows.length === 0) {
-    parts.push(`<div class="hunt-section"><div class="hunt-section__header hunt-section__header--done"><span class="hunt-section__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><div><h3 class="hunt-section__title">Beau travail !</h3><p class="hunt-section__sub">Tout a été trouvé par au moins un membre.</p></div></div></div>`);
+    parts.push(`<div class="hunt-section"><div class="hunt-section__header hunt-section__header--done"><span class="hunt-section__icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span><div><h3 class="hunt-section__title">${t("squad.allFoundTitle")}</h3><p class="hunt-section__sub">${t("squad.allFoundSub")}</p></div></div></div>`);
   }
 
   parts.push(buildSquadSummary(players, items));
@@ -947,7 +947,7 @@ function renderSquadDuel(rows, players, items) {
     parts.push(`<div class="hunt-section__header ${colorClass}">`);
     parts.push(`<span class="hunt-section__icon">${icon}</span>`);
     parts.push(`<div><h3 class="hunt-section__title">${title}</h3>`);
-    parts.push(`<p class="hunt-section__sub">${sectionRows.length} variante${sectionRows.length > 1 ? "s" : ""}${subtitle ? " — " + subtitle : ""}</p></div>`);
+    parts.push(t("squad.duelSection", { count: sectionRows.length, subtitle: subtitle || "" }));
     parts.push(`</div>`);
 
     if (sectionRows.length > 0) {
@@ -966,21 +966,21 @@ function renderSquadDuel(rows, players, items) {
   }
 
   if (onlyA.length > 0) {
-    buildDuelSection(`${escapeHtml(pA.name)} a, ${escapeHtml(pB.name)} n'a pas`, "→", "hunt-section__header--partial", onlyA, "à échanger ?");
+    buildDuelSection(t("squad.duelOnlyA", { a: escapeHtml(pA.name), b: escapeHtml(pB.name) }), "→", "hunt-section__header--partial", onlyA, t("squad.duelSubtitle"));
   }
 
   if (onlyB.length > 0) {
     if (onlyA.length > 0) parts.push(`<div class="hunt-divider"></div>`);
-    buildDuelSection(`${escapeHtml(pB.name)} a, ${escapeHtml(pA.name)} n'a pas`, "←", "hunt-section__header--nobody", onlyB, "à échanger ?");
+    buildDuelSection(t("squad.duelOnlyB", { a: escapeHtml(pA.name), b: escapeHtml(pB.name) }), "←", "hunt-section__header--nobody", onlyB, t("squad.duelSubtitle"));
   }
 
   if (common.length > 0) {
     if (onlyA.length > 0 || onlyB.length > 0) parts.push(`<div class="hunt-divider"></div>`);
-    buildDuelSection("En commun", "∩", "hunt-section__header--done", common, "");
+    buildDuelSection(t("squad.inCommon"), "∩", "hunt-section__header--done", common, "");
   }
 
   if (onlyA.length === 0 && onlyB.length === 0 && common.length === 0) {
-    parts.push(`<p class="squad-empty">Aucune donnée pour ces deux joueurs.</p>`);
+    parts.push(`<p class="squad-empty">${t("squad.noDuelData")}</p>`);
   }
 
   els.squadTableWrap.innerHTML = parts.join("");
@@ -1016,29 +1016,29 @@ function renderSquadSession(players, items) {
 
   parts.push(`<div class="session-header">`);
   parts.push(`<span class="session-header__icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>`);
-  parts.push(`<div><h3 class="session-header__title">Mode Session</h3>`);
-  parts.push(`<p class="session-header__sub">Progression : ${teamPct}% — ${atLeastOne}/${total} trouvés</p></div>`);
+  parts.push(`<div><h3 class="session-header__title">${t("squad.sessionMode")}</h3>`);
+  parts.push(`<p class="session-header__sub">${t("squad.sessionProgress", { pct: teamPct, found: atLeastOne, total: total })}</p></div>`);
   parts.push(`</div>`);
 
   if (prioItems.length > 0) {
     parts.push(`<div class="session-block">`);
-    parts.push(`<h4 class="session-block__title session-block__title--prio"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Priorités squad</h4>`);
+    parts.push(`<h4 class="session-block__title session-block__title--prio"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ${t("squad.prioritiesHeader")}</h4>`);
     parts.push(`<ul class="session-list">`);
     for (const r of prioItems.slice(0, 15)) {
       parts.push(`<li class="session-list__item">`);
       parts.push(`<span class="session-list__name">${escapeHtml(r.item.spriteName)} <span class="session-list__variant">${escapeHtml(r.item.variant)}</span></span>`);
-      parts.push(`<span class="session-list__meta session-list__meta--missing">manque à ${r.missingCount}</span>`);
+      parts.push(`<span class="session-list__meta session-list__meta--missing">${t("squad.missingTo", { count: r.missingCount })}</span>`);
       parts.push(`</li>`);
     }
     if (prioItems.length > 15) {
-      parts.push(`<li class="session-list__more">+${prioItems.length - 15} autres</li>`);
+      parts.push(`<li class="session-list__more">+${prioItems.length - 15} ${t("engine.more")}</li>`);
     }
     parts.push(`</ul></div>`);
   }
 
   if (nobodyItems.length > 0) {
     parts.push(`<div class="session-block">`);
-    parts.push(`<h4 class="session-block__title session-block__title--nobody"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Personne ne l'a</h4>`);
+    parts.push(`<h4 class="session-block__title session-block__title--nobody"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> ${t("squad.filterMissingAll")}</h4>`);
     parts.push(`<ul class="session-list">`);
     for (const r of nobodyItems.slice(0, 20)) {
       parts.push(`<li class="session-list__item">`);
@@ -1047,14 +1047,14 @@ function renderSquadSession(players, items) {
       parts.push(`</li>`);
     }
     if (nobodyItems.length > 20) {
-      parts.push(`<li class="session-list__more">+${nobodyItems.length - 20} autres</li>`);
+      parts.push(`<li class="session-list__more">+${nobodyItems.length - 20} ${t("engine.more")}</li>`);
     }
     parts.push(`</ul></div>`);
   }
 
   if (toCheck.length > 0) {
     parts.push(`<div class="session-block">`);
-    parts.push(`<h4 class="session-block__title session-block__title--check">? À vérifier</h4>`);
+    parts.push(`<h4 class="session-block__title session-block__title--check">? ${t("squad.toCheck")}</h4>`);
     parts.push(`<ul class="session-list">`);
     for (const r of toCheck.slice(0, 15)) {
       const who = players.filter((_, i) => r.statuses[i] === "unsure" || r.statuses[i] === "spotted").map(p => p.name);
@@ -1064,13 +1064,13 @@ function renderSquadSession(players, items) {
       parts.push(`</li>`);
     }
     if (toCheck.length > 15) {
-      parts.push(`<li class="session-list__more">+${toCheck.length - 15} autres</li>`);
+      parts.push(`<li class="session-list__more">+${toCheck.length - 15} ${t("engine.more")}</li>`);
     }
     parts.push(`</ul></div>`);
   }
 
   if (prioItems.length === 0 && nobodyItems.length === 0 && toCheck.length === 0) {
-    parts.push(`<div class="session-block"><p class="squad-empty">Tout est en ordre ! Rien à signaler.</p></div>`);
+    parts.push(`<div class="session-block"><p class="squad-empty">${t("squad.allGood")}</p></div>`);
   }
 
   parts.push(`</div>`);
@@ -1082,55 +1082,55 @@ function renderSquadSession(players, items) {
 // ── Squad : unified activity history view ──
 function formatSquadHistoryTime(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(document.documentElement.lang || "fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
 function renderSquadHistoryEntry(e, itemMap) {
   const meta = e.metadata || {};
-  const username = escapeHtml(e.username || "Utilisateur anonyme");
+  const username = escapeHtml(e.username || t("squad.anonymousUser"));
   switch (e.type) {
     case "member_joined":
-      return `<strong>${username}</strong> a rejoint la squad.`;
+      return `${t("squad.historyJoined", { name: username })}`;
     case "friendship":
-      return `<strong>${escapeHtml(meta.usernameA || "Quelqu'un")}</strong> et <strong>${escapeHtml(meta.usernameB || "Quelqu'un")}</strong> sont devenus amis.`;
+      return `${t("squad.historyFriendship", { a: escapeHtml(meta.usernameA || t("squad.someone")), b: escapeHtml(meta.usernameB || t("squad.someone")) })}`;
     case "milestone":
-      return `La squad a atteint <strong>${safePercentage(meta.completionRate ?? meta.threshold, 0)} %</strong> de complétion.`;
+      return `${t("squad.historyMilestone", { pct: safePercentage(meta.completionRate ?? meta.threshold, 0) })}`;
     case "goal_created":
-      return `<strong>${username}</strong> a créé un objectif collectif${meta.goalName ? ` : ${escapeHtml(meta.goalName)}` : ""}.`;
+      return `${t("squad.historyGoal", { name: username, goal: meta.goalName ? ` : ${escapeHtml(meta.goalName)}` : "" })}`;
     case "collection_update":
     default: {
       const it = itemMap.get(e.sprite_id);
       const spriteName = it ? escapeHtml(it.spriteName) : escapeHtml(meta.spriteName || e.sprite_id);
       const variant = it ? `<span class="history-list__variant">${escapeHtml(it.variant)}</span>` : "";
-      const suffix = meta.firstInSquad ? " <em>(absent de la squad)</em>" : "";
-      return `<strong>${username}</strong> a obtenu ${spriteName} ${variant}${suffix}`;
+      const suffix = meta.firstInSquad ? ` <em>(${t("squad.historyFirstInSquad")})</em>` : "";
+      return `${t("squad.historyObtained", { name: username, sprite: spriteName, variant: variant, suffix: suffix })}`;
     }
   }
 }
 
 async function renderSquadHistory() {
   els.squadCounter.innerHTML = "";
-  els.squadTableWrap.innerHTML = `<p class="squad-empty">Chargement de l'historique…</p>`;
+  els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.historyLoading")}</p>`;
 
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/history?days=7`, {
       headers: authHeaders()
     });
     if (!res.ok) {
-      els.squadTableWrap.innerHTML = `<p class="squad-empty">Impossible de charger l'historique.</p>`;
+      els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.historyFailed")}</p>`;
       return;
     }
     const data = await res.json();
     const entries = data.entries || [];
 
     if (entries.length === 0) {
-      els.squadTableWrap.innerHTML = `<p class="squad-empty">Aucune activité récente dans la squad.</p>`;
+      els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.historyEmpty")}</p>`;
       return;
     }
 
     const dayMap = new Map();
     for (const e of entries) {
-      const day = new Date(e.created_at).toLocaleDateString("fr-FR", {
+      const day = new Date(e.created_at).toLocaleDateString(document.documentElement.lang || "fr-FR", {
         weekday: "long", day: "numeric", month: "long"
       });
       if (!dayMap.has(day)) dayMap.set(day, []);
@@ -1156,7 +1156,7 @@ async function renderSquadHistory() {
       }
 
       if (dayEntries.length > 100) {
-        parts.push(`<li class="history-list__more">+${dayEntries.length - 100} autres</li>`);
+        parts.push(`<li class="history-list__more">+${dayEntries.length - 100} ${t("engine.more")}</li>`);
       }
       parts.push(`</ul></div>`);
     }
@@ -1164,15 +1164,15 @@ async function renderSquadHistory() {
     parts.push(`</div>`);
     els.squadTableWrap.innerHTML = parts.join("");
   } catch (e) {
-    els.squadTableWrap.innerHTML = `<p class="squad-empty">Erreur réseau.</p>`;
+    els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("common.networkError")}</p>`;
   }
 }
 
 // ── Squad : Recommendations view (complementarity engine) ──
 async function renderSquadRecommendations() {
   if (!state.activeSquad) return;
-  els.squadCounter.innerHTML = `<span class="squad-counter__text">Recommandations</span>`;
-  els.squadTableWrap.innerHTML = `<p class="squad-empty">Chargement des recommandations…</p>`;
+  els.squadCounter.innerHTML = `<span class="squad-counter__text">${t("squad.recommendations")}</span>`;
+  els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.recsLoading")}</p>`;
   try {
     const res = await fetch(`${API_BASE}/recommendations`, { headers: authHeadersOnly() });
     if (!res.ok) throw new Error("recommendations failed");
@@ -1182,8 +1182,8 @@ async function renderSquadRecommendations() {
     const ownedCount = safeFiniteNumber(data.ownedCount, 0, { min: 0, max: 1000000 });
     const totalVariants = safeFiniteNumber(data.totalVariants, 0, { min: 0, max: 1000000 });
     const ownedRate = safePercentage(data.ownedRate, 0);
-    parts.push(`<div class="recommendations-header"><h3 class="recommendations-title">Complémentarité sociale</h3><p class="recommendations-subtitle">Tu possèdes ${ownedCount}/${totalVariants} variantes actifs (${ownedRate}%). Pour les priorités, assignations et simulations de la squad, utilise le Moteur.</p></div>`);
-    parts.push(`<div class="recommendations-engine-cta"><button type="button" class="ghost-button" id="openSquadEngineFromRecs">Ouvrir le Moteur (recommandations)</button></div>`);
+    parts.push(`<div class="recommendations-header"><h3 class="recommendations-title">${t("squad.recTitle")}</h3><p class="recommendations-subtitle">${t("squad.recSubtitle", { owned: ownedCount, total: totalVariants, rate: ownedRate })}</p></div>`);
+    parts.push(`<div class="recommendations-engine-cta"><button type="button" class="ghost-button" id="openSquadEngineFromRecs">${t("squad.openEngineFromRecs")}</button></div>`);
 
     if (data.mostComplementary) {
       const m = data.mostComplementary;
@@ -1195,17 +1195,17 @@ async function renderSquadRecommendations() {
       parts.push(`<div class="recommendation-card recommendation-card--highlight">`);
       parts.push(`<div class="recommendation-card__header">`);
       parts.push(`<span class="recommendation-card__name">${escapeHtml(m.displayName || m.username)}</span>`);
-      parts.push(`<span class="recommendation-card__badge">Plus complémentaire</span>`);
+      parts.push(`<span class="recommendation-card__badge">${t("squad.mostComplementaryBadge")}</span>`);
       parts.push(`</div>`);
       parts.push(`<div class="recommendation-card__body">`);
-      parts.push(`<p>${escapeHtml(m.displayName || m.username)} possède <strong>${safeFiniteNumber(m.missingCount, 0, { min: 0, max: 1000000 })}</strong> variantes qui te manquent, dont <strong>${safeFiniteNumber(m.priorityMatchCount, 0, { min: 0, max: 1000000 })}</strong> prioritaires.</p>`);
-      parts.push(`<p>Ensemble, vous couvrez <strong>${safePercentage(m.jointCoverage, 0)}%</strong> des variantes actives.</p>`);
+      parts.push(`<p>${t("squad.recMemberMissing", { name: escapeHtml(m.displayName || m.username), count: safeFiniteNumber(m.missingCount, 0, { min: 0, max: 1000000 }), priority: safeFiniteNumber(m.priorityMatchCount, 0, { min: 0, max: 1000000 }) })}</p>`);
+      parts.push(`<p>${t("squad.recJointCoverage", { pct: safePercentage(m.jointCoverage, 0) })}</p>`);
       if (rarityParts) parts.push(`<p class="recommendation-rarities">${rarityParts}</p>`);
       parts.push(`</div></div>`);
     }
 
     if (data.friends && data.friends.length > 0) {
-      parts.push(`<h4 class="recommendations-section-title">Amis et membres de squad</h4>`);
+      parts.push(`<h4 class="recommendations-section-title">${t("squad.friendsAndMembers")}</h4>`);
       parts.push(`<div class="recommendation-list">`);
       for (const f of data.friends) {
         parts.push(`<div class="recommendation-card">
@@ -1214,7 +1214,7 @@ async function renderSquadRecommendations() {
             <span class="recommendation-card__score">score ${safeFiniteNumber(f.score, 0, { min: 0, max: 1000000 })}</span>
           </div>
           <div class="recommendation-card__body">
-            <p><strong>${safeFiniteNumber(f.missingCount, 0, { min: 0, max: 1000000 })}</strong> variantes te manquent chez lui · <strong>${safeFiniteNumber(f.priorityMatchCount, 0, { min: 0, max: 1000000 })}</strong> priorités · couverture commune <strong>${safePercentage(f.jointCoverage, 0)}%</strong></p>
+            <p>${t("squad.recFriendStats", { count: safeFiniteNumber(f.missingCount, 0, { min: 0, max: 1000000 }), priority: safeFiniteNumber(f.priorityMatchCount, 0, { min: 0, max: 1000000 }), pct: safePercentage(f.jointCoverage, 0) })}</p>
           </div>
         </div>`);
       }
@@ -1222,7 +1222,7 @@ async function renderSquadRecommendations() {
     }
 
     if (data.squadAdditions && data.squadAdditions.length > 0) {
-      parts.push(`<h4 class="recommendations-section-title">Renforcer une squad</h4>`);
+      parts.push(`<h4 class="recommendations-section-title">${t("squad.strengthenSquad")}</h4>`);
       parts.push(`<div class="recommendation-list">`);
       for (const s of data.squadAdditions) {
         parts.push(`<div class="recommendation-card">
@@ -1231,7 +1231,7 @@ async function renderSquadRecommendations() {
             <span class="recommendation-card__gain">+${safePercentage(s.gain, 0)}%</span>
           </div>
           <div class="recommendation-card__body">
-            <p>Ajouter <strong>${escapeHtml(s.candidate.displayName || s.candidate.username)}</strong> ferait passer la couverture de <strong>${safePercentage(s.currentRate, 0)}%</strong> à <strong>${safePercentage(s.newRate, 0)}%</strong>.</p>
+            <p>${t("squad.addBoostsCoverage", { name: `<strong>${escapeHtml(s.candidate.displayName || s.candidate.username)}</strong>`, from: `<strong>${safePercentage(s.currentRate, 0)}%</strong>`, to: `<strong>${safePercentage(s.newRate, 0)}%</strong>` })}</p>
           </div>
         </div>`);
       }
@@ -1249,7 +1249,7 @@ async function renderSquadRecommendations() {
     }
   } catch (e) {
     console.error("[renderSquadRecommendations]", e);
-    els.squadTableWrap.innerHTML = `<p class="squad-empty">Impossible de charger les recommandations.</p>`;
+    els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("squad.recLoadFailed")}</p>`;
   }
 }
 
@@ -1265,16 +1265,16 @@ async function handleRecommendedFriendInvite(e) {
       headers: authHeaders()
     });
     if (res.ok) {
-      toast("Invitation envoyée.");
+      toast(t("squad.inviteSent"));
       btn.disabled = true;
-      btn.textContent = "Invité";
+      btn.textContent = t("squad.invited");
     } else {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible d'inviter.");
+      toastError(data, "squad.inviteFailed");
     }
   } catch (e) {
     console.error("[invite recommended]", e);
-    toast("Erreur réseau.");
+    toast(t("common.networkError"));
   }
 }
 
@@ -1284,7 +1284,7 @@ async function renderSquadRecommendedFriends() {
     els.squadRecommendedFriends.innerHTML = "";
     return;
   }
-  els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">Chargement…</p>`;
+  els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">${t("squad.loading")}</p>`;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/recommended-friends`, { headers: authHeadersOnly() });
     if (!res.ok) throw new Error("recommended friends failed");
@@ -1296,22 +1296,22 @@ async function renderSquadRecommendedFriends() {
     }
     const squadName = escapeHtml(data.squadName || els.squadActiveName?.textContent || "l'escouade");
     const parts = [];
-    parts.push(`<div class="recommended-friends-section"><h4 class="recommended-friends__title">Amis recommandés</h4><div class="recommended-friends__list">`);
+    parts.push(`<div class="recommended-friends-section"><h4 class="recommended-friends__title">${t("squad.recommendedFriendsTitle")}</h4><div class="recommended-friends__list">`);
     for (const c of candidates) {
       const btn = c.canInvite
-        ? `<button type="button" class="login-btn" data-recommended-id="${encodeURIComponent(c.userId)}" data-action="invite-recommended">Inviter</button>`
-        : `<button type="button" class="ghost-button" disabled>Inviter</button>`;
+        ? `<button type="button" class="login-btn" data-recommended-id="${encodeURIComponent(c.userId)}" data-action="invite-recommended">${t("squad.inviteBtn")}</button>`
+        : `<button type="button" class="ghost-button" disabled>${t("squad.inviteBtn")}</button>`;
       const contrib = safeFiniteNumber(c.potentialContribution || c.newVariantsForSquad, 0, { min: 0, max: 1000000 });
       const contributionLine = contrib > 0
-        ? `<span class="recommended-friend__stat recommended-friend__stat--contribution">${escapeHtml(c.displayName || c.username)} pourrait apporter ${contrib} nouvelle${contrib > 1 ? 's' : ''} variante${contrib > 1 ? 's' : ''} à ${squadName}.</span>`
+        ? `<span class="recommended-friend__stat recommended-friend__stat--contribution">${t("squad.recContrib", { name: escapeHtml(c.displayName || c.username), count: contrib, squad: squadName })}</span>`
         : "";
       parts.push(`<div class="recommended-friend">
         <div class="recommended-friend__info">
           <span class="recommended-friend__name">${escapeHtml(c.displayName || c.username)}</span>
           <span class="recommended-friend__meta">
-            <span class="recommended-friend__stat">+${safeFiniteNumber(c.newVariantsForSquad, 0, { min: 0, max: 1000000 })} variantes nouvelles</span>
-            <span class="recommended-friend__stat">${safeFiniteNumber(c.mythicNewVariants, 0, { min: 0, max: 1000000 })} variantes mythiques manquantes</span>
-            <span class="recommended-friend__stat">Score de complémentarité : ${safePercentage(c.complementarityScore, 0)}%</span>
+            <span class="recommended-friend__stat">+${safeFiniteNumber(c.newVariantsForSquad, 0, { min: 0, max: 1000000 })} ${t("squad.newVariants")}</span>
+            <span class="recommended-friend__stat">${safeFiniteNumber(c.mythicNewVariants, 0, { min: 0, max: 1000000 })} ${t("squad.mythicMissing")}</span>
+            <span class="recommended-friend__stat">${t("squad.complementarityScoreLabel", { pct: safePercentage(c.complementarityScore, 0) })}</span>
             ${contributionLine}
           </span>
         </div>
@@ -1325,7 +1325,7 @@ async function renderSquadRecommendedFriends() {
     });
   } catch (e) {
     console.error("[renderSquadRecommendedFriends]", e);
-    els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">Impossible de charger les amis recommandés.</p>`;
+    els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">${t("squad.recommendedFriendsFailed")}</p>`;
   }
 }
 
@@ -1335,7 +1335,7 @@ async function renderSquadComplementaryPairs() {
     els.squadComplementaryPairs.innerHTML = "";
     return;
   }
-  els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">Chargement…</p>`;
+  els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">${t("squad.loading")}</p>`;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/complementary-pairs`, { headers: authHeadersOnly() });
     if (!res.ok) throw new Error("complementary pairs failed");
@@ -1346,7 +1346,7 @@ async function renderSquadComplementaryPairs() {
       return;
     }
     const parts = [];
-    parts.push(`<div class="complementary-pairs-section"><h4 class="complementary-pairs__title">Membres complémentaires</h4><div class="complementary-pairs__list">`);
+    parts.push(`<div class="complementary-pairs-section"><h4 class="complementary-pairs__title">${t("squad.complementaryTitle")}</h4><div class="complementary-pairs__list">`);
     for (const p of pairs) {
       parts.push(`<button type="button" class="complementary-pair" data-user-a-id="${encodeURIComponent(p.userAId)}" data-user-a-name="${escapeHtml(p.userAName)}" data-user-b-id="${encodeURIComponent(p.userBId)}" data-user-b-name="${escapeHtml(p.userBName)}">
         <span class="complementary-pair__names">${escapeHtml(p.userAName)} <span class="complementary-pair__cross">×</span> ${escapeHtml(p.userBName)}</span>
@@ -1360,7 +1360,7 @@ async function renderSquadComplementaryPairs() {
     });
   } catch (e) {
     console.error("[renderSquadComplementaryPairs]", e);
-    els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">Impossible de charger les paires complémentaires.</p>`;
+    els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">${t("squad.complementaryPairsFailed")}</p>`;
   }
 }
 
@@ -1406,22 +1406,22 @@ function buildSquadSummary(players, items) {
   parts.push(`<div class="team-score">`);
   parts.push(`<div class="team-score__ring"><svg viewBox="0 0 36 36" class="team-score__svg"><path class="team-score__bg" d="M18 2.0845a15.9155 15.9155 0 1 1 0 31.831 15.9155 15.9155 0 1 1 0-31.831" /><path class="team-score__fill" stroke-dasharray="${teamPct}, 100" d="M18 2.0845a15.9155 15.9155 0 1 1 0 31.831 15.9155 15.9155 0 1 1 0-31.831" /></svg><span class="team-score__pct">${teamPct}%</span></div>`);
   parts.push(`<div class="team-score__details">`);
-  parts.push(`<h3 class="team-score__title">Progression équipe</h3>`);
+  parts.push(`<h3 class="team-score__title">${t("squad.teamProgress")}</h3>`);
   parts.push(`<div class="team-score__rows">`);
-  parts.push(`<div class="team-score__row"><span class="team-score__label">Au moins 1 joueur</span><span class="team-score__val team-score__val--good">${atLeastOne} / ${total}</span></div>`);
-  parts.push(`<div class="team-score__row"><span class="team-score__label">Toute la squad</span><span class="team-score__val team-score__val--full">${everyoneCount} / ${total}</span></div>`);
-  parts.push(`<div class="team-score__row"><span class="team-score__label">Personne ne l'a</span><span class="team-score__val team-score__val--nobody">${nobodyCount} / ${total}</span></div>`);
+  parts.push(`<div class="team-score__row"><span class="team-score__label">${t("squad.atLeastOne")}</span><span class="team-score__val team-score__val--good">${atLeastOne} / ${total}</span></div>`);
+  parts.push(`<div class="team-score__row"><span class="team-score__label">${t("squad.wholeSquad")}</span><span class="team-score__val team-score__val--full">${everyoneCount} / ${total}</span></div>`);
+  parts.push(`<div class="team-score__row"><span class="team-score__label">${t("squad.filterMissingAll")}</span><span class="team-score__val team-score__val--nobody">${nobodyCount} / ${total}</span></div>`);
   parts.push(`</div></div></div>`);
 
   parts.push(`<div class="squad-summary__divider"></div>`);
-  parts.push(`<h4 class="squad-summary__subtitle">Par joueur</h4>`);
+  parts.push(`<h4 class="squad-summary__subtitle">${t("squad.perPlayer")}</h4>`);
   parts.push(`<div class="squad-summary__grid">`);
   stats.forEach((s, i) => {
     parts.push(`<div class="squad-stat">
       <span class="squad-stat__name">${escapeHtml(s.name)}</span>
       <div class="squad-stat__bar"><div class="squad-stat__fill" style="width:${s.pct}%"></div></div>
       <span class="squad-stat__pct">${s.owned}/${s.total} (${s.pct}%)</span>
-      <span class="squad-stat__unique">${uniqueMap[i]} exclu.</span>
+      <span class="squad-stat__unique">${t("squad.uniqueExcl", { count: uniqueMap[i] })}</span>
     </div>`);
   });
   parts.push(`</div></div>`);

@@ -10,7 +10,7 @@ const VERIFICATION_STATUSES = Object.freeze([
   "officially_verified"
 ]);
 
-/** French display copy for name_key / description_key (v1, no i18n files yet). */
+/** French display copy for name_key / description_key. */
 const BADGE_COPY = Object.freeze({
   "badge.first_collection.name": "Première collection",
   "badge.first_collection.description": "Vous avez ajouté votre première variante.",
@@ -44,6 +44,41 @@ const BADGE_COPY = Object.freeze({
   "badge.social.description": "Vous avez au moins un ami.",
   "badge.event_complete.name": "Événement accompli",
   "badge.event_complete.description": "Vous avez complété au moins un événement."
+});
+
+const BADGE_COPY_EN = Object.freeze({
+  "badge.first_collection.name": "First collection",
+  "badge.first_collection.description": "You added your first variant.",
+  "badge.collection_25.name": "Collection 25%",
+  "badge.collection_25.description": "You reached 25% completion of the published catalogue.",
+  "badge.collection_50.name": "Collection 50%",
+  "badge.collection_50.description": "You reached 50% completion of the published catalogue.",
+  "badge.collection_75.name": "Collection 75%",
+  "badge.collection_75.description": "You reached 75% completion of the published catalogue.",
+  "badge.collection_100.name": "Collection 100%",
+  "badge.collection_100.description": "You reached 100% completion on a catalogue version.",
+  "badge.explorer.name": "Explorer",
+  "badge.explorer.description": "You discovered 5 Sprite families.",
+  "badge.reliable_collection.name": "Reliable collection",
+  "badge.reliable_collection.description": "Your collection is at least 90% filled in.",
+  "badge.squad_member.name": "Squad spirit",
+  "badge.squad_member.description": "You are part of a squad.",
+  "badge.squad_founder.name": "Squad founder",
+  "badge.squad_founder.description": "You created a squad joined by another collector and active for at least 24 hours.",
+  "badge.complementary_collection.name": "Complementary collection",
+  "badge.complementary_collection.description": "Your collection meaningfully complements a friend or teammate.",
+  "badge.archivist.name": "Archivist",
+  "badge.archivist.description": "You kept a complete, up-to-date collection across three catalogue updates.",
+  "badge.early_collector.name": "Early Collector",
+  "badge.early_collector.description": "You were among the collectors present from the start of sprite-index.",
+  "badge.all_rarities.name": "One variant of each rarity",
+  "badge.all_rarities.description": "You own at least one variant of each official catalogue rarity.",
+  "badge.event_completed.name": "Event completed",
+  "badge.event_completed.description": "You completed all variants of an event.",
+  "badge.social.name": "Social",
+  "badge.social.description": "You have at least one friend.",
+  "badge.event_complete.name": "Event accomplished",
+  "badge.event_complete.description": "You completed at least one event."
 });
 
 /** Fixed Early Collector cutoff — never change retroactively once seeded (Étapes 47–48). */
@@ -255,8 +290,16 @@ const LEGACY_CODE_MAP = Object.freeze({
   collector_100: "collection_100"
 });
 
-function resolveBadgeCopy(key, fallback = "") {
-  return BADGE_COPY[key] || fallback || key;
+function resolveBadgeCopy(key, fallback = "", lang = "fr") {
+  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  if (locale === "en" && BADGE_COPY_EN[key]) return BADGE_COPY_EN[key];
+  return BADGE_COPY[key] || BADGE_COPY_EN[key] || fallback || key;
+}
+
+function labelForBadgeCode(code, lang = "fr") {
+  if (!code) return null;
+  const key = `badge.${code}.name`;
+  return resolveBadgeCopy(key, code, lang);
 }
 
 /**
@@ -1144,11 +1187,13 @@ module.exports = {
   VERIFICATION_STATUSES,
   BADGE_SEED,
   BADGE_COPY,
+  BADGE_COPY_EN,
   EARLY_COLLECTOR_BEFORE,
   MILESTONE_BY_CODE,
   LEGACY_CODE_MAP,
   MILESTONE_BADGES: MILESTONE_BY_CODE,
   resolveBadgeCopy,
+  labelForBadgeCode,
   meetsCompletionThreshold,
   evaluateRule,
   evaluateBadgeCondition,

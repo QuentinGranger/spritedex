@@ -272,6 +272,7 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS cookie_consent JSONB;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(50);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(5) NOT NULL DEFAULT 'fr';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS friend_invites_from VARCHAR(20) DEFAULT 'everyone';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS squad_invites_from VARCHAR(20) DEFAULT 'friends';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_visibility VARCHAR(20) DEFAULT 'public';

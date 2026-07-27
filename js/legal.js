@@ -1,5 +1,5 @@
 /* ── Legal UI helpers: viewer, cookie consent, CGU acceptance ────────────────
- * Depends on js/legal-content.js (loaded before this file).
+ * Depends on js/legal-content.js (and optionally js/legal-content-en.js).
  */
 
 // Backward-compatible alias map used by older openLegal() calls.
@@ -16,7 +16,10 @@ function openLegal(docIdOrAlias) {
     privacyPolicy: "politique-confidentialite"
   };
   const docId = aliasMap[docIdOrAlias] || docIdOrAlias;
-  const doc = LEGAL_DOCUMENTS[docId];
+  const lang = typeof appLocale === "function" ? appLocale() : "fr";
+  const doc = typeof getLegalDocument === "function"
+    ? getLegalDocument(docId, lang)
+    : LEGAL_DOCUMENTS[docId];
   if (!doc) return;
 
   const dialog = document.getElementById("legalDialog");
@@ -100,13 +103,13 @@ function showCookieBanner() {
   banner.className = "cookie-banner";
   banner.innerHTML = `
     <div class="cookie-banner__text">
-      <strong>Confidentialité et traceurs</strong>
-      <p>SPRITE-INDEX utilise uniquement des traceurs strictement nécessaires au fonctionnement (session, authentification, préférences). Aucun traceur de mesure d'audience n'est chargé.</p>
+      <strong>${t("cookie.title")}</strong>
+      <p>${t("cookie.desc")}</p>
     </div>
     <div class="cookie-banner__actions">
-      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieDetails">Voir les détails</button>
-      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieReject">Continuer sans accepter</button>
-      <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookieAccept">J'ai compris</button>
+      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieDetails">${t("cookie.details")}</button>
+      <button class="cookie-banner__btn cookie-banner__btn--secondary" id="cookieReject">${t("cookie.reject")}</button>
+      <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookieAccept">${t("cookie.accept")}</button>
     </div>
   `;
   document.body.appendChild(banner);
@@ -129,17 +132,17 @@ function openCookiePreferences() {
   dialog.className = "cookie-dialog";
   dialog.innerHTML = `
     <div class="cookie-dialog__card">
-      <h3>Traceurs utilisés</h3>
+      <h3>${t("cookie.prefTitle")}</h3>
       <div class="cookie-option">
         <div>
-          <strong>Strictement nécessaires</strong>
-          <p>Session, authentification, sauvegarde locale, choix de confidentialité. Toujours actifs.</p>
+          <strong>${t("cookie.necessary")}</strong>
+          <p>${t("cookie.necessaryDesc")}</p>
         </div>
         <label class="toggle"><input type="checkbox" checked disabled /><span class="toggle__slider"></span></label>
       </div>
-      <p class="cookie-dialog__notice">Aucun traceur de mesure d'audience, de publicité ou de profilage n'est chargé dans cette version de SPRITE-INDEX.</p>
+      <p class="cookie-dialog__notice">${t("cookie.notice")}</p>
       <div class="cookie-dialog__actions">
-        <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookiePrefOk">J'ai compris</button>
+        <button class="cookie-banner__btn cookie-banner__btn--primary" id="cookiePrefOk">${t("cookie.accept")}</button>
       </div>
     </div>
   `;
@@ -194,12 +197,12 @@ function initCguListeners() {
 function requireCguAccepted() {
   const cguCheck = document.getElementById("registerCgu");
   if (!cguCheck || !cguCheck.checked) {
-    toast("Tu dois accepter les Conditions générales d'utilisation pour t'inscrire.");
+    toast(t("login.acceptTosToast"));
     return false;
   }
   const ageCheck = document.getElementById("registerAge");
   if (!ageCheck || !ageCheck.checked) {
-    toast("Tu dois avoir au moins 15 ans pour créer un compte.");
+    toast(t("login.acceptAgeToast"));
     return false;
   }
   acceptCgu();

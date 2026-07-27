@@ -241,8 +241,7 @@ async function notifySquadOfJoin(squadId, joinerId, squadCode, squadName) {
       "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
       [joinerId]
     );
-    const joinerName = joinerRes.rows[0]?.username || "Un membre";
-    const message = `${joinerName} a rejoint l'escouade ${squadName || ""}`.trim();
+    const joinerName = joinerRes.rows[0]?.username || null;
     const members = await pool.query(
       "SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active' AND user_id <> $2",
       [squadId, joinerId]
@@ -253,8 +252,7 @@ async function notifySquadOfJoin(squadId, joinerId, squadCode, squadName) {
         actorId: joinerId,
         type: "squad_member_joined",
         entityId: squadId,
-        context: { squadId, squadCode, squadName },
-        message,
+        context: { squadId, squadCode, squadName, joinerName, actorName: joinerName },
         url: `/squad/${squadCode}`
       }).catch(err => console.error("[notifySquadOfJoin] notification failed", err));
     }

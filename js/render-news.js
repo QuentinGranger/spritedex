@@ -17,6 +17,16 @@ const NOTIF_FILTER_LABELS = {
   unread: "Non lues"
 };
 
+const NOTIF_FILTER_I18N_KEYS = {
+  all: "notif.filterAll",
+  news: "notif.filterNews",
+  social: "notif.filterSocial",
+  collection: "notif.filterCollection",
+  squads: "notif.filterSquads",
+  alerts: "notif.filterAlerts",
+  unread: "notif.filterUnread"
+};
+
 const NOTIF_CATEGORY_LABELS = {
   news: "Actualités",
   social: "Social",
@@ -123,8 +133,17 @@ function notifDisplayCategory(item) {
   return "collection";
 }
 
+const NOTIF_CATEGORY_I18N_KEYS = {
+  news: "notif.filterNews",
+  social: "notif.filterSocial",
+  collection: "notif.filterCollection",
+  alerts: "notif.filterAlerts",
+  squads: "notif.filterSquads"
+};
+
 function notifCategoryLabel(key) {
-  return NOTIF_CATEGORY_LABELS[key] || NOTIF_CATEGORY_LABELS.collection;
+  const i18nKey = NOTIF_CATEGORY_I18N_KEYS[key] || NOTIF_CATEGORY_I18N_KEYS.collection;
+  return t(i18nKey) || NOTIF_CATEGORY_LABELS[key] || NOTIF_CATEGORY_LABELS.collection;
 }
 
 function formatNotifDate(value) {
@@ -134,13 +153,13 @@ function formatNotifDate(value) {
   const now = Date.now();
   const diffMs = now - d.getTime();
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "À l'instant";
-  if (mins < 60) return `Il y a ${mins} min`;
+  if (mins < 1) return t("news.justNow");
+  if (mins < 60) return t("news.minsAgo", { mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Il y a ${hours} h`;
+  if (hours < 24) return t("news.hoursAgo", { hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `Il y a ${days} j`;
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+  if (days < 7) return t("news.daysAgo", { days });
+  return d.toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR", { day: "numeric", month: "short", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
 }
 
 /** Étape 48 — stable deep-link for each contextual notification type (never "/"). */
@@ -196,7 +215,7 @@ function getNotifPrimaryAction(item) {
   // Étape 60 — prefer normalized action.
   if (item.action && (item.action.label || item.action.url)) {
     return {
-      label: item.action.label || "Ouvrir",
+      label: item.action.label || t("news.actionOpen"),
       url: item.action.url || getNotificationUrl(item)
     };
   }
@@ -207,15 +226,15 @@ function getNotifPrimaryAction(item) {
     return { label: primary.label, url };
   }
   const defaults = {
-    news_article: "Lire l’actualité",
-    friend_request_accepted: "Comparer avec l'ami",
-    friend_acquired_missing_variant: "Comparer la variante",
+    news_article: t("news.actionReadArticle"),
+    friend_request_accepted: t("news.actionCompareWithFriend"),
+    friend_acquired_missing_variant: t("news.actionCompareVariant"),
     squad_completion_increased: "Squad Completion Engine",
-    priority_variant_available: "Voir la variante",
-    wanted_event_ending_soon: "Priorités de l'événement"
+    priority_variant_available: t("news.actionViewVariant"),
+    wanted_event_ending_soon: t("news.actionEventPriorities")
   };
   return {
-    label: defaults[item.type] || "Ouvrir",
+    label: defaults[item.type] || t("news.actionOpen"),
     url
   };
 }
@@ -280,7 +299,7 @@ function renderNotifItem(item) {
   // clickable anchor (middle click and keyboard activation bypass our normal
   // delegated click handler).
   const url = safeAppPath(action.url, `#notif-${encodeURIComponent(String(item.id || ""))}`);
-  const readLabel = isUnread ? "Non lu" : "Lu";
+  const readLabel = isUnread ? t("news.unreadLabel") : t("news.readLabel");
   const imageUrl = getNotifImageUrl(item);
   const media = imageUrl
     ? `<img class="notif-item__img${catKey === "news" ? " notif-item__img--news" : ""}" src="${escapeHtml(imageUrl)}" alt="" loading="lazy" decoding="async" />`
@@ -326,9 +345,9 @@ async function loadMoreNews() {
 
   const loader = document.getElementById("notifLoader");
   if (!loader && notifOffset === 0) {
-    list.innerHTML = `<p class="notif-dropdown__empty" id="notifLoader">Chargement…</p>`;
+    list.innerHTML = `<p class="notif-dropdown__empty" id="notifLoader">${t("squad.loading")}</p>`;
   } else if (!loader) {
-    list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__empty" id="notifLoader">Chargement…</p>`);
+    list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__empty" id="notifLoader">${t("squad.loading")}</p>`);
   }
 
   try {
@@ -338,7 +357,7 @@ async function loadMoreNews() {
 
     if (!res.ok) {
       if (notifOffset === 0) {
-        list.innerHTML = notifEmptyMarkup("Impossible de charger", "Réessayez dans un instant.");
+        list.innerHTML = notifEmptyMarkup(t("notif.loadErrorTitle"), t("notif.loadErrorHint"));
       }
       notifLoading = false;
       return;
@@ -352,13 +371,15 @@ async function loadMoreNews() {
 
     if (notifications.length === 0 && notifOffset === 0) {
       const emptyTitle = notifFilter === "unread"
-        ? "Tout est à jour"
-        : "Aucune notification";
+        ? t("notif.emptyUnreadTitle")
+        : t("notif.emptyTitle");
       const emptyHint = notifFilter === "unread"
-        ? "Vous avez lu toutes vos notifications."
+        ? t("notif.emptyUnreadHint")
         : notifFilter === "all"
-          ? "Les nouveautés apparaîtront ici."
-          : `Rien pour le filtre « ${NOTIF_FILTER_LABELS[notifFilter] || ""} ».`;
+          ? t("notif.emptyHint")
+          : t("notif.emptyFilterHint", {
+              filter: t(NOTIF_FILTER_I18N_KEYS[notifFilter] || "notif.filterAll")
+            });
       list.innerHTML = notifEmptyMarkup(emptyTitle, emptyHint);
       notifLoading = false;
       return;
@@ -369,11 +390,11 @@ async function loadMoreNews() {
     notifOffset += notifications.length;
 
     if (!notifHasMore && notifications.length > 0) {
-      list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__end">Fin de la liste</p>`);
+      list.insertAdjacentHTML("beforeend", `<p class="notif-dropdown__end">${t("history.listEnd")}</p>`);
     }
   } catch (e) {
     if (notifOffset === 0) {
-      list.innerHTML = notifEmptyMarkup("Erreur réseau", "Vérifiez votre connexion puis réessayez.");
+      list.innerHTML = notifEmptyMarkup(t("notif.networkErrorTitle"), t("notif.networkErrorHint"));
     }
   }
   notifLoading = false;
@@ -387,8 +408,8 @@ function paintNotifItemRead(itemEl) {
   if (stateEl) {
     stateEl.textContent = "";
     stateEl.classList.remove("notif-item__state--unread");
-    stateEl.setAttribute("aria-label", "Lu");
-    stateEl.setAttribute("title", "Lu");
+    stateEl.setAttribute("aria-label", t("news.readLabel"));
+    stateEl.setAttribute("title", t("news.readLabel"));
   }
 }
 
@@ -438,7 +459,7 @@ function switchAppView(view) {
 
 async function openCompareDestination(friendId, { variantIds = null } = {}) {
   if (!friendId) {
-    if (typeof toast === "function") toast("Ami introuvable pour la comparaison.");
+    if (typeof toast === "function") toast(t("news.friendNotFound"));
     return false;
   }
   state.compareFocusVariantIds = Array.isArray(variantIds) && variantIds.length
@@ -467,7 +488,7 @@ async function openCompareDestination(friendId, { variantIds = null } = {}) {
 
 async function openSquadEngineDestination(squadRef) {
   if (!squadRef) {
-    if (typeof toast === "function") toast("Escouade introuvable.");
+    if (typeof toast === "function") toast(t("news.squadNotFound"));
     return false;
   }
   // Étape 58 — private squad destinations require active membership.
@@ -477,7 +498,7 @@ async function openSquadEngineDestination(squadRef) {
   if (typeof loadSquad === "function") await loadSquad(squadRef);
   if (!state.activeSquad) {
     if (typeof toast === "function") {
-      toast("Vous n'avez plus accès à cette escouade.");
+      toast(t("news.squadNoAccess"));
     }
     return false;
   }
@@ -507,13 +528,13 @@ function openVariantDestination({ variantId: targetVariantId = null, spriteId = 
     openSpriteDetail(spriteId);
     return true;
   }
-  if (typeof toast === "function") toast("Variante introuvable.");
+  if (typeof toast === "function") toast(t("news.variantNotFound"));
   return false;
 }
 
 function openEventPrioritiesDestination(eventId, variantIds = null) {
   if (!eventId && !(Array.isArray(variantIds) && variantIds.length)) {
-    if (typeof toast === "function") toast("Événement introuvable.");
+    if (typeof toast === "function") toast(t("news.eventNotFound"));
     return false;
   }
   state.missingEventFilter = {
@@ -524,8 +545,8 @@ function openEventPrioritiesDestination(eventId, variantIds = null) {
   if (typeof renderMissing === "function") renderMissing();
   const eventName = eventId && typeof EVENTS !== "undefined"
     ? (EVENTS[eventId]?.name || eventId)
-    : "événement";
-  if (typeof toast === "function") toast(`Priorités manquantes · ${eventName}`);
+    : t("news.eventFallback");
+  if (typeof toast === "function") toast(t("news.missingPriorities", { event: eventName }));
   return true;
 }
 
@@ -542,7 +563,7 @@ async function openNotificationDestination(item) {
 
   // Étape 58 — destinations revoked after leaving a squad.
   if (data.accessRevoked && (type === "squad_completion_increased" || String(type || "").startsWith("squad_"))) {
-    if (typeof toast === "function") toast("Vous n'avez plus accès à cette escouade.");
+    if (typeof toast === "function") toast(t("news.squadAccessLost"));
     return false;
   }
 
@@ -579,14 +600,14 @@ async function openNotificationDestination(item) {
 
   if (type === "news_article") {
     const opened = await openExternalNews(data.newsUrl || data.actionUrl);
-    if (!opened && typeof toast === "function") toast("Actualité indisponible.");
+    if (!opened && typeof toast === "function") toast(t("news.unavailable"));
     return opened;
   }
 
   // Legacy / unknown types: resolve via deep link, but never "/".
   const url = getNotificationUrl(item);
   if (!url || url === "/" || url.startsWith("#")) {
-    if (typeof toast === "function") toast("Destination indisponible pour cette notification.");
+    if (typeof toast === "function") toast(t("news.destinationUnavailable"));
     return false;
   }
   return openNotificationTarget(url);
@@ -647,7 +668,7 @@ async function openNotificationTarget(url) {
     return openEventPrioritiesDestination(decodeURIComponent(eventMatch[1]));
   }
 
-  if (typeof toast === "function") toast("Destination indisponible pour cette notification.");
+  if (typeof toast === "function") toast(t("news.destinationUnavailable"));
   return false;
 }
 

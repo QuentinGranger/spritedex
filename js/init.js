@@ -11,7 +11,7 @@ function handleInviteLink() {
   const socialTab = document.querySelector('.tab[data-view="social"]');
   if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("friends"); }
   if (!state.userId) {
-    toast("Connecte-toi pour accepter l'invitation.");
+    toast(t("init.inviteLoginRequired"));
     return;
   }
   fetch(`${API_BASE}/friends/invite-links/${encodeURIComponent(token)}/use`, {
@@ -20,12 +20,12 @@ function handleInviteLink() {
   }).then(async r => {
     const data = await r.json().catch(() => ({}));
     if (r.ok) {
-      toast("Demande d'ami envoyée !");
+      toast(t("init.friendRequestSent"));
       if (typeof loadFriendsData === "function") loadFriendsData();
     } else {
-      toast(data.error || "Lien d'invitation invalide.");
+      toastError(data, "init.inviteLinkInvalid");
     }
-  }).catch(() => toast("Erreur réseau lors de l'invitation."));
+  }).catch(() => toast(t("init.inviteNetworkError")));
 }
 
 function handleJoinLink() {
@@ -34,7 +34,7 @@ function handleJoinLink() {
   if (!code) return;
   history.replaceState(null, "", location.pathname);
   if (state.activeSquad) {
-    toast("Tu es déjà dans une escouade. Quitte-la d'abord.");
+    toast(t("init.alreadyInSquad"));
     return;
   }
   const socialTab = document.querySelector('.tab[data-view="social"]');
@@ -74,14 +74,14 @@ async function applyAuthParams(params) {
   if (authError) {
     sessionStorage.removeItem(window.OAUTH_EXCHANGE_VERIFIER_KEY || "sprite-index_oauth_exchange_verifier");
     const messages = {
-      invalid_state: "Session expirée (cookie bloqué). Réessaie.",
-      token_failed: "Clé/secret OAuth invalide côté serveur.",
-      no_email: "Aucune adresse email fournie par le provider.",
-      unverified_email: "L'adresse email fournie par le provider n'est pas vérifiée.",
-      invalid_exchange: "La connexion sécurisée a expiré. Réessaie.",
-      server_error: "Erreur serveur OAuth. Réessaie."
+      invalid_state: t("login.oauth.invalid_state"),
+      token_failed: t("login.oauth.token_failed"),
+      no_email: t("login.oauth.no_email"),
+      unverified_email: t("login.oauth.unverified_email"),
+      invalid_exchange: t("login.oauth.invalid_exchange"),
+      server_error: t("login.oauth.server_error")
     };
-    toast(messages[authError] || `Erreur OAuth : ${authError}`);
+    toast(messages[authError] || t("login.oauthUnknown", { error: authError }));
     return false;
   }
 
@@ -89,7 +89,7 @@ async function applyAuthParams(params) {
     const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "sprite-index_oauth_exchange_verifier";
     const verifier = sessionStorage.getItem(verifierKey);
     if (!verifier) {
-      toast("Connexion sécurisée expirée. Réessaie.");
+      toast(t("login.oauthExpired"));
       return false;
     }
     try {
@@ -100,7 +100,7 @@ async function applyAuthParams(params) {
       });
       const user = await response.json().catch(() => ({}));
       if (!response.ok || !user.token) {
-        throw new Error(user.error || "Connexion OAuth expirée. Réessaie.");
+        throw new Error(user.error || t("login.oauthExchangeExpired"));
       }
       sessionStorage.removeItem(verifierKey);
       localStorage.setItem(TOKEN_KEY, user.token);
@@ -121,11 +121,11 @@ async function applyAuthParams(params) {
       handleInviteLink();
       setupNotifBell();
       checkNewsNotifications();
-      toast(`Bienvenue ${user.username} !`);
+      toast(t("login.welcomeUser", { name: user.username }));
       return true;
     } catch (e) {
       console.error("OAuth return parse error:", e);
-      toast(e.message || "Connexion OAuth impossible. Réessaie.");
+      toast(e.message ? t(e.message) : t("login.oauthFailed"));
     }
   }
   return false;
@@ -141,9 +141,9 @@ async function handleOAuthReturn() {
     history.replaceState(null, "", location.pathname);
     if (emailVerified === "true") {
       localStorage.setItem("sprite-index_email_verified", "true");
-      setTimeout(() => toast("Email vérifié avec succès !"), 500);
+      setTimeout(() => toast(t("login.emailVerified")), 500);
     } else {
-      setTimeout(() => toast("Lien de vérification invalide ou expiré."), 500);
+      setTimeout(() => toast(t("login.emailVerifyInvalid")), 500);
     }
   }
 
@@ -174,9 +174,9 @@ async function handlePassportPublicUrl() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       if (typeof renderPublicPassportError === "function") {
-        renderPublicPassportError(data.error || "Passeport non accessible");
+        renderPublicPassportError(data.error || t("init.passportNotAccessible"));
       } else {
-        toast(data.error || "Passeport non accessible");
+        toastError(data, "init.passportNotAccessible");
       }
       return true;
     }
@@ -187,7 +187,7 @@ async function handlePassportPublicUrl() {
     }
   } catch {
     if (typeof renderPublicPassportError === "function") {
-      renderPublicPassportError("Impossible de charger le passeport");
+      renderPublicPassportError(t("init.passportLoadFailed"));
     }
   }
   return true;

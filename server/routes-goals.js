@@ -854,8 +854,11 @@ async function checkAffectedGoals(userId, variantId) {
             actorId: userId,
             type: "goal_completed",
             entityId: goal.variant_id,
-            context: { goalId: goal.id },
-            message: `Objectif${goal.title ? ` : ${goal.title}` : ""} atteint par ${actorName}.`,
+            context: {
+              goalId: goal.id,
+              goalTitle: goal.title || null,
+              actorName
+            },
             url: "/collection"
           });
         }

@@ -1,6 +1,6 @@
 // Bump whenever security-sensitive client code changes so an old cached
 // renderer cannot keep serving a vulnerable version after deployment.
-const CACHE_NAME = "sprite-index-v17";
+const CACHE_NAME = "sprite-index-v18";
 const TRUSTED_NOTIFICATION_ORIGINS = new Set([
   "https://fortnite.com",
   "https://www.fortnite.com",
@@ -24,6 +24,7 @@ const STATIC_ASSETS = [
   "/js/config.js",
   "/js/state.js",
   "/js/helpers.js",
+  "/js/legal-content-en.js",
   "/js/legal-content.js",
   "/js/legal.js",
   "/js/api.js",

@@ -209,6 +209,7 @@ async function applyBlockNotificationCleanup(pool, userA, userB) {
          body = '',
          data = jsonb_build_object(
            'hiddenDueToBlock', true,
+           'translationKey', 'notifications.hidden',
            'technical', jsonb_build_object(
              'type', type,
              'category', category,

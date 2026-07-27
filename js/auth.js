@@ -63,19 +63,19 @@ function setupLogin() {
       window.PushClient.register();
       if (window.PushClient.checkReactivation) window.PushClient.checkReactivation();
     }
-    toast(`Bienvenue ${user.username} !`);
+    toast(t("login.welcomeUser", { name: user.username }));
   }
 
   const doEmailLogin = async () => {
     const email = loginEmail.value.trim();
     const password = loginPassword.value;
     if (!email || !password) {
-      loginHint.textContent = "Email et mot de passe requis";
+      loginHint.textContent = t("login.emailPasswordRequired");
       return;
     }
     loginHint.textContent = "";
     loginEmailBtn.disabled = true;
-    loginEmailBtn.textContent = "Connexion...";
+    loginEmailBtn.textContent = t("login.signingIn");
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
@@ -83,12 +83,12 @@ function setupLogin() {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Identifiants incorrects");
+      if (!res.ok) throw new Error(data.error || t("login.badCredentials"));
       await finishLogin(data);
     } catch (e) {
-      loginHint.textContent = e.message === "Failed to fetch" ? "Impossible de contacter le serveur. Vérifie ta connexion." : e.message;
+      loginHint.textContent = e.message === "Failed to fetch" ? t("login.serverUnreachable") : t(e.message);
       loginEmailBtn.disabled = false;
-      loginEmailBtn.textContent = "Se connecter";
+      loginEmailBtn.textContent = t("login.signIn");
     }
   };
 
@@ -99,22 +99,22 @@ function setupLogin() {
     const password = registerPassword.value;
     const username = registerUsername.value.trim();
     if (!username || username.length < 2) {
-      loginHint.textContent = "Pseudo requis (min 2 caractères)";
+      loginHint.textContent = t("login.usernameRequired");
       return;
     }
     if (!email || !password) {
-      loginHint.textContent = "Email et mot de passe requis";
+      loginHint.textContent = t("login.emailPasswordRequired");
       return;
     }
     if (password.length < 8) {
-      loginHint.textContent = "Mot de passe trop court (min 8)";
+      loginHint.textContent = t("login.passwordTooShort");
       return;
     }
     if (!requireCguAccepted()) return;
 
     loginHint.textContent = "";
     registerEmailBtn.disabled = true;
-    registerEmailBtn.textContent = "Création...";
+    registerEmailBtn.textContent = t("login.creating");
     try {
       const cguVersion = localStorage.getItem(CGU_VERSION_KEY) || LEGAL_VERSION;
       const cookieConsent = getConsent() || { necessary: true, analytics: false, version: LEGAL_VERSION };
@@ -124,15 +124,15 @@ function setupLogin() {
         body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion, ageConfirmed: true, cookieConsent })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Inscription impossible");
+      if (!res.ok) throw new Error(data.error || t("login.registerFailed"));
       pendingUser = data;
       if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
       document.getElementById("profileUsername").value = username;
       goToStep("onboardingStepProfile");
     } catch (e) {
-      loginHint.textContent = e.message === "Failed to fetch" ? "Impossible de contacter le serveur. Vérifie ta connexion." : e.message;
+      loginHint.textContent = e.message === "Failed to fetch" ? t("login.serverUnreachable") : t(e.message);
       registerEmailBtn.disabled = false;
-      registerEmailBtn.textContent = "Créer mon compte";
+      registerEmailBtn.textContent = t("login.createMyAccount");
     }
   };
 
@@ -147,7 +147,7 @@ function setupLogin() {
     forgotBtn.addEventListener("click", async () => {
       const email = loginEmail.value.trim();
       if (!email) {
-        loginHint.textContent = "Entre ton email pour réinitialiser";
+        loginHint.textContent = t("login.forgotEmailHint");
         loginEmail.focus();
         return;
       }
@@ -158,9 +158,9 @@ function setupLogin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email })
         });
-        loginHint.textContent = "Si un compte existe, un email a été envoyé.";
+        loginHint.textContent = t("login.forgotEmailSent");
       } catch {
-        loginHint.textContent = "Erreur, réessaie plus tard.";
+        loginHint.textContent = t("login.forgotError");
       }
       forgotBtn.disabled = false;
     });
@@ -207,7 +207,7 @@ function setupLogin() {
   document.getElementById("profileSubmitBtn").addEventListener("click", async () => {
     const username = document.getElementById("profileUsername").value.trim();
     if (!username || username.length < 2) {
-      loginHint.textContent = "Pseudo requis (min 2 caractères)";
+      loginHint.textContent = t("login.usernameRequired");
       return;
     }
     const privacy = document.querySelector('input[name="privacy"]:checked')?.value || "squad_only";
@@ -240,7 +240,7 @@ function setupLogin() {
   document.getElementById("transferYes").addEventListener("click", async () => {
     if (!pendingUser) return;
     await finishLogin(pendingUser);
-    toast("Collection transférée !");
+    toast(t("login.collectionTransferred"));
   });
 
   document.getElementById("transferNo").addEventListener("click", async () => {
@@ -248,7 +248,7 @@ function setupLogin() {
     localStorage.removeItem(STORAGE_KEY);
     state.collection = createSafeRecord();
     await finishLogin(pendingUser);
-    toast("Nouvelle collection créée !");
+    toast(t("login.newCollectionCreated"));
   });
 
   document.getElementById("transferLater").addEventListener("click", async () => {
@@ -270,7 +270,7 @@ function setupLogin() {
 
   async function createOAuthVerifier() {
     if (!globalThis.crypto?.getRandomValues || !globalThis.crypto?.subtle) {
-      throw new Error("Le navigateur ne prend pas en charge la connexion sécurisée.");
+      throw new Error(t("login.secureLoginUnsupported"));
     }
     const bytes = new Uint8Array(32);
     globalThis.crypto.getRandomValues(bytes);
@@ -302,7 +302,7 @@ function setupLogin() {
       setOAuthInProgress(false);
     } catch (err) {
       console.error("OAuth initialisation failed:", err);
-      loginHint.textContent = err.message || "Impossible de démarrer la connexion sécurisée.";
+      loginHint.textContent = err.message ? t(err.message) : t("login.oauthStartFailed");
       setOAuthInProgress(false);
     }
   }

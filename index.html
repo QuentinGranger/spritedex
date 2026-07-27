@@ -45,50 +45,50 @@
 
         <!-- Step 1: Inscription -->
         <div class="onboarding-step active" id="onboardingStep1">
-          <h2 class="onboarding-heading">Créer un compte</h2>
-          <p class="login-sub">Sauvegarde ta collection et rejoins une escouade</p>
+          <h2 class="onboarding-heading" data-i18n="login.createAccount">Créer un compte</h2>
+          <p class="login-sub" data-i18n="login.subtitleSave">Sauvegarde ta collection et rejoins une escouade</p>
 
           <div class="onboarding-choices">
             <button class="onboarding-choice" data-method="google" id="authGoogle">
               <div class="onboarding-choice__icon onboarding-choice__icon--google">
                 <svg viewBox="0 0 24 24" width="22" height="22"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
               </div>
-              <span class="onboarding-choice__label">Continuer avec Google</span>
+              <span class="onboarding-choice__label" data-i18n="login.continueGoogle">Continuer avec Google</span>
             </button>
 
             <button class="onboarding-choice" data-method="email" id="authEmailChoice">
               <div class="onboarding-choice__icon onboarding-choice__icon--email">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
               </div>
-              <span class="onboarding-choice__label">Continuer avec Email</span>
+              <span class="onboarding-choice__label" data-i18n="login.continueEmail">Continuer avec Email</span>
             </button>
 
             <button class="onboarding-choice" data-method="discord" id="authDiscord">
               <div class="onboarding-choice__icon onboarding-choice__icon--discord">
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
               </div>
-              <span class="onboarding-choice__label">Continuer avec Discord</span>
+              <span class="onboarding-choice__label" data-i18n="login.continueDiscord">Continuer avec Discord</span>
             </button>
           </div>
 
-          <p class="onboarding-switch">Déjà un compte ? <button class="onboarding-link" id="goToLogin">Se connecter</button></p>
+          <p class="onboarding-switch"><span data-i18n="login.alreadyHaveAccount">Déjà un compte ?</span> <button class="onboarding-link" id="goToLogin" data-i18n="login.signIn">Se connecter</button></p>
 
-          <div class="onboarding-divider"><span>ou</span></div>
+          <div class="onboarding-divider"><span data-i18n="login.or">ou</span></div>
 
-          <button class="login-skip" id="loginSkip">Continuer sans compte</button>
+          <button class="login-skip" id="loginSkip" data-i18n="login.continueGuest">Continuer sans compte</button>
         </div>
 
         <!-- Step 2: Connexion (existing user) -->
         <div class="onboarding-step" id="onboardingStepLogin">
-          <button class="onboarding-back" id="backFromLogin" title="Retour">
+          <button class="onboarding-back" id="backFromLogin" data-i18n-title="login.back" title="Retour">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Retour
+            <span data-i18n="login.back">Retour</span>
           </button>
-          <h2 class="onboarding-heading">Connexion</h2>
-          <p class="login-sub">Connecte-toi pour sauvegarder ta collection et rejoindre une squad.</p>
+          <h2 class="onboarding-heading" data-i18n="login.signInTitle">Connexion</h2>
+          <p class="login-sub" data-i18n="login.signInSubtitle">Connecte-toi pour sauvegarder ta collection et rejoindre une squad.</p>
 
           <div class="onboarding-providers-row">
-            <button class="onboarding-provider-btn" data-method="google" id="authGoogleLogin">
+            <button class="onboarding-provider-btn" data-method="google" id="authGoogleLogin" data-i18n="login.continueGoogle">
               <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
               Continuer avec Google
             </button>
@@ -100,54 +100,54 @@
             </div>
           </div>
 
-          <div class="onboarding-divider"><span>ou</span></div>
+          <div class="onboarding-divider"><span data-i18n="login.or">ou</span></div>
 
           <div class="login-form active" id="loginFormExisting">
-            <input type="email" id="loginEmail" class="login-input" placeholder="Email" autocomplete="email" />
-            <input type="password" id="loginPassword" class="login-input" placeholder="Mot de passe" autocomplete="current-password" />
-            <button class="login-btn" id="loginEmailBtn">Se connecter</button>
+            <input type="email" id="loginEmail" class="login-input" data-i18n-placeholder="login.email" placeholder="Email" autocomplete="email" />
+            <input type="password" id="loginPassword" class="login-input" data-i18n-placeholder="login.password" placeholder="Mot de passe" autocomplete="current-password" />
+            <button class="login-btn" id="loginEmailBtn" data-i18n="login.signIn">Se connecter</button>
           </div>
 
-          <p class="onboarding-switch"><button class="onboarding-link" id="forgotPassword">Mot de passe oublié ?</button></p>
-          <p class="onboarding-switch">Pas encore de compte ? <button class="onboarding-link" id="goToRegister">Créer un compte</button></p>
+          <p class="onboarding-switch"><button class="onboarding-link" id="forgotPassword" data-i18n="login.forgotPassword">Mot de passe oublié ?</button></p>
+          <p class="onboarding-switch"><span data-i18n="login.noAccountYet">Pas encore de compte ?</span> <button class="onboarding-link" id="goToRegister" data-i18n="login.createAccount">Créer un compte</button></p>
         </div>
 
         <!-- Step 3: Email registration form -->
         <div class="onboarding-step" id="onboardingStepRegister">
-          <button class="onboarding-back" id="backFromRegister" title="Retour">
+          <button class="onboarding-back" id="backFromRegister" data-i18n-title="login.back" title="Retour">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Retour
+            <span data-i18n="login.back">Retour</span>
           </button>
-          <h2 class="onboarding-heading">Créer un compte</h2>
-          <p class="login-sub">Quelques infos et c'est parti</p>
+          <h2 class="onboarding-heading" data-i18n="login.createAccount">Créer un compte</h2>
+          <p class="login-sub" data-i18n="login.registerSubtitle">Quelques infos et c'est parti</p>
 
           <div class="login-form active" id="loginFormRegister">
-            <input type="text" id="registerUsername" class="login-input" placeholder="Pseudo" maxlength="50" autocomplete="username" />
-            <input type="email" id="registerEmail" class="login-input" placeholder="Email" autocomplete="email" />
-            <input type="password" id="registerPassword" class="login-input" placeholder="Mot de passe (min 8 car.)" autocomplete="new-password" />
+            <input type="text" id="registerUsername" class="login-input" data-i18n-placeholder="login.username" placeholder="Pseudo" maxlength="50" autocomplete="username" />
+            <input type="email" id="registerEmail" class="login-input" data-i18n-placeholder="login.email" placeholder="Email" autocomplete="email" />
+            <input type="password" id="registerPassword" class="login-input" data-i18n-placeholder="login.passwordMin" placeholder="Mot de passe (min 8 car.)" autocomplete="new-password" />
             <label class="cgu-check" id="registerCguLabel">
               <input type="checkbox" id="registerCgu" />
               <span class="cgu-check__box"></span>
-              <span class="cgu-check__text">J'accepte les <button class="onboarding-link" type="button" data-legal-doc="cgu">Conditions générales d'utilisation</button> et la <button class="onboarding-link" type="button" data-legal-doc="politique-confidentialite">Politique de confidentialité</button>.</span>
+              <span class="cgu-check__text"><span data-i18n="login.acceptPrefix">J'accepte les</span> <button class="onboarding-link" type="button" data-legal-doc="cgu" data-i18n="login.tos">Conditions générales d'utilisation</button> <span data-i18n="login.acceptAnd">et la</span> <button class="onboarding-link" type="button" data-legal-doc="politique-confidentialite" data-i18n="login.privacyPolicy">Politique de confidentialité</button>.</span>
             </label>
             <label class="cgu-check" id="registerAgeLabel">
               <input type="checkbox" id="registerAge" />
               <span class="cgu-check__box"></span>
-              <span class="cgu-check__text">J'ai au moins 15 ans.</span>
+              <span class="cgu-check__text" data-i18n="login.ageConfirm">J'ai au moins 15 ans.</span>
             </label>
-            <button class="login-btn" id="registerEmailBtn" disabled>Créer mon compte</button>
+            <button class="login-btn" id="registerEmailBtn" data-i18n="login.createMyAccount" disabled>Créer mon compte</button>
           </div>
         </div>
 
         <!-- Step 4: Profile setup (after registration) -->
         <div class="onboarding-step" id="onboardingStepProfile">
-          <h2 class="onboarding-heading">Bienvenue dans SPRITE-INDEX</h2>
-          <p class="login-sub">Personnalise ton profil</p>
+          <h2 class="onboarding-heading" data-i18n="login.welcome">Bienvenue dans SPRITE-INDEX</h2>
+          <p class="login-sub" data-i18n="login.personalize">Personnalise ton profil</p>
 
-          <label class="onboarding-label">Choisis ton pseudo :</label>
-          <input type="text" id="profileUsername" class="login-input" placeholder="Ton pseudo..." maxlength="50" />
+          <label class="onboarding-label" data-i18n="login.chooseUsername">Choisis ton pseudo :</label>
+          <input type="text" id="profileUsername" class="login-input" data-i18n-placeholder="login.usernameHint" placeholder="Ton pseudo..." maxlength="50" />
 
-          <label class="onboarding-label">Avatar :</label>
+          <label class="onboarding-label" data-i18n="login.avatar">Avatar :</label>
           <div class="avatar-picker" id="avatarPicker">
             <div class="avatar-picker__item selected" data-avatar="">
               <span class="avatar-picker__placeholder">?</span>
@@ -179,70 +179,70 @@
             <div class="avatar-picker__item" data-avatar="Personna/TheScientist.png"><img src="Personna/TheScientist.png" alt="TheScientist" /></div>
           </div>
 
-          <label class="onboarding-label">Confidentialité :</label>
+          <label class="onboarding-label" data-i18n="login.privacy">Confidentialité :</label>
           <div class="privacy-options" id="privacyOptions">
             <label class="privacy-option">
               <input type="radio" name="privacy" value="private" />
               <span class="privacy-option__radio"></span>
-              <span class="privacy-option__text">Profil privé</span>
+              <span class="privacy-option__text" data-i18n="login.privacyPrivate">Profil privé</span>
             </label>
             <label class="privacy-option selected">
               <input type="radio" name="privacy" value="squad_only" checked />
               <span class="privacy-option__radio"></span>
-              <span class="privacy-option__text">Visible par mes squads</span>
+              <span class="privacy-option__text" data-i18n="login.privacySquads">Visible par mes squads</span>
             </label>
             <label class="privacy-option">
               <input type="radio" name="privacy" value="public" />
               <span class="privacy-option__radio"></span>
-              <span class="privacy-option__text">Profil public via lien</span>
+              <span class="privacy-option__text" data-i18n="login.privacyPublic">Profil public via lien</span>
             </label>
           </div>
 
-          <button class="login-btn" id="profileSubmitBtn">Commencer</button>
+          <button class="login-btn" id="profileSubmitBtn" data-i18n="login.getStarted">Commencer</button>
         </div>
 
         <!-- Step 5: Transfer local collection -->
         <div class="onboarding-step" id="onboardingStepTransfer">
-          <h2 class="onboarding-heading">Collection détectée</h2>
-          <p class="login-sub">Tu as déjà une collection locale.</p>
+          <h2 class="onboarding-heading" data-i18n="login.collectionDetected">Collection détectée</h2>
+          <p class="login-sub" data-i18n="login.localCollection">Tu as déjà une collection locale.</p>
 
           <div class="transfer-box">
             <div class="transfer-box__preview">
               <span class="transfer-box__count" id="transferCount">0</span>
-              <span class="transfer-box__label">sprites enregistrés</span>
+              <span class="transfer-box__label" data-i18n="login.spritesRecorded">sprites enregistrés</span>
             </div>
-            <p class="transfer-box__text">Veux-tu la sauvegarder sur ton compte ?</p>
+            <p class="transfer-box__text" data-i18n="login.savePrompt">Veux-tu la sauvegarder sur ton compte ?</p>
           </div>
 
           <div class="transfer-actions">
-            <button class="login-btn" id="transferYes">Sauvegarder ma collection</button>
-            <button class="transfer-actions__btn transfer-actions__btn--reset" id="transferNo">Repartir de zéro</button>
-            <button class="transfer-actions__btn transfer-actions__btn--later" id="transferLater">Plus tard</button>
+            <button class="login-btn" id="transferYes" data-i18n="login.saveCollection">Sauvegarder ma collection</button>
+            <button class="transfer-actions__btn transfer-actions__btn--reset" id="transferNo" data-i18n="login.startOver">Repartir de zéro</button>
+            <button class="transfer-actions__btn transfer-actions__btn--later" id="transferLater" data-i18n="login.later">Plus tard</button>
           </div>
         </div>
 
         <p class="login-hint" id="loginHint"></p>
 
         <div class="login-legal-links">
-          <button class="onboarding-link" type="button" data-legal-doc="privacyPolicy">Politique de confidentialité</button>
+          <button class="onboarding-link" type="button" data-legal-doc="privacyPolicy" data-i18n="login.privacyPolicy">Politique de confidentialité</button>
           <span>•</span>
-          <button class="onboarding-link" type="button" data-legal-doc="mentionsLegales">Mentions légales</button>
+          <button class="onboarding-link" type="button" data-legal-doc="mentionsLegales" data-i18n="login.legalNotice">Mentions légales</button>
         </div>
 
-        <p class="legal-disclaimer">SPRITE-INDEX est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
+        <p class="legal-disclaimer" data-i18n="login.disclaimer">SPRITE-INDEX est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
       </div>
     </div>
 
     <div class="app-shell" id="appShell" style="display:none">
-      <aside class="desktop-rail" aria-label="Espace collectionneur">
+      <aside class="desktop-rail" data-i18n-aria-label="nav.collectorSpace" aria-label="Espace collectionneur">
         <div class="desktop-rail__brand">
           <img src="js/MainLogo.png" alt="Sprite-Index" class="desktop-rail__logo" />
         </div>
-        <div class="desktop-rail__section-label">Navigation</div>
-        <div class="desktop-rail__collection" aria-label="Progression de votre collection">
-          <span>Votre collection</span>
+        <div class="desktop-rail__section-label" data-i18n="nav.section">Navigation</div>
+        <div class="desktop-rail__collection" data-i18n-aria-label="nav.collectionProgress" aria-label="Progression de votre collection">
+          <span data-i18n="nav.yourCollection">Votre collection</span>
           <strong><b id="desktopOwnedCount">0</b> <i>/</i> <b id="desktopTotalCount">0</b></strong>
-          <small>variantes obtenues</small>
+          <small data-i18n="nav.variantsOwned">variantes obtenues</small>
           <div><span id="desktopCollectionProgress"></span></div>
         </div>
       </aside>
@@ -255,49 +255,49 @@
           <span class="desktop-page-heading__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
           </span>
-          <div><h1 id="desktopViewTitle">Swipe</h1><p id="desktopViewSubtitle">Explorez, classez et complétez votre collection de sprites.</p></div>
+          <div><h1 id="desktopViewTitle" data-i18n="nav.swipe">Swipe</h1><p id="desktopViewSubtitle" data-i18n="view.swipeSubtitle">Explorez, classez et complétez votre collection de sprites.</p></div>
         </div>
         <label class="desktop-command-search" for="desktopSearch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
-          <input id="desktopSearch" type="search" placeholder="Rechercher un sprite…" autocomplete="off" />
+          <input id="desktopSearch" type="search" data-i18n-placeholder="search.sprite" placeholder="Rechercher un sprite…" autocomplete="off" />
           <kbd id="desktopSearchShortcut">⌘ K</kbd>
         </label>
         <div class="topbar-actions">
           <div class="notif-wrap" id="notifWrap">
-            <button class="notif-bell" id="notifBell" aria-label="Notifications" aria-expanded="false" aria-haspopup="dialog" aria-controls="notifDropdown">
+            <button class="notif-bell" id="notifBell" data-i18n-aria-label="notif.title" aria-label="Notifications" aria-expanded="false" aria-haspopup="dialog" aria-controls="notifDropdown">
               <svg class="notif-bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
               <span class="notif-bell__badge" id="notifBadge" style="display:none">0</span>
             </button>
-            <div class="notif-dropdown notif-center" id="notifDropdown" style="display:none" role="dialog" aria-label="Notifications">
+            <div class="notif-dropdown notif-center" id="notifDropdown" style="display:none" role="dialog" data-i18n-aria-label="notif.title" aria-label="Notifications">
               <div class="notif-dropdown__header">
-                <span class="notif-dropdown__title">Notifications</span>
+                <span class="notif-dropdown__title" data-i18n="notif.title">Notifications</span>
                 <div class="notif-dropdown__header-actions">
-                  <button type="button" class="notif-dropdown__mark-read" id="notifMarkAllRead" title="Tout marquer comme lu">Tout lu</button>
-                  <button type="button" class="notif-dropdown__close" id="notifClose" aria-label="Fermer">✕</button>
+                  <button type="button" class="notif-dropdown__mark-read" id="notifMarkAllRead" data-i18n="notif.markAllRead" data-i18n-title="notif.markAllReadTitle" title="Tout marquer comme lu">Tout lu</button>
+                  <button type="button" class="notif-dropdown__close" id="notifClose" data-i18n-aria-label="notif.close" aria-label="Fermer">✕</button>
                 </div>
               </div>
-              <div class="notif-center__filters" id="notifFilters" role="tablist" aria-label="Filtres">
-                <button type="button" class="notif-filter active" data-notif-filter="all">Toutes</button>
-                <button type="button" class="notif-filter" data-notif-filter="news">Actualités</button>
-                <button type="button" class="notif-filter" data-notif-filter="social">Social</button>
-                <button type="button" class="notif-filter" data-notif-filter="collection">Collections</button>
-                <button type="button" class="notif-filter" data-notif-filter="squads">Squads</button>
-                <button type="button" class="notif-filter" data-notif-filter="alerts">Alertes</button>
-                <button type="button" class="notif-filter" data-notif-filter="unread">Non lues</button>
+              <div class="notif-center__filters" id="notifFilters" role="tablist" data-i18n-aria-label="notif.filters" aria-label="Filtres">
+                <button type="button" class="notif-filter active" data-notif-filter="all" data-i18n="notif.filterAll">Toutes</button>
+                <button type="button" class="notif-filter" data-notif-filter="news" data-i18n="notif.filterNews">Actualités</button>
+                <button type="button" class="notif-filter" data-notif-filter="social" data-i18n="notif.filterSocial">Social</button>
+                <button type="button" class="notif-filter" data-notif-filter="collection" data-i18n="notif.filterCollection">Collections</button>
+                <button type="button" class="notif-filter" data-notif-filter="squads" data-i18n="notif.filterSquads">Squads</button>
+                <button type="button" class="notif-filter" data-notif-filter="alerts" data-i18n="notif.filterAlerts">Alertes</button>
+                <button type="button" class="notif-filter" data-notif-filter="unread" data-i18n="notif.filterUnread">Non lues</button>
               </div>
               <div class="notif-dropdown__list" id="notifList">
                 <div class="notif-dropdown__empty">
                   <div class="notif-dropdown__empty-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                   </div>
-                  <p class="notif-dropdown__empty-title">Aucune notification</p>
-                  <p class="notif-dropdown__empty-hint">Les nouveautés apparaîtront ici.</p>
+                  <p class="notif-dropdown__empty-title" data-i18n="notif.emptyTitle">Aucune notification</p>
+                  <p class="notif-dropdown__empty-hint" data-i18n="notif.emptyHint">Les nouveautés apparaîtront ici.</p>
                 </div>
               </div>
             </div>
           </div>
-          <button class="icon-button" id="themeToggle" aria-label="Changer le thème"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
-          <button class="topbar-avatar" id="accountBtn" aria-label="Mon compte">
+          <button class="icon-button" id="themeToggle" data-i18n-aria-label="common.theme" aria-label="Changer le thème"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+          <button class="topbar-avatar" id="accountBtn" data-i18n-aria-label="common.account" aria-label="Mon compte">
             <img src="" alt="" id="topbarAvatarImg" class="topbar-avatar__img" style="display:none" />
             <svg class="topbar-avatar__fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
@@ -313,16 +313,16 @@
       <div class="account-panel" id="accountPanel" style="display:none">
         <header class="account-panel__header">
           <div>
-            <p class="account-panel__eyebrow">Espace collectionneur</p>
-            <h2 class="account-panel__title">Mon compte</h2>
-            <p class="account-panel__subtitle">Gérez votre profil, vos préférences et votre expérience de collection.</p>
+            <p class="account-panel__eyebrow" data-i18n="account.eyebrow">Espace collectionneur</p>
+            <h2 class="account-panel__title" data-i18n="account.title">Mon compte</h2>
+            <p class="account-panel__subtitle" data-i18n="account.subtitle">Gérez votre profil, vos préférences et votre expérience de collection.</p>
           </div>
           <div class="account-panel__header-actions">
             <button class="account-panel__edit" id="accountHeaderEdit" type="button">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Modifier mon profil
+              <span data-i18n="account.editProfile">Modifier mon profil</span>
             </button>
-            <button class="account-panel__close" id="accountClose" aria-label="Fermer mon compte">
+            <button class="account-panel__close" id="accountClose" aria-label="Fermer mon compte" data-i18n-aria-label="account.close">
               <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
@@ -331,8 +331,8 @@
         <!-- Email verification banner -->
         <div class="email-banner" id="emailBanner" style="display:none">
           <svg class="email-banner__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <span class="email-banner__text">Email non vérifié — vérifie ta boîte mail</span>
-          <button class="email-banner__btn" id="resendVerification">Renvoyer</button>
+          <span class="email-banner__text" data-i18n="account.emailUnverified">Email non vérifié — vérifie ta boîte mail</span>
+          <button class="email-banner__btn" id="resendVerification" data-i18n="account.resend">Renvoyer</button>
         </div>
 
         <div class="account-profile-dashboard" id="accountProfileOverview">
@@ -343,7 +343,7 @@
           </div>
           <div class="profile-hero__identity">
             <h2 class="profile-hero__name" id="accountUsername">—</h2>
-            <p class="profile-hero__tagline">Votre passeport, vos variantes et vos squads en un seul endroit.</p>
+            <p class="profile-hero__tagline" data-i18n="account.tagline">Votre passeport, vos variantes et vos squads en un seul endroit.</p>
             <span class="profile-hero__since" id="accountSince">Membre depuis —</span>
           </div>
 
@@ -351,20 +351,20 @@
           <div class="profile-stats">
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountPercent">0%</span>
-            <span class="profile-stat__label">Progression</span>
+            <span class="profile-stat__label" data-i18n="account.stat.progression">Progression</span>
             <span class="profile-stat__detail" id="accountVariants">0 / 0 variantes</span>
           </div>
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountHeroBadges">—</span>
-            <span class="profile-stat__label">Badges obtenus</span>
+            <span class="profile-stat__label" data-i18n="account.stat.badges">Badges obtenus</span>
           </div>
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountHeroSquad">—</span>
-            <span class="profile-stat__label">Squad principale</span>
+            <span class="profile-stat__label" data-i18n="account.stat.mainSquad">Squad principale</span>
           </div>
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountHeroReliability">—</span>
-            <span class="profile-stat__label">Fiabilité</span>
+            <span class="profile-stat__label" data-i18n="account.stat.reliability">Fiabilité</span>
           </div>
           </div>
         </div>
@@ -373,11 +373,11 @@
           <div class="collector-passport__header">
             <div>
               <p class="collector-passport__eyebrow">sprite-index</p>
-              <h3 class="collector-passport__title" id="collectorPassportTitle">Passeport du collectionneur</h3>
+              <h3 class="collector-passport__title" id="collectorPassportTitle" data-i18n="account.passportTitle">Passeport du collectionneur</h3>
             </div>
             <span class="collector-passport__status" id="passportReliability" role="status">—</span>
           </div>
-          <div id="collectorPassportContent" class="collector-passport__content" tabindex="-1"><p class="collector-passport__empty" role="status">Calcul du passeport…</p></div>
+          <div id="collectorPassportContent" class="collector-passport__content" tabindex="-1"><p class="collector-passport__empty" role="status" data-i18n="account.passportLoading">Calcul du passeport…</p></div>
           <div class="collector-passport__actions" id="collectorPassportActions"></div>
           <div class="sr-only" aria-live="polite" id="passportA11yStatus"></div>
         </section>
@@ -386,83 +386,83 @@
         <div class="profile-actions">
           <button class="profile-action-btn" id="accountEditUsernameBtn">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Modifier pseudo
+            <span data-i18n="account.editUsername">Modifier pseudo</span>
           </button>
           <button class="profile-action-btn" id="accountChangeAvatar">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            Modifier avatar
+            <span data-i18n="account.editAvatar">Modifier avatar</span>
           </button>
           <button class="profile-action-btn" id="accountGoCollection">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            Voir ma collection
+            <span data-i18n="account.viewCollection">Voir ma collection</span>
           </button>
           <button class="profile-action-btn" id="accountGoCompare">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><path d="M11.5 9.2 14.8 14.8"/><path d="M4 17h7"/></svg>
-            Comparer un joueur
+            <span data-i18n="account.comparePlayer">Comparer un joueur</span>
           </button>
           <button class="profile-action-btn" id="accountShare">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-            Partager mon profil
+            <span data-i18n="account.shareProfile">Partager mon profil</span>
           </button>
           <button class="profile-action-btn" id="accountRevokeShare" style="display:none">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
-            Désactiver le lien de partage
+            <span data-i18n="account.revokeShare">Désactiver le lien de partage</span>
           </button>
         </div>
         </div>
 
-        <nav class="account-section-nav" aria-label="Navigation du compte">
-          <button class="account-section-nav__item is-active" type="button" data-account-target="accountProfileOverview">Aperçu</button>
-          <button class="account-section-nav__item" type="button" data-account-target="collectorPassport">Badges</button>
-          <button class="account-section-nav__item" type="button" data-account-target="accountPrivacySection">Confidentialité</button>
-          <button class="account-section-nav__item" type="button" data-account-target="notifSettingsSection">Notifications</button>
-          <button class="account-section-nav__item" type="button" data-account-target="accountSecuritySection">Sécurité</button>
+        <nav class="account-section-nav" aria-label="Navigation du compte" data-i18n-aria-label="account.nav.label">
+          <button class="account-section-nav__item is-active" type="button" data-account-target="accountProfileOverview" data-i18n="account.nav.overview">Aperçu</button>
+          <button class="account-section-nav__item" type="button" data-account-target="collectorPassport" data-i18n="account.nav.badges">Badges</button>
+          <button class="account-section-nav__item" type="button" data-account-target="accountPrivacySection" data-i18n="account.nav.privacy">Confidentialité</button>
+          <button class="account-section-nav__item" type="button" data-account-target="notifSettingsSection" data-i18n="account.nav.notifications">Notifications</button>
+          <button class="account-section-nav__item" type="button" data-account-target="accountSecuritySection" data-i18n="account.nav.security">Sécurité</button>
         </nav>
 
-        <section class="account-overview-grid" id="accountOverviewDashboard" aria-label="Aperçu du compte">
+        <section class="account-overview-grid" id="accountOverviewDashboard" aria-label="Aperçu du compte" data-i18n-aria-label="account.overview.label">
           <article class="account-overview-card account-overview-card--collection">
-            <header class="account-overview-card__header"><h3>Ma collection</h3></header>
+            <header class="account-overview-card__header"><h3 data-i18n="account.section.collection">Ma collection</h3></header>
             <div class="account-collection-overview">
-              <div class="account-overview-ring" id="accountOverviewRing" role="img" aria-label="Progression de la collection"><strong id="accountOverviewPercent">0%</strong></div>
+              <div class="account-overview-ring" id="accountOverviewRing" role="img" aria-label="Progression de la collection" data-i18n-aria-label="account.collectionProgress"><strong id="accountOverviewPercent">0%</strong></div>
               <div class="account-overview-collection-copy">
                 <strong id="accountOverviewOwned">0 / 0</strong>
-                <span>variantes possédées</span>
-                <small id="accountOverviewRemaining">Aucune donnée de collection</small>
+                <span data-i18n="account.variantsOwned">variantes possédées</span>
+                <small id="accountOverviewRemaining" data-i18n="account.noCollectionData">Aucune donnée de collection</small>
               </div>
             </div>
             <div class="account-overview-insight">
-              <span>Sprites complétés <strong id="accountCompleted">0 / 0</strong></span>
-              <span>Priorités <strong id="accountPriorities">0</strong></span>
+              <span><span data-i18n="account.spritesCompleted">Sprites complétés</span> <strong id="accountCompleted">0 / 0</strong></span>
+              <span><span data-i18n="account.priorities">Priorités</span> <strong id="accountPriorities">0</strong></span>
             </div>
-            <button class="account-overview-card__action" type="button" data-account-overview-action="collection">Voir ma collection complète <span aria-hidden="true">›</span></button>
+            <button class="account-overview-card__action" type="button" data-account-overview-action="collection"><span data-i18n="account.viewFullCollection">Voir ma collection complète</span> <span aria-hidden="true">›</span></button>
           </article>
 
           <article class="account-overview-card account-overview-card--activity">
-            <header class="account-overview-card__header"><h3>Activité</h3><span class="account-overview-card__period">Récent</span></header>
+            <header class="account-overview-card__header"><h3 data-i18n="account.section.activity">Activité</h3><span class="account-overview-card__period" data-i18n="account.period.recent">Récent</span></header>
             <div class="account-activity-kpis">
-              <span><strong id="accountOverviewEventsCompleted">0</strong> Événements terminés</span>
-              <span><strong id="accountOverviewEventsInProgress">0</strong> En cours</span>
-              <span><strong id="accountOverviewNewBadges">0</strong> Nouveaux badges</span>
-              <span><strong id="accountOverviewAddedVariants">0</strong> Variantes ajoutées</span>
+              <span><strong id="accountOverviewEventsCompleted">0</strong> <span data-i18n="account.kpi.eventsCompleted">Événements terminés</span></span>
+              <span><strong id="accountOverviewEventsInProgress">0</strong> <span data-i18n="account.kpi.inProgress">En cours</span></span>
+              <span><strong id="accountOverviewNewBadges">0</strong> <span data-i18n="account.kpi.newBadges">Nouveaux badges</span></span>
+              <span><strong id="accountOverviewAddedVariants">0</strong> <span data-i18n="account.kpi.variantsAdded">Variantes ajoutées</span></span>
             </div>
-            <div class="account-overview-activity-list" id="accountOverviewActivityList"><p>Aucun événement récent.</p></div>
-            <button class="account-overview-card__action" type="button" data-account-overview-action="history">Voir mon historique <span aria-hidden="true">›</span></button>
+            <div class="account-overview-activity-list" id="accountOverviewActivityList"><p data-i18n="account.noRecentActivity">Aucun événement récent.</p></div>
+            <button class="account-overview-card__action" type="button" data-account-overview-action="history"><span data-i18n="account.viewHistory">Voir mon historique</span> <span aria-hidden="true">›</span></button>
           </article>
 
           <div class="account-overview-side">
             <article class="account-overview-card account-overview-card--badges">
-              <header class="account-overview-card__header"><h3>Aperçu des badges</h3><button class="account-overview-card__link" type="button" data-account-overview-action="passport">Voir tout</button></header>
-              <div class="account-badge-preview" id="accountBadgePreview"><p>Aucun badge débloqué.</p></div>
+              <header class="account-overview-card__header"><h3 data-i18n="account.section.badgePreview">Aperçu des badges</h3><button class="account-overview-card__link" type="button" data-account-overview-action="passport" data-i18n="account.viewAll">Voir tout</button></header>
+              <div class="account-badge-preview" id="accountBadgePreview"><p data-i18n="account.noBadge">Aucun badge débloqué.</p></div>
             </article>
 
             <article class="account-overview-card account-overview-card--preferences">
-              <header class="account-overview-card__header"><h3>Préférences rapides</h3></header>
+              <header class="account-overview-card__header"><h3 data-i18n="account.section.quickPrefs">Préférences rapides</h3></header>
               <div class="account-quick-preferences">
-                <span>Notifications push <strong id="accountQuickPush">—</strong></span>
-                <span>E-mails <strong id="accountQuickEmail">—</strong></span>
-                <span>Invitations d’amis <strong id="accountQuickFriends">—</strong></span>
+                <span><span data-i18n="account.pref.pushNotifs">Notifications push</span> <strong id="accountQuickPush">—</strong></span>
+                <span><span data-i18n="account.pref.emails">E-mails</span> <strong id="accountQuickEmail">—</strong></span>
+                <span><span data-i18n="account.pref.friendInvites">Invitations d’amis</span> <strong id="accountQuickFriends">—</strong></span>
               </div>
-              <button class="account-overview-card__action" type="button" data-account-overview-action="notifications">Configurer les notifications <span aria-hidden="true">›</span></button>
+              <button class="account-overview-card__action" type="button" data-account-overview-action="notifications"><span data-i18n="account.configureNotifs">Configurer les notifications</span> <span aria-hidden="true">›</span></button>
             </article>
           </div>
         </section>
@@ -470,191 +470,191 @@
         <div class="account-panel__sections">
           <!-- Edit pseudo (hidden by default) -->
           <div class="account-section" id="accountEditSection" style="display:none">
-            <h3 class="account-section__title">Modifier le pseudo</h3>
+            <h3 class="account-section__title" data-i18n="account.section.editUsername">Modifier le pseudo</h3>
             <div class="account-row">
-              <input type="text" class="account-row__input" id="accountEditUsername" maxlength="50" placeholder="Nouveau pseudo" />
-              <button class="account-save-btn" id="accountSaveProfile">Enregistrer</button>
+              <input type="text" class="account-row__input" id="accountEditUsername" maxlength="50" placeholder="Nouveau pseudo" data-i18n-placeholder="account.placeholder.newUsername" />
+              <button class="account-save-btn" id="accountSaveProfile" data-i18n="account.save">Enregistrer</button>
             </div>
           </div>
 
           <!-- Confidentialité -->
           <div class="account-section" id="accountPrivacySection">
-            <h3 class="account-section__title">Confidentialité</h3>
+            <h3 class="account-section__title" data-i18n="account.section.privacy">Confidentialité</h3>
             <div class="account-row">
-              <span class="account-row__label">Visibilité</span>
+              <span class="account-row__label" data-i18n="account.label.visibility">Visibilité</span>
               <select class="account-row__select" id="accountPrivacy">
-                <option value="private">Profil privé</option>
-                <option value="squad_only">Visible par mes squads</option>
-                <option value="public">Profil public</option>
+                <option value="private" data-i18n="account.privacy.private">Profil privé</option>
+                <option value="squad_only" data-i18n="account.visibleBySquads">Visible par mes squads</option>
+                <option value="public" data-i18n="account.privacy.public">Profil public</option>
               </select>
             </div>
             <div class="account-row">
-              <span class="account-row__label">Participer aux statistiques communautaires anonymisées</span>
+              <span class="account-row__label" data-i18n="account.label.communityStats">Participer aux statistiques communautaires anonymisées</span>
               <label class="toggle"><input type="checkbox" id="accountCommunityStatsOptIn" /><span class="toggle__slider"></span></label>
             </div>
-            <p class="account-row__hint" style="opacity:.7;font-size:.85rem;margin:.25rem 0 0">Les fonctions essentielles restent disponibles sans ce consentement.</p>
+            <p class="account-row__hint" style="opacity:.7;font-size:.85rem;margin:.25rem 0 0" data-i18n="account.hint.communityStats">Les fonctions essentielles restent disponibles sans ce consentement.</p>
           </div>
 
           <!-- Notifications (Étape 49) -->
           <div class="account-section" id="notifSettingsSection" hidden>
-            <h3 class="account-section__title">Notifications</h3>
+            <h3 class="account-section__title" data-i18n="account.section.notifications">Notifications</h3>
             <div class="notif-settings" id="notifSettings">
               <div class="notif-settings__group">
-                <h4 class="notif-settings__group-title">Canaux</h4>
+                <h4 class="notif-settings__group-title" data-i18n="account.section.channels">Canaux</h4>
                 <div class="account-row">
-                  <span class="account-row__label">Dans l'application</span>
+                  <span class="account-row__label" data-i18n="account.label.inApp">Dans l'application</span>
                   <label class="toggle"><input type="checkbox" id="notifChannelInApp" data-notif-channel="in_app" checked /><span class="toggle__slider"></span></label>
                 </div>
                 <div class="account-row">
-                  <span class="account-row__label">Notifications push</span>
+                  <span class="account-row__label" data-i18n="account.label.pushNotif">Notifications push</span>
                   <label class="toggle"><input type="checkbox" id="notifChannelPush" data-notif-channel="push" checked /><span class="toggle__slider"></span></label>
                 </div>
                 <div class="account-row">
-                  <span class="account-row__label">E-mails</span>
+                  <span class="account-row__label" data-i18n="account.pref.emails">E-mails</span>
                   <label class="toggle"><input type="checkbox" id="notifChannelEmail" data-notif-channel="email" checked /><span class="toggle__slider"></span></label>
                 </div>
               </div>
 
               <div class="notif-settings__group">
-                <h4 class="notif-settings__group-title">Social</h4>
+                <h4 class="notif-settings__group-title" data-i18n="account.section.social">Social</h4>
                 <div class="notif-delivery" data-notif-delivery="friend_request_accepted">
-                  <p class="notif-delivery__title">Invitations d'amis acceptées</p>
+                  <p class="notif-delivery__title" data-i18n="account.notif.friendAccepted">Invitations d'amis acceptées</p>
                   <div class="account-row">
-                    <span class="account-row__label">Dans l'application</span>
+                    <span class="account-row__label" data-i18n="account.label.inApp">Dans l'application</span>
                     <label class="toggle"><input type="checkbox" data-notif-in-app="friend_request_accepted" checked /><span class="toggle__slider"></span></label>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Push</span>
-                    <select class="account-row__select" data-notif-push="friend_request_accepted" aria-label="Push — invitation acceptée">
-                      <option value="enabled" selected>Activé</option>
-                      <option value="disabled">Désactivé</option>
+                    <span class="account-row__label" data-i18n="account.notif.push">Push</span>
+                    <select class="account-row__select" data-notif-push="friend_request_accepted" aria-label="Push — invitation acceptée" data-i18n-aria-label="account.notif.push">
+                      <option value="enabled" selected data-i18n="account.notif.enabled">Activé</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                 </div>
               </div>
 
               <div class="notif-settings__group">
-                <h4 class="notif-settings__group-title">Collections et squads</h4>
+                <h4 class="notif-settings__group-title" data-i18n="account.section.collectionsSquads">Collections et squads</h4>
                 <div class="notif-delivery" data-notif-delivery="friend_acquired_missing_variant">
-                  <p class="notif-delivery__title">Un ami possède une variante qui me manque</p>
+                  <p class="notif-delivery__title" data-i18n="account.notif.friendMissingVariant">Un ami possède une variante qui me manque</p>
                   <div class="account-row">
-                    <span class="account-row__label">Dans l'application</span>
+                    <span class="account-row__label" data-i18n="account.label.inApp">Dans l'application</span>
                     <label class="toggle"><input type="checkbox" data-notif-in-app="friend_acquired_missing_variant" checked /><span class="toggle__slider"></span></label>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Push</span>
+                    <span class="account-row__label" data-i18n="account.notif.push">Push</span>
                     <select class="account-row__select" data-notif-push="friend_acquired_missing_variant" aria-label="Push — variante manquante chez un ami">
-                      <option value="enabled">Activé</option>
-                      <option value="priorities_only" selected>Activé seulement pour les priorités</option>
-                      <option value="disabled">Désactivé</option>
+                      <option value="enabled" data-i18n="account.notif.enabled">Activé</option>
+                      <option value="priorities_only" selected data-i18n="account.notif.prioritiesOnly">Activé seulement pour les priorités</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Fréquence</span>
-                    <select class="account-row__select" data-notif-frequency="friend_acquired_missing_variant" aria-label="Fréquence — variante manquante chez un ami">
-                      <option value="immediate" selected>Immédiatement</option>
-                      <option value="daily_digest">Résumé quotidien</option>
-                      <option value="disabled">Désactivé</option>
+                    <span class="account-row__label" data-i18n="account.notif.frequency">Fréquence</span>
+                    <select class="account-row__select" data-notif-frequency="friend_acquired_missing_variant" aria-label="Fréquence — variante manquante chez un ami" data-i18n-aria-label="account.notif.frequency">
+                      <option value="immediate" selected data-i18n="account.notif.immediate">Immédiatement</option>
+                      <option value="daily_digest" data-i18n="account.notif.dailyDigest">Résumé quotidien</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
-                    <p class="notif-settings__hint">Les acquisitions multiples peuvent être regroupées dans un résumé quotidien.</p>
+                    <p class="notif-settings__hint" data-i18n="account.notif.frequencyHint">Les acquisitions multiples peuvent être regroupées dans un résumé quotidien.</p>
                   </div>
                 </div>
                 <div class="notif-delivery" data-notif-delivery="squad_completion_increased">
-                  <p class="notif-delivery__title">Progression de mes squads</p>
+                  <p class="notif-delivery__title" data-i18n="account.notif.squadProgress">Progression de mes squads</p>
                   <div class="account-row">
-                    <span class="account-row__label">Dans l'application</span>
+                    <span class="account-row__label" data-i18n="account.label.inApp">Dans l'application</span>
                     <label class="toggle"><input type="checkbox" data-notif-in-app="squad_completion_increased" checked /><span class="toggle__slider"></span></label>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Push</span>
-                    <select class="account-row__select" data-notif-push="squad_completion_increased" aria-label="Push — progression de squad">
-                      <option value="enabled">Activé</option>
-                      <option value="milestones_only" selected>Paliers importants uniquement</option>
-                      <option value="disabled">Désactivé</option>
+                    <span class="account-row__label" data-i18n="account.notif.push">Push</span>
+                    <select class="account-row__select" data-notif-push="squad_completion_increased" aria-label="Push — progression de squad" data-i18n-aria-label="account.notif.push">
+                      <option value="enabled" data-i18n="account.notif.enabled">Activé</option>
+                      <option value="milestones_only" selected data-i18n="account.notif.milestonesOnly">Paliers importants uniquement</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                 </div>
               </div>
 
               <div class="notif-settings__group">
-                <h4 class="notif-settings__group-title">Priorités et événements</h4>
+                <h4 class="notif-settings__group-title" data-i18n="account.section.prioritiesEvents">Priorités et événements</h4>
                 <div class="notif-delivery" data-notif-delivery="priority_variant_available">
-                  <p class="notif-delivery__title">Une variante prioritaire devient disponible</p>
+                  <p class="notif-delivery__title" data-i18n="account.notif.priorityVariant">Une variante prioritaire devient disponible</p>
                   <div class="account-row">
-                    <span class="account-row__label">Dans l'application</span>
+                    <span class="account-row__label" data-i18n="account.label.inApp">Dans l'application</span>
                     <label class="toggle"><input type="checkbox" data-notif-in-app="priority_variant_available" checked /><span class="toggle__slider"></span></label>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Push</span>
+                    <span class="account-row__label" data-i18n="account.notif.push">Push</span>
                     <select class="account-row__select" data-notif-push="priority_variant_available" aria-label="Push — variante prioritaire disponible">
-                      <option value="enabled" selected>Activé</option>
-                      <option value="disabled">Désactivé</option>
+                      <option value="enabled" selected data-i18n="account.notif.enabled">Activé</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Fréquence</span>
-                    <select class="account-row__select" data-notif-frequency="priority_variant_available" aria-label="Fréquence — variante prioritaire disponible">
-                      <option value="immediate" selected>Immédiatement</option>
-                      <option value="daily_digest">Résumé quotidien</option>
-                      <option value="disabled">Désactivé</option>
+                    <span class="account-row__label" data-i18n="account.notif.frequency">Fréquence</span>
+                    <select class="account-row__select" data-notif-frequency="priority_variant_available" aria-label="Fréquence — variante prioritaire disponible" data-i18n-aria-label="account.notif.frequency">
+                      <option value="immediate" selected data-i18n="account.notif.immediate">Immédiatement</option>
+                      <option value="daily_digest" data-i18n="account.notif.dailyDigest">Résumé quotidien</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                 </div>
                 <div class="notif-delivery" data-notif-delivery="wanted_event_ending_soon">
-                  <p class="notif-delivery__title">Un événement recherché se termine bientôt</p>
+                  <p class="notif-delivery__title" data-i18n="account.notif.eventEndingSoon">Un événement recherché se termine bientôt</p>
                   <div class="account-row">
-                    <span class="account-row__label">Dans l'application</span>
+                    <span class="account-row__label" data-i18n="account.label.inApp">Dans l'application</span>
                     <label class="toggle"><input type="checkbox" data-notif-in-app="wanted_event_ending_soon" checked /><span class="toggle__slider"></span></label>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Push</span>
-                    <select class="account-row__select" data-notif-push="wanted_event_ending_soon" aria-label="Push — événement bientôt terminé">
-                      <option value="enabled" selected>Activé</option>
-                      <option value="disabled">Désactivé</option>
+                    <span class="account-row__label" data-i18n="account.notif.push">Push</span>
+                    <select class="account-row__select" data-notif-push="wanted_event_ending_soon" aria-label="Push — événement bientôt terminé" data-i18n-aria-label="account.notif.push">
+                      <option value="enabled" selected data-i18n="account.notif.enabled">Activé</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                   <div class="account-row account-row--stack">
-                    <span class="account-row__label">Fréquence</span>
-                    <select class="account-row__select" data-notif-frequency="wanted_event_ending_soon" aria-label="Fréquence — événement bientôt terminé">
-                      <option value="immediate" selected>Immédiatement</option>
-                      <option value="daily_digest">Résumé quotidien</option>
-                      <option value="disabled">Désactivé</option>
+                    <span class="account-row__label" data-i18n="account.notif.frequency">Fréquence</span>
+                    <select class="account-row__select" data-notif-frequency="wanted_event_ending_soon" aria-label="Fréquence — événement bientôt terminé" data-i18n-aria-label="account.notif.frequency">
+                      <option value="immediate" selected data-i18n="account.notif.immediate">Immédiatement</option>
+                      <option value="daily_digest" data-i18n="account.notif.dailyDigest">Résumé quotidien</option>
+                      <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
                   </div>
                 </div>
               </div>
 
               <div class="notif-settings__group">
-                <h4 class="notif-settings__group-title">Confort</h4>
+                <h4 class="notif-settings__group-title" data-i18n="account.section.comfort">Confort</h4>
                 <div class="account-row account-row--stack">
-                  <span class="account-row__label">Heures silencieuses</span>
+                  <span class="account-row__label" data-i18n="account.label.quietHours">Heures silencieuses</span>
                   <div class="notif-settings__quiet">
                     <label class="notif-settings__quiet-field">
-                      <span>De</span>
-                      <select class="account-row__select" id="notifQuietStart" aria-label="Début des heures silencieuses"></select>
+                      <span data-i18n="account.label.from">De</span>
+                      <select class="account-row__select" id="notifQuietStart" aria-label="Début des heures silencieuses" data-i18n-aria-label="account.label.quietHours"></select>
                     </label>
                     <label class="notif-settings__quiet-field">
-                      <span>à</span>
+                      <span data-i18n="account.label.to">à</span>
                       <select class="account-row__select" id="notifQuietEnd" aria-label="Fin des heures silencieuses"></select>
                     </label>
                   </div>
-                  <p class="notif-settings__hint">Les push non urgents sont reportés pendant cette plage (fuseau local).</p>
+                  <p class="notif-settings__hint" data-i18n="account.hint.quietHours">Les push non urgents sont reportés pendant cette plage (fuseau local).</p>
                 </div>
                 <div class="account-row account-row--stack">
-                  <span class="account-row__label">Fuseau horaire</span>
+                  <span class="account-row__label" data-i18n="account.label.timezone">Fuseau horaire</span>
                   <select class="account-row__select" id="notifTimezone" aria-label="Fuseau horaire"></select>
                 </div>
                 <div class="account-row account-row--stack">
-                  <span class="account-row__label">Maximum de push par jour</span>
+                  <span class="account-row__label" data-i18n="account.label.maxPush">Maximum de push par jour</span>
                   <select class="account-row__select" id="notifMaxPushPerDay" aria-label="Maximum de notifications push par jour">
-                    <option value="8" selected>8 (recommandé)</option>
+                    <option value="8" selected data-i18n="account.notif.maxPushRecommended">8 (recommandé)</option>
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="15">15</option>
                     <option value="20">20</option>
-                    <option value="0">Illimité</option>
+                    <option value="0" data-i18n="account.notif.maxPushUnlimited">Illimité</option>
                   </select>
-                  <p class="notif-settings__hint">Limite de sécurité pour les notifications sprite-index ordinaires. Les alertes critiques (sécurité, juridique, service) ne sont pas plafonnées.</p>
+                  <p class="notif-settings__hint" data-i18n="account.hint.maxPush">Limite de sécurité pour les notifications sprite-index ordinaires. Les alertes critiques (sécurité, juridique, service) ne sont pas plafonnées.</p>
                 </div>
               </div>
 
@@ -664,63 +664,63 @@
 
           <!-- Sauvegarde -->
           <div class="account-section" id="accountCloudSection">
-            <h3 class="account-section__title">Sauvegarde cloud</h3>
+            <h3 class="account-section__title" data-i18n="account.section.cloud">Sauvegarde cloud</h3>
             <div class="account-row">
-              <span class="account-row__label">Dernière sync</span>
+              <span class="account-row__label" data-i18n="account.label.lastSync">Dernière sync</span>
               <span class="account-row__value" id="accountLastSync">—</span>
             </div>
-            <button class="account-row__btn" id="accountForceSync">Synchroniser maintenant</button>
+            <button class="account-row__btn" id="accountForceSync" data-i18n="account.syncNow">Synchroniser maintenant</button>
           </div>
 
           <!-- Sécurité -->
           <div class="account-section account-section--danger" id="accountSecuritySection">
-            <h3 class="account-section__title">Sécurité</h3>
-            <button class="account-action-btn" id="accountLogout">Déconnexion</button>
-            <button class="account-action-btn account-action-btn--danger" id="accountDeleteOpen">Supprimer mon compte</button>
+            <h3 class="account-section__title" data-i18n="account.section.security">Sécurité</h3>
+            <button class="account-action-btn" id="accountLogout" data-i18n="account.logout">Déconnexion</button>
+            <button class="account-action-btn account-action-btn--danger" id="accountDeleteOpen" data-i18n="account.deleteAccount">Supprimer mon compte</button>
           </div>
 
           <!-- Informations et confidentialité -->
           <div class="account-section" id="accountInfoSection">
-            <h3 class="account-section__title">Informations et confidentialité</h3>
+            <h3 class="account-section__title" data-i18n="account.section.info">Informations et confidentialité</h3>
             <div class="legal-menu">
               <button class="legal-menu__item" type="button" data-legal-doc="mentions-legales">
-                <span>Mentions légales</span>
+                <span data-i18n="account.legal.mentions">Mentions légales</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="politique-confidentialite">
-                <span>Politique de confidentialité</span>
+                <span data-i18n="account.legal.privacy">Politique de confidentialité</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="cgu">
-                <span>Conditions générales d'utilisation</span>
+                <span data-i18n="account.legal.cgu">Conditions générales d'utilisation</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="cookies">
-                <span>Confidentialité et traceurs</span>
+                <span data-i18n="account.legal.cookies">Confidentialité et traceurs</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="donnees-personnelles">
-                <span>Gérer mes données</span>
+                <span data-i18n="account.legal.myData">Gérer mes données</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="suppression-compte">
-                <span>Supprimer mon compte</span>
+                <span data-i18n="account.legal.deleteAccount">Supprimer mon compte</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="contact">
-                <span>Contacter le support</span>
+                <span data-i18n="account.legal.contact">Contacter le support</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="signalement">
-                <span>Signaler un contenu</span>
+                <span data-i18n="account.legal.report">Signaler un contenu</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="regles-communautaires">
-                <span>Règles communautaires</span>
+                <span data-i18n="account.legal.rules">Règles communautaires</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button class="legal-menu__item" type="button" data-legal-doc="licences">
-                <span>Licences et crédits</span>
+                <span data-i18n="account.legal.licenses">Licences et crédits</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
@@ -732,7 +732,7 @@
       <div class="delete-modal" id="avatarModal" style="display:none">
         <div class="delete-modal__backdrop" id="avatarModalClose"></div>
         <div class="delete-modal__card">
-          <h3 class="delete-modal__title">Changer d'avatar</h3>
+          <h3 class="delete-modal__title" data-i18n="account.modal.changeAvatar">Changer d'avatar</h3>
           <div class="avatar-picker" id="avatarModalPicker">
             <div class="avatar-picker__item" data-avatar=""><span class="avatar-picker__placeholder">?</span></div>
             <div class="avatar-picker__item" data-avatar="Personna/Jones.png"><img src="Personna/Jones.png" alt="Jones" /></div>
@@ -768,18 +768,18 @@
       <div class="delete-modal" id="deleteModal" style="display:none">
         <div class="delete-modal__backdrop" id="deleteModalClose"></div>
         <div class="delete-modal__card">
-          <h3 class="delete-modal__title">Supprimer mon compte</h3>
-          <p class="delete-modal__desc">
+          <h3 class="delete-modal__title" data-i18n="account.modal.deleteTitle">Supprimer mon compte</h3>
+          <p class="delete-modal__desc" data-i18n="account.modal.deleteDesc">
             Cette action désactive immédiatement ton compte : profil, collection cloud, escouades et préférences ne seront plus accessibles.<br>
             Les données sont ensuite effacées définitivement dans un délai de <strong>30 jours</strong>.
           </p>
           <button class="delete-modal__export" id="deleteExportBtn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exporter mes données avant suppression
+            <span data-i18n="account.modal.exportBefore">Exporter mes données avant suppression</span>
           </button>
-          <label class="delete-modal__label">Écris <strong>SUPPRIMER</strong> pour confirmer :</label>
+          <label class="delete-modal__label" data-i18n="account.modal.deleteConfirmLabel">Écris <strong>SUPPRIMER</strong> pour confirmer :</label>
           <input type="text" class="delete-modal__input" id="deleteConfirmInput" placeholder="SUPPRIMER" autocomplete="off" />
-          <button class="delete-modal__btn" id="deleteConfirmBtn" disabled>Supprimer définitivement</button>
+          <button class="delete-modal__btn" id="deleteConfirmBtn" disabled data-i18n="account.modal.deleteConfirmBtn">Supprimer définitivement</button>
         </div>
       </div>
 
@@ -789,62 +789,62 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
           </span>
           <div>
-          <p class="muted">Progression collection</p>
+          <p class="muted" data-i18n="shell.collectionProgress">Progression collection</p>
           <div class="progress-line">
             <strong id="ownedCount">0</strong>
             <span>/</span>
             <span id="totalCount">0</span>
-            <span>variantes</span>
+            <span data-i18n="shell.variants">variantes</span>
           </div>
-          <p class="hero-card__caption">Déjà en votre possession</p>
+          <p class="hero-card__caption" data-i18n="shell.alreadyOwned">Déjà en votre possession</p>
           </div>
         </div>
-        <div class="ring" aria-label="Pourcentage de progression">
+        <div class="ring" data-i18n-aria-label="shell.progressPercent" aria-label="Pourcentage de progression">
           <span id="percentCount">0%</span>
         </div>
-        <p class="hero-card__remaining"><strong id="desktopRemainingCount">0</strong> variantes<br />à découvrir !</p>
+        <p class="hero-card__remaining"><strong id="desktopRemainingCount">0</strong> <span data-i18n="shell.variants">variantes</span><br /><span data-i18n="shell.toDiscover">à découvrir !</span></p>
       </section>
 
-      <nav class="tabs" aria-label="Navigation principale" id="mainTabs">
+      <nav class="tabs" data-i18n-aria-label="nav.main" aria-label="Navigation principale" id="mainTabs">
         <button class="tab active" data-view="swipe" type="button" aria-current="page">
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
-          <span class="tab__label">Swipe</span>
+          <span class="tab__label" data-i18n="nav.swipe">Swipe</span>
         </button>
         <button class="tab" data-view="checklist" type="button">
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          <span class="tab__label">Checklist</span>
+          <span class="tab__label" data-i18n="nav.checklist">Checklist</span>
         </button>
         <button class="tab" data-view="missing" type="button">
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6"/></svg>
-          <span class="tab__label">Manquants</span>
+          <span class="tab__label" data-i18n="nav.missing">Manquants</span>
         </button>
         <button class="tab" data-view="stats" type="button">
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
-          <span class="tab__label">Stats</span>
+          <span class="tab__label" data-i18n="nav.stats">Stats</span>
         </button>
         <button class="tab" data-view="history" type="button">
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-          <span class="tab__label">Historique</span>
+          <span class="tab__label" data-i18n="nav.history">Historique</span>
         </button>
         <button class="tab" data-view="social" type="button">
-          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span class="tab__label">Social</span>
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 0v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="tab__label" data-i18n="nav.social">Social</span>
         </button>
       </nav>
 
       <main id="mainViews" class="main-views">
         <section class="view active" id="view-swipe">
           <div class="deck-toolbar">
-            <select id="deckFilter" aria-label="Filtre du deck swipe">
-              <option value="all">Tous</option>
-              <option value="new">Non classés</option>
-              <option value="missing">Manquants</option>
-              <option value="priority">Prioritaires</option>
-              <option value="unsure">À vérifier</option>
-              <option value="spotted">Rares vus</option>
-              <option value="owned">Possédés</option>
+            <select id="deckFilter" data-i18n-aria-label="swipe.filterAria" aria-label="Filtre du deck swipe">
+              <option value="all" data-i18n="filter.all">Tous</option>
+              <option value="new" data-i18n="filter.unclassified">Non classés</option>
+              <option value="missing" data-i18n="filter.missing">Manquants</option>
+              <option value="priority" data-i18n="filter.priority">Prioritaires</option>
+              <option value="unsure" data-i18n="filter.unsure">À vérifier</option>
+              <option value="spotted" data-i18n="filter.spotted">Rares vus</option>
+              <option value="owned" data-i18n="filter.owned">Possédés</option>
             </select>
-            <button class="ghost-button" id="shuffleDeck">Mélanger</button>
+            <button class="ghost-button" id="shuffleDeck" data-i18n="common.shuffle">Mélanger</button>
           </div>
 
           <div class="deck-zone">
@@ -857,94 +857,94 @@
               <p class="variant-name" id="cardVariant">Base</p>
               <p class="effect" id="cardEffect">Effet du sprite</p>
               <div class="card-progress" id="cardProgress">
-                <div class="card-progress__label">Progression : <strong id="cardProgressText">0 / 6</strong></div>
+                <div class="card-progress__label"><span data-i18n="swipe.progress">Progression :</span> <strong id="cardProgressText">0 / 6</strong></div>
                 <div class="card-progress__track"><div class="card-progress__fill" id="cardProgressFill"></div></div>
               </div>
-              <div class="card-mastery" id="cardMastery" hidden aria-label="Niveau de maîtrise de la variante">
+              <div class="card-mastery" id="cardMastery" hidden data-i18n-aria-label="mastery.variantLevel" aria-label="Niveau de maîtrise de la variante">
                 <div class="card-mastery__top">
-                  <span class="card-mastery__title">Maîtrise</span>
+                  <span class="card-mastery__title" data-i18n="mastery.title">Maîtrise</span>
                   <span class="card-mastery__label" id="cardMasteryLabel">Niveau 1</span>
                 </div>
-                <div class="card-mastery__levels" id="cardMasteryLevels" role="group" aria-label="Choisir un niveau de maîtrise"></div>
+                <div class="card-mastery__levels" id="cardMasteryLevels" role="group" data-i18n-aria-label="mastery.chooseLevel" aria-label="Choisir un niveau de maîtrise"></div>
               </div>
               <div class="status-row">
-                <span id="cardStatus">Statut : Non classé</span>
+                <span id="cardStatus"></span>
                 <span id="cardIndex">1/1</span>
               </div>
             </article>
           </div>
 
-          <div class="swipe-actions" aria-label="Actions de swipe">
+          <div class="swipe-actions" data-i18n-aria-label="swipe.actionsAria" aria-label="Actions de swipe">
             <button class="action danger" id="markMissing">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              <span>Pas encore</span>
-              <small class="action__hint">Je ne l’ai pas</small>
+              <span data-i18n="swipe.notYet">Pas encore</span>
+              <small class="action__hint" data-i18n="swipe.notYetHint">Je ne l’ai pas</small>
             </button>
             <button class="action neutral" id="markUnsure">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
-              <span>À vérifier</span>
-              <small class="action__hint">Je dois vérifier</small>
+              <span data-i18n="swipe.unsure">À vérifier</span>
+              <small class="action__hint" data-i18n="swipe.unsureHint">Je dois vérifier</small>
             </button>
             <button class="action star" id="markPriority">
               <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              <span>Priorité</span>
-              <small class="action__hint">À obtenir en priorité</small>
+              <span data-i18n="swipe.priority">Priorité</span>
+              <small class="action__hint" data-i18n="swipe.priorityHint">À obtenir en priorité</small>
             </button>
             <button class="action success" id="markOwned">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Je l’ai</span>
-              <small class="action__hint">Déjà en ma possession</small>
+              <span data-i18n="swipe.owned">Je l’ai</span>
+              <small class="action__hint" data-i18n="swipe.ownedHint">Déjà en ma possession</small>
             </button>
           </div>
 
-          <p class="hint">Carte : → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note<br>Écran : glisse depuis le bord pour changer d’onglet</p>
+          <p class="hint"><span data-i18n="swipe.hint">Carte : → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note</span><br><span data-i18n="swipe.hintScreen">Écran : glisse depuis le bord pour changer d’onglet</span></p>
         </section>
 
-        <section class="view" id="view-checklist" aria-label="Checklist de collection">
+        <section class="view" id="view-checklist" data-i18n-aria-label="checklist.aria" aria-label="Checklist de collection">
           <div class="checklist-controls">
             <div class="checklist-toolbar">
             <div class="search-box">
               <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="searchInput" type="search" placeholder="Rechercher sprite, variante, rareté..." aria-label="Rechercher dans la checklist" aria-controls="checklistList" aria-describedby="checklistSearchHint" autocomplete="off" />
-              <span class="sr-only" id="checklistSearchHint">Appuyez sur Échap pour effacer la recherche.</span>
+              <input id="searchInput" type="search" data-i18n-placeholder="checklist.search" placeholder="Rechercher sprite, variante, rareté..." data-i18n-aria-label="checklist.searchAria" aria-label="Rechercher dans la checklist" aria-controls="checklistList" aria-describedby="checklistSearchHint" autocomplete="off" />
+              <span class="sr-only" id="checklistSearchHint" data-i18n="checklist.searchHint">Appuyez sur Échap pour effacer la recherche.</span>
             </div>
-            <div class="filter-chips-bar" id="filterChipsBar" role="group" aria-label="Filtrer la checklist">
-              <button type="button" class="filter-chip active" data-filter="all" aria-pressed="true">Tous</button>
-              <button type="button" class="filter-chip" data-filter="owned" aria-pressed="false">Possédés</button>
-              <button type="button" class="filter-chip" data-filter="missing" aria-pressed="false">Manquants</button>
-              <button type="button" class="filter-chip" data-filter="priority" aria-pressed="false">Prioritaires</button>
-              <button type="button" class="filter-chip" data-filter="unsure" aria-pressed="false">À vérifier</button>
-              <button type="button" class="filter-chip" data-filter="spotted" aria-pressed="false">Rares vus</button>
-              <button type="button" class="filter-chip" data-filter="unavailable" aria-pressed="false">Indispos</button>
-              <button type="button" class="filter-chip" data-filter="complete" aria-pressed="false">100%</button>
-              <button type="button" class="filter-chip" data-filter="incomplete" aria-pressed="false">Incomplets</button>
+            <div class="filter-chips-bar" id="filterChipsBar" role="group" data-i18n-aria-label="checklist.filtersAria" aria-label="Filtrer la checklist">
+              <button type="button" class="filter-chip active" data-filter="all" data-i18n="filter.all" aria-pressed="true">Tous</button>
+              <button type="button" class="filter-chip" data-filter="owned" data-i18n="filter.owned" aria-pressed="false">Possédés</button>
+              <button type="button" class="filter-chip" data-filter="missing" data-i18n="filter.missing" aria-pressed="false">Manquants</button>
+              <button type="button" class="filter-chip" data-filter="priority" data-i18n="filter.priority" aria-pressed="false">Prioritaires</button>
+              <button type="button" class="filter-chip" data-filter="unsure" data-i18n="filter.unsure" aria-pressed="false">À vérifier</button>
+              <button type="button" class="filter-chip" data-filter="spotted" data-i18n="filter.spotted" aria-pressed="false">Rares vus</button>
+              <button type="button" class="filter-chip" data-filter="unavailable" data-i18n="filter.unavailable" aria-pressed="false">Indispos</button>
+              <button type="button" class="filter-chip" data-filter="complete" data-i18n="filter.complete" aria-pressed="false">100%</button>
+              <button type="button" class="filter-chip" data-filter="incomplete" data-i18n="filter.incomplete" aria-pressed="false">Incomplets</button>
             </div>
             <div class="sort-bar">
-              <label class="sort-bar__label" for="checklistSort">Tri :</label>
+              <label class="sort-bar__label" for="checklistSort" data-i18n="sort.label">Tri :</label>
               <select id="checklistSort" class="sort-bar__select" aria-controls="checklistList">
-                <option value="alpha">Alphabétique</option>
-                <option value="progress-asc">Moins complété</option>
-                <option value="progress-desc">Plus complété</option>
-                <option value="rarity-desc">Plus rare d'abord</option>
-                <option value="rarity-asc">Plus commun d'abord</option>
-                <option value="priority">Par priorité</option>
-                <option value="recent">Par nouveauté</option>
+                <option value="alpha" data-i18n="sort.alpha">Alphabétique</option>
+                <option value="progress-asc" data-i18n="sort.progressAsc">Moins complété</option>
+                <option value="progress-desc" data-i18n="sort.progressDesc">Plus complété</option>
+                <option value="rarity-desc" data-i18n="sort.rarityDesc">Plus rare d'abord</option>
+                <option value="rarity-asc" data-i18n="sort.rarityAsc">Plus commun d'abord</option>
+                <option value="priority" data-i18n="sort.priority">Par priorité</option>
+                <option value="recent" data-i18n="sort.recent">Par nouveauté</option>
               </select>
             </div>
             </div>
             <div class="bulk-actions">
-            <button type="button" class="ghost-button" id="exportData" aria-label="Exporter la checklist">
+            <button type="button" class="ghost-button" id="exportData" data-i18n-aria-label="checklist.exportAria" aria-label="Exporter la checklist">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Exporter
+              <span data-i18n="common.export">Exporter</span>
             </button>
             <label class="ghost-button file-label">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              Importer
+              <span data-i18n="common.import">Importer</span>
               <input id="importData" type="file" accept="application/json" hidden />
             </label>
-            <button type="button" class="ghost-button danger-text" id="resetData" aria-label="Réinitialiser toutes les données de la checklist">
+            <button type="button" class="ghost-button danger-text" id="resetData" data-i18n-aria-label="checklist.resetAria" aria-label="Réinitialiser toutes les données de la checklist">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-              Reset
+              <span data-i18n="common.reset">Reset</span>
             </button>
             </div>
           </div>
@@ -955,99 +955,99 @@
         <section class="view" id="view-missing" aria-labelledby="missingTitle">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Farm list</p>
-              <h2 id="missingTitle">Ce qu’il te manque</h2>
-              <p class="section-heading__description">Prépare ta prochaine session : priorise, retrouve une variante et marque-la dès qu’elle est obtenue.</p>
+              <p class="eyebrow" data-i18n="missing.eyebrow">Farm list</p>
+              <h2 id="missingTitle" data-i18n="missing.title">Ce qu’il te manque</h2>
+              <p class="section-heading__description" data-i18n="missing.description">Prépare ta prochaine session : priorise, retrouve une variante et marque-la dès qu’elle est obtenue.</p>
             </div>
-            <button class="ghost-button" id="copyMissing" type="button">Copier la liste visible</button>
+            <button class="ghost-button" id="copyMissing" type="button" data-i18n="missing.copyVisible">Copier la liste visible</button>
           </div>
-          <div class="missing-controls" aria-label="Outils de la liste des manquants">
+          <div class="missing-controls" data-i18n-aria-label="missing.toolsAria" aria-label="Outils de la liste des manquants">
             <div class="search-box missing-controls__search">
               <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input id="missingSearch" type="search" placeholder="Rechercher un sprite ou une variante…" aria-label="Rechercher dans les manquants" aria-controls="missingList" aria-describedby="missingSearchHint" autocomplete="off" />
-              <span class="sr-only" id="missingSearchHint">Appuyez sur Échap pour effacer la recherche.</span>
+              <input id="missingSearch" type="search" data-i18n-placeholder="missing.search" placeholder="Rechercher un sprite ou une variante…" data-i18n-aria-label="missing.searchAria" aria-label="Rechercher dans les manquants" aria-controls="missingList" aria-describedby="missingSearchHint" autocomplete="off" />
+              <span class="sr-only" id="missingSearchHint" data-i18n="missing.searchHint">Appuyez sur Échap pour effacer la recherche.</span>
             </div>
-            <div class="missing-filter-chips" id="missingFilterChips" role="group" aria-label="Filtrer les manquants">
-              <button class="filter-chip active" type="button" data-missing-filter="all" aria-pressed="true">Tous</button>
-              <button class="filter-chip" type="button" data-missing-filter="priority" aria-pressed="false">Prioritaires</button>
-              <button class="filter-chip" type="button" data-missing-filter="spotted" aria-pressed="false">Rares vus</button>
-              <button class="filter-chip" type="button" data-missing-filter="missing" aria-pressed="false">À planifier</button>
+            <div class="missing-filter-chips" id="missingFilterChips" role="group" data-i18n-aria-label="missing.filtersAria" aria-label="Filtrer les manquants">
+              <button class="filter-chip active" type="button" data-missing-filter="all" data-i18n="filter.all" aria-pressed="true">Tous</button>
+              <button class="filter-chip" type="button" data-missing-filter="priority" data-i18n="filter.priority" aria-pressed="false">Prioritaires</button>
+              <button class="filter-chip" type="button" data-missing-filter="spotted" data-i18n="filter.spotted" aria-pressed="false">Rares vus</button>
+              <button class="filter-chip" type="button" data-missing-filter="missing" data-i18n="filter.toPlan" aria-pressed="false">À planifier</button>
             </div>
             <label class="sort-bar missing-controls__sort" for="missingSort">
-              <span class="sort-bar__label">Trier :</span>
+              <span class="sort-bar__label" data-i18n="sort.labelAlt">Trier :</span>
               <select id="missingSort" class="sort-bar__select" aria-controls="missingList">
-                <option value="priority">Par priorité</option>
-                <option value="alpha">Alphabétique</option>
-                <option value="rarity">Par rareté</option>
-                <option value="variant">Par variante</option>
+                <option value="priority" data-i18n="sort.priority">Par priorité</option>
+                <option value="alpha" data-i18n="sort.alpha">Alphabétique</option>
+                <option value="rarity" data-i18n="sort.rarity">Par rareté</option>
+                <option value="variant" data-i18n="sort.variant">Par variante</option>
               </select>
             </label>
-            <button class="ghost-button missing-controls__reset" id="clearMissingFilters" type="button" hidden>Réinitialiser</button>
+            <button class="ghost-button missing-controls__reset" id="clearMissingFilters" type="button" hidden data-i18n="missing.reset">Réinitialiser</button>
           </div>
           <p class="sr-only" id="missingResultsStatus" role="status" aria-live="polite" aria-atomic="true"></p>
           <div class="missing-list" id="missingList" aria-describedby="missingResultsStatus"></div>
         </section>
 
         <section class="view" id="view-stats">
-          <div class="stats-page" aria-label="Statistiques de collection">
+          <div class="stats-page" data-i18n-aria-label="stats.pageAria" aria-label="Statistiques de collection">
 
-            <section class="stats-kpis" aria-label="Indicateurs clés de collection">
+            <section class="stats-kpis" data-i18n-aria-label="stats.kpisAria" aria-label="Indicateurs clés de collection">
               <article class="stats-kpi stats-kpi--sprites">
                 <span class="stats-kpi__icon" aria-hidden="true">◈</span>
                 <span class="stats-kpi__value" id="kpiSprites">0 / 0</span>
-                <span class="stats-kpi__label">Sprites possédés</span>
-                <span class="stats-kpi__hint" id="kpiSpritesHint">Familles découvertes</span>
+                <span class="stats-kpi__label" data-i18n="stats.kpiSpritesLabel">Sprites possédés</span>
+                <span class="stats-kpi__hint" id="kpiSpritesHint" data-i18n="stats.kpiSpritesHint">Familles découvertes</span>
               </article>
               <article class="stats-kpi stats-kpi--variants">
                 <span class="stats-kpi__icon" aria-hidden="true">▣</span>
                 <span class="stats-kpi__value" id="kpiVariants">0 / 0</span>
-                <span class="stats-kpi__label">Variantes possédées</span>
+                <span class="stats-kpi__label" data-i18n="stats.kpiVariantsLabel">Variantes possédées</span>
                 <span class="stats-kpi__hint" id="kpiVariantsHint">Progression du catalogue</span>
               </article>
               <article class="stats-kpi stats-kpi--priorities">
                 <span class="stats-kpi__icon" aria-hidden="true">◎</span>
                 <span class="stats-kpi__value" id="kpiPriorities">0</span>
-                <span class="stats-kpi__label">Priorités restantes</span>
-                <span class="stats-kpi__hint" id="kpiPrioritiesHint">Aucune recherche prioritaire</span>
+                <span class="stats-kpi__label" data-i18n="stats.kpiPrioritiesLabel">Priorités restantes</span>
+                <span class="stats-kpi__hint" id="kpiPrioritiesHint" data-i18n="stats.kpiPrioritiesNone">Aucune recherche prioritaire</span>
               </article>
             </section>
 
             <section class="stats-module stats-module--rarity" aria-labelledby="statsRarityTitle">
-              <h3 class="stats-module__title" id="statsRarityTitle"><span aria-hidden="true">◇</span> Par rareté</h3>
-              <p class="stats-module__description">Votre progression dans chaque niveau de rareté.</p>
+              <h3 class="stats-module__title" id="statsRarityTitle"><span aria-hidden="true">◇</span> <span data-i18n="stats.rarityTitle">Par rareté</span></h3>
+              <p class="stats-module__description" data-i18n="stats.rarityDesc">Votre progression dans chaque niveau de rareté.</p>
               <div id="rarityBars"></div>
             </section>
 
             <section class="stats-module stats-module--variant" aria-labelledby="statsVariantTitle">
-              <h3 class="stats-module__title" id="statsVariantTitle"><span aria-hidden="true">▱</span> Par variante</h3>
-              <p class="stats-module__description">Les styles de Sprite les plus proches de votre objectif.</p>
+              <h3 class="stats-module__title" id="statsVariantTitle"><span aria-hidden="true">▱</span> <span data-i18n="stats.variantTitle">Par variante</span></h3>
+              <p class="stats-module__description" data-i18n="stats.variantDesc">Les styles de Sprite les plus proches de votre objectif.</p>
               <div id="variantBars"></div>
             </section>
 
-            <section class="stats-insights" id="statsInsights" aria-label="Points clés de votre collection"></section>
+            <section class="stats-insights" id="statsInsights" data-i18n-aria-label="stats.insightsAria" aria-label="Points clés de votre collection"></section>
 
-            <section id="sprite-indexTrends" aria-label="Tendances sprite-index"></section>
+            <section id="sprite-indexTrends" data-i18n-aria-label="stats.trendsAria" aria-label="Tendances sprite-index"></section>
 
-            <section id="communityStats" aria-label="Statistiques communautaires"></section>
+            <section id="communityStats" data-i18n-aria-label="stats.communityAria" aria-label="Statistiques communautaires"></section>
 
           </div>
         </section>
 
         <section class="view" id="view-social">
           <nav class="social-tabs" role="tablist" aria-label="Espace social">
-            <button class="social-tab active" id="social-tab-friends" data-social-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="social-panel-friends">Amis</button>
-            <button class="social-tab" id="social-tab-compare" data-social-tab="compare" type="button" role="tab" aria-selected="false" aria-controls="social-panel-compare">Comparer</button>
-            <button class="social-tab" id="social-tab-squad" data-social-tab="squad" type="button" role="tab" aria-selected="false" aria-controls="social-panel-squad">Escouade</button>
+            <button class="social-tab active" id="social-tab-friends" data-social-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="social-panel-friends" data-i18n="social.friends">Amis</button>
+            <button class="social-tab" id="social-tab-compare" data-social-tab="compare" type="button" role="tab" aria-selected="false" aria-controls="social-panel-compare" data-i18n="social.compare">Comparer</button>
+            <button class="social-tab" id="social-tab-squad" data-social-tab="squad" type="button" role="tab" aria-selected="false" aria-controls="social-panel-squad" data-i18n="social.squad">Escouade</button>
           </nav>
 
           <div class="social-panel" id="social-panel-friends" role="tabpanel" aria-labelledby="social-tab-friends">
-          <nav class="friends-tabs" role="tablist" aria-label="Amis">
-            <button class="friends-tab active" id="friends-tab-friends" data-friends-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="friends-panel-friends">Mes amis</button>
-            <button class="friends-tab" id="friends-tab-received" data-friends-tab="received" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-received">Demandes reçues</button>
-            <button class="friends-tab" id="friends-tab-sent" data-friends-tab="sent" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-sent">Demandes envoyées</button>
-            <button class="friends-tab" id="friends-tab-add" data-friends-tab="add" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-add">Ajouter</button>
-            <button class="friends-tab" id="friends-tab-qr" data-friends-tab="qr" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-qr">Mon QR code</button>
-            <button class="friends-tab" id="friends-tab-blocked" data-friends-tab="blocked" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-blocked">Bloqués</button>
+          <nav class="friends-tabs" role="tablist" data-i18n-aria-label="social.friends" aria-label="Amis">
+            <button class="friends-tab active" id="friends-tab-friends" data-friends-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="friends-panel-friends" data-i18n="friends.tabFriends">Mes amis</button>
+            <button class="friends-tab" id="friends-tab-received" data-friends-tab="received" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-received" data-i18n="friends.tabReceived">Demandes reçues</button>
+            <button class="friends-tab" id="friends-tab-sent" data-friends-tab="sent" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-sent" data-i18n="friends.tabSent">Demandes envoyées</button>
+            <button class="friends-tab" id="friends-tab-add" data-friends-tab="add" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-add" data-i18n="friends.tabAdd">Ajouter</button>
+            <button class="friends-tab" id="friends-tab-qr" data-friends-tab="qr" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-qr" data-i18n="friends.tabQr">Mon QR code</button>
+            <button class="friends-tab" id="friends-tab-blocked" data-friends-tab="blocked" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-blocked" data-i18n="friends.tabBlocked">Bloqués</button>
           </nav>
 
           <div class="friends-panels">
@@ -1055,63 +1055,63 @@
               <div class="friends-toolbar">
                 <div class="search-box friends-search-box">
                   <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input id="friendSearch" type="search" placeholder="Rechercher un ami…" />
+                  <input id="friendSearch" type="search" placeholder="Rechercher un ami…" data-i18n-placeholder="friends.searchPlaceholder" />
                 </div>
                 <select id="friendFilter" class="sort-bar__select" aria-label="Filtrer les amis">
-                  <option value="all">Tous</option>
-                  <option value="online">En ligne</option>
-                  <option value="squad">Même squad</option>
-                  <option value="recent">Collection mise à jour récemment</option>
-                  <option value="complementary">Variantes complémentaires</option>
-                  <option value="pending">Demandes en attente</option>
+                  <option value="all" data-i18n="friends.filterAll">Tous</option>
+                  <option value="online" data-i18n="friends.filterOnline">En ligne</option>
+                  <option value="squad" data-i18n="friends.filterSquad">Même squad</option>
+                  <option value="recent" data-i18n="friends.filterRecent">Collection mise à jour récemment</option>
+                  <option value="complementary" data-i18n="friends.filterComplementary">Variantes complémentaires</option>
+                  <option value="pending" data-i18n="friends.filterPending">Demandes en attente</option>
                 </select>
                 <select id="friendSort" class="sort-bar__select" aria-label="Trier les amis">
-                  <option value="name">Nom</option>
-                  <option value="lastActive">Dernière activité</option>
-                  <option value="complementarity">Complémentarité</option>
-                  <option value="progression">Progression</option>
-                  <option value="added">Date d'ajout</option>
+                  <option value="name" data-i18n="friends.sortName">Nom</option>
+                  <option value="lastActive" data-i18n="friends.sortLastActive">Dernière activité</option>
+                  <option value="complementarity" data-i18n="friends.sortComplementarity">Complémentarité</option>
+                  <option value="progression" data-i18n="friends.sortProgression">Progression</option>
+                  <option value="added" data-i18n="friends.sortAdded">Date d'ajout</option>
                 </select>
               </div>
-              <div class="friends-list" id="friendsList"><p class="squad-empty">Chargement…</p></div>
+              <div class="friends-list" id="friendsList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
             </div>
 
             <div class="friends-panel" id="friends-panel-received" role="tabpanel" aria-labelledby="friends-tab-received">
-              <div class="friends-list" id="receivedList"><p class="squad-empty">Chargement…</p></div>
+              <div class="friends-list" id="receivedList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
             </div>
 
             <div class="friends-panel" id="friends-panel-sent" role="tabpanel" aria-labelledby="friends-tab-sent">
-              <div class="friends-list" id="sentList"><p class="squad-empty">Chargement…</p></div>
+              <div class="friends-list" id="sentList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
             </div>
 
             <div class="friends-panel" id="friends-panel-add" role="tabpanel" aria-labelledby="friends-tab-add">
               <div class="friends-toolbar">
                 <div class="search-box friends-search-box">
                   <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input id="addFriendSearch" type="search" placeholder="Pseudo (min. 3 caractères)" />
+                  <input id="addFriendSearch" type="search" placeholder="Pseudo (min. 3 caractères)" data-i18n-placeholder="friends.addSearchPlaceholder" />
                 </div>
-                <button class="ghost-button" id="addFriendSearchBtn" type="button">Rechercher</button>
+                <button class="ghost-button" id="addFriendSearchBtn" type="button" data-i18n="friends.searchBtn">Rechercher</button>
               </div>
               <div class="friends-actions">
-                <button class="ghost-button" id="friendShareLinkBtn" type="button">Copier mon lien d'ami</button>
-                <button class="ghost-button" id="friendShowQrBtn" type="button">Afficher mon QR code</button>
+                <button class="ghost-button" id="friendShareLinkBtn" type="button" data-i18n="friends.copyLinkBtn">Copier mon lien d'ami</button>
+                <button class="ghost-button" id="friendShowQrBtn" type="button" data-i18n="friends.showQrBtn">Afficher mon QR code</button>
               </div>
-              <h3 class="friends-subtitle">Résultats</h3>
+              <h3 class="friends-subtitle" data-i18n="friends.resultsTitle">Résultats</h3>
               <div class="friends-list" id="addFriendResults"></div>
-              <h3 class="friends-subtitle">Suggestions d'escouade</h3>
-              <div class="friends-list" id="friendSuggestions"><p class="squad-empty">Aucune suggestion</p></div>
+              <h3 class="friends-subtitle" data-i18n="friends.squadSuggestions">Suggestions d'escouade</h3>
+              <div class="friends-list" id="friendSuggestions"><p class="squad-empty" data-i18n="friends.noSuggestions">Aucune suggestion</p></div>
             </div>
 
             <div class="friends-panel" id="friends-panel-qr" role="tabpanel" aria-labelledby="friends-tab-qr">
               <div class="friends-qr-wrap">
-                <p id="friendQrHint" class="squad-empty">Génère un lien permanent pour afficher ton QR code.</p>
-                <img id="friendQrImg" alt="QR code d'ami" style="display:none" />
-                <button class="ghost-button" id="friendGenerateQrBtn" type="button">Générer mon QR code</button>
+                <p id="friendQrHint" class="squad-empty" data-i18n="friends.qrHint">Génère un lien permanent pour afficher ton QR code.</p>
+                <img id="friendQrImg" alt="QR code d'ami" data-i18n-alt="friends.qrAlt" style="display:none" />
+                <button class="ghost-button" id="friendGenerateQrBtn" type="button" data-i18n="friends.generateQrBtn">Générer mon QR code</button>
               </div>
             </div>
 
             <div class="friends-panel" id="friends-panel-blocked" role="tabpanel" aria-labelledby="friends-tab-blocked">
-              <div class="friends-list" id="blockedList"><p class="squad-empty">Chargement…</p></div>
+              <div class="friends-list" id="blockedList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
             </div>
           </div>
           </div><!-- /social-panel-friends -->
@@ -1120,14 +1120,14 @@
           <!-- Friend (1v1) comparison mode -->
           <div class="compare-mode-panel" id="compareModeFriend">
             <div class="compare-hero">
-              <h2>Comparaison avec un ami</h2>
-              <p>Compare ta collection avec un ami pour voir ce que vous pouvez vous échanger.</p>
+              <h2 data-i18n="compare.title">Comparaison avec un ami</h2>
+              <p data-i18n="compare.subtitle">Compare ta collection avec un ami pour voir ce que vous pouvez vous échanger.</p>
             </div>
             <form class="compare-form" id="compareForm">
-              <label for="compareTokenInput">Lien ou token de partage de ton ami</label>
-              <input type="text" id="compareTokenInput" placeholder="https://...?share=... ou token" autocomplete="off" />
-              <button type="submit" class="login-btn" id="compareLoadBtn">Comparer</button>
-              <button type="button" class="ghost-button" id="compareShareBtn">Partager ma collection</button>
+              <label for="compareTokenInput" data-i18n="compare.tokenLabel">Lien ou token de partage de ton ami</label>
+              <input type="text" id="compareTokenInput" placeholder="https://...?share=... ou token" data-i18n-placeholder="compare.tokenPlaceholder" autocomplete="off" />
+              <button type="submit" class="login-btn" id="compareLoadBtn" data-i18n="compare.compareBtn">Comparer</button>
+              <button type="button" class="ghost-button" id="compareShareBtn" data-i18n="compare.shareBtn">Partager ma collection</button>
             </form>
             <div class="compare-status" id="compareStatus"></div>
             <div class="compare-results" id="compareResults" style="display:none">
@@ -1147,18 +1147,18 @@
           <!-- Squad lobby: create or join -->
           <div class="squad-lobby" id="squadLobby">
             <div class="squad-lobby__card">
-              <h3 class="squad-lobby__title">Créer une escouade</h3>
+              <h3 class="squad-lobby__title" data-i18n="squad.createTitle">Créer une escouade</h3>
               <div class="squad-lobby__row">
-                <input type="text" id="squadNameInput" class="squad-input" placeholder="Nom de l'escouade (optionnel)" maxlength="50" />
-                <button class="ghost-button" id="squadCreateBtn">Créer</button>
+                <input type="text" id="squadNameInput" class="squad-input" placeholder="Nom de l'escouade (optionnel)" data-i18n-placeholder="squad.namePlaceholder" maxlength="50" />
+                <button class="ghost-button" id="squadCreateBtn" data-i18n="squad.createBtn">Créer</button>
               </div>
             </div>
-            <div class="squad-lobby__divider"><span>ou</span></div>
+            <div class="squad-lobby__divider"><span data-i18n="squad.or">ou</span></div>
             <div class="squad-lobby__card">
-              <h3 class="squad-lobby__title">Rejoindre avec un code</h3>
+              <h3 class="squad-lobby__title" data-i18n="squad.joinTitle">Rejoindre avec un code</h3>
               <div class="squad-lobby__row">
                 <input type="text" id="squadCodeInput" class="squad-input squad-input--code" placeholder="SPRITE-XXXX" maxlength="20" />
-                <button class="ghost-button" id="squadJoinBtn">Rejoindre</button>
+                <button class="ghost-button" id="squadJoinBtn" data-i18n="squad.joinBtn">Rejoindre</button>
               </div>
             </div>
           </div>
@@ -1167,20 +1167,20 @@
           <div class="squad-active" id="squadActive" style="display:none">
             <div class="squad-active__header">
               <div class="squad-active__info">
-                <h3 class="squad-active__name" id="squadActiveName">Mon escouade</h3>
+                <h3 class="squad-active__name" id="squadActiveName" data-i18n="squad.defaultName">Mon escouade</h3>
                 <span class="squad-active__code" id="squadActiveCode">SPRITE-0000</span>
                 <button class="squad-copy-code" id="squadCopyCode" title="Copier le code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               </div>
-              <button class="ghost-button" id="squadEngineBtn">Moteur</button>
-              <button class="ghost-button" id="squadShareBtn">Partager</button>
-              <button class="ghost-button danger-text" id="squadLeaveBtn">Quitter</button>
+              <button class="ghost-button" id="squadEngineBtn" data-i18n="squad.engineBtn">Moteur</button>
+              <button class="ghost-button" id="squadShareBtn" data-i18n="squad.shareBtn">Partager</button>
+              <button class="ghost-button danger-text" id="squadLeaveBtn" data-i18n="squad.leaveBtn">Quitter</button>
             </div>
             <div id="squadAdminWrap"></div>
             <div class="squad-member-filter" id="squadMemberFilter" style="display:none">
-              <button type="button" class="squad-member-filter__btn active" data-member-filter="all">Tous</button>
-              <button type="button" class="squad-member-filter__btn" data-member-filter="friends">Mes amis</button>
-              <button type="button" class="squad-member-filter__btn" data-member-filter="nonfriends">Non-amis</button>
-              <button type="button" class="squad-member-filter__btn" data-member-filter="admins">Administrateurs</button>
+              <button type="button" class="squad-member-filter__btn active" data-member-filter="all" data-i18n="squad.filterAll">Tous</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="friends" data-i18n="squad.filterFriends">Mes amis</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="nonfriends" data-i18n="squad.filterNonFriends">Non-amis</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="admins" data-i18n="squad.filterAdmins">Administrateurs</button>
             </div>
             <div class="squad-member-summary" id="squadMemberSummary"></div>
             <div class="squad-members" id="squadMembers"></div>
@@ -1188,27 +1188,27 @@
             <div class="squad-complementary-pairs" id="squadComplementaryPairs"></div>
             <div class="squad-controls">
               <div class="squad-search">
-                <input type="text" id="squadSearchInput" class="squad-input" placeholder="Rechercher un sprite…" />
+                <input type="text" id="squadSearchInput" class="squad-input" placeholder="Rechercher un sprite…" data-i18n-placeholder="squad.searchPlaceholder" />
               </div>
               <div class="squad-filters">
                 <select id="squadFilter" class="sort-bar__select">
-                  <optgroup label="Essentiels">
-                    <option value="all">Tout afficher</option>
-                    <option value="diff">Manque à quelqu'un</option>
-                    <option value="missing-all">Personne ne l'a</option>
-                    <option value="team-prio">Priorités de l'équipe</option>
-                    <option value="duo">Duo — échange possible</option>
+                  <optgroup label="Essentiels" data-i18n-label="squad.groupEssential">
+                    <option value="all" data-i18n="squad.filterShowAll">Tout afficher</option>
+                    <option value="diff" data-i18n="squad.filterDiff">Manque à quelqu'un</option>
+                    <option value="missing-all" data-i18n="squad.filterMissingAll">Personne ne l'a</option>
+                    <option value="team-prio" data-i18n="squad.filterTeamPrio">Priorités de l'équipe</option>
+                    <option value="duo" data-i18n="squad.filterDuo">Duo — échange possible</option>
                   </optgroup>
-                  <optgroup label="Perso">
-                    <option value="missing-me">Ce qu'il me manque</option>
-                    <option value="exclusive">Mes exclusivités</option>
-                    <option value="everyone">Tout le monde l'a</option>
+                  <optgroup label="Perso" data-i18n-label="squad.groupPerso">
+                    <option value="missing-me" data-i18n="squad.filterMissingMe">Ce qu'il me manque</option>
+                    <option value="exclusive" data-i18n="squad.filterExclusive">Mes exclusivités</option>
+                    <option value="everyone" data-i18n="squad.filterEveryone">Tout le monde l'a</option>
                   </optgroup>
-                  <optgroup label="Rareté">
-                    <option value="rarity:Mythique">Mythique</option>
-                    <option value="rarity:Légendaire">Légendaire</option>
-                    <option value="rarity:Épique">Épique</option>
-                    <option value="rarity:Rare">Rare</option>
+                  <optgroup label="Rareté" data-i18n-label="squad.groupRarity">
+                    <option value="rarity:Mythique" data-i18n="rarity.mythic">Mythique</option>
+                    <option value="rarity:Légendaire" data-i18n="rarity.legendary">Légendaire</option>
+                    <option value="rarity:Épique" data-i18n="rarity.epic">Épique</option>
+                    <option value="rarity:Rare" data-i18n="rarity.rare">Rare</option>
                   </optgroup>
                   <optgroup label="Variante" id="squadVariantGroup">
                   </optgroup>
@@ -1216,10 +1216,10 @@
                 <button class="ghost-button squad-refresh-btn" id="squadRefreshBtn">↻</button>
               </div>
               <div class="squad-view-toggle">
-                <button class="squad-view-btn active" data-squad-view="table" title="Tableau">▦</button>
-                <button class="squad-view-btn" data-squad-view="cards" title="Manque à qui ?">▤</button>
-                <button class="squad-view-btn" data-squad-view="hunt" title="À farmer">⊘</button>
-                <button class="squad-view-btn" data-squad-view="duel" title="Duel 1v1">⇄</button>
+                <button class="squad-view-btn active" data-squad-view="table" data-i18n-title="squad.viewTable" title="Tableau">▦</button>
+                <button class="squad-view-btn" data-squad-view="cards" data-i18n-title="squad.viewCards" title="Manque à qui ?">▤</button>
+                <button class="squad-view-btn" data-squad-view="hunt" data-i18n-title="squad.viewHunt" title="À farmer">⊘</button>
+                <button class="squad-view-btn" data-squad-view="duel" data-i18n-title="squad.viewDuel" title="Duel 1v1">⇄</button>
                 <button class="squad-view-btn" data-squad-view="session" title="Session rapide"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
                 <button class="squad-view-btn" data-squad-view="recommendations" title="Recommandations"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
                 <button class="squad-view-btn" data-squad-view="history" title="Historique"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
@@ -1232,21 +1232,21 @@
             </div>
             <div class="squad-counter" id="squadCounter"></div>
             <div class="squad-table-wrap" id="squadTableWrap">
-              <p class="squad-empty">Chargement...</p>
+              <p class="squad-empty" data-i18n="squad.loading">Chargement...</p>
             </div>
 
             <!-- Squad completion engine -->
             <div class="squad-engine" id="squadEngine" style="display:none">
               <div class="squad-engine__header">
-                <h3 class="squad-engine__title">Moteur de complétion</h3>
+                <h3 class="squad-engine__title" data-i18n="squad.engineTitle">Moteur de complétion</h3>
                 <span class="squad-engine__version" id="squadEngineVersion"></span>
-                <button class="ghost-button" id="squadEngineCloseBtn">Retour</button>
+                <button class="ghost-button" id="squadEngineCloseBtn" data-i18n="squad.engineClose">Retour</button>
               </div>
-              <nav class="squad-engine__tabs" role="tablist" aria-label="Moteur de complétion">
-                <button class="squad-engine__tab active" data-engine-tab="overview" type="button">Vue d'ensemble</button>
-                <button class="squad-engine__tab" data-engine-tab="missing" type="button">Manquants</button>
-                <button class="squad-engine__tab" data-engine-tab="recommendations" type="button">Recommandations</button>
-                <button class="squad-engine__tab" data-engine-tab="optimization" type="button">Optimisation</button>
+              <nav class="squad-engine__tabs" role="tablist" data-i18n-aria-label="squad.engineTitle" aria-label="Moteur de complétion">
+                <button class="squad-engine__tab active" data-engine-tab="overview" type="button" data-i18n="squad.engineTabOverview">Vue d'ensemble</button>
+                <button class="squad-engine__tab" data-engine-tab="missing" type="button" data-i18n="squad.engineTabMissing">Manquants</button>
+                <button class="squad-engine__tab" data-engine-tab="recommendations" type="button" data-i18n="squad.engineTabRecommendations">Recommandations</button>
+                <button class="squad-engine__tab" data-engine-tab="optimization" type="button" data-i18n="squad.engineTabOptimization">Optimisation</button>
               </nav>
               <div class="squad-engine__panels">
                 <div class="squad-engine__panel active" id="squadEnginePanel-overview"></div>
@@ -1263,35 +1263,35 @@
           <div class="history-dashboard">
             <header class="history-dashboard__heading">
               <div>
-                <p class="history-dashboard__eyebrow">Journal de collection</p>
-                <h2 class="section-title" id="historyPageTitle">Historique</h2>
-                <p class="history-dashboard__intro">Retrouvez les évolutions de votre collection.</p>
+                <p class="history-dashboard__eyebrow" data-i18n="history.pageEyebrow">Journal de collection</p>
+                <h2 class="section-title" id="historyPageTitle" data-i18n="nav.history">Historique</h2>
+                <p class="history-dashboard__intro" data-i18n="history.pageIntro">Retrouvez les évolutions de votre collection.</p>
               </div>
             </header>
 
-            <section class="history-kpis" id="historyStats" aria-label="Résumé de l'activité de collection"></section>
+            <section class="history-kpis" id="historyStats" data-i18n-aria-label="history.kpisAria" aria-label="Résumé de l'activité de collection"></section>
 
             <section class="history-panel history-panel--trend" id="historyWeekly" aria-labelledby="historyTrendTitle" aria-busy="true"></section>
 
             <section class="history-panel history-activity" aria-labelledby="historyActivityTitle">
               <header class="history-panel__header history-activity__header">
                 <div>
-                  <p class="history-panel__eyebrow">Journal personnel</p>
-                  <h3 id="historyActivityTitle">Activité récente</h3>
+                  <p class="history-panel__eyebrow" data-i18n="history.logEyebrow">Journal personnel</p>
+                  <h3 id="historyActivityTitle" data-i18n="history.recentActivityTitle">Activité récente</h3>
                 </div>
-                <div class="history-filter" role="group" aria-label="Filtrer l'activité récente">
-                  <button class="history-filter__button active" type="button" data-history-filter="all" aria-pressed="true">Tout</button>
-                  <button class="history-filter__button" type="button" data-history-filter="acquisition" aria-pressed="false">Acquisitions</button>
-                  <button class="history-filter__button" type="button" data-history-filter="change" aria-pressed="false">Changements</button>
+                <div class="history-filter" role="group" data-i18n-aria-label="history.filterAria" aria-label="Filtrer l'activité récente">
+                  <button class="history-filter__button active" type="button" data-history-filter="all" aria-pressed="true" data-i18n="history.filterAll">Tout</button>
+                  <button class="history-filter__button" type="button" data-history-filter="acquisition" aria-pressed="false" data-i18n="history.filterAcquisitions">Acquisitions</button>
+                  <button class="history-filter__button" type="button" data-history-filter="change" aria-pressed="false" data-i18n="history.filterChanges">Changements</button>
                 </div>
               </header>
               <p class="history-activity__count" id="historyActivityCount" aria-live="polite"></p>
-              <div class="history-list" id="historyList" role="feed" aria-busy="true" aria-label="Événements récents de votre collection">
-                <p class="squad-empty">Chargement…</p>
+              <div class="history-list" id="historyList" role="feed" aria-busy="true" data-i18n-aria-label="history.feedAria" aria-label="Événements récents de votre collection">
+                <p class="squad-empty" data-i18n="history.loading">Chargement…</p>
               </div>
             </section>
 
-            <aside class="history-sidebar" aria-label="Résumé de l'historique">
+            <aside class="history-sidebar" data-i18n-aria-label="history.sidebarAria" aria-label="Résumé de l'historique">
               <section class="history-panel history-panel--recent" id="historyRecent" aria-labelledby="historyRecentTitle" aria-busy="true"></section>
               <section class="history-panel history-panel--summary" id="historyActionSummary" aria-labelledby="historyActionSummaryTitle" aria-busy="true"></section>
               <section class="history-panel history-panel--active" id="historyActiveSprites" aria-labelledby="historyActiveSpritesTitle" aria-busy="true"></section>
@@ -1305,7 +1305,7 @@
 
     <dialog id="detailDialog">
       <form method="dialog" class="dialog-card">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <button class="close-button" value="cancel" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button>
         <div class="sprite-avatar dialog-avatar" id="dialogAvatar">💧</div>
         <p class="rarity-pill" id="dialogRarity">Rare</p>
         <h2 id="dialogTitle">Sprite</h2>
@@ -1313,69 +1313,69 @@
         <p class="effect" id="dialogEffect">Effet</p>
         <div id="dialogCommunityStats" class="sg-community-mount"></div>
         <div class="dialog-priority" id="dialogPriorityBar">
-          <span class="dialog-priority__label">Priorité de farm :</span>
+          <span class="dialog-priority__label" data-i18n="dialog.farmPriority">Priorité de farm :</span>
           <div class="dialog-priority__chips">
-            <button type="button" class="prio-chip" data-prio="urgent">Urgent</button>
-            <button type="button" class="prio-chip" data-prio="important">Important</button>
-            <button type="button" class="prio-chip" data-prio="medium">Moyen</button>
-            <button type="button" class="prio-chip" data-prio="low">Faible</button>
-            <button type="button" class="prio-chip" data-prio="ignored">Ignoré</button>
+            <button type="button" class="prio-chip" data-prio="urgent" data-i18n="prio.urgent">Urgent</button>
+            <button type="button" class="prio-chip" data-prio="important" data-i18n="prio.important">Important</button>
+            <button type="button" class="prio-chip" data-prio="medium" data-i18n="prio.medium">Moyen</button>
+            <button type="button" class="prio-chip" data-prio="low" data-i18n="prio.low">Faible</button>
+            <button type="button" class="prio-chip" data-prio="ignored" data-i18n="prio.ignored">Ignoré</button>
           </div>
         </div>
         <label class="note-label">
-          Note perso
-          <textarea id="dialogNote" rows="4" placeholder="Ex : à farmer samedi, trade avec un pote…"></textarea>
+          <span data-i18n="dialog.note">Note perso</span>
+          <textarea id="dialogNote" rows="4" data-i18n-placeholder="dialog.notePlaceholder" placeholder="Ex : à farmer samedi, trade avec un pote…"></textarea>
         </label>
         <div class="dialog-actions">
-          <button type="button" class="ghost-button" id="dialogOwned">Possédé</button>
-          <button type="button" class="ghost-button" id="dialogMissing">Manquant</button>
-          <button type="button" class="ghost-button" id="dialogPriority">Priorité</button>
-          <button type="button" class="ghost-button" id="dialogUnsure">À vérifier</button>
-          <button type="button" class="ghost-button" id="dialogUnavailable">Indispo</button>
-          <button type="button" class="ghost-button" id="dialogSpotted">Rare vu</button>
+          <button type="button" class="ghost-button" id="dialogOwned" data-i18n="status.owned">Possédé</button>
+          <button type="button" class="ghost-button" id="dialogMissing" data-i18n="status.missing">Manquant</button>
+          <button type="button" class="ghost-button" id="dialogPriority" data-i18n="swipe.priority">Priorité</button>
+          <button type="button" class="ghost-button" id="dialogUnsure" data-i18n="status.unsure">À vérifier</button>
+          <button type="button" class="ghost-button" id="dialogUnavailable" data-i18n="filter.unavailable">Indispo</button>
+          <button type="button" class="ghost-button" id="dialogSpotted" data-i18n="dialog.spotted">Rare vu</button>
         </div>
       </form>
     </dialog>
 
     <dialog id="spriteDetailDialog" class="sprite-detail-dialog">
       <form method="dialog" class="sprite-detail">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <button class="close-button" value="cancel" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button>
         <div class="sprite-detail__content" id="spriteDetailContent"></div>
       </form>
     </dialog>
 
     <dialog id="compareSpriteDialog" class="compare-sprite-dialog">
       <form method="dialog" class="compare-sprite-detail">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <button class="close-button" value="cancel" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button>
         <div class="compare-sprite-detail__content" id="compareSpriteDetailContent"></div>
       </form>
     </dialog>
 
     <dialog id="shareCompareDialog" class="share-compare-dialog">
       <form method="dialog" class="dialog-card share-compare-form">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
-        <h3 id="shareCompareTitle">Partager ma comparaison</h3>
-        <p class="share-compare-intro" id="shareCompareIntro">Génère un lien et un QR code à envoyer à tes amis.</p>
+        <button class="close-button" value="cancel" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button>
+        <h3 id="shareCompareTitle" data-i18n="compare.shareTitle">Partager ma comparaison</h3>
+        <p class="share-compare-intro" id="shareCompareIntro" data-i18n="compare.shareIntro">Génère un lien et un QR code à envoyer à tes amis.</p>
         <div id="shareCompareOptions">
           <label class="share-compare-field">
-            Durée
+            <span data-i18n="compare.shareDuration">Durée</span>
             <select id="shareCompareDuration">
-              <option value="1h">1 heure</option>
-              <option value="24h" selected>24 heures</option>
-              <option value="7d">7 jours</option>
-              <option value="none">Sans expiration</option>
+              <option value="1h" data-i18n="compare.duration1h">1 heure</option>
+              <option value="24h" selected data-i18n="compare.duration24h">24 heures</option>
+              <option value="7d" data-i18n="compare.duration7d">7 jours</option>
+              <option value="none" data-i18n="compare.durationNone">Sans expiration</option>
             </select>
           </label>
-          <label class="share-compare-check"><input type="checkbox" id="shareCompareCollection" checked> Collection visible</label>
-          <label class="share-compare-check"><input type="checkbox" id="shareCompareNotes"> Afficher les notes</label>
-          <label class="share-compare-check"><input type="checkbox" id="shareComparePriorities" checked> Afficher les priorités</label>
-          <label class="share-compare-check"><input type="checkbox" id="shareCompareVisitor" checked> Permettre la comparaison avec le visiteur</label>
+          <label class="share-compare-check"><input type="checkbox" id="shareCompareCollection" checked> <span data-i18n="compare.shareCollection">Collection visible</span></label>
+          <label class="share-compare-check"><input type="checkbox" id="shareCompareNotes"> <span data-i18n="compare.shareNotes">Afficher les notes</span></label>
+          <label class="share-compare-check"><input type="checkbox" id="shareComparePriorities" checked> <span data-i18n="compare.sharePriorities">Afficher les priorités</span></label>
+          <label class="share-compare-check"><input type="checkbox" id="shareCompareVisitor" checked> <span data-i18n="compare.shareVisitor">Permettre la comparaison avec le visiteur</span></label>
         </div>
-        <button type="submit" class="login-btn" id="shareCompareGenerate">Générer le lien</button>
+        <button type="submit" class="login-btn" id="shareCompareGenerate" data-i18n="compare.generateLink">Générer le lien</button>
         <div id="shareCompareResult" class="share-compare-result">
-          <img id="shareCompareQr" class="share-compare-qr" alt="QR code du lien de partage" />
+          <img id="shareCompareQr" class="share-compare-qr" data-i18n-alt="compare.qrAlt" alt="QR code du lien de partage" />
           <p class="share-compare-url"><a id="shareCompareUrl" href="#" target="_blank" rel="noopener"></a></p>
-          <button type="button" class="ghost-button" id="shareCompareCopy">Copier le lien</button>
+          <button type="button" class="ghost-button" id="shareCompareCopy" data-i18n="compare.copyLink">Copier le lien</button>
         </div>
       </form>
     </dialog>
@@ -1383,11 +1383,11 @@
     <dialog id="squadInviteDialog" class="squad-invite-dialog">
       <form method="dialog" class="dialog-card squad-invite-form">
         <button class="close-button" value="cancel" aria-label="Fermer">×</button>
-        <h3 id="squadInviteDialogTitle">Inviter dans une escouade</h3>
+        <h3 id="squadInviteDialogTitle" data-i18n="squad.inviteDialogTitle">Inviter dans une escouade</h3>
         <div id="squadInviteDialogOptions" class="squad-invite-options"></div>
         <div class="squad-invite-actions">
           <button type="button" class="ghost-button" value="cancel">Annuler</button>
-          <button type="submit" class="login-btn" id="squadInviteDialogConfirm" disabled>Inviter</button>
+          <button type="submit" class="login-btn" id="squadInviteDialogConfirm" disabled data-i18n="squad.inviteBtn">Inviter</button>
         </div>
       </form>
     </dialog>
@@ -1413,19 +1413,19 @@
     <dialog id="passportShareDialog" class="passport-share-dialog" aria-labelledby="passportShareDialogTitle">
       <form method="dialog" class="dialog-card passport-share-dialog__card">
         <button class="close-button" value="cancel" aria-label="Fermer">×</button>
-        <h3 id="passportShareDialogTitle">Partager mon passeport</h3>
-        <p class="passport-share-preview__intro" id="passportSharePreviewIntro">Aperçu exact des informations visibles sur la carte :</p>
+        <h3 id="passportShareDialogTitle" data-i18n="passport.shareTitle">Partager mon passeport</h3>
+        <p class="passport-share-preview__intro" id="passportSharePreviewIntro" data-i18n="passport.sharePreviewIntro">Aperçu exact des informations visibles sur la carte :</p>
         <div id="passportSharePreview" class="passport-share-preview" aria-live="polite" aria-describedby="passportSharePreviewIntro"></div>
         <fieldset class="passport-share-options">
-          <legend>Options</legend>
-          <label><input type="checkbox" id="passportShareOptSquad" checked /> Afficher la squad</label>
-          <label><input type="checkbox" id="passportShareOptBadges" checked /> Afficher les badges</label>
-          <label><input type="checkbox" id="passportShareOptJoined" /> Afficher la date d’inscription</label>
-          <label><input type="checkbox" id="passportShareOptCompletion" checked /> Afficher le taux de complétion</label>
-          <label><input type="checkbox" id="passportShareOptEvents" checked /> Afficher les événements complétés</label>
+          <legend data-i18n="passport.shareOptions">Options</legend>
+          <label><input type="checkbox" id="passportShareOptSquad" checked /> <span data-i18n="passport.shareOptSquad">Afficher la squad</span></label>
+          <label><input type="checkbox" id="passportShareOptBadges" checked /> <span data-i18n="passport.shareOptBadges">Afficher les badges</span></label>
+          <label><input type="checkbox" id="passportShareOptJoined" /> <span data-i18n="passport.shareOptJoined">Afficher la date d’inscription</span></label>
+          <label><input type="checkbox" id="passportShareOptCompletion" checked /> <span data-i18n="passport.shareOptCompletion">Afficher le taux de complétion</span></label>
+          <label><input type="checkbox" id="passportShareOptEvents" checked /> <span data-i18n="passport.shareOptEvents">Afficher les événements complétés</span></label>
         </fieldset>
         <div class="passport-share-format">
-          <label for="passportShareFormat">Format</label>
+          <label for="passportShareFormat" data-i18n="passport.shareFormat">Format</label>
           <select id="passportShareFormat">
             <option value="1080x1080">1080 × 1080</option>
             <option value="1080x1920">1080 × 1920</option>
@@ -1433,8 +1433,8 @@
           </select>
         </div>
         <div class="passport-share-actions">
-          <button type="submit" class="ghost-button" value="cancel">Annuler</button>
-          <button type="button" class="login-btn" id="passportShareGenerate">Générer la carte</button>
+          <button type="submit" class="ghost-button" value="cancel" data-i18n="passport.shareCancel">Annuler</button>
+          <button type="button" class="login-btn" id="passportShareGenerate" data-i18n="passport.shareGenerate">Générer la carte</button>
         </div>
       </form>
     </dialog>
@@ -1460,6 +1460,7 @@
     <script src="js/config.js"></script>
     <script src="js/state.js"></script>
     <script src="js/helpers.js"></script>
+    <script src="js/legal-content-en.js"></script>
     <script src="js/legal-content.js"></script>
     <script src="js/legal.js"></script>
     <script src="js/api.js"></script>

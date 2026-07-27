@@ -216,7 +216,7 @@ function updateSyncStatus() {
   if (!navigator.onLine) {
     bar.classList.add("sync-bar--offline");
     icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l5.6 5.6M17.4 17.4L23 23"/><path d="M5 12.5a7 7 0 0 1 9.9-1"/><path d="M8.5 16a3.5 3.5 0 0 1 5 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>';
-    text.textContent = "Hors ligne — tes changements sont sauvegardés localement";
+    text.textContent = t("sync.offline");
     return;
   }
 
@@ -224,17 +224,17 @@ function updateSyncStatus() {
   if (syncErrorState) {
     bar.classList.add("sync-bar--error");
     icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-    text.textContent = "Erreur de synchronisation";
+    text.textContent = t("sync.error");
   } else if (queue.length > 0) {
     bar.classList.add("sync-bar--pending");
     icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
     text.textContent = queue.length === 1
-      ? "1 changement en attente"
-      : `${queue.length} changements en attente`;
+      ? t("sync.pendingOne")
+      : t("sync.pendingMany", { count: queue.length });
   } else {
     bar.classList.add("sync-bar--synced");
     icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>';
-    text.textContent = "Synchronisé";
+    text.textContent = t("sync.synced");
     // Auto-hide after 3s
     clearTimeout(syncStatusTimer);
     syncStatusTimer = setTimeout(() => { bar.style.display = "none"; }, 3000);

@@ -219,10 +219,10 @@ function countExplicitCollectionEntries(collection) {
 function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) {
   const userAInfo = userA && typeof userA === "object" && "collection" in userA
     ? userA
-    : { id: "userA", displayName: "Joueur A", collection: userA || {} };
+    : { id: "userA", displayName: t("compare.playerA"), collection: userA || {} };
   const userBInfo = userB && typeof userB === "object" && "collection" in userB
     ? userB
-    : { id: "userB", displayName: "Joueur B", collection: userB || {} };
+    : { id: "userB", displayName: t("compare.playerB"), collection: userB || {} };
   const collectionA = userAInfo.collection;
   const collectionB = userBInfo.collection;
 
@@ -350,7 +350,7 @@ function compareItemHTML(item, extraHTML = "") {
 function renderCompareSection(title, items, renderItem, open = false) {
   const body = items.length
     ? `<div class="compare-list">${items.map(renderItem).join("")}</div>`
-    : `<p class="compare-empty">Aucun sprite dans cette catégorie.</p>`;
+    : `<p class="compare-empty">${t("compare.emptyVariants")}</p>`;
   return `
     <details class="compare-section" ${open ? "open" : ""}>
       <summary class="compare-section__title">
@@ -365,49 +365,49 @@ function renderCompareSummary(result, aName, bName) {
   const s = result.summary;
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
-  const ownerLine = (name, count, other) => `<strong>${name}</strong> possède <strong>${count}</strong> variante${count > 1 ? 's' : ''} qui manque${count > 1 ? 'nt' : ''} à <strong>${other}</strong>.`;
+  const ownerLine = (name, count, other) => t("compare.ownerLine", { name: `<strong>${name}</strong>`, count: `<strong>${count}</strong>`, other: `<strong>${other}</strong>`, s: count !== 1 ? "s" : "", nt: count !== 1 ? "nt" : "" });
   const pct = (v) => s.insufficientData ? "—" : `${v}%`;
   const warning = s.insufficientData
-    ? `<p class="compare-insufficient-warning">Collection insuffisamment renseignée pour calculer une comparaison fiable.</p>`
+    ? `<p class="compare-insufficient-warning">${t("compare.insufficientData")}</p>`
     : "";
   els.compareSummary.innerHTML = `
     ${warning}
     <div class="compare-main-indicators">
-      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.aPossessionRate)}</span><span class="compare-kpi__label">Complétion ${safeA}</span></div>
-      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.bPossessionRate)}</span><span class="compare-kpi__label">Complétion ${safeB}</span></div>
-      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">Complétion collective</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.aPossessionRate)}</span><span class="compare-kpi__label">${t("compare.completionOf", { name: safeA })}</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.bPossessionRate)}</span><span class="compare-kpi__label">${t("compare.completionOf", { name: safeB })}</span></div>
+      <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">${t("compare.collectiveCompletion")}</span></div>
     </div>
     <div class="compare-main-summary">
       <p>${ownerLine(safeA, s.onlyUserACount, safeB)}</p>
       <p>${ownerLine(safeB, s.onlyUserBCount, safeA)}</p>
-      <p>Vous possédez <strong>${s.bothOwnedCount}</strong> variante${s.bothOwnedCount > 1 ? 's' : ''} en commun.</p>
-      <p><strong>${s.bothMissingCount}</strong> variante${s.bothMissingCount > 1 ? 's' : ''} vous manquent à tous les deux.</p>
-      <p>Ensemble, vous couvrez <strong>${pct(s.collectiveCompletionRate)}</strong> du catalogue.</p>
+      <p>${t("compare.inCommonSentence", { count: `<strong>${s.bothOwnedCount}</strong>`, s: s.bothOwnedCount !== 1 ? "s" : "" })}</p>
+      <p>${t("compare.bothMissingSentence", { count: `<strong>${s.bothMissingCount}</strong>`, s: s.bothMissingCount !== 1 ? "s" : "" })}</p>
+      <p>${t("compare.togetherCover", { pct: `<strong>${pct(s.collectiveCompletionRate)}</strong>` })}</p>
     </div>
-    <p class="compare-complementarity-message">Vos collections sont complémentaires à <strong>${pct(s.complementarityRate)}</strong> · Score de complémentarité : <strong>${pct(s.complementarityScore)}</strong>.</p>
+    <p class="compare-complementarity-message">${t("compare.complementarityMessage", { rate: `<strong>${pct(s.complementarityRate)}</strong>`, score: `<strong>${pct(s.complementarityScore)}</strong>` })}</p>
     <div class="compare-community" id="compareCommunityContext" hidden>
-      <p class="compare-community__title">Contexte communautaire</p>
+      <p class="compare-community__title">${t("compare.communityContext")}</p>
       <div class="compare-community__list" id="compareCommunityList"></div>
-      <p class="compare-community__note">Ces données restent secondaires par rapport à la comparaison personnelle.</p>
+      <p class="compare-community__note">${t("compare.communityNote")}</p>
     </div>
     <div class="compare-summary-grid">
-      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">Complétion collective</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityRate)}</span><span class="compare-kpi__label">Complémentarité de base</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityScore)}</span><span class="compare-kpi__label">Score de complémentarité</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.bothOwnedCount}</span><span class="compare-kpi__label">En commun</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserACount}</span><span class="compare-kpi__label">${safeA} a · ${safeB} manque</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserBCount}</span><span class="compare-kpi__label">${safeB} a · ${safeA} manque</span></div>
-      <div class="compare-kpi"><span class="compare-kpi__value">${s.bothMissingCount}</span><span class="compare-kpi__label">Manque aux deux</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.collectiveCompletionRate)}</span><span class="compare-kpi__label">${t("compare.collectiveCompletion")}</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityRate)}</span><span class="compare-kpi__label">${t("compare.baseComplementarity")}</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${pct(s.complementarityScore)}</span><span class="compare-kpi__label">${t("compare.complementarityScore")}</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.bothOwnedCount}</span><span class="compare-kpi__label">${t("compare.inCommon")}</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserACount}</span><span class="compare-kpi__label">${t("compare.hasLacks", { a: safeA, b: safeB })}</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.onlyUserBCount}</span><span class="compare-kpi__label">${t("compare.hasLacks", { a: safeB, b: safeA })}</span></div>
+      <div class="compare-kpi"><span class="compare-kpi__value">${s.bothMissingCount}</span><span class="compare-kpi__label">${t("compare.lacksBoth")}</span></div>
     </div>
     <div class="compare-players">
       <div class="compare-player">
         <span class="compare-player__name">${safeA}</span>
-        <span class="compare-player__pct">${pct(s.aPossessionRate)} possédé</span>
+        <span class="compare-player__pct">${pct(s.aPossessionRate)} ${t("compare.ownedSuffix")}</span>
         <span class="compare-player__count">${s.aOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
       <div class="compare-player">
         <span class="compare-player__name">${safeB}</span>
-        <span class="compare-player__pct">${pct(s.bPossessionRate)} possédé</span>
+        <span class="compare-player__pct">${pct(s.bPossessionRate)} ${t("compare.ownedSuffix")}</span>
         <span class="compare-player__count">${s.bOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
     </div>`;
@@ -451,8 +451,8 @@ async function loadCompareCommunityContext(result, aName, bName) {
     }
     list.innerHTML = insights.map((ins) => `
       <div class="compare-community__item">
-        ${ins.personalLine ? `<p class="compare-community__personal">${escapeHtml(ins.personalLine)}</p>` : ""}
-        ${ins.communityLine ? `<p class="compare-community__stat">${escapeHtml(ins.communityLine)}</p>` : ""}
+        ${ins.personalLine ? `<p class="compare-community__personal">${escapeHtml(t(ins.personalLine))}</p>` : ""}
+        ${ins.communityLine ? `<p class="compare-community__stat">${escapeHtml(t(ins.communityLine))}</p>` : ""}
       </div>
     `).join("");
     mount.hidden = false;
@@ -467,24 +467,24 @@ function compareStatusIcon(status) {
 
 function compareSeasonLabel(seasonId) {
   const s = (typeof SEASONS !== "undefined" && SEASONS[seasonId]) || null;
-  if (!s) return seasonId || "Inconnue";
-  return s.name || `Chapitre ${s.chapter} — Saison ${s.season}`;
+  if (!s) return seasonId || t("compare.unknownStatus");
+  return s.name || t("compare.chapterSeason", { chapter: s.chapter, season: s.season });
 }
 
 function compareEventLabel(eventId) {
   const e = (typeof EVENTS !== "undefined" && EVENTS[eventId]) || null;
-  if (!e) return eventId || "Aucun";
+  if (!e) return eventId || t("compare.noneEvent");
   return e.name || eventId;
 }
 
 function compareAvailabilityLabel(status) {
-  const map = { available: "Disponible actuellement", unavailable: "Indisponible", unknown: "Inconnue" };
-  return map[(status || "").toLowerCase()] || status || "Inconnue";
+  const map = { available: t("compare.availableNow"), unavailable: t("compare.unavailableStatus"), unknown: t("compare.unknownStatus") };
+  return map[(status || "").toLowerCase()] || status || t("compare.unknownStatus");
 }
 
 function compareAcquisitionLabel(method) {
-  const map = { exploration: "Exploration", shop: "Boutique", challenge: "Défi", event: "Événement", unknown: "Inconnue" };
-  return map[(method || "").toLowerCase()] || method || "Inconnue";
+  const map = { exploration: t("compare.acqExploration"), shop: t("compare.acqShop"), challenge: t("compare.acqChallenge"), event: t("compare.acqEvent"), unknown: t("compare.unknownStatus") };
+  return map[(method || "").toLowerCase()] || method || t("compare.unknownStatus");
 }
 
 function compareVariantTypeLabel(type) {
@@ -520,12 +520,12 @@ function renderCompareCatalogFilters(records) {
   const filters = state.compareCatalogFilters;
   const makeSelect = (key, label, options) => {
     const current = filters[key] || "";
-    return `<div class="compare-catalog-filter"><label for="compareFilter-${key}">${escapeHtml(label)}</label><select id="compareFilter-${key}" class="compare-catalog-filter__select" data-filter-key="${key}"><option value="">Tous</option>${options.map(([val, lbl]) => `<option value="${escapeHtml(val)}" ${val === current ? "selected" : ""}>${escapeHtml(lbl)}</option>`).join("")}</select></div>`;
+    return `<div class="compare-catalog-filter"><label for="compareFilter-${key}">${escapeHtml(label)}</label><select id="compareFilter-${key}" class="compare-catalog-filter__select" data-filter-key="${key}"><option value="">${t("compare.selectAll")}</option>${options.map(([val, lbl]) => `<option value="${escapeHtml(val)}" ${val === current ? "selected" : ""}>${escapeHtml(lbl)}</option>`).join("")}</select></div>`;
   };
 
   const seasonOpts = getCompareFilterOptions(records, "seasonId", r => compareSeasonLabel(r.seasonId));
   const eventOpts = getCompareFilterOptions(records, "eventId", r => compareEventLabel(r.eventId));
-  const rarityOpts = getCompareFilterOptions(records, "rarity", r => r.rarity || "Inconnue");
+  const rarityOpts = getCompareFilterOptions(records, "rarity", r => r.rarity || t("compare.unknownStatus"));
   const spriteOpts = getCompareFilterOptions(records, "spriteId", r => r.spriteName);
   const variantOpts = getCompareFilterOptions(records, "variantType", r => compareVariantTypeLabel(r.variantType));
   const availOpts = getCompareFilterOptions(records, "availabilityStatus", r => compareAvailabilityLabel(r.availabilityStatus));
@@ -534,17 +534,17 @@ function renderCompareCatalogFilters(records) {
   const hasFilters = Object.keys(filters).some(k => filters[k]);
   return `
     <details class="compare-catalog-filters" ${hasFilters ? "open" : ""}>
-      <summary class="compare-catalog-filters__summary">Filtres du catalogue</summary>
+      <summary class="compare-catalog-filters__summary">${t("compare.catalogFilters")}</summary>
       <div class="compare-catalog-filters__grid">
-        ${makeSelect("season", "Saison", seasonOpts)}
-        ${makeSelect("event", "Événement", eventOpts)}
-        ${makeSelect("rarity", "Rareté", rarityOpts)}
-        ${makeSelect("sprite", "Sprite", spriteOpts)}
-        ${makeSelect("variantType", "Variante", variantOpts)}
-        ${makeSelect("availability", "Disponibilité", availOpts)}
-        ${makeSelect("acquisition", "Obtention", acqOpts)}
+        ${makeSelect("season", t("compare.seasonLabel"), seasonOpts)}
+        ${makeSelect("event", t("compare.eventLabel"), eventOpts)}
+        ${makeSelect("rarity", t("compare.rarityLabel"), rarityOpts)}
+        ${makeSelect("sprite", t("compare.spriteLabel"), spriteOpts)}
+        ${makeSelect("variantType", t("compare.variantTypeLabel"), variantOpts)}
+        ${makeSelect("availability", t("compare.availabilityLabel"), availOpts)}
+        ${makeSelect("acquisition", t("compare.acquisitionLabel"), acqOpts)}
       </div>
-      <button type="button" class="ghost-button compare-catalog-filters__reset" id="compareFilterReset">Réinitialiser les filtres</button>
+      <button type="button" class="ghost-button compare-catalog-filters__reset" id="compareFilterReset">${t("compare.resetFilters")}</button>
     </details>`;
 }
 
@@ -645,7 +645,7 @@ function renderCompareTable(result, aName, bName) {
 
   const header = `
     <div class="compare-table__header">
-      <span class="compare-table__cell compare-table__cell--variant">Variante</span>
+      <span class="compare-table__cell compare-table__cell--variant">${t("compare.variantHeader")}</span>
       <span class="compare-table__cell">${escapeHtml(aName)}</span>
       <span class="compare-table__cell">${escapeHtml(bName)}</span>
       <span class="compare-table__cell compare-table__cell--actions"></span>
@@ -654,7 +654,7 @@ function renderCompareTable(result, aName, bName) {
   const rows = records.map(r => {
     const imageUrl = safeImageUrl(r.img);
     const actions = `
-      <button type="button" class="compare-action compare-action--detail" data-sprite-id="${escapeHtml(String(r.spriteId || ""))}">Fiche</button>
+      <button type="button" class="compare-action compare-action--detail" data-sprite-id="${escapeHtml(String(r.spriteId || ""))}">${t("compare.detailBtn")}</button>
       ${compareQuickActionsHTML(r.variantId, r.userA.status)}`;
     return `
       <div class="compare-table__row" data-sprite-id="${escapeHtml(String(r.spriteId || ""))}" data-variant-id="${escapeHtml(String(r.variantId || ""))}">
@@ -670,11 +670,11 @@ function renderCompareTable(result, aName, bName) {
 
   const body = records.length
     ? `<div class="compare-table__body">${rows}</div>`
-    : `<div class="compare-table__empty"><p class="compare-empty">Aucune variante dans cette catégorie.</p></div>`;
+    : `<div class="compare-table__empty"><p class="compare-empty">${t("compare.emptyVariants")}</p></div>`;
 
   els.compareTable.innerHTML = `
     <div class="compare-section compare-section--table">
-      <h3 class="compare-section__title">Comparaison visuelle</h3>
+      <h3 class="compare-section__title">${t("compare.visualComparison")}</h3>
       <div class="compare-table__wrap">${header}${body}</div>
     </div>`;
 
@@ -715,7 +715,7 @@ function openCompareSprite(spriteId) {
       ${headerImage ? `<img src="${escapeHtml(headerImage)}" alt="${spriteName}" class="compare-sprite-header__img">` : ""}
       <div class="compare-sprite-header__info">
         <h2>${spriteName}</h2>
-        <span class="compare-sprite-completion">Complétion collective du ${spriteName} : <strong>${pct}%</strong></span>
+        <span class="compare-sprite-completion">${t("compare.spriteCompletion", { name: spriteName, pct: `${pct}%` })}</span>
       </div>
     </div>`;
 
@@ -734,10 +734,10 @@ function openCompareSprite(spriteId) {
   const table = `
     <div class="compare-sprite-table">
       <div class="compare-sprite-table__header">
-        <span class="compare-sprite-table__cell">Variante</span>
+        <span class="compare-sprite-table__cell">${t("compare.variantHeader")}</span>
         <span class="compare-sprite-table__cell">${safeA}</span>
         <span class="compare-sprite-table__cell">${safeB}</span>
-        <span class="compare-sprite-table__cell compare-sprite-table__cell--actions">Action</span>
+        <span class="compare-sprite-table__cell compare-sprite-table__cell--actions">${t("compare.actionHeader")}</span>
       </div>
       <div class="compare-sprite-table__body">${rows}</div>
     </div>`;
@@ -754,15 +754,15 @@ function openCompareSprite(spriteId) {
 
 function compareQuickActionsHTML(variantId, selectedStatus) {
   const options = [
-    { value: "", label: "Action" },
-    { value: "owned", label: "Possédé" },
-    { value: "missing", label: "Manquant" },
-    { value: "priority", label: "Prioritaire" },
-    { value: "spotted", label: "Repéré" }
+    { value: "", label: t("compare.quickDefault") },
+    { value: "owned", label: t("compare.quickOwned") },
+    { value: "missing", label: t("compare.quickMissing") },
+    { value: "priority", label: t("compare.quickPriority") },
+    { value: "spotted", label: t("compare.quickSpotted") }
   ];
   const safeVariantId = escapeHtml(String(variantId || ""));
   const select = `<select class="compare-status-select" data-variant-id="${safeVariantId}">${options.map(o => `<option value="${o.value}" ${selectedStatus === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
-  const noteBtn = `<button type="button" class="compare-action compare-action--note" data-variant-id="${safeVariantId}">Note</button>`;
+  const noteBtn = `<button type="button" class="compare-action compare-action--note" data-variant-id="${safeVariantId}">${t("compare.noteBtn")}</button>`;
   return `<span class="compare-quick-actions">${select}${noteBtn}</span>`;
 }
 
@@ -788,7 +788,7 @@ function attachCompareQuickActions(container, spriteIdForDialog = null) {
   container.querySelectorAll(".compare-action--note").forEach(btn => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const note = prompt("Note :");
+      const note = prompt(t("compare.notePrompt"));
       if (note !== null) {
         setEntry(btn.dataset.variantId, { note });
         renderCompare();
@@ -810,28 +810,28 @@ function groupCompareRecordsBy(records, key) {
 }
 
 function generateCompareRecommendations(result, aName, bName) {
-  const safeA = safeText(aName, "Joueur A");
-  const safeB = safeText(bName, "Joueur B");
+  const safeA = safeText(aName, t("compare.playerA"));
+  const safeB = safeText(bName, t("compare.playerB"));
   const recs = [];
 
   // 1. Priority exchanges
   const aWantsFromB = result.groups.onlyUserB.filter(r => compareIsPriority(r.userA));
   const bWantsFromA = result.groups.onlyUserA.filter(r => compareIsPriority(r.userB));
   if (aWantsFromB.length) {
-    recs.push({ type: "priority", title: `${safeB} possède ${aWantsFromB.length} variante${aWantsFromB.length > 1 ? 's' : ''} prioritaire${aWantsFromB.length > 1 ? 's' : ''} pour ${safeA}`, items: aWantsFromB });
+    recs.push({ type: "priority", title: t("compare.recPriorityTitle", { owner: safeB, count: aWantsFromB.length, target: safeA, s: aWantsFromB.length !== 1 ? "s" : "" }), items: aWantsFromB });
   }
   if (bWantsFromA.length) {
-    recs.push({ type: "priority", title: `${safeA} possède ${bWantsFromA.length} variante${bWantsFromA.length > 1 ? 's' : ''} prioritaire${bWantsFromA.length > 1 ? 's' : ''} pour ${safeB}`, items: bWantsFromA });
+    recs.push({ type: "priority", title: t("compare.recPriorityTitle", { owner: safeA, count: bWantsFromA.length, target: safeB, s: bWantsFromA.length !== 1 ? "s" : "" }), items: bWantsFromA });
   }
 
   // 2. Unavailable variants owned by one and missing to the other
   const aHasUnavailableBMissing = result.groups.onlyUserA.filter(r => r.availabilityStatus === "unavailable");
   const bHasUnavailableAMissing = result.groups.onlyUserB.filter(r => r.availabilityStatus === "unavailable");
   if (aHasUnavailableBMissing.length) {
-    recs.push({ type: "unavailable", title: `${safeA} possède ${aHasUnavailableBMissing.length} variante${aHasUnavailableBMissing.length > 1 ? 's' : ''} indisponible${aHasUnavailableBMissing.length > 1 ? 's' : ''} qui manque${aHasUnavailableBMissing.length > 1 ? 'nt' : ''} à ${safeB}`, items: aHasUnavailableBMissing });
+    recs.push({ type: "unavailable", title: t("compare.recUnavailableTitle", { owner: safeA, count: aHasUnavailableBMissing.length, other: safeB, s: aHasUnavailableBMissing.length !== 1 ? "s" : "", nt: aHasUnavailableBMissing.length !== 1 ? "nt" : "" }), items: aHasUnavailableBMissing });
   }
   if (bHasUnavailableAMissing.length) {
-    recs.push({ type: "unavailable", title: `${safeB} possède ${bHasUnavailableAMissing.length} variante${bHasUnavailableAMissing.length > 1 ? 's' : ''} indisponible${bHasUnavailableAMissing.length > 1 ? 's' : ''} qui manque${bHasUnavailableAMissing.length > 1 ? 'nt' : ''} à ${safeA}`, items: bHasUnavailableAMissing });
+    recs.push({ type: "unavailable", title: t("compare.recUnavailableTitle", { owner: safeB, count: bHasUnavailableAMissing.length, other: safeA, s: bHasUnavailableAMissing.length !== 1 ? "s" : "", nt: bHasUnavailableAMissing.length !== 1 ? "nt" : "" }), items: bHasUnavailableAMissing });
   }
 
   // 3. Both missing by rarity
@@ -839,7 +839,7 @@ function generateCompareRecommendations(result, aName, bName) {
   for (const rarity of rarities) {
     const items = result.groups.bothMissing.filter(r => r.rarity === rarity);
     if (items.length) {
-      recs.push({ type: "bothMissingRarity", title: `Il vous manque à tous les deux ${items.length} variante${items.length > 1 ? 's' : ''} ${rarity}`, items });
+      recs.push({ type: "bothMissingRarity", title: t("compare.recBothMissingRarity", { count: items.length, rarity, s: items.length !== 1 ? "s" : "" }), items });
     }
   }
 
@@ -855,10 +855,10 @@ function generateCompareRecommendations(result, aName, bName) {
       if (!missingA && !missingB) continue;
       const spriteName = records[0].spriteName;
       let detail = "";
-      if (missingA && missingB) detail = ` (${safeA} en manque ${missingA}, ${safeB} en manque ${missingB})`;
-      else if (missingA) detail = ` (${safeA} en manque ${missingA})`;
-      else if (missingB) detail = ` (${safeB} en manque ${missingB})`;
-      recs.push({ type: "completeTogether", title: `Vous possédez ensemble toutes les variantes du ${safeText(spriteName)}${detail}`, items: records.filter(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status)) });
+      if (missingA && missingB) detail = t("compare.recDetailBoth", { a: safeA, countA: missingA, b: safeB, countB: missingB });
+      else if (missingA) detail = t("compare.recDetailOne", { who: safeA, count: missingA });
+      else if (missingB) detail = t("compare.recDetailOne", { who: safeB, count: missingB });
+      recs.push({ type: "completeTogether", title: t("compare.recTogetherComplete", { sprite: safeText(spriteName), detail }), items: records.filter(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status)) });
     }
   }
 
@@ -871,7 +871,7 @@ function generateCompareRecommendations(result, aName, bName) {
     if (total - covered === 1) {
       const missingRecord = records.find(r => isCollectibleMissingStatus(r.userA.status) || isCollectibleMissingStatus(r.userB.status));
       if (missingRecord) {
-        recs.push({ type: "eventClose", title: `Il ne vous manque qu’une variante pour compléter l’événement ${safeText(compareEventLabel(eventId))}`, items: [missingRecord] });
+        recs.push({ type: "eventClose", title: t("compare.recEventClose", { event: safeText(compareEventLabel(eventId)) }), items: [missingRecord] });
       }
     }
   }
@@ -883,9 +883,9 @@ function renderCompareRecommendations(result, aName, bName) {
   if (!els.compareRecommendations) return;
   const recommendations = generateCompareRecommendations(result, aName, bName);
 
-  let html = `<div class="compare-section compare-section--recommendations"><h3 class="compare-section__title">Recommandations</h3><div class="compare-section__body">`;
+  let html = `<div class="compare-section compare-section--recommendations"><h3 class="compare-section__title">${t("compare.recommendationsTitle")}</h3><div class="compare-section__body">`;
   if (!recommendations.length) {
-    html += `<p class="compare-empty">Aucune recommandation notable.</p>`;
+    html += `<p class="compare-empty">${t("compare.emptyRecommendations")}</p>`;
   } else {
     for (const rec of recommendations) {
       const list = rec.items.map(r => compareItemHTML(r, `${compareStatusIcon(r.userA.status)} ${compareStatusIcon(r.userB.status)}`)).join("");
@@ -900,37 +900,37 @@ function renderCompareActions(result) {
   if (!els.compareActions) return;
   const filter = state.compareFilter || "all";
   const options = [
-    { value: "all", label: "Tous les Sprites" },
-    { value: "differences", label: "Seulement les différences" },
-    { value: "missingMatch", label: "Missing Match (complémentaires)" },
-    { value: "priorities", label: "Seulement les priorités" },
-    { value: "bothMissing", label: "Manquantes aux deux" },
-    { value: "bothOwned", label: "En commun" },
-    { value: "onlyUserA", label: "Possédés par moi" },
-    { value: "onlyUserB", label: "Possédés par l'ami" },
-    { value: "unknown", label: "Inconnus" }
+    { value: "all", label: t("compare.filterAll") },
+    { value: "differences", label: t("compare.filterDiffs") },
+    { value: "missingMatch", label: t("compare.filterMissingMatch") },
+    { value: "priorities", label: t("compare.filterPriorities") },
+    { value: "bothMissing", label: t("compare.filterBothMissing") },
+    { value: "bothOwned", label: t("compare.filterBothOwned") },
+    { value: "onlyUserA", label: t("compare.filterOnlyA") },
+    { value: "onlyUserB", label: t("compare.filterOnlyB") },
+    { value: "unknown", label: t("compare.filterUnknown") }
   ];
   const sortOptions = [
-    { value: "alpha", label: "Ordre alphabétique" },
-    { value: "rarity-asc", label: "Rareté croissante" },
-    { value: "rarity-desc", label: "Rareté décroissante" },
-    { value: "priority", label: "Priorité" },
-    { value: "availability", label: "Disponibilité" },
-    { value: "release-date", label: "Date de sortie" },
-    { value: "biggest-difference", label: "Plus grande différence" }
+    { value: "alpha", label: t("compare.sortAlpha") },
+    { value: "rarity-asc", label: t("compare.sortRarityAsc") },
+    { value: "rarity-desc", label: t("compare.sortRarityDesc") },
+    { value: "priority", label: t("compare.sortPriority") },
+    { value: "availability", label: t("compare.sortAvailability") },
+    { value: "release-date", label: t("compare.sortReleaseDate") },
+    { value: "biggest-difference", label: t("compare.sortBiggestDiff") }
   ];
   const sort = state.compareSort || "alpha";
-  const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="Filtrer">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
-  const sortSelect = `<select id="compareSortSelect" class="compare-filter-select" aria-label="Trier">${sortOptions.map(o => `<option value="${o.value}" ${sort === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="${t("compare.filterLabel")}">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
+  const sortSelect = `<select id="compareSortSelect" class="compare-filter-select" aria-label="${t("compare.sortLabel")}">${sortOptions.map(o => `<option value="${o.value}" ${sort === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
   const catalogFilters = renderCompareCatalogFilters(result && result.records);
   els.compareActions.innerHTML = `
     <div class="compare-actions-bar">
-      <label for="compareFilterSelect" class="compare-actions-label">Filtrer</label>
+      <label for="compareFilterSelect" class="compare-actions-label">${t("compare.filterLabel")}</label>
       ${select}
-      <label for="compareSortSelect" class="compare-actions-label">Trier</label>
+      <label for="compareSortSelect" class="compare-actions-label">${t("compare.sortLabel")}</label>
       ${sortSelect}
-      <button type="button" class="login-btn" id="compareRefreshBtn">Actualiser</button>
-      <button type="button" class="ghost-button" id="compareShareActionBtn">Partager</button>
+      <button type="button" class="login-btn" id="compareRefreshBtn">${t("compare.refreshBtn")}</button>
+      <button type="button" class="ghost-button" id="compareShareActionBtn">${t("compare.shareActionBtn")}</button>
     </div>
     ${catalogFilters}`;
 
@@ -1036,15 +1036,15 @@ function renderCompareSquads() {
     <div class="compare-squad-card">
       <span class="compare-squad-card__name">${escapeHtml(s.name)}</span>
       <div class="compare-squad-card__actions">
-        <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="view">Voir la squad</button>
-        <button type="button" class="login-btn" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="hunt">Objectif commun</button>
-        <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="session">Recommandations</button>
+        <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="view">${t("compare.viewSquad")}</button>
+        <button type="button" class="login-btn" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="hunt">${t("compare.commonGoal")}</button>
+        <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="session">${t("compare.recommendationsTitle")}</button>
       </div>
     </div>`).join("");
   els.compareSquads.innerHTML = `
     <div class="compare-section compare-section--squads">
-      <h3 class="compare-section__title">Squads communes</h3>
-      <p class="compare-squads__intro">Vous êtes tous les deux membres de :</p>
+      <h3 class="compare-section__title">${t("compare.commonSquads")}</h3>
+      <p class="compare-squads__intro">${t("compare.bothMembers")}</p>
       <div class="compare-squads__list">${cards}</div>
     </div>`;
   els.compareSquads.querySelectorAll("[data-squad-action]").forEach(b => b.addEventListener("click", handleCompareSquadAction));
@@ -1059,14 +1059,14 @@ function renderCompare() {
   }
   els.compareResults.style.display = "block";
   const pairA = state.compareAsPair?.userA;
-  const aName = pairA ? pairA.displayName : (state.username || "Moi");
-  const bName = state.compareTarget.username || "Ami";
+  const aName = pairA ? pairA.displayName : (state.username || t("compare.me"));
+  const bName = state.compareTarget.username || t("compare.friend");
   if (els.comparePlayerAName) els.comparePlayerAName.textContent = aName;
   if (els.comparePlayerBName) els.comparePlayerBName.textContent = bName;
   const userA = pairA
     ? { id: pairA.id || "userA", displayName: pairA.displayName, collection: pairA.collection }
-    : { id: state.userId || "userA", displayName: state.username || "Moi", collection: state.collection };
-  const userB = { id: state.compareTarget.userId || state.compareTarget.username || "userB", displayName: state.compareTarget.username || "Ami", collection: state.compareTarget.collection };
+    : { id: state.userId || "userA", displayName: state.username || t("compare.me"), collection: state.collection };
+  const userB = { id: state.compareTarget.userId || state.compareTarget.username || "userB", displayName: state.compareTarget.username || t("compare.friend"), collection: state.compareTarget.collection };
   const result = compareCollections(userA, userB, getCompareCatalogItems());
   state.lastCompareResult = result;
   renderCompareSummary(result, aName, bName);
@@ -1099,17 +1099,17 @@ function extractShareToken(raw) {
 async function loadCompareTarget(raw) {
   const token = extractShareToken(raw);
   if (!token) {
-    toast("Lien ou token de partage invalide");
+    toast(t("compare.invalidToken"));
     return;
   }
   try {
     const res = await fetch(`${API_BASE}/shared/${encodeURIComponent(token)}`, { headers: authHeadersOnly() });
     if (res.status === 403) {
-      toast("Ce profil est privé ou tu n’as pas l’autorisation de le comparer");
+      toast(t("compare.profilePrivate"));
       return;
     }
     if (res.status === 404) {
-      toast("Lien de partage invalide ou révoqué");
+      toast(t("compare.shareRevoked"));
       return;
     }
     if (!res.ok) throw new Error("shared failed");
@@ -1117,7 +1117,7 @@ async function loadCompareTarget(raw) {
     state.compareToken = token;
     state.compareTarget = {
       userId: data.id,
-      username: data.username || "Ami",
+      username: data.username || t("compare.friend"),
       avatarUrl: data.avatarUrl || "",
       collection: sanitizeCollection(data.collection)
     };
@@ -1127,9 +1127,9 @@ async function loadCompareTarget(raw) {
     url.searchParams.set("compare", token);
     history.replaceState(null, "", url.toString());
     renderCompare();
-    toast(`Comparaison avec ${state.compareTarget.username} chargée`);
+    toast(t("compare.loadedWith", { name: state.compareTarget.username }));
   } catch (e) {
-    toast("Impossible de charger ce profil partagé");
+    toast(t("compare.loadProfileFailed"));
     console.error("[compare]", e);
   }
 }
@@ -1137,7 +1137,7 @@ async function loadCompareTarget(raw) {
 function setShareResult(url, qrDataUrl = null) {
   const absoluteUrl = safeAppWebUrl(url);
   if (!absoluteUrl) {
-    toast("Lien de partage invalide.");
+    toast(t("compare.shareInvalid"));
     return;
   }
   if (els.shareCompareUrl) {
@@ -1153,7 +1153,7 @@ function setShareResult(url, qrDataUrl = null) {
     els.shareCompareCopy.onclick = async () => {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(absoluteUrl);
-        toast("Lien copié !");
+        toast(t("compare.copied"));
       } else {
         toast(absoluteUrl);
       }
@@ -1171,7 +1171,7 @@ function resetShareDialog() {
 
 async function openShareDialog(context) {
   if (!state.userId) {
-    toast("Connecte-toi d’abord pour obtenir un lien de partage");
+    toast(t("compare.loginForShare"));
     return;
   }
   if (!els.shareCompareDialog || typeof els.shareCompareDialog.showModal !== "function") return;
@@ -1179,19 +1179,19 @@ async function openShareDialog(context) {
 
   const isSquad = context === "squad";
   if (els.shareCompareTitle) {
-    els.shareCompareTitle.textContent = isSquad ? "Partager l’escouade" : "Partager ma comparaison";
+    els.shareCompareTitle.textContent = isSquad ? t("compare.shareSquadTitle") : t("compare.shareTitle");
   }
   if (els.shareCompareIntro) {
     els.shareCompareIntro.textContent = isSquad
-      ? "Envoie ce lien ou ce QR code pour faire rejoindre l’escouade en un clic."
-      : "Génère un lien et un QR code à envoyer à tes amis.";
+      ? t("compare.shareSquadIntro")
+      : t("compare.shareCompareIntro");
   }
   if (els.shareCompareOptions) {
     els.shareCompareOptions.style.display = isSquad ? "none" : "";
   }
   if (els.shareCompareGenerate) {
     els.shareCompareGenerate.style.display = isSquad ? "none" : "";
-    els.shareCompareGenerate.textContent = isSquad ? "" : "Générer le lien";
+    els.shareCompareGenerate.textContent = isSquad ? "" : t("compare.generateBtn");
   }
 
   els.shareCompareDialog.showModal();
@@ -1206,7 +1206,7 @@ async function openShareDialog(context) {
       setShareResult(data.url, data.qr);
     } catch (e) {
       console.error("[squad share]", e);
-      toast("Impossible de charger le lien d’escouade");
+      toast(t("compare.squadLinkFailed"));
     }
   }
 }
@@ -1217,7 +1217,7 @@ async function shareCompareLink() {
 
 async function createCompareShare() {
   if (!state.userId) {
-    toast("Connecte-toi d’abord pour obtenir un lien de partage");
+    toast(t("compare.loginForShare"));
     return;
   }
   if (!els.shareCompareDuration) return;
@@ -1240,12 +1240,12 @@ async function createCompareShare() {
     setShareResult(data.url, data.qr);
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(data.url);
-      toast("Lien copié !");
+      toast(t("compare.copied"));
     } else {
       toast(data.url);
     }
   } catch (e) {
-    toast("Erreur réseau");
+    toast(t("common.networkError"));
     console.error("[compare share]", e);
   }
 }
@@ -1254,11 +1254,11 @@ async function loadCompareShare(token) {
   try {
     const res = await fetch(`${API_BASE}/compare/share/${encodeURIComponent(token)}`, { headers: authHeadersOnly() });
     if (res.status === 403) {
-      toast("Ce profil est privé ou tu n’as pas l’autorisation de le comparer");
+      toast(t("compare.profilePrivate"));
       return;
     }
     if (res.status === 404) {
-      toast("Lien de partage invalide, expiré ou révoqué");
+      toast(t("compare.shareExpiredRevoked"));
       return;
     }
     if (!res.ok) throw new Error("compare share failed");
@@ -1274,7 +1274,7 @@ async function loadCompareShare(token) {
 
     state.compareTarget = {
       userId: owner?.id,
-      username: owner?.displayName || "Ami",
+      username: owner?.displayName || t("compare.friend"),
       collection: ownerCollection
     };
 
@@ -1282,9 +1282,9 @@ async function loadCompareShare(token) {
     logCompareAnalytics("app_returned_from_compare", { source: "share_link", targetId: state.compareTarget.userId });
     renderCompare();
     switchToCompareView();
-    toast(`Comparaison avec ${state.compareTarget.username} chargée`);
+    toast(t("compare.loadedWith", { name: state.compareTarget.username }));
   } catch (e) {
-    toast("Impossible de charger ce lien partagé");
+    toast(t("compare.loadShareFailed"));
     console.error("[compare share load]", e);
   }
 }
@@ -1328,7 +1328,7 @@ async function handleCompareShareParams() {
 }
 
 async function compareWithUser(identifier) {
-  if (!state.userId) { toast("Connecte-toi d'abord"); return; }
+  if (!state.userId) { toast(t("squad.loginFirst")); return; }
   if (!identifier) return;
   const self = state.username || state.userId;
   const target = identifier;
@@ -1339,7 +1339,7 @@ async function compareWithUser(identifier) {
     const res = await fetch(url, { headers: authHeadersOnly() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible de comparer.");
+      toastError(data, "compare.failed");
       return;
     }
     const result = await res.json();
@@ -1369,7 +1369,7 @@ async function compareWithUser(identifier) {
     switchToCompareView();
   } catch (e) {
     console.error("[compare] compare with user", e);
-    toast("Erreur lors de la comparaison.");
+    toast(t("compare.error"));
   }
 }
 
@@ -1379,7 +1379,7 @@ async function comparePair(userAId, userAName, userBId, userBName) {
     const res = await fetch(`${API_BASE}/comparisons/users/${encodeURIComponent(userAId)}/${encodeURIComponent(userBId)}?source=squad`, { headers: authHeadersOnly() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible de comparer cette paire.");
+      toastError(data, "compare.pairFailed");
       return;
     }
     const result = await res.json();
@@ -1396,13 +1396,13 @@ async function comparePair(userAId, userAName, userBId, userBName) {
       if (rec.id && rec.id !== rec.variantId) setSafeRecordValue(collectionB, rec.id, entryB);
     }
 
-    state.compareAsPair = { userA: { id: Number(userAId), displayName: userAName || "Joueur A", collection: collectionA } };
-    state.compareTarget = { userId: Number(userBId), username: userBName || "Joueur B", collection: collectionB };
+    state.compareAsPair = { userA: { id: Number(userAId), displayName: userAName || t("compare.playerA"), collection: collectionA } };
+    state.compareTarget = { userId: Number(userBId), username: userBName || t("compare.playerB"), collection: collectionB };
     renderCompare();
     switchToCompareView();
   } catch (e) {
     console.error("[compare] comparePair", e);
-    toast("Erreur lors de la comparaison.");
+    toast(t("compare.error"));
   }
 }
 
@@ -1412,8 +1412,8 @@ async function handleCompareUserParams() {
   const [, userA, userB] = pathMatch;
   const res = await fetch(`${API_BASE}/compare/${encodeURIComponent(userA)}/${encodeURIComponent(userB)}`, { headers: authHeadersOnly() });
   if (!res.ok) {
-    if (res.status === 401) toast("Connecte-toi pour voir cette comparaison");
-    else toast("Impossible de charger cette comparaison");
+    if (res.status === 401) toast(t("compare.loginToView"));
+    else toast(t("compare.loadFailed"));
     return false;
   }
   const result = await res.json();
@@ -1521,12 +1521,12 @@ function updateCompareFromMessage(msg) {
 
 function showCompareUpdateToast(msg, change) {
   const catalog = getCompareCatalogItems().find(i => i.variantId === change.variantId);
-  const spriteName = catalog?.spriteName || change.spriteId || "un sprite";
+  const spriteName = catalog?.spriteName || change.spriteId || t("compare.aSprite");
   const variantName = catalog?.variantName || "";
-  const displayName = state.compareTarget?.username || "Votre ami";
-  const action = (change.status === "owned") ? "a obtenu" : "a mis à jour";
+  const displayName = state.compareTarget?.username || t("compare.yourFriend");
+  const action = (change.status === "owned") ? t("compare.actionObtained") : t("compare.actionUpdated");
   const label = variantName && variantName !== "Base" ? `${spriteName} (${variantName})` : spriteName;
-  toast(`${displayName} ${action} ${label}`);
+  toast(t("compare.actionToast", { name: displayName, action, label }));
 }
 
 function setupCompareEvents() {

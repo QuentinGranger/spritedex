@@ -273,15 +273,6 @@ async function notifyBadgeUnlocks(userId, unlockedRows, { batch = true, db = poo
     if (!claimed) return null;
   }
 
-  let title = "Nouveau badge débloqué";
-  let body;
-  if (labels.length === 1) {
-    body = labels[0];
-  } else {
-    title = "Nouveaux badges débloqués";
-    body = `Vous avez débloqué ${labels.length} badges : ${labels.join(", ")}.`;
-  }
-
   return pushService.createNotification(db, {
     recipientId: userId,
     actorId: null,
@@ -289,19 +280,14 @@ async function notifyBadgeUnlocks(userId, unlockedRows, { batch = true, db = poo
     category: "collection",
     entityType: "badge",
     entityId: codes[0] || null,
-    title,
-    body,
-    message: body,
     url: "/?view=account",
     context: {
       badgeCodes: codes,
       badgeLabels: labels,
-      count: labels.length,
-      actionLabel: "Voir mon passeport"
+      count: labels.length
     },
     data: {
       actionUrl: "/?view=account",
-      actionLabel: "Voir mon passeport",
       badgeCodes: codes
     }
   });

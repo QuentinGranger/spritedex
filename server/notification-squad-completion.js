@@ -333,6 +333,7 @@ async function hideInaccessibleSquadCompletionNotifications(poolRef, recipientId
   const technicalData = JSON.stringify({
     accessRevoked: true,
     accessRevokedReason: "collection_private",
+    translationKey: "notifications.hidden",
     technical: { type: TYPE }
   });
   const hidden = await db.query(

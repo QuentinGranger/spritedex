@@ -33,7 +33,7 @@ function shuffleDeck() {
   }
   state.currentIndex = 0;
   renderCard();
-  toast("Deck mélangé");
+  toast(t("swipe.shuffled"));
 }
 
 function currentItem() {
@@ -53,11 +53,11 @@ function renderCard() {
 
   if (!item) {
     els.cardAvatar.innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><circle cx="12" cy="12" r="10"/></svg>';
-    els.cardRarity.textContent = "Terminé";
-    els.cardName.textContent = "Deck vide";
-    els.cardVariant.textContent = "Change le filtre";
-    els.cardEffect.textContent = "Aucune carte à afficher avec ce filtre.";
-    els.cardStatus.textContent = "Statut : —";
+    els.cardRarity.textContent = t("swipe.done");
+    els.cardName.textContent = t("swipe.emptyDeck");
+    els.cardVariant.textContent = t("swipe.changeFilter");
+    els.cardEffect.textContent = t("swipe.noCards");
+    els.cardStatus.textContent = t("swipe.statusDash");
     els.cardIndex.textContent = "0/0";
     els.cardProgress.style.display = "none";
     if (els.cardMastery) els.cardMastery.hidden = true;
@@ -73,7 +73,7 @@ function renderCard() {
   els.card.setAttribute("data-rarity", item.rarity);
   els.cardName.textContent = item.spriteName;
   els.cardVariant.textContent = item.variant;
-  els.cardEffect.textContent = `${item.effect} ${item.variant !== "Base" ? `Bonus variante : ${item.variantBonus}` : ""}`;
+  els.cardEffect.textContent = `${item.effect} ${item.variant !== "Base" ? t("swipe.variantBonus", { bonus: item.variantBonus }) : ""}`;
   els.cardStatus.innerHTML = `${statusEmoji(entry.status)} ${statusLabel(entry.status)}`;
   els.cardIndex.textContent = `${state.currentIndex + 1}/${state.currentDeck.length}`;
   els.card.style.setProperty("--card-color", safeCssColor(item.color));
@@ -84,12 +84,13 @@ function renderCard() {
     if (level > 0) {
       const isMaster = level === 5;
       els.cardMastery.classList.toggle("card-mastery--master", isMaster);
-      els.cardMasteryLabel.textContent = isMaster ? "♛ Master · niv. 5" : `Niveau ${level} / 5`;
+      els.cardMasteryLabel.textContent = isMaster ? t("mastery.cardMaster") : t("mastery.levelOf", { level });
       els.cardMasteryLevels.innerHTML = Array.from({ length: 5 }, (_, index) => {
         const currentLevel = index + 1;
         const active = currentLevel <= level;
         const master = currentLevel === 5;
-        return `<button type="button" class="card-mastery__level ${active ? "is-active" : ""} ${master ? "is-master" : ""}" data-card-mastery="${currentLevel}" aria-label="Niveau ${currentLevel}${master ? ', Master' : ''}" aria-pressed="${currentLevel === level}">${master ? "♛" : currentLevel}</button>`;
+        const aria = master ? t("swipe.masteryAriaMaster", { level: currentLevel }) : t("swipe.masteryAriaLevel", { level: currentLevel });
+        return `<button type="button" class="card-mastery__level ${active ? "is-active" : ""} ${master ? "is-master" : ""}" data-card-mastery="${currentLevel}" aria-label="${escapeHtml(aria)}" aria-pressed="${currentLevel === level}">${master ? "♛" : currentLevel}</button>`;
       }).join("");
     }
   }
@@ -126,7 +127,7 @@ function markCurrent(status) {
   const item = currentItem();
   if (!item) return;
   setEntry(item.id, { status });
-  toast(`${item.spriteName} ${item.variant} : ${statusLabel(status)}`);
+  toast(t("swipe.statusToast", { name: item.spriteName, variant: item.variant, status: statusLabel(status) }));
 
   if (status === "owned") {
     state.currentDeck.splice(state.currentIndex, 1);

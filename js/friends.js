@@ -31,8 +31,8 @@ function friendAvatarHTML(user) {
 function friendMeta(user) {
   const parts = [];
   if (user.username) parts.push(`@${escapeHtml(user.username)}`);
-  if (user.commonSquad) parts.push("Escouade");
-  if (user.lastActive) parts.push("En ligne");
+  if (user.commonSquad) parts.push(t("friends.squadBadge"));
+  if (user.lastActive) parts.push(t("friends.online"));
   return parts.join(" · ");
 }
 
@@ -107,7 +107,7 @@ function sortFriends(items) {
   return sorted;
 }
 
-function emptyFriendsHTML(message = "Aucun résultat.") {
+function emptyFriendsHTML(message = t("friends.emptyDefault")) {
   return `<p class="friend-empty">${escapeHtml(message)}</p>`;
 }
 
@@ -140,16 +140,16 @@ function getPendingEntries() {
 function renderPendingItem(item) {
   const user = item.user || {};
   const actions = item.kind === "received"
-    ? `<button class="ghost-button success-text" data-action="accept" data-request-id="${escapeHtml(String(item.requestId))}">Accepter</button>
-       <button class="ghost-button danger-text" data-action="decline" data-request-id="${escapeHtml(String(item.requestId))}">Refuser</button>
-       <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(user.id))}">Bloquer</button>`
-    : `<button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(item.requestId))}">Annuler</button>`;
+    ? `<button class="ghost-button success-text" data-action="accept" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.accept")}</button>
+       <button class="ghost-button danger-text" data-action="decline" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.decline")}</button>
+       <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(user.id))}">${t("friends.block")}</button>`
+    : `<button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.cancel")}</button>`;
   return `
     <div class="friend-item" data-request-id="${escapeHtml(String(item.requestId))}">
       ${friendAvatarHTML(user)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(user.displayName || user.username || "Utilisateur")}</div>
-        <div class="friend-meta">${escapeHtml(user.username ? `@${user.username}` : "")}${item.commonSquad ? " · Escouade" : ""} · ${item.kind === "received" ? "Demande reçue" : "Demande envoyée"}</div>
+        <div class="friend-name">${escapeHtml(user.displayName || user.username || t("friends.defaultUser"))}</div>
+        <div class="friend-meta">${escapeHtml(user.username ? `@${user.username}` : "")}${item.commonSquad ? ` · ${t("friends.squadBadge")}` : ""} · ${item.kind === "received" ? t("friends.requestReceived") : t("friends.requestSentMeta")}</div>
       </div>
       <div class="friend-actions">${actions}</div>
     </div>
@@ -168,17 +168,17 @@ async function sendFriendRequest(userId) {
       body: JSON.stringify({ addresseeId: userId })
     });
     if (res.ok) {
-      toast("Demande d'ami envoyée.");
+      toast(t("friends.requestSentToast"));
       await loadFriendsData();
       if (friendsState.activeTab === "friends") renderFriendsList();
       if (state.activeSquad) await loadSquad(state.activeSquad);
     } else {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible d'envoyer la demande.");
+      toastError(data, "friends.sendFailed");
     }
   } catch (e) {
     console.error("[friends] send request error", e);
-    toast("Erreur réseau.");
+    toast(t("common.networkError"));
   }
 }
 
@@ -189,17 +189,17 @@ async function acceptFriendRequest(userId) {
       headers: authHeaders()
     });
     if (res.ok) {
-      toast("Demande d'ami acceptée.");
+      toast(t("friends.requestAcceptedToast"));
       await loadFriendsData();
       if (friendsState.activeTab === "friends") renderFriendsList();
       if (state.activeSquad) await loadSquad(state.activeSquad);
     } else {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible d'accepter la demande.");
+      toastError(data, "friends.acceptFailed");
     }
   } catch (e) {
     console.error("[friends] accept request error", e);
-    toast("Erreur réseau.");
+    toast(t("common.networkError"));
   }
 }
 
@@ -208,27 +208,27 @@ function renderFriendItem(f) {
   const progress = getProgression(f);
   const metaParts = [];
   if (f.username) metaParts.push(`@${escapeHtml(f.username)}`);
-  if (f.commonSquad) metaParts.push("Escouade");
-  if (isOnline(f)) metaParts.push("En ligne");
-  if (progress >= 0) metaParts.push(`${progress}% complété`);
-  if (comp > 0) metaParts.push(`${comp}% complémentaire`);
+  if (f.commonSquad) metaParts.push(t("friends.squadBadge"));
+  if (isOnline(f)) metaParts.push(t("friends.online"));
+  if (progress >= 0) metaParts.push(t("friends.progressMeta", { pct: progress }));
+  if (comp > 0) metaParts.push(t("friends.complementaryMeta", { pct: comp }));
   const meta = metaParts.join(" · ");
   const inviteSquad = canInviteToSquad(f)
-    ? `<button class="ghost-button" data-action="invite-squad" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">Inviter dans une squad</button>`
+    ? `<button class="ghost-button" data-action="invite-squad" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">${t("friends.inviteToSquad")}</button>`
     : "";
   return `
     <div class="friend-item" data-friend-id="${escapeHtml(String(f.id))}">
       ${friendAvatarHTML(f)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(getDisplayName(f) || "Utilisateur")}</div>
+        <div class="friend-name">${escapeHtml(getDisplayName(f) || t("friends.defaultUser"))}</div>
         <div class="friend-meta">${meta}</div>
       </div>
       <div class="friend-actions">
-        <button class="ghost-button" data-action="passport" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">Passeport</button>
-        <button class="ghost-button" data-action="compare" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">Comparer</button>
+        <button class="ghost-button" data-action="passport" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">${t("friends.passport")}</button>
+        <button class="ghost-button" data-action="compare" data-id="${escapeHtml(String(f.id))}" data-name="${escapeHtml(getDisplayName(f))}">${t("friends.compare")}</button>
         ${inviteSquad}
-        <button class="ghost-button danger-text" data-action="remove" data-id="${escapeHtml(String(f.id))}">Supprimer</button>
-        <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(f.id))}">Bloquer</button>
+        <button class="ghost-button danger-text" data-action="remove" data-id="${escapeHtml(String(f.id))}">${t("friends.remove")}</button>
+        <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(f.id))}">${t("friends.block")}</button>
       </div>
     </div>
   `;
@@ -243,7 +243,7 @@ function renderFriendsList() {
     let entries = getPendingEntries();
     if (term) entries = entries.filter((e) => nameMatches(e.user, term));
     if (entries.length === 0) {
-      list.innerHTML = emptyFriendsHTML("Aucune demande en attente.");
+      list.innerHTML = emptyFriendsHTML(t("friends.emptyPending"));
       return;
     }
     list.innerHTML = entries.map(renderPendingItem).join("");
@@ -271,7 +271,7 @@ function renderFriendsList() {
   items = sortFriends(items);
 
   if (items.length === 0) {
-    list.innerHTML = emptyFriendsHTML("Aucun ami trouvé.");
+    list.innerHTML = emptyFriendsHTML(t("friends.emptyFriends"));
     return;
   }
 
@@ -282,20 +282,20 @@ function renderReceivedList() {
   const list = getFriendsEl("receivedList");
   if (!list) return;
   if (friendsState.received.length === 0) {
-    list.innerHTML = emptyFriendsHTML("Aucune demande reçue.");
+    list.innerHTML = emptyFriendsHTML(t("friends.emptyReceived"));
     return;
   }
   list.innerHTML = friendsState.received.map((r) => `
     <div class="friend-item" data-request-id="${escapeHtml(String(r.requestId))}">
       ${friendAvatarHTML(r.user)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(r.user.displayName || r.user.username || "Utilisateur")}</div>
-        <div class="friend-meta">${escapeHtml(r.user.username ? `@${r.user.username}` : "")}${r.commonSquad ? " · Escouade" : ""}</div>
+        <div class="friend-name">${escapeHtml(r.user.displayName || r.user.username || t("friends.defaultUser"))}</div>
+        <div class="friend-meta">${escapeHtml(r.user.username ? `@${r.user.username}` : "")}${r.commonSquad ? ` · ${t("friends.squadBadge")}` : ""}</div>
       </div>
       <div class="friend-actions">
-        <button class="ghost-button success-text" data-action="accept" data-request-id="${escapeHtml(String(r.requestId))}">Accepter</button>
-        <button class="ghost-button danger-text" data-action="decline" data-request-id="${escapeHtml(String(r.requestId))}">Refuser</button>
-        <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(r.user.id))}">Bloquer</button>
+        <button class="ghost-button success-text" data-action="accept" data-request-id="${escapeHtml(String(r.requestId))}">${t("friends.accept")}</button>
+        <button class="ghost-button danger-text" data-action="decline" data-request-id="${escapeHtml(String(r.requestId))}">${t("friends.decline")}</button>
+        <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(r.user.id))}">${t("friends.block")}</button>
       </div>
     </div>
   `).join("");
@@ -305,18 +305,18 @@ function renderSentList() {
   const list = getFriendsEl("sentList");
   if (!list) return;
   if (friendsState.sent.length === 0) {
-    list.innerHTML = emptyFriendsHTML("Aucune demande envoyée.");
+    list.innerHTML = emptyFriendsHTML(t("friends.emptySent"));
     return;
   }
   list.innerHTML = friendsState.sent.map((r) => `
     <div class="friend-item" data-request-id="${escapeHtml(String(r.requestId))}">
       ${friendAvatarHTML(r.user)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(r.user.displayName || r.user.username || "Utilisateur")}</div>
+        <div class="friend-name">${escapeHtml(r.user.displayName || r.user.username || t("friends.defaultUser"))}</div>
         <div class="friend-meta">${escapeHtml(r.user.username ? `@${r.user.username}` : "")}</div>
       </div>
       <div class="friend-actions">
-        <button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(r.requestId))}">Annuler</button>
+        <button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(r.requestId))}">${t("friends.cancel")}</button>
       </div>
     </div>
   `).join("");
@@ -326,18 +326,18 @@ function renderBlockedList() {
   const list = getFriendsEl("blockedList");
   if (!list) return;
   if (friendsState.blocked.length === 0) {
-    list.innerHTML = emptyFriendsHTML("Aucun utilisateur bloqué.");
+    list.innerHTML = emptyFriendsHTML(t("friends.emptyBlocked"));
     return;
   }
   list.innerHTML = friendsState.blocked.map((u) => `
     <div class="friend-item" data-user-id="${escapeHtml(String(u.id))}">
       ${friendAvatarHTML(u)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(u.displayName || u.username || "Utilisateur")}</div>
+        <div class="friend-name">${escapeHtml(u.displayName || u.username || t("friends.defaultUser"))}</div>
         <div class="friend-meta">${escapeHtml(u.username ? `@${u.username}` : "")}</div>
       </div>
       <div class="friend-actions">
-        <button class="ghost-button" data-action="unblock" data-id="${escapeHtml(String(u.id))}">Débloquer</button>
+        <button class="ghost-button" data-action="unblock" data-id="${escapeHtml(String(u.id))}">${t("friends.unblock")}</button>
       </div>
     </div>
   `).join("");
@@ -347,20 +347,20 @@ function renderAddFriendResults() {
   const list = getFriendsEl("addFriendResults");
   if (!list) return;
   if (friendsState.searchResults.length === 0) {
-    list.innerHTML = emptyFriendsHTML("Aucun utilisateur trouvé.");
+    list.innerHTML = emptyFriendsHTML(t("friends.emptySearch"));
     return;
   }
   list.innerHTML = friendsState.searchResults.map((u) => `
     <div class="friend-item" data-user-id="${escapeHtml(String(u.id))}">
       ${friendAvatarHTML(u)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(u.displayName || u.username || "Utilisateur")}</div>
+        <div class="friend-name">${escapeHtml(u.displayName || u.username || t("friends.defaultUser"))}</div>
         <div class="friend-meta">${escapeHtml(u.username ? `@${u.username}` : "")}</div>
       </div>
       <div class="friend-actions">
         ${u.canReceiveFriendRequest
-          ? `<button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">Ajouter</button>`
-          : `<span class="friend-meta">Indisponible</span>`}
+          ? `<button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">${t("friends.addUser")}</button>`
+          : `<span class="friend-meta">${t("friends.unavailableUser")}</span>`}
       </div>
     </div>
   `).join("");
@@ -370,18 +370,18 @@ function renderSuggestions() {
   const list = getFriendsEl("friendSuggestions");
   if (!list) return;
   if (friendsState.suggestions.length === 0) {
-    list.innerHTML = emptyFriendsHTML("Aucune suggestion (rejoins d'abord une escouade).");
+    list.innerHTML = emptyFriendsHTML(t("friends.emptySuggestions"));
     return;
   }
   list.innerHTML = friendsState.suggestions.map((u) => `
     <div class="friend-item" data-user-id="${escapeHtml(String(u.id))}">
       ${friendAvatarHTML(u)}
       <div class="friend-info">
-        <div class="friend-name">${escapeHtml(u.displayName || u.username || "Utilisateur")}</div>
-        <div class="friend-meta">${escapeHtml(u.username ? `@${u.username}` : "")} · Membre de l'escouade</div>
+        <div class="friend-name">${escapeHtml(u.displayName || u.username || t("friends.defaultUser"))}</div>
+        <div class="friend-meta">${escapeHtml(u.username ? `@${u.username}` : "")} · ${t("friends.squadBadge")}</div>
       </div>
       <div class="friend-actions">
-        <button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">Ajouter</button>
+        <button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">${t("friends.addUser")}</button>
       </div>
     </div>
   `).join("");
@@ -471,7 +471,7 @@ async function searchAndRenderAddFriend() {
   if (!input) return;
   const q = input.value.trim();
   if (!q || q.length < 3) {
-    toast("Tape au moins 3 caractères pour rechercher.");
+    toast(t("friends.searchMinChars"));
     return;
   }
   friendsState.searchResults = [];
@@ -483,7 +483,7 @@ async function searchAndRenderAddFriend() {
     const data = await res.json();
     friendsState.searchResults = data.users || [];
   } catch (e) {
-    toast("Erreur lors de la recherche.");
+    toast(t("friends.searchError"));
     console.error("[friends] search error", e);
   }
   renderAddFriendResults();
@@ -504,12 +504,12 @@ async function handleFriendsActionClick(e) {
           body: JSON.stringify({ addresseeId: userId })
         });
         if (res.ok) {
-          toast("Demande envoyée.");
+          toast(t("friends.requestSentToast"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible d'envoyer la demande.");
+          toastError(data, "friends.sendFailed");
         }
         break;
       }
@@ -520,12 +520,12 @@ async function handleFriendsActionClick(e) {
           headers: authHeaders()
         });
         if (res.ok) {
-          toast("Demande acceptée.");
+          toast(t("friends.accepted"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible d'accepter.");
+          toastError(data, "friends.acceptFailed");
         }
         break;
       }
@@ -536,12 +536,12 @@ async function handleFriendsActionClick(e) {
           headers: authHeaders()
         });
         if (res.ok) {
-          toast("Demande refusée.");
+          toast(t("friends.declined"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible de refuser.");
+          toastError(data, "friends.declineFailed");
         }
         break;
       }
@@ -552,46 +552,46 @@ async function handleFriendsActionClick(e) {
           headers: authHeaders()
         });
         if (res.ok) {
-          toast("Demande annulée.");
+          toast(t("friends.cancelled"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible d'annuler.");
+          toastError(data, "friends.cancelFailed");
         }
         break;
       }
       case "remove": {
         const friendId = btn.dataset.id;
-        if (!confirm("Supprimer cet ami ?")) return;
+        if (!confirm(t("friends.confirmRemove"))) return;
         const res = await fetch(`${API_BASE}/friends/${encodeURIComponent(friendId)}`, {
           method: "DELETE",
           headers: authHeaders()
         });
         if (res.ok) {
-          toast("Ami supprimé.");
+          toast(t("friends.removed"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible de supprimer.");
+          toastError(data, "friends.removeFailed");
         }
         break;
       }
       case "block": {
         const userId = btn.dataset.id;
-        if (!confirm("Bloquer cet utilisateur ?")) return;
+        if (!confirm(t("friends.confirmBlock"))) return;
         const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/block`, {
           method: "POST",
           headers: authHeaders()
         });
         if (res.ok) {
-          toast("Utilisateur bloqué.");
+          toast(t("friends.blockedToast"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible de bloquer.");
+          toastError(data, "friends.blockFailed");
         }
         break;
       }
@@ -602,12 +602,12 @@ async function handleFriendsActionClick(e) {
           headers: authHeaders()
         });
         if (res.ok) {
-          toast("Utilisateur débloqué.");
+          toast(t("friends.unblocked"));
           await loadFriendsData();
           renderActivePanel();
         } else {
           const data = await res.json().catch(() => ({}));
-          toast(data.error || "Impossible de débloquer.");
+          toastError(data, "friends.unblockFailed");
         }
         break;
       }
@@ -623,7 +623,7 @@ async function handleFriendsActionClick(e) {
         if (typeof openCollectorPassport === "function") {
           await openCollectorPassport(friendId, name);
         } else {
-          toast("Passeport indisponible.");
+          toast(t("friends.passportUnavailable"));
         }
         break;
       }
@@ -636,7 +636,7 @@ async function handleFriendsActionClick(e) {
     }
   } catch (e) {
     console.error("[friends] action error", e);
-    toast("Erreur réseau.");
+    toast(t("common.networkError"));
   }
 }
 
@@ -647,7 +647,7 @@ async function compareWithFriend(friendId, name, options = {}) {
     const res = await fetch(`${API_BASE}/compare/${encodeURIComponent(friendId)}${qs}`, { headers: authHeadersOnly() });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible de comparer.");
+      toastError(data, "friends.compareError");
       return;
     }
     const result = await res.json();
@@ -679,7 +679,7 @@ async function compareWithFriend(friendId, name, options = {}) {
     switchToCompareView();
   } catch (e) {
     console.error("[friends] compare error", e);
-    toast("Erreur lors de la comparaison.");
+    toast(t("compare.error"));
   }
 }
 
@@ -687,10 +687,10 @@ async function openSquadInviteDialog(friendId, friendName) {
   if (!els.squadInviteDialog) return;
   pendingSquadInvite.friendId = friendId;
   if (els.squadInviteDialogTitle) {
-    els.squadInviteDialogTitle.textContent = `Inviter ${friendName || "l'ami"} dans une escouade`;
+    els.squadInviteDialogTitle.textContent = t("friends.inviteDialogTitle", { name: friendName || t("squad.friend") });
   }
   if (els.squadInviteDialogOptions) {
-    els.squadInviteDialogOptions.innerHTML = "<p class='friend-meta'>Chargement des escouades…</p>";
+    els.squadInviteDialogOptions.innerHTML = `<p class='friend-meta'>${t("friends.loadingSquads")}</p>`;
   }
   if (els.squadInviteDialogConfirm) els.squadInviteDialogConfirm.disabled = true;
   els.squadInviteDialog.showModal();
@@ -702,7 +702,7 @@ async function openSquadInviteDialog(friendId, friendName) {
   } catch (e) {
     console.error("[friends] invitable squads", e);
     if (els.squadInviteDialogOptions) {
-      els.squadInviteDialogOptions.innerHTML = "<p class='friend-meta'>Impossible de charger les escouades.</p>";
+      els.squadInviteDialogOptions.innerHTML = `<p class='friend-meta'>${t("friends.loadSquadsFailed")}</p>`;
     }
   }
 }
@@ -710,7 +710,7 @@ async function openSquadInviteDialog(friendId, friendName) {
 function renderSquadInviteOptions(squads) {
   if (!els.squadInviteDialogOptions) return;
   if (!squads.length) {
-    els.squadInviteDialogOptions.innerHTML = "<p class='friend-meta'>Aucune escouade invitable.</p>";
+    els.squadInviteDialogOptions.innerHTML = `<p class='friend-meta'>${t("friends.noInvitableSquads")}</p>`;
     if (els.squadInviteDialogConfirm) els.squadInviteDialogConfirm.disabled = true;
     return;
   }
@@ -741,17 +741,17 @@ async function handleSquadInviteSubmit(e) {
       headers: authHeaders()
     });
     if (res.ok) {
-      toast("Invitation envoyée.");
+      toast(t("friends.inviteSent"));
       els.squadInviteDialog.close();
       await loadSquadSuggestions();
       renderFriendsList();
     } else {
       const data = await res.json().catch(() => ({}));
-      toast(data.error || "Impossible d'inviter.");
+      toastError(data, "friends.inviteFailed");
     }
   } catch (e) {
     console.error("[friends] invite to squad", e);
-    toast("Erreur réseau.");
+    toast(t("common.networkError"));
   }
 }
 
@@ -771,13 +771,13 @@ async function copyFriendInviteLink() {
     if (!link) throw new Error("invalid invite link");
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(link);
-      toast("Lien copié dans le presse-papiers.");
+      toast(t("friends.linkCopied"));
     } else {
-      toast(`Lien : ${link}`);
+      toast(t("friends.linkFallback", { link }));
     }
   } catch (e) {
     console.error("[friends] invite link error", e);
-    toast("Impossible de générer le lien.");
+    toast(t("friends.linkFailed"));
   }
 }
 
@@ -785,12 +785,12 @@ async function showMyQrCode() {
   const img = getFriendsEl("friendQrImg");
   const hint = getFriendsEl("friendQrHint");
   if (!state.userId || !localStorage.getItem(TOKEN_KEY)) {
-    if (hint) hint.textContent = "Connecte-toi pour afficher ton QR code.";
-    toast("Connecte-toi pour générer un QR code.");
+    if (hint) hint.textContent = t("friends.loginForQr");
+    toast(t("friends.loginForQr"));
     return;
   }
   if (img) { img.style.display = "none"; img.src = ""; }
-  if (hint) hint.textContent = "Génération du QR code…";
+  if (hint) hint.textContent = t("friends.qrGenerating");
   try {
     const res = await fetch(`${API_BASE}/friends/invite-links`, {
       method: "POST",
@@ -820,8 +820,8 @@ async function showMyQrCode() {
     throw new Error("no qr data");
   } catch (e) {
     console.error("[friends] qr error", e);
-    if (hint) hint.textContent = "Impossible de générer le QR code. Vérifie ta connexion.";
-    toast("Impossible de générer le QR code.");
+    if (hint) hint.textContent = t("friends.qrFailed");
+    toast(t("friends.qrFailedShort"));
   }
 }
 

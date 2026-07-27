@@ -3,29 +3,32 @@ let squadEngineReport = null;
 let squadEngineTab = "overview";
 let engineScenarioChanges = [];
 
-const engineDefinitions = {
-  collectiveCompletionRate: "Pourcentage des variantes sorties possédées par au moins un membre actif de la squad.",
-  coveredVariantCount: "Nombre de variantes sorties et actives déjà présentes dans au moins une collection d'un membre.",
-  totalMissing: "Nombre de variantes sorties et actives qu'aucun membre de la squad ne possède.",
-  totalUnique: "Nombre de variantes possédées par exactement un membre de la squad.",
-  totalShared: "Nombre de variantes possédées par au moins deux membres de la squad.",
-  averageOwnershipRate: "Moyenne du taux de possession individuel des membres actifs de la squad.",
-  includedMemberCount: "Nombre de collections partagées avec la squad et utilisées dans les calculs.",
-  excludedPrivateCollections: "Nombre de collections privées exclues des calculs pour respecter la confidentialité.",
-  mostComplementaryMember: "Membre apportant le plus grand nombre de variantes que les autres membres de la squad ne possèdent pas.",
-  missingAll: "Variantes que personne dans la squad ne possède.",
-  uniqueOwner: "Variantes possédées par un seul membre de la squad.",
-  duplicates: "Variantes possédées par au moins deux membres de la squad.",
-  availableNow: "Variantes actuellement disponibles dans le jeu.",
-  priorities: "Variantes jugées prioritaires par le moteur d'acquisition collectif.",
-  bestPair: "Paire de membres couvrant ensemble le plus grand nombre de variantes.",
-  bestTeam: "Groupe de 2 à 4 membres couvrant ensemble le plus grand nombre de variantes.",
-  minimumTeam: "Nombre minimal de membres permettant d’atteindre l’objectif de couverture choisi.",
-  simulation: "Scénario temporaire : il ne modifie jamais les collections réelles."
-};
+function getEngineDefinitions() {
+  return {
+    collectiveCompletionRate: t("engine.def.collectiveCompletionRate"),
+    coveredVariantCount: t("engine.def.coveredVariantCount"),
+    totalMissing: t("engine.def.totalMissing"),
+    totalUnique: t("engine.def.totalUnique"),
+    totalShared: t("engine.def.totalShared"),
+    averageOwnershipRate: t("engine.def.averageOwnershipRate"),
+    includedMemberCount: t("engine.def.includedMemberCount"),
+    excludedPrivateCollections: t("engine.def.excludedPrivateCollections"),
+    mostComplementaryMember: t("engine.def.mostComplementaryMember"),
+    missingAll: t("engine.def.missingAll"),
+    uniqueOwner: t("engine.def.uniqueOwner"),
+    duplicates: t("engine.def.duplicates"),
+    availableNow: t("engine.def.availableNow"),
+    priorities: t("engine.def.priorities"),
+    bestPair: t("engine.def.bestPair"),
+    bestTeam: t("engine.def.bestTeam"),
+    minimumTeam: t("engine.def.minimumTeam"),
+    simulation: t("engine.def.simulation")
+  };
+}
 
 function explain(text, key) {
-  const def = engineDefinitions[key];
+  const defs = getEngineDefinitions();
+  const def = defs[key];
   if (!def) return escapeHtml(text);
   return `<span class="engine-stat" data-definition="${escapeHtml(def)}">${escapeHtml(text)} <span class="engine-stat__icon" aria-hidden="true">?</span><span class="engine-stat__tip">${escapeHtml(def)}</span></span>`;
 }
@@ -55,7 +58,7 @@ async function loadSquadEngine(code) {
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/completion/report`, { headers: authHeaders() });
     if (!res.ok) {
-      toast("Impossible de charger le moteur.");
+      toast(t("engine.loadFailed"));
       return;
     }
     squadEngineReport = await res.json();
@@ -66,7 +69,7 @@ async function loadSquadEngine(code) {
     renderSquadEngineTab(squadEngineTab);
   } catch (e) {
     console.error("[loadSquadEngine]", e);
-    toast("Erreur réseau");
+    toast(t("common.networkError"));
   }
 }
 
@@ -98,7 +101,7 @@ function priorityDisplay(p) {
 function renderUniqueOwnersLeaderboard(uniqueOwners) {
   const byMember = (uniqueOwners && uniqueOwners.byMember) || [];
   if (!byMember.length) {
-    return `<p class="engine-empty">Aucune contribution unique pour le moment.</p>`;
+    return `<p class="engine-empty">${t("engine.noUniqueContrib")}</p>`;
   }
   return `
     <ul class="engine-list engine-list--ranked">
@@ -123,53 +126,53 @@ function renderEngineOverview(r) {
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
         <div class="engine-card__value">${formatPct(s.collectiveCompletionRate)}</div>
-        <div class="engine-card__label">${explain("Taux collectif", "collectiveCompletionRate")}</div>
+        <div class="engine-card__label">${t("engine.label.collectiveCompletionRate")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${safeFiniteNumber(s.coveredVariantCount, 0, { min: 0, max: 1000000 })}</div>
-        <div class="engine-card__label">${explain("Variantes couvertes", "coveredVariantCount")}</div>
+        <div class="engine-card__label">${t("engine.label.coveredVariantCount")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${safeFiniteNumber(s.totalMissing, 0, { min: 0, max: 1000000 })}</div>
-        <div class="engine-card__label">${explain("Variantes manquantes", "totalMissing")}</div>
+        <div class="engine-card__label">${t("engine.label.totalMissing")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${safeFiniteNumber(s.totalUnique, 0, { min: 0, max: 1000000 })}</div>
-        <div class="engine-card__label">${explain("Variantes uniques", "totalUnique")}</div>
+        <div class="engine-card__label">${t("engine.label.totalUnique")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${s.includedMemberCount != null ? safeFiniteNumber(s.includedMemberCount, 0, { min: 0, max: 1000000 }) : "—"}/${safeFiniteNumber(s.totalActiveMembers, 0, { min: 0, max: 1000000 })}</div>
-        <div class="engine-card__label">${explain("Collections utilisées", "includedMemberCount")}</div>
+        <div class="engine-card__label">${t("engine.label.includedMemberCount")}</div>
       </div>
       ${safeFiniteNumber(s.excludedPrivateCollections, 0, { min: 0, max: 1000000 }) > 0 ? `
         <div class="engine-card engine-card--warning">
           <div class="engine-card__value">${safeFiniteNumber(s.excludedPrivateCollections, 0, { min: 0, max: 1000000 })}</div>
-          <div class="engine-card__label">${explain("Collections privées exclues", "excludedPrivateCollections")}</div>
+          <div class="engine-card__label">${t("engine.label.excludedPrivateCollections")}</div>
         </div>
       ` : ""}
     </div>
     <div class="engine-section engine-section--community" id="squadCommunityContext" hidden>
-      <h4 class="engine-section__title">Contexte communautaire</h4>
-      <p class="engine-section__hint">Repères anonymes parmi des squads de taille comparable — pas de classement.</p>
+      <h4 class="engine-section__title">${t("engine.communityContextTitle")}</h4>
+      <p class="engine-section__hint">${t("engine.communityContextHint")}</p>
       <div class="engine-community" id="squadCommunityLines"></div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">${explain("Membre le plus complémentaire", "mostComplementaryMember")}</h4>
+      <h4 class="engine-section__title">${t("engine.label.mostComplementaryMember")}</h4>
       ${mc.username ? `
         <div class="engine-card engine-card--member">
           <div class="engine-card__value">${escapeHtml(mc.username)}</div>
-          <div class="engine-card__label">${uniqueContributionCount(mc)} variantes uniques apportées</div>
+          <div class="engine-card__label">${t("engine.uniqueContrib", { count: uniqueContributionCount(mc) })}</div>
           ${mc.contributionDisplay ? `<div class="engine-card__sub">${escapeHtml(mc.contributionDisplay)}</div>` : ""}
         </div>
-      ` : `<p class="engine-empty">Aucun membre complémentaire détecté.</p>`}
+      ` : `<p class="engine-empty">${t("engine.noComplementaryMember")}</p>`}
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">${explain("Contributions uniques par membre", "uniqueOwner")}</h4>
+      <h4 class="engine-section__title">${t("engine.label.uniqueOwner")}</h4>
       ${renderUniqueOwnersLeaderboard(uniqueOwners)}
     </div>
     <div class="engine-meta">
-      <span>Généré le ${new Date(r.generatedAt).toLocaleString("fr-FR")}</span>
-      <span>Catalogue : ${escapeHtml(r.catalogueVersion)}</span>
+      <span>${t("engine.generatedAt", { date: new Date(r.generatedAt).toLocaleString() })}</span>
+      <span>${t("engine.catalogueVersion", { version: escapeHtml(r.catalogueVersion) })}</span>
     </div>
     ${(r.warnings || []).length ? `<div class="engine-warnings">${r.warnings.map(w => `<p class="engine-warning">${escapeHtml(w)}</p>`).join("")}</div>` : ""}
   `;
@@ -196,9 +199,9 @@ async function loadSquadCommunityContext(squadRef) {
       return;
     }
     linesEl.innerHTML = lines.map((line) => `
-      <p class="engine-community__line">${escapeHtml(line)}</p>
+      <p class="engine-community__line">${escapeHtml(t(line))}</p>
     `).join("") + (data.publicDisplay?.disclaimer
-      ? `<p class="engine-community__disclaimer">${escapeHtml(data.publicDisplay.disclaimer)}</p>`
+      ? `<p class="engine-community__disclaimer">${escapeHtml(t(data.publicDisplay.disclaimer))}</p>`
       : "");
     mount.hidden = false;
   } catch (_e) {
@@ -242,26 +245,27 @@ function applyEngineFilters(variants) {
 
 function engineFilterControl() {
   const all = getEngineAllVariants();
-  const rarityOptions = distinctOptions(all, "rarity", r => r ? `Rareté ${r}` : "Rareté inconnue");
-  const seasonOptions = distinctOptions(all, "seasonId", id => id ? (SEASONS[id]?.name || id) : "Hors saison");
-  const eventOptions = distinctOptions(all, "eventId", id => id ? (EVENTS[id]?.name || id) : "Hors événement");
-  const typeOptions = distinctOptions(all, "variantType", t => t || "Type inconnu");
+  const defs = getEngineDefinitions();
+  const rarityOptions = distinctOptions(all, "rarity", r => r ? `${t("engine.rarity")} ${r}` : t("engine.rarityUnknown"));
+  const seasonOptions = distinctOptions(all, "seasonId", id => id ? (SEASONS[id]?.name || id) : t("engine.noSeason"));
+  const eventOptions = distinctOptions(all, "eventId", id => id ? (EVENTS[id]?.name || id) : t("engine.noEvent"));
+  const typeOptions = distinctOptions(all, "variantType", vt => vt || t("engine.typeUnknown"));
   return `
     <div class="engine-filter-bar" id="squadEngineFilterBar">
       <div class="engine-filter-group">
-        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.missingAll)}"><input type="checkbox" data-engine-filter="missingAll" ${engineFilters.missingAll ? "checked" : ""}> Manque à toute la squad</label>
-        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.uniqueOwner)}"><input type="checkbox" data-engine-filter="uniqueOwner" ${engineFilters.uniqueOwner ? "checked" : ""}> Propriétaire unique</label>
-        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.duplicates)}"><input type="checkbox" data-engine-filter="duplicates" ${engineFilters.duplicates ? "checked" : ""}> Doublons</label>
-        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.availableNow)}"><input type="checkbox" data-engine-filter="availableNow" ${engineFilters.availableNow ? "checked" : ""}> Disponibles actuellement</label>
-        <label class="engine-filter-toggle" title="${escapeHtml(engineDefinitions.priorities)}"><input type="checkbox" data-engine-filter="priorities" ${engineFilters.priorities ? "checked" : ""}> Priorités</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(defs.missingAll)}"><input type="checkbox" data-engine-filter="missingAll" ${engineFilters.missingAll ? "checked" : ""}> ${t("engine.filterMissingAll")}</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(defs.uniqueOwner)}"><input type="checkbox" data-engine-filter="uniqueOwner" ${engineFilters.uniqueOwner ? "checked" : ""}> ${t("engine.filterUniqueOwner")}</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(defs.duplicates)}"><input type="checkbox" data-engine-filter="duplicates" ${engineFilters.duplicates ? "checked" : ""}> ${t("engine.filterDuplicates")}</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(defs.availableNow)}"><input type="checkbox" data-engine-filter="availableNow" ${engineFilters.availableNow ? "checked" : ""}> ${t("engine.filterAvailableNow")}</label>
+        <label class="engine-filter-toggle" title="${escapeHtml(defs.priorities)}"><input type="checkbox" data-engine-filter="priorities" ${engineFilters.priorities ? "checked" : ""}> ${t("engine.filterPriorities")}</label>
       </div>
       <div class="engine-filter-group engine-filter-group--selects">
-        <select class="engine-select" data-engine-filter="rarity"><option value="">Toutes raretés</option>${rarityOptions}</select>
-        <select class="engine-select" data-engine-filter="season"><option value="">Toutes saisons</option>${seasonOptions}</select>
-        <select class="engine-select" data-engine-filter="event"><option value="">Tous événements</option>${eventOptions}</select>
-        <select class="engine-select" data-engine-filter="variantType"><option value="">Tous types</option>${typeOptions}</select>
+        <select class="engine-select" data-engine-filter="rarity"><option value="">${t("engine.allRarities")}</option>${rarityOptions}</select>
+        <select class="engine-select" data-engine-filter="season"><option value="">${t("engine.allSeasons")}</option>${seasonOptions}</select>
+        <select class="engine-select" data-engine-filter="event"><option value="">${t("engine.allEvents")}</option>${eventOptions}</select>
+        <select class="engine-select" data-engine-filter="variantType"><option value="">${t("engine.allTypes")}</option>${typeOptions}</select>
       </div>
-      <button type="button" class="ghost-button" id="squadEngineResetFilters">Réinitialiser</button>
+      <button type="button" class="ghost-button" id="squadEngineResetFilters">${t("engine.reset")}</button>
     </div>
   `;
 }
@@ -279,10 +283,10 @@ function distinctOptions(arr, key, labelFn) {
 function renderEngineFilterResults(filtered) {
   return `
     <div class="engine-section">
-      <h4 class="engine-section__title">Résultats filtrés (${filtered.length})</h4>
+      <h4 class="engine-section__title">${t("engine.filteredResults", { count: filtered.length })}</h4>
       <div class="engine-chip-list">
         ${filtered.slice(0, 60).map(v => `<span class="engine-chip" title="${escapeHtml(v.variantId)}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`).join("")}
-        ${filtered.length > 60 ? `<span class="engine-chip">+${filtered.length - 60} autres</span>` : ""}
+        ${filtered.length > 60 ? `<span class="engine-chip">+${filtered.length - 60} ${t("engine.more")}</span>` : ""}
       </div>
     </div>
   `;
@@ -301,39 +305,39 @@ function renderEngineMissing(r) {
     <div class="engine-grid engine-grid--4">
       <div class="engine-card">
         <div class="engine-card__value">${confirmed.length}</div>
-        <div class="engine-card__label">${explain("Totalement absents", "missingAll")}</div>
+        <div class="engine-card__label">${t("engine.label.missingAll")}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${maybe.length}</div>
-        <div class="engine-card__label">${explain("Peut-être absents", "totalMissing")}</div>
+        <div class="engine-card__label">${t("engine.label.maybeAbsent")}</div>
       </div>
     </div>
     <div class="engine-columns">
       <div class="engine-column">
-        <h4 class="engine-section__title">Par rareté</h4>
+        <h4 class="engine-section__title">${t("engine.byRarity")}</h4>
         ${renderGroupList(m.byRarity)}
       </div>
       <div class="engine-column">
-        <h4 class="engine-section__title">Par événement</h4>
+        <h4 class="engine-section__title">${t("engine.byEvent")}</h4>
         ${renderGroupList(m.byEvent)}
       </div>
       <div class="engine-column">
-        <h4 class="engine-section__title">Par disponibilité</h4>
+        <h4 class="engine-section__title">${t("engine.byAvailability")}</h4>
         ${renderGroupList(m.byAvailability)}
       </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">Variantes manquantes (${variants.length})</h4>
+      <h4 class="engine-section__title">${t("engine.missingVariants", { count: variants.length })}</h4>
       <div class="engine-chip-list">
         ${variants.slice(0, 60).map(v => `<span class="engine-chip" title="${escapeHtml(v.display || "")}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`).join("")}
-        ${variants.length > 60 ? `<span class="engine-chip">+${variants.length - 60} autres</span>` : ""}
+        ${variants.length > 60 ? `<span class="engine-chip">+${variants.length - 60} ${t("engine.more")}</span>` : ""}
       </div>
     </div>
   `;
 }
 
 function renderGroupList(groups) {
-  if (!groups || !groups.length) return `<p class="engine-empty">Aucun groupe</p>`;
+  if (!groups || !groups.length) return `<p class="engine-empty">${t("engine.noGroup")}</p>`;
   return `<ul class="engine-list">
     ${groups.map(g => `<li><span class="engine-list__label">${escapeHtml(g.label || g.key)}</span><span class="engine-list__count">${safeFiniteNumber(g.count, 0, { min: 0, max: 1000000 })}</span></li>`).join("")}
   </ul>`;
@@ -368,8 +372,8 @@ function renderEngineRecommendations(r) {
   const priorities = rec.priorities || [];
   return `
     <div class="engine-section">
-      <h4 class="engine-section__title">Priorité par membre</h4>
-      <p class="engine-section__hint">Répartition déterministe des recherches à fort impact entre les membres visibles.</p>
+      <h4 class="engine-section__title">${t("engine.priorityByMember")}</h4>
+      <p class="engine-section__hint">${t("engine.priorityHint")}</p>
       <div class="engine-assignments">
         ${groups.length ? groups.slice(0, 20).map(a => `
           <div class="engine-assignment">
@@ -380,11 +384,11 @@ function renderEngineRecommendations(r) {
               return `<button type="button" class="engine-chip engine-chip--action" data-graph-recommendation="assignment" title="${escapeHtml(tip)}">${escapeHtml(v.spriteName || v.variantId)}${gain ? `<small>${escapeHtml(gain)}</small>` : ""}</button>`;
             }).join("")}</div>
           </div>
-        `).join("") : `<p class="engine-empty">Aucune assignation.</p>`}
+        `).join("") : `<p class="engine-empty">${t("engine.noAssignments")}</p>`}
       </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">Acquisitions à fort impact (${priorities.length})</h4>
+      <h4 class="engine-section__title">${t("engine.highImpactAcquisitions", { count: priorities.length })}</h4>
       <div class="engine-chip-list">
         ${priorities.slice(0, 20).map(p => {
           const tip = priorityDisplay(p);
@@ -394,15 +398,15 @@ function renderEngineRecommendations(r) {
       </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">Objectifs suggérés (${goals.length})</h4>
+      <h4 class="engine-section__title">${t("engine.suggestedGoals", { count: goals.length })}</h4>
       <div class="engine-goal-list">
         ${goals.length ? goals.map(g => `
           <button type="button" class="engine-goal-card engine-goal-card--action" data-graph-recommendation="goal">
             <div class="engine-goal-card__title">${escapeHtml(g.title)}</div>
             <div class="engine-goal-card__meta">${escapeHtml(g.reason || "")}</div>
-            <div class="engine-goal-card__gain">Gain collectif : +${safePercentage(g.expectedCollectiveGain, 0)}%</div>
+            <div class="engine-goal-card__gain">${t("engine.collectiveGain", { pct: safePercentage(g.expectedCollectiveGain, 0) })}</div>
           </button>
-        `).join("") : `<p class="engine-empty">Aucun objectif suggéré.</p>`}
+        `).join("") : `<p class="engine-empty">${t("engine.noGoals")}</p>`}
       </div>
     </div>
   `;
@@ -433,7 +437,7 @@ function getEngineSimulateMembers(r) {
   if (typeof state !== "undefined" && state.userId != null) {
     map.set(String(state.userId), {
       userId: state.userId,
-      username: state.username || "Moi"
+      username: state.username || t("squad.me")
     });
   }
   return Array.from(map.values()).sort((a, b) => String(a.username).localeCompare(String(b.username)));
@@ -460,7 +464,7 @@ function getEngineSimulateVariants(r) {
 
 function renderEngineSimulateResult(result) {
   if (!result) {
-    return `<p class="engine-empty">Choisis un membre et une variante pour estimer l’impact collectif.</p>`;
+    return `<p class="engine-empty">${t("engine.simHint")}</p>`;
   }
   const before = result.before || {};
   const after = result.after || {};
@@ -472,21 +476,21 @@ function renderEngineSimulateResult(result) {
     <div class="engine-grid engine-grid--3">
       <div class="engine-card">
         <div class="engine-card__value">${formatPct(before.completionRate)}</div>
-        <div class="engine-card__label">Avant</div>
+        <div class="engine-card__label">${t("engine.before")}</div>
         <div class="engine-card__sub">${safeFiniteNumber(before.coveredCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(before.totalVariantCount, 0, { min: 0, max: 1000000 })}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value">${formatPct(after.completionRate)}</div>
-        <div class="engine-card__label">Après</div>
+        <div class="engine-card__label">${t("engine.after")}</div>
         <div class="engine-card__sub">${safeFiniteNumber(after.coveredCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(after.totalVariantCount, 0, { min: 0, max: 1000000 })}</div>
       </div>
       <div class="engine-card">
         <div class="engine-card__value ${rateClass}">${rateDelta > 0 ? "+" : ""}${formatPct(rateDelta)}</div>
-        <div class="engine-card__label">Δ taux collectif</div>
-        <div class="engine-card__sub">${coveredDelta > 0 ? "+" : ""}${coveredDelta} variante${Math.abs(coveredDelta) === 1 ? "" : "s"}</div>
+        <div class="engine-card__label">Δ ${t("engine.label.collectiveCompletionRate")}</div>
+        <div class="engine-card__sub">${t("engine.variantsDelta", { delta: (coveredDelta > 0 ? "+" : "") + coveredDelta, count: Math.abs(coveredDelta) })}</div>
       </div>
     </div>
-    ${result.appliedChanges != null ? `<p class="engine-section__hint">${safeFiniteNumber(result.appliedChanges, 0, { min: 0, max: 20 })} changement${result.appliedChanges > 1 ? "s" : ""} simulé${result.appliedChanges > 1 ? "s" : ""}.</p>` : ""}
+    ${result.appliedChanges != null ? `<p class="engine-section__hint">${t("engine.appliedChanges", { count: safeFiniteNumber(result.appliedChanges, 0, { min: 0, max: 20 }) })}</p>` : ""}
   `;
 }
 
@@ -515,20 +519,20 @@ function describeEngineScenarioChange(change, members, variants) {
   const variantById = new Map(variants.map(v => [String(v.variantId), `${v.spriteName || v.spriteId || v.variantId}${v.variantName ? ` · ${v.variantName}` : ""}`]));
   if (change.type === "acquire") {
     const names = (change.variantIds || []).map(id => variantById.get(String(id)) || String(id));
-    return `${memberById.get(String(change.memberId)) || change.memberId} obtient ${names.join(", ")}`;
+    return t("engine.scenarioAcquires", { member: memberById.get(String(change.memberId)) || change.memberId, items: names.join(", ") });
   }
   if (change.type === "join") {
     const names = (change.ownedVariantIds || []).map(id => variantById.get(String(id)) || String(id));
-    return `${change.username || "Nouveau membre"} rejoint${names.length ? ` avec ${names.join(", ")}` : " sans variante renseignée"}`;
+    return names.length ? t("engine.scenarioJoinsWith", { name: change.username || t("engine.newMember"), items: names.join(", ") }) : t("engine.scenarioJoins", { name: change.username || t("engine.newMember") });
   }
-  if (change.type === "leave") return `${memberById.get(String(change.memberId)) || change.memberId} quitte la squad`;
-  return "Changement simulé";
+  if (change.type === "leave") return t("engine.scenarioLeaves", { member: memberById.get(String(change.memberId)) || change.memberId });
+  return t("engine.scenarioChange");
 }
 
 function engineScenarioQueueHtml(members, variants) {
-  if (!engineScenarioChanges.length) return `<p class="engine-empty">Aucun changement dans le scénario.</p>`;
+  if (!engineScenarioChanges.length) return `<p class="engine-empty">${t("engine.scenarioEmpty")}</p>`;
   return `<ol class="engine-scenario__queue">${engineScenarioChanges.map((change, index) => `
-    <li><span>${escapeHtml(describeEngineScenarioChange(change, members, variants))}</span><button type="button" class="ghost-button engine-scenario__remove" data-engine-scenario-remove="${index}">Retirer</button></li>
+    <li><span>${escapeHtml(describeEngineScenarioChange(change, members, variants))}</span><button type="button" class="ghost-button engine-scenario__remove" data-engine-scenario-remove="${index}">${t("engine.removeBtn")}</button></li>
   `).join("")}</ol>`;
 }
 
@@ -539,15 +543,15 @@ function renderEngineScenarioQueue(members, variants) {
 
 function renderEngineCombinationResult(data) {
   const team = data && (data.teams || [])[0];
-  if (!team) return `<p class="engine-empty">Aucune combinaison trouvée.</p>`;
+  if (!team) return `<p class="engine-empty">${t("engine.noComboFound")}</p>`;
   const names = (team.members || []).map(m => escapeHtml(m.username || m.displayName || m.userId)).join(", ");
-  return `<div class="engine-result"><strong>${formatPct(team.coverageRate)} de couverture</strong><span>${safeFiniteNumber(team.coveredVariantCount, 0, { min: 0, max: 1000000 })} variantes · ${names || "Membres indisponibles"}</span></div>`;
+  return `<div class="engine-result"><strong>${formatPct(team.coverageRate)} ${t("engine.coverage")}</strong><span>${safeFiniteNumber(team.coveredVariantCount, 0, { min: 0, max: 1000000 })} ${t("engine.variants")} · ${names || t("engine.membersUnavailable")}</span></div>`;
 }
 
 function renderEngineMinimumTeamResult(data) {
-  if (!data) return `<p class="engine-empty">Aucune équipe ne peut atteindre cet objectif.</p>`;
+  if (!data) return `<p class="engine-empty">${t("engine.noTeamForTarget")}</p>`;
   const names = (data.members || []).map(m => escapeHtml(m.username || m.displayName || m.userId)).join(", ");
-  return `<div class="engine-result"><strong>${safeFiniteNumber(data.minPlayers, 0, { min: 0, max: 1000000 })} joueur${data.minPlayers > 1 ? "s" : ""}</strong><span>${escapeHtml(data.display || "")} ${names ? `· ${names}` : ""}</span></div>`;
+  return `<div class="engine-result"><strong>${safeFiniteNumber(data.minPlayers, 0, { min: 0, max: 1000000 })} ${t("engine.players", { count: data.minPlayers })}</strong><span>${escapeHtml(data.display || "")} ${names ? `· ${names}` : ""}</span></div>`;
 }
 
 function renderEngineOptimization(r) {
@@ -560,59 +564,59 @@ function renderEngineOptimization(r) {
     <div class="engine-grid engine-grid--2">
       <div class="engine-card">
         <div class="engine-card__value">${bp.coverageRate != null ? formatPct(bp.coverageRate) : "—"}</div>
-        <div class="engine-card__label">${explain("Meilleure paire", "bestPair")}</div>
-        <div class="engine-card__sub">${bp.userAName && bp.userBName ? `${escapeHtml(bp.userAName)} + ${escapeHtml(bp.userBName)}` : "Aucune"}</div>
+        <div class="engine-card__label">${t("engine.label.bestPair")}</div>
+        <div class="engine-card__sub">${bp.userAName && bp.userBName ? `${escapeHtml(bp.userAName)} + ${escapeHtml(bp.userBName)}` : t("engine.none")}</div>
       </div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">${explain("Meilleur groupe", "bestTeam")}</h4>
-      <p class="engine-section__hint">Compare les groupes de 2, 3 ou 4 membres ayant la meilleure couverture collective.</p>
+      <h4 class="engine-section__title">${t("engine.label.bestTeam")}</h4>
+      <p class="engine-section__hint">${t("engine.hint.combinations")}</p>
       <form class="engine-sim" id="squadEngineCombinationForm">
         <label class="engine-sim__field">
-          <span>Taille du groupe</span>
+          <span>${t("engine.groupSize")}</span>
           <select class="engine-select" name="size">
-            <option value="2">2 joueurs</option>
-            <option value="3" selected>3 joueurs</option>
-            <option value="4">4 joueurs</option>
+            <option value="2">2 ${t("engine.players2")}</option>
+            <option value="3" selected>3 ${t("engine.players2")}</option>
+            <option value="4">4 ${t("engine.players2")}</option>
           </select>
         </label>
-        <button type="submit" class="ghost-button engine-sim__submit">Calculer</button>
+        <button type="submit" class="ghost-button engine-sim__submit">${t("engine.calcBtn")}</button>
       </form>
-      <div id="squadEngineCombinationResult"><p class="engine-empty">Choisis une taille de groupe.</p></div>
+      <div id="squadEngineCombinationResult"><p class="engine-empty">${t("engine.chooseGroupSize")}</p></div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">${explain("Équipe minimale", "minimumTeam")}</h4>
-      <p class="engine-section__hint">Trouve le plus petit nombre de membres nécessaire pour atteindre un objectif de couverture.</p>
+      <h4 class="engine-section__title">${t("engine.label.minimumTeam")}</h4>
+      <p class="engine-section__hint">${t("engine.hint.minimumTeam")}</p>
       <form class="engine-sim" id="squadEngineMinimumTeamForm">
         <label class="engine-sim__field">
-          <span>Objectif de couverture</span>
+          <span>${t("engine.coverageTarget")}</span>
           <input class="engine-select" name="target" type="number" min="1" max="100" value="90" required>
         </label>
-        <button type="submit" class="ghost-button engine-sim__submit">Calculer</button>
+        <button type="submit" class="ghost-button engine-sim__submit">${t("engine.calcBtn")}</button>
       </form>
-      <div id="squadEngineMinimumTeamResult"><p class="engine-empty">Objectif par défaut : 90 %.</p></div>
+      <div id="squadEngineMinimumTeamResult"><p class="engine-empty">${t("engine.defaultTarget")}</p></div>
     </div>
     <div class="engine-section">
-      <h4 class="engine-section__title">${explain("Scénario de squad", "simulation")}</h4>
-      <p class="engine-section__hint">Ajoute plusieurs acquisitions, l’arrivée d’un membre ou le départ d’un membre, puis simule l’ensemble sans modifier les collections.</p>
+      <h4 class="engine-section__title">${t("engine.label.simulation")}</h4>
+      <p class="engine-section__hint">${t("engine.hint.simulation")}</p>
       <div class="engine-scenario">
         <form class="engine-sim" id="squadEngineScenarioAcquireForm">
-          <label class="engine-sim__field"><span>Membre</span><select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}><option value="">Choisir…</option>${memberOpts}</select></label>
-          <label class="engine-sim__field"><span>Variantes obtenues</span><select class="engine-select engine-sim__multi" name="variantIds" multiple required ${variants.length ? "" : "disabled"}>${variantOpts}</select></label>
-          <button type="submit" class="ghost-button engine-sim__submit" ${members.length && variants.length ? "" : "disabled"}>Ajouter acquisition</button>
+          <label class="engine-sim__field"><span>${t("engine.member")}</span><select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}><option value="">${t("engine.choose")}</option>${memberOpts}</select></label>
+          <label class="engine-sim__field"><span>${t("engine.variantsObtained")}</span><select class="engine-select engine-sim__multi" name="variantIds" multiple required ${variants.length ? "" : "disabled"}>${variantOpts}</select></label>
+          <button type="submit" class="ghost-button engine-sim__submit" ${members.length && variants.length ? "" : "disabled"}>${t("engine.addAcquisition")}</button>
         </form>
         <form class="engine-sim" id="squadEngineScenarioJoinForm">
-          <label class="engine-sim__field"><span>Nouveau membre</span><input class="engine-select" name="username" maxlength="80" placeholder="Pseudo"></label>
-          <label class="engine-sim__field"><span>Variantes possédées</span><select class="engine-select engine-sim__multi" name="ownedVariantIds" multiple>${variantOpts}</select></label>
-          <button type="submit" class="ghost-button engine-sim__submit">Ajouter arrivée</button>
+          <label class="engine-sim__field"><span>${t("engine.newMember")}</span><input class="engine-select" name="username" maxlength="80" placeholder="${t('engine.usernamePlaceholder')}"></label>
+          <label class="engine-sim__field"><span>${t("engine.variantsOwned")}</span><select class="engine-select engine-sim__multi" name="ownedVariantIds" multiple>${variantOpts}</select></label>
+          <button type="submit" class="ghost-button engine-sim__submit">${t("engine.addJoin")}</button>
         </form>
         <form class="engine-sim" id="squadEngineScenarioLeaveForm">
-          <label class="engine-sim__field"><span>Membre qui quitte</span><select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}><option value="">Choisir…</option>${memberOpts}</select></label>
-          <button type="submit" class="ghost-button engine-sim__submit" ${members.length ? "" : "disabled"}>Ajouter départ</button>
+          <label class="engine-sim__field"><span>${t("engine.memberLeaving")}</span><select class="engine-select" name="memberId" required ${members.length ? "" : "disabled"}><option value="">${t("engine.choose")}</option>${memberOpts}</select></label>
+          <button type="submit" class="ghost-button engine-sim__submit" ${members.length ? "" : "disabled"}>${t("engine.addLeave")}</button>
         </form>
       </div>
       <div id="squadEngineScenarioQueue">${engineScenarioQueueHtml(members, variants)}</div>
-      <button type="button" class="ghost-button engine-scenario__run" id="squadEngineScenarioRun">Simuler le scénario</button>
+      <button type="button" class="ghost-button engine-scenario__run" id="squadEngineScenarioRun">${t("engine.simulateBtn")}</button>
       <div id="squadEngineSimulateResult">${renderEngineSimulateResult(null)}</div>
     </div>
   `;
@@ -656,7 +660,7 @@ async function runEngineScenarioSimulation(changes = engineScenarioChanges) {
   const code = state.activeSquad;
   const resultEl = document.getElementById("squadEngineSimulateResult");
   if (!code || !resultEl || !changes.length) return;
-  resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
+  resultEl.innerHTML = `<p class="engine-empty">${t("engine.calculating")}</p>`;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/completion/simulate`, {
       method: "POST",
@@ -665,48 +669,48 @@ async function runEngineScenarioSimulation(changes = engineScenarioChanges) {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      resultEl.innerHTML = `<p class="engine-empty">${escapeHtml(data.error || "Simulation impossible.")}</p>`;
+      resultEl.innerHTML = `<p class="engine-empty">${escapeHtml(data.error || t("engine.simFailed"))}</p>`;
       return;
     }
     const data = await res.json();
     resultEl.innerHTML = renderEngineSimulateResult(data);
   } catch (e) {
     console.error("[runEngineAcquisitionSimulate]", e);
-    resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
+    resultEl.innerHTML = `<p class="engine-empty">${t("common.networkError")}</p>`;
   }
 }
 
 async function loadEngineCombinations(size) {
   const resultEl = document.getElementById("squadEngineCombinationResult");
   if (!state.activeSquad || !resultEl) return;
-  resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
+  resultEl.innerHTML = `<p class="engine-empty">${t("engine.calculating")}</p>`;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/completion/combinations?size=${encodeURIComponent(size)}`, { headers: authHeaders() });
     const data = await res.json().catch(() => ({}));
-    resultEl.innerHTML = res.ok ? renderEngineCombinationResult(data) : `<p class="engine-empty">${escapeHtml(data.error || "Calcul impossible.")}</p>`;
+    resultEl.innerHTML = res.ok ? renderEngineCombinationResult(data) : `<p class="engine-empty">${escapeHtml(data.error || t("engine.calcFailed"))}</p>`;
   } catch (e) {
     console.error("[loadEngineCombinations]", e);
-    resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
+    resultEl.innerHTML = `<p class="engine-empty">${t("common.networkError")}</p>`;
   }
 }
 
 async function loadEngineMinimumTeam(target) {
   const resultEl = document.getElementById("squadEngineMinimumTeamResult");
   if (!state.activeSquad || !resultEl) return;
-  resultEl.innerHTML = `<p class="engine-empty">Calcul en cours…</p>`;
+  resultEl.innerHTML = `<p class="engine-empty">${t("engine.calculating")}</p>`;
   try {
     const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/minimum-team?targetType=coverage&target=${encodeURIComponent(target)}`, { headers: authHeaders() });
     const data = await res.json().catch(() => ({}));
-    resultEl.innerHTML = res.ok ? renderEngineMinimumTeamResult(data) : `<p class="engine-empty">${escapeHtml(data.error || "Aucune équipe ne peut atteindre cet objectif.")}</p>`;
+    resultEl.innerHTML = res.ok ? renderEngineMinimumTeamResult(data) : `<p class="engine-empty">${escapeHtml(data.error || t("engine.noTeamForTarget"))}</p>`;
   } catch (e) {
     console.error("[loadEngineMinimumTeam]", e);
-    resultEl.innerHTML = `<p class="engine-empty">Erreur réseau</p>`;
+    resultEl.innerHTML = `<p class="engine-empty">${t("common.networkError")}</p>`;
   }
 }
 
 function addEngineScenarioChange(change) {
   if (engineScenarioChanges.length >= 20) {
-    toast("Un scénario est limité à 20 changements.");
+    toast(t("engine.scenarioLimit"));
     return;
   }
   engineScenarioChanges.push(change);
@@ -761,7 +765,7 @@ function setupSquadEngine() {
       if (form.id === "squadEngineScenarioJoinForm") {
         const username = String(fd.get("username") || "").trim();
         const ownedVariantIds = fd.getAll("ownedVariantIds").map(String).filter(Boolean);
-        addEngineScenarioChange({ type: "join", username: username || "Nouveau membre", ownedVariantIds });
+        addEngineScenarioChange({ type: "join", username: username || t("engine.newMember"), ownedVariantIds });
         form.reset();
         return;
       }

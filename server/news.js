@@ -864,10 +864,18 @@ async function persistNewsInInbox(items, { markRead = false } = {}) {
          WHERE u.deleted_at IS NULL
          ON CONFLICT (recipient_id, entity_id) WHERE type = 'news_article' DO NOTHING`,
         [
-          String(item.title || "Nouvelle actualité Sprite Index").slice(0, 500),
-          String(item.description || "").slice(0, 500),
+          String(item.title || item.description || "SPRITE-INDEX").slice(0, 500),
+          String(item.description || item.title || "").slice(0, 500),
           entityId,
-          JSON.stringify(data),
+          JSON.stringify({
+            ...data,
+            translationKey: "notifications.news_article",
+            translationParams: {
+              articleTitle: item.title || null,
+              count: 1,
+              template: "default"
+            }
+          }),
           markRead
         ]
       );
@@ -902,21 +910,38 @@ async function backfillRecentNewsInbox({ limit = 10 } = {}) {
 
 async function notifyNewsSubscribers(items) {
   if (!items.length) return;
-  const title = items.length === 1
-    ? "Nouvelle actu SPRITE-INDEX"
-    : `${items.length} nouvelles actus`;
-  const body = items.length === 1
-    ? items[0].title || "Un article vient d'être ajouté"
-    : items[0].title || `${items.length} articles sur les sprites`;
+  const count = items.length;
+  const articleTitle = items[0].title || null;
+  const icon = items[0].image || "/icons/icon-192x192.png";
+  const url = items[0].link || "/";
   try {
-    const results = await pushService.notifyNewsSubscribers(pool, {
-      title,
-      body,
-      icon: items[0].image || "/icons/icon-192x192.png",
-      url: items[0].link || "/"
+    const notifI18n = require("./notification-i18n");
+    const { resolveNotificationLanguage } = require("./i18n");
+    const results = await pushService.notifyNewsSubscribersLocalized(pool, {
+      icon,
+      url,
+      render(lang) {
+        const locale = resolveNotificationLanguage(lang, null);
+        const fallbackArticle = notifI18n.tNotif(
+          count > 1 ? "notifications.fallback.articles" : "notifications.fallback.article",
+          { count },
+          locale
+        );
+        const rendered = notifI18n.renderTranslatedMessage("news_article", {
+          count,
+          articleTitle: articleTitle || fallbackArticle
+        }, locale);
+        return {
+          title: (rendered && rendered.title)
+            || (locale === "en" ? "New SPRITE-INDEX news" : "Nouvelle actu SPRITE-INDEX"),
+          body: (rendered && rendered.body) || articleTitle || fallbackArticle || "",
+          icon,
+          url
+        };
+      }
     });
-    const ok = results.filter(r => r.ok).length;
-    console.log(`[PUSH] News notification sent to ${ok}/${results.length} devices`);
+    const ok = (results || []).filter(r => r.ok).length;
+    console.log(`[PUSH] News notification sent to ${ok}/${(results || []).length} devices`);
   } catch (err) {
     console.error("[PUSH] Failed to send news notification:", err);
   }

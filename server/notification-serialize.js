@@ -14,11 +14,36 @@ const { toUtcIso } = require("./timezone");
 const PUBLIC_ID_PREFIX = "notification_";
 
 const DEFAULT_ACTION_LABELS = Object.freeze({
-  friend_request_accepted: "Comparer",
-  friend_acquired_missing_variant: "Comparer",
-  squad_completion_increased: "Ouvrir",
-  priority_variant_available: "Voir",
-  wanted_event_ending_soon: "Voir"
+  fr: Object.freeze({
+    friend_request_accepted: "Comparer",
+    friend_request_received: "Voir",
+    friend_acquired_missing_variant: "Comparer",
+    friend_collection_updated: "Ouvrir",
+    friend_removed: "Voir",
+    squad_completion_increased: "Ouvrir",
+    squad_member_joined: "Ouvrir",
+    priority_variant_available: "Voir",
+    wanted_event_ending_soon: "Voir",
+    goal_completed: "Ouvrir",
+    badge_unlocked: "Voir mon passeport",
+    passport_catalogue_updated: "Mettre à jour ma collection",
+    news_article: "Voir"
+  }),
+  en: Object.freeze({
+    friend_request_accepted: "Compare",
+    friend_request_received: "View",
+    friend_acquired_missing_variant: "Compare",
+    friend_collection_updated: "Open",
+    friend_removed: "View",
+    squad_completion_increased: "Open",
+    squad_member_joined: "Open",
+    priority_variant_available: "View",
+    wanted_event_ending_soon: "View",
+    goal_completed: "Open",
+    badge_unlocked: "View my passport",
+    passport_catalogue_updated: "Update my collection",
+    news_article: "View"
+  })
 });
 
 const ENTITY_TYPE_ALIASES = Object.freeze({
@@ -82,17 +107,21 @@ function normalizeEntity(row = {}) {
   };
 }
 
-function normalizeAction(row = {}) {
+function normalizeAction(row = {}, lang = "fr") {
   const data = row.data && typeof row.data === "object" ? row.data : {};
-  if (data.accessRevoked) return null;
+  if (data.accessRevoked || data.hiddenDueToBlock) return null;
   const primary = data.actions && data.actions.primary ? data.actions.primary : null;
   const url = (primary && primary.url) || data.actionUrl || null;
-  const label = (primary && primary.label)
-    || DEFAULT_ACTION_LABELS[row.type]
+  const locale = String(lang || data.lang || "fr").toLowerCase().slice(0, 2) === "en" ? "en" : "fr";
+  const defaults = DEFAULT_ACTION_LABELS[locale] || DEFAULT_ACTION_LABELS.fr;
+  // Never reuse a stored FR/EN actionLabel when it doesn't match the inbox locale.
+  const storedLabelMatchesLocale = primary && primary.label && data.lang === locale;
+  const label = (storedLabelMatchesLocale ? primary.label : null)
+    || defaults[row.type]
     || null;
   if (!url && !label) return null;
   return {
-    label: label || "Ouvrir",
+    label: label || (locale === "en" ? "Open" : "Ouvrir"),
     url: url || null
   };
 }
@@ -143,8 +172,9 @@ function newsIdFromRow(row = {}) {
 
 /**
  * Pure mapper: row (+ optional actor user row) → normalized notification.
+ * Pass `lang` to re-render title/body from translationKey when available.
  */
-function normalizeNotification(row, actorUser = null) {
+function normalizeNotification(row, actorUser = null, lang = null) {
   if (!row) return null;
   const data = row.data && typeof row.data === "object" ? row.data : {};
   const createdAt = toUtcIso(row.created_at || row.createdAt) || null;
@@ -165,15 +195,43 @@ function normalizeNotification(row, actorUser = null) {
     : null;
   const imageUrl = resolveImageUrl(row, actorUser);
 
+  const locale = String(lang || data.lang || "fr").toLowerCase().slice(0, 2) === "en" ? "en" : "fr";
+  let title = row.title || "";
+  let body = row.body || row.message || "";
+
+  const isHidden = !!(data.hiddenDueToBlock || data.accessRevoked
+    || title === "Notification masquée" || title === "Hidden notification");
+  if (isHidden) {
+    try {
+      const notifI18n = require("./notification-i18n");
+      title = notifI18n.tNotif("notifications.hidden.title", {}, locale)
+        || (locale === "en" ? "Hidden notification" : "Notification masquée");
+    } catch (_err) {
+      title = locale === "en" ? "Hidden notification" : "Notification masquée";
+    }
+    body = "";
+  } else if (translationKey && translationParams && row.type) {
+    try {
+      const catalog = require("./notification-catalog");
+      if (catalog.isKnownType(row.type)) {
+        const rendered = catalog.renderFromTranslation(row.type, translationParams, locale, data);
+        if (rendered?.title) title = rendered.title;
+        if (rendered?.body) body = rendered.body;
+      }
+    } catch (_err) {
+      // Keep stored title/body if re-render fails.
+    }
+  }
+
   return {
     id: toPublicNotificationId(row.id),
     type: row.type || null,
     category: row.category || null,
-    title: row.title || "",
-    body: row.body || row.message || "",
+    title,
+    body,
     actor,
     entity: normalizeEntity(row),
-    action: normalizeAction(row),
+    action: normalizeAction(row, locale),
     imageUrl,
     isRead: !!(row.read_at || row.readAt || row.isRead === true),
     createdAt,
@@ -218,8 +276,9 @@ async function loadActorsById(pool, actorIds) {
 /**
  * Normalize a page of notification rows, batch-loading actors.
  * News rows missing data.image are enriched from sprite_news.
+ * Catalog display names are re-localized for the inbox language.
  */
-async function normalizeNotificationList(pool, rows) {
+async function normalizeNotificationList(pool, rows, lang = null) {
   const list = Array.isArray(rows) ? rows : [];
   const actors = await loadActorsById(
     pool,
@@ -231,20 +290,39 @@ async function normalizeNotificationList(pool, rows) {
     .filter((id) => id != null);
   const newsImages = await loadNewsImagesById(pool, newsIdsNeedingImage);
 
-  return list.map((row) => {
-    const actor = row.actor_id != null ? actors.get(Number(row.actor_id)) : null;
+  let notifI18n = null;
+  try { notifI18n = require("./notification-i18n"); } catch (_err) { /* optional */ }
+
+  const enrichedRows = await Promise.all(list.map(async (row) => {
     const newsId = row.type === "news_article" ? newsIdFromRow(row) : null;
     const scrapedImage = newsId != null ? newsImages.get(newsId) : null;
-    const enriched = scrapedImage && !resolveImageUrl(row)
-      ? {
-          ...row,
-          data: {
-            ...(row.data && typeof row.data === "object" ? row.data : {}),
-            image: scrapedImage
-          }
-        }
-      : row;
-    return normalizeNotification(enriched, actor || null);
+    const data = row.data && typeof row.data === "object" ? { ...row.data } : {};
+    if (scrapedImage && !resolveImageUrl(row)) data.image = scrapedImage;
+
+    if (
+      notifI18n
+      && data.translationKey
+      && data.translationParams
+      && typeof data.translationParams === "object"
+      && (data.translationParams.variantId || data.translationParams.spriteId)
+    ) {
+      try {
+        data.translationParams = await notifI18n.enrichParamsWithLocalizedCatalog(
+          pool,
+          data.translationParams,
+          lang || data.lang || "fr"
+        );
+      } catch (_err) {
+        // Keep frozen params if catalog lookup fails.
+      }
+    }
+
+    return { ...row, data };
+  }));
+
+  return enrichedRows.map((row) => {
+    const actor = row.actor_id != null ? actors.get(Number(row.actor_id)) : null;
+    return normalizeNotification(row, actor || null, lang);
   });
 }
 

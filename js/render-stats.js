@@ -1,12 +1,12 @@
 function renderBars(container, rows) {
   container.innerHTML = rows
     .map((row) => `
-      <div class="bar-row" data-progress="${row.percent}" aria-label="${escapeHtml(row.label)} : ${row.owned} sur ${row.total}, ${row.percent} %">
+      <div class="bar-row" data-progress="${row.percent}" aria-label="${escapeHtml(t("stats.barAriaRow", { label: row.label, owned: row.owned, total: row.total, percent: row.percent }))}">
         <div class="bar-meta">
           <span class="bar-meta__label">${escapeHtml(row.icon || "◇")} ${escapeHtml(row.label)}</span>
           <span class="bar-meta__value">${row.owned}/${row.total} · ${row.percent}%</span>
         </div>
-        <div class="bar-track" role="progressbar" aria-label="Progression ${escapeHtml(row.label)}" aria-valuemin="0" aria-valuemax="${row.total}" aria-valuenow="${row.owned}" aria-valuetext="${row.owned} sur ${row.total}, ${row.percent} %"><div class="bar-fill" style="--bar:${row.percent}%"></div></div>
+        <div class="bar-track" role="progressbar" aria-label="${escapeHtml(t("stats.barAriaProgress", { label: row.label }))}" aria-valuemin="0" aria-valuemax="${row.total}" aria-valuenow="${row.owned}" aria-valuetext="${escapeHtml(t("stats.barAriaValuetext", { owned: row.owned, total: row.total, percent: row.percent }))}"><div class="bar-fill" style="--bar:${row.percent}%"></div></div>
       </div>
     `)
     .join("");
@@ -39,13 +39,13 @@ function renderStats() {
   const offset = circumference - (circumference * pct / 100);
   if (els.statsRingCircle) els.statsRingCircle.style.strokeDashoffset = offset;
   if (els.statsHeroPct) els.statsHeroPct.textContent = `${pct}%`;
-  if (els.statsHeroDetail) els.statsHeroDetail.textContent = `${ownedVariants} / ${totalVariants} variantes collectées`;
+  if (els.statsHeroDetail) els.statsHeroDetail.textContent = t("stats.heroDetail", { owned: ownedVariants, total: totalVariants });
   const remainingVariants = Math.max(0, totalVariants - ownedVariants);
   if (els.statsHeroRemaining) els.statsHeroRemaining.textContent = remainingVariants;
   if (els.statsHeroSupport) {
     els.statsHeroSupport.textContent = remainingVariants
-      ? `Encore ${pluralize(remainingVariants, "variante")} à découvrir.`
-      : "Collection complète : toutes les variantes publiées sont réunies.";
+      ? t("stats.heroRemaining", { count: remainingVariants, plural: remainingVariants > 1 ? "s" : "" })
+      : t("stats.heroComplete");
   }
 
   const spritesCompleted = SPRITES.filter(s => {
@@ -60,10 +60,10 @@ function renderStats() {
   els.kpiVariants.textContent = `${ownedVariants} / ${totalVariants}`;
   if (els.kpiSpritesHint) {
     els.kpiSpritesHint.textContent = spritesCompleted
-      ? `${pluralize(spritesCompleted, "Sprite")} complété${spritesCompleted > 1 ? "s" : ""} à 100 %`
-      : "Aucune famille complète";
+      ? t("stats.kpiSpritesCompleted", { count: spritesCompleted, plural: spritesCompleted > 1 ? "s" : "" })
+      : t("stats.kpiSpritesNone");
   }
-  if (els.kpiVariantsHint) els.kpiVariantsHint.textContent = `${pct} % du catalogue publié`;
+  if (els.kpiVariantsHint) els.kpiVariantsHint.textContent = t("stats.kpiVariantsHint", { pct });
 
   const prioritiesLeft = items.filter(i => {
     const e = getEntry(i.id);
@@ -72,8 +72,8 @@ function renderStats() {
   els.kpiPriorities.textContent = prioritiesLeft;
   if (els.kpiPrioritiesHint) {
     els.kpiPrioritiesHint.textContent = prioritiesLeft
-      ? `${pluralize(prioritiesLeft, "recherche")} à planifier`
-      : "Aucune recherche prioritaire";
+      ? t("stats.kpiPrioritiesHint", { count: prioritiesLeft, plural: prioritiesLeft > 1 ? "s" : "" })
+      : t("stats.kpiPrioritiesNone");
   }
 
   const rarities = Object.keys(RARITY_ORDER)
@@ -109,16 +109,16 @@ function renderStats() {
     insights.push(renderInsight({
       tone: "best",
       icon: "◇",
-      label: "Collection la plus avancée",
+      label: t("stats.bestRarityLabel"),
       value: `${bestRarity.label} — ${bestRarity.percent} %`,
-      detail: `${bestRarity.owned} sur ${bestRarity.total} variantes réunies`
+      detail: t("stats.variantsCollected", { owned: bestRarity.owned, total: bestRarity.total })
     }));
     insights.push(renderInsight({
       tone: "worst",
       icon: "★",
-      label: "Collection la moins avancée",
+      label: t("stats.worstRarityLabel"),
       value: `${worstRarity.label} — ${worstRarity.percent} %`,
-      detail: `${worstRarity.owned} sur ${worstRarity.total} variantes réunies`
+      detail: t("stats.variantsCollected", { owned: worstRarity.owned, total: worstRarity.total })
     }));
   }
 
@@ -126,25 +126,27 @@ function renderStats() {
     insights.push(renderInsight({
       tone: "variant",
       icon: "◎",
-      label: "Variante la plus manquante",
+      label: t("stats.worstVariantLabel"),
       value: `${worstVariant.label} — ${worstVariant.owned}/${worstVariant.total}`,
-      detail: `${Math.max(0, worstVariant.total - worstVariant.owned)} à découvrir`
+      detail: t("stats.variantsToDiscover", { count: Math.max(0, worstVariant.total - worstVariant.owned) })
     }));
   }
 
   insights.push(renderInsight({
     tone: "myth",
     icon: "♛",
-    label: `${topRarity} complétés`,
+    label: t("stats.mythCompleted", { rarity: topRarity }),
     value: `${mythCompleted} / ${mythTotal}`,
-    detail: mythTotal ? `${Math.round((mythCompleted / mythTotal) * 100)} % des Sprites ${topRarity.toLowerCase()}` : "Aucun Sprite concerné"
+    detail: mythTotal
+      ? t("stats.mythPercent", { pct: Math.round((mythCompleted / mythTotal) * 100), rarity: topRarity.toLowerCase() })
+      : t("stats.mythNone")
   }));
   insights.push(renderInsight({
     tone: "full",
     icon: "◈",
-    label: "Sprites 100 % complétés",
+    label: t("stats.fullLabel"),
     value: `${spritesCompleted} / ${SPRITES.length}`,
-    detail: spritesCompleted ? "Toutes leurs variantes sont possédées" : "Votre prochain objectif de maîtrise"
+    detail: spritesCompleted ? t("stats.fullAllVariants") : t("stats.fullNextGoal")
   }));
 
   els.statsInsights.innerHTML = insights.join("");

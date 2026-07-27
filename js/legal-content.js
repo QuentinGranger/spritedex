@@ -31,6 +31,7 @@
 const LEGAL_VERSION = "2026.07.18-1";
 const LEGAL_LAST_UPDATED_ISO = "2026-07-18";
 const LEGAL_LAST_UPDATED_FR = "18 juillet 2026";
+const LEGAL_LAST_UPDATED_EN = "18 July 2026";
 
 const LEGAL_CONFIG = Object.freeze({
   APP_NAME: "SPRITE-INDEX",
@@ -60,8 +61,24 @@ const LEGAL_CONFIG = Object.freeze({
   OPTIONAL_TRACKER_RETENTION: "13 mois maximum"
 });
 
+const LEGAL_CONFIG_EN = Object.freeze({
+  ...LEGAL_CONFIG,
+  EDITOR_STATUS: "individual non-professional publisher",
+  HOST_ADDRESS:
+    "525 Brannan Street, Suite 300, San Francisco, CA 94107, United States",
+  EPIC_FAN_POLICY_URL:
+    "https://legal.epicgames.com/epicgames/fan-art-policy?lang=en",
+  ACCOUNT_DELETION_DELAY: "30 days maximum",
+  SECURITY_LOG_RETENTION: "12 months maximum",
+  CONSENT_CHOICE_RETENTION: "6 months",
+  OPTIONAL_TRACKER_RETENTION: "13 months maximum"
+});
+
 const EPIC_DISCLAIMER =
   "Des parties des supports utilisés sont des marques déposées et/ou des travaux soumis aux droits d’auteur d’Epic Games, Inc. Tous droits réservés par Epic. Ce produit n’est pas officiel et n’a pas l’approbation d’Epic.";
+
+const EPIC_DISCLAIMER_EN =
+  "Portions of the materials used are trademarks and/or copyrighted works of Epic Games, Inc. All rights reserved by Epic. This product is not official and is not endorsed by Epic.";
 
 function escapeHtml(value) {
   return String(value)
@@ -72,31 +89,39 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function renderLegalTemplate(template) {
+function normalizeLegalLang(lang) {
+  return String(lang || "fr").toLowerCase().slice(0, 2) === "en" ? "en" : "fr";
+}
+
+function renderLegalTemplate(template, lang = "fr") {
+  const isEn = normalizeLegalLang(lang) === "en";
+  const cfg = isEn ? LEGAL_CONFIG_EN : LEGAL_CONFIG;
+  const lastUpdatedLabel = isEn ? LEGAL_LAST_UPDATED_EN : LEGAL_LAST_UPDATED_FR;
   const replacements = {
-    APP_NAME: LEGAL_CONFIG.APP_NAME,
-    EDITOR_NAME: LEGAL_CONFIG.EDITOR_NAME,
-    EDITOR_STATUS: LEGAL_CONFIG.EDITOR_STATUS,
-    CONTACT_EMAIL: LEGAL_CONFIG.CONTACT_EMAIL,
-    SUPPORT_EMAIL: LEGAL_CONFIG.SUPPORT_EMAIL,
-    PRIVACY_EMAIL: LEGAL_CONFIG.PRIVACY_EMAIL,
-    REPORT_EMAIL: LEGAL_CONFIG.REPORT_EMAIL,
-    HOST_NAME: LEGAL_CONFIG.HOST_NAME,
-    HOST_ADDRESS: LEGAL_CONFIG.HOST_ADDRESS,
-    HOST_PHONE: LEGAL_CONFIG.HOST_PHONE,
-    HOST_WEBSITE: LEGAL_CONFIG.HOST_WEBSITE,
-    HOST_SUPPORT: LEGAL_CONFIG.HOST_SUPPORT,
-    HOST_LEGAL_EMAIL: LEGAL_CONFIG.HOST_LEGAL_EMAIL,
-    CNIL_URL: LEGAL_CONFIG.CNIL_URL,
-    EPIC_FAN_POLICY_URL: LEGAL_CONFIG.EPIC_FAN_POLICY_URL,
-    ACCOUNT_MINIMUM_AGE: LEGAL_CONFIG.ACCOUNT_MINIMUM_AGE,
-    ACCOUNT_DELETION_DELAY: LEGAL_CONFIG.ACCOUNT_DELETION_DELAY,
-    SECURITY_LOG_RETENTION: LEGAL_CONFIG.SECURITY_LOG_RETENTION,
-    CONSENT_CHOICE_RETENTION: LEGAL_CONFIG.CONSENT_CHOICE_RETENTION,
-    OPTIONAL_TRACKER_RETENTION: LEGAL_CONFIG.OPTIONAL_TRACKER_RETENTION,
-    EPIC_DISCLAIMER,
+    APP_NAME: cfg.APP_NAME,
+    EDITOR_NAME: cfg.EDITOR_NAME,
+    EDITOR_STATUS: cfg.EDITOR_STATUS,
+    CONTACT_EMAIL: cfg.CONTACT_EMAIL,
+    SUPPORT_EMAIL: cfg.SUPPORT_EMAIL,
+    PRIVACY_EMAIL: cfg.PRIVACY_EMAIL,
+    REPORT_EMAIL: cfg.REPORT_EMAIL,
+    HOST_NAME: cfg.HOST_NAME,
+    HOST_ADDRESS: cfg.HOST_ADDRESS,
+    HOST_PHONE: cfg.HOST_PHONE,
+    HOST_WEBSITE: cfg.HOST_WEBSITE,
+    HOST_SUPPORT: cfg.HOST_SUPPORT,
+    HOST_LEGAL_EMAIL: cfg.HOST_LEGAL_EMAIL,
+    CNIL_URL: cfg.CNIL_URL,
+    EPIC_FAN_POLICY_URL: cfg.EPIC_FAN_POLICY_URL,
+    ACCOUNT_MINIMUM_AGE: cfg.ACCOUNT_MINIMUM_AGE,
+    ACCOUNT_DELETION_DELAY: cfg.ACCOUNT_DELETION_DELAY,
+    SECURITY_LOG_RETENTION: cfg.SECURITY_LOG_RETENTION,
+    CONSENT_CHOICE_RETENTION: cfg.CONSENT_CHOICE_RETENTION,
+    OPTIONAL_TRACKER_RETENTION: cfg.OPTIONAL_TRACKER_RETENTION,
+    EPIC_DISCLAIMER: isEn ? EPIC_DISCLAIMER_EN : EPIC_DISCLAIMER,
     LEGAL_VERSION,
-    LEGAL_LAST_UPDATED_FR
+    LEGAL_LAST_UPDATED_FR: lastUpdatedLabel,
+    LEGAL_LAST_UPDATED: lastUpdatedLabel
   };
 
   let result = String(template);
@@ -120,15 +145,16 @@ function renderLegalTemplate(template) {
   return result.trim();
 }
 
-function legalDocument({ id, title, short, content }) {
+function legalDocument({ id, title, short, content }, lang = "fr") {
+  const locale = normalizeLegalLang(lang);
   return Object.freeze({
     id,
     title,
     short,
     version: LEGAL_VERSION,
     lastUpdated: LEGAL_LAST_UPDATED_ISO,
-    lastUpdatedLabel: LEGAL_LAST_UPDATED_FR,
-    content: renderLegalTemplate(content)
+    lastUpdatedLabel: locale === "en" ? LEGAL_LAST_UPDATED_EN : LEGAL_LAST_UPDATED_FR,
+    content: renderLegalTemplate(content, locale)
   });
 }
 
@@ -768,7 +794,36 @@ const LEGAL_FOOTER = Object.freeze({
   links: LEGAL_MENU
 });
 
-function getLegalDocument(docId) {
+function buildLegalDocumentsFromSource(sourceMap, lang) {
+  const locale = normalizeLegalLang(lang);
+  const out = {};
+  for (const [id, raw] of Object.entries(sourceMap || {})) {
+    if (!raw || typeof raw !== "object") continue;
+    out[id] = legalDocument(
+      {
+        id,
+        title: raw.title,
+        short: raw.short,
+        content: raw.content
+      },
+      locale
+    );
+  }
+  return Object.freeze(out);
+}
+
+const LEGAL_DOCUMENTS_EN_SOURCE =
+  typeof LEGAL_DOCUMENTS_EN !== "undefined" ? LEGAL_DOCUMENTS_EN : null;
+
+const LEGAL_DOCUMENTS_EN_RESOLVED = LEGAL_DOCUMENTS_EN_SOURCE
+  ? buildLegalDocumentsFromSource(LEGAL_DOCUMENTS_EN_SOURCE, "en")
+  : Object.freeze({});
+
+function getLegalDocument(docId, lang = "fr") {
+  const locale = normalizeLegalLang(lang);
+  if (locale === "en" && LEGAL_DOCUMENTS_EN_RESOLVED[docId]) {
+    return LEGAL_DOCUMENTS_EN_RESOLVED[docId];
+  }
   return LEGAL_DOCUMENTS[docId] || null;
 }
 
@@ -785,6 +840,14 @@ function validateLegalDocuments() {
     if (!LEGAL_DOCUMENTS[item.docId]) {
       errors.push(`Document absent de LEGAL_DOCUMENTS : ${item.docId}`);
     }
+
+    if (!LEGAL_DOCUMENTS_EN_SOURCE) {
+      errors.push(`Sources EN absentes (LEGAL_DOCUMENTS_EN) pour : ${item.docId}`);
+    } else if (!LEGAL_DOCUMENTS_EN_SOURCE[item.docId]) {
+      errors.push(`Document EN absent de LEGAL_DOCUMENTS_EN : ${item.docId}`);
+    } else if (!LEGAL_DOCUMENTS_EN_RESOLVED[item.docId]) {
+      errors.push(`Document EN non résolu : ${item.docId}`);
+    }
   }
 
   for (const [key, document] of Object.entries(LEGAL_DOCUMENTS)) {
@@ -798,6 +861,25 @@ function validateLegalDocuments() {
 
     if (/\[[A-Z0-9_]+\]/.test(document.content)) {
       errors.push(`Placeholder non remplacé dans : ${key}`);
+    }
+  }
+
+  for (const [key, document] of Object.entries(LEGAL_DOCUMENTS_EN_RESOLVED)) {
+    if (key !== document.id) {
+      errors.push(`Identifiant EN incohérent : clé ${key}, id ${document.id}`);
+    }
+
+    if (!document.title || !document.content) {
+      errors.push(`Document EN incomplet : ${key}`);
+    }
+
+    if (/\[[A-Z0-9_]+\]/.test(document.content)) {
+      errors.push(`Placeholder EN non remplacé dans : ${key}`);
+    }
+
+    // Heuristic: rendered EN body should not keep common French legal phrasing.
+    if (/\b(Dernière mise à jour|Mentions légales|Conditions générales|Politique de confidentialité)\b/.test(document.content)) {
+      errors.push(`Document EN encore en français : ${key}`);
     }
   }
 
@@ -817,16 +899,22 @@ if (!LEGAL_VALIDATION.valid && typeof console !== "undefined") {
 
 const SPRITE_INDEX_LEGAL = Object.freeze({
   LEGAL_CONFIG,
+  LEGAL_CONFIG_EN,
   LEGAL_VERSION,
   LEGAL_LAST_UPDATED_ISO,
   LEGAL_LAST_UPDATED_FR,
+  LEGAL_LAST_UPDATED_EN,
   EPIC_DISCLAIMER,
+  EPIC_DISCLAIMER_EN,
   LEGAL_DOCUMENTS,
+  LEGAL_DOCUMENTS_EN: LEGAL_DOCUMENTS_EN_RESOLVED,
   LEGAL_MENU,
   LEGAL_FOOTER,
   LEGAL_VALIDATION,
   getLegalDocument,
-  validateLegalDocuments
+  validateLegalDocuments,
+  normalizeLegalLang,
+  renderLegalTemplate
 });
 
 if (typeof window !== "undefined") {
