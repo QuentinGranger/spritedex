@@ -7,7 +7,7 @@ const path = require("path");
 if (process.env.APP_LIVE_RELOAD === "1") {
   const ROOT_DIR = path.join(__dirname, "..");
   const WATCHED_PATHS = [
-    "index.html", "404.html", "manifest.json", "sw.js", "LogoApp.png", "MainLogo.png",
+    "index.html", "404.html", "manifest.json", "sw.js", "LogoApp.png",
     "Favicon", "icons", "css", "js", "server", "sprite-data.js", "server.js"
   ];
   const IGNORED_DIRECTORIES = new Set([".git", "node_modules", "www", "release", "coverage"]);

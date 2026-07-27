@@ -104,7 +104,8 @@ function safeImageUrl(value) {
     const isBundledSpriteAsset = parsed.pathname.startsWith("/Sprite/")
       || parsed.pathname.startsWith("/Favicon/")
       || parsed.pathname === "/LogoApp.png"
-      || parsed.pathname === "/MainLogo.png";
+      || parsed.pathname === "/MainLogo.png"
+      || parsed.pathname === "/js/MainLogo.png";
     if (isBundledAppOrigin && isBundledSpriteAsset) return parsed.href;
   } catch {
     // Invalid URLs are rendered as the normal image placeholder.

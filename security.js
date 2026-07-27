@@ -144,7 +144,7 @@ const PUBLIC_STATIC_ROOT_FILES = new Set([
 ]);
 const PUBLIC_STATIC_DIRECTORIES = new Map([
   ["/css/", new Set([".css"])],
-  ["/js/", new Set([".js"])],
+  ["/js/", new Set([".js", ".png", ".webp", ".jpg", ".jpeg", ".svg", ".ico"])],
   ["/favicon/", new Set([".png", ".ico", ".svg", ".webmanifest", ".json"])],
   ["/sprite/", new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"])],
   ["/personna/", new Set([".png", ".jpg", ".jpeg", ".webp"])],

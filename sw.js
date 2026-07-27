@@ -44,7 +44,7 @@ const STATIC_ASSETS = [
   "/js/mobile.js",
   "/manifest.json",
   "/LogoApp.png",
-  "/MainLogo.png",
+  "/js/MainLogo.png",
   "/Favicon/favicon.ico",
   "/Favicon/favicon-32x32.png",
   "/Favicon/favicon-16x16.png",
