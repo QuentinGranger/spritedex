@@ -72,7 +72,7 @@ function getCompareCatalogItems() {
           img: variant.image || (sprite.images && sprite.images[variantType]) || getSpriteImg(sprite.id, variantType),
           rarity: variant.rarity || sprite.rarity,
           color: sprite.color,
-          effect: variant.effect || sprite.effect,
+          effect: (typeof variant.effect === "string" ? variant.effect : null) || sprite.effect,
           seasonId: sprite.seasonId,
           eventId: sprite.eventId,
           releaseStatus,

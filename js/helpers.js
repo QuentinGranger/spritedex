@@ -254,7 +254,7 @@ function getAllItems() {
         rarity: variant.rarity || sprite.rarity,
         img: safeImageUrl(variant.image || getSpriteImg(sprite.id, variantType)),
         color: safeCssColor(sprite.color),
-        effect: variant.effect || sprite.effect,
+        effect: (typeof variant.effect === "string" ? variant.effect : null) || sprite.effect,
         variant: variantType,
         variantBonus: VARIANT_META[variantType]?.bonus ?? t("helpers.variantSpecial")
       };

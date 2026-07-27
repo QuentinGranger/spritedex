@@ -147,6 +147,7 @@ const PUBLIC_STATIC_DIRECTORIES = new Map([
   ["/js/", new Set([".js", ".png", ".webp", ".jpg", ".jpeg", ".svg", ".ico"])],
   ["/favicon/", new Set([".png", ".ico", ".svg", ".webmanifest", ".json"])],
   ["/sprite/", new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"])],
+  ["/images/", new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"])],
   ["/personna/", new Set([".png", ".jpg", ".jpeg", ".webp"])],
   ["/icons/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
   ["/assets/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
