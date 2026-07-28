@@ -467,7 +467,7 @@ function setupEvents() {
     if (typeof copyCurrentMissingList === "function") copyCurrentMissingList();
     else copyMissingList();
   });
-  els.themeToggle.addEventListener("click", toggleTheme);
+  els.themeToggle?.addEventListener("click", toggleTheme);
 
   const missingSearch = document.getElementById("missingSearch");
   const missingSort = document.getElementById("missingSort");
