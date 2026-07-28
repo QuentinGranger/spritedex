@@ -148,6 +148,13 @@ const SPRITES = [
     available: "unknown", added_date: null
   },
   {
+    id: "sprite_vini_jr", name: "Vini Jr. Sprite", rarity: "unknown",
+    color: "rgba(255, 215, 0, 0.46)",
+    effect: "unknown",
+    variants: ["Base"],
+    available: "unknown", added_date: null
+  },
+  {
     id: "sprite_pollo", name: "Pollo Sprite", rarity: "unknown",
     color: "rgba(229, 208, 67, 0.46)",
     effect: "unknown",
@@ -176,6 +183,7 @@ const SPRITE_IMAGES = {
   "sprite_grim":        { Base: "Sprite/Grim/Grim.webp", Gold: "Sprite/Grim/Grim_Gold.webp", Gummy: "Sprite/Grim/Grim_Gummy.webp", Galaxy: "Sprite/Grim/Grim_Galaxy.webp", Cube: "Sprite/Grim/Grim_Cube.webp" },
   "sprite_zero_point":  { Base: "Sprite/ZeroPoint/ZeroPoint.webp", Gold: "Sprite/ZeroPoint/ZeroPoint_Gold.webp", Gummy: "Sprite/ZeroPoint/ZeroPoint_Gummy.webp", Galaxy: "Sprite/ZeroPoint/ZeroPoint_Galaxy.webp" },
   "sprite_burnt_peanut":{ Base: "Sprite/Peannut/BurntPeanut.webp" },
+  "sprite_vini_jr":     { Base: "Sprite/ViniJr/Vini_Jr.webp" },
   "sprite_pollo":       { Base: "Sprite/Pollo/Pollo.webp" }
 };
 
