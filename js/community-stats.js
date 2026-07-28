@@ -22,13 +22,11 @@ const COMMUNITY_DROP_TABLE = [
   { name: "Grim Sprite", rarity: "Mythique", base: "0,09 % ≈ 1/1 111", gold: "0 %*", gummy: "0 %*", galaxy: "0 %*", holofoil: "—" },
   { name: "Zero Point Sprite", rarity: "Mythique", base: "0,00093 % ≈ 1/107 527", gold: "0,000041 %", gummy: "0,000031 %", galaxy: "0,000016 %", holofoil: "—" },
   { name: "Burnt Peanut", rarity: "Mythique", base: "0 %*", gold: "—", gummy: "—", galaxy: "—", holofoil: "—" },
-  { name: "Vini Jr. Sprite", rarity: "Mythique", base: "0 %*", gold: "—", gummy: "—", galaxy: "—", holofoil: "—" }
+  { name: "Vini Jr. Sprite", rarity: "Mythique", base: "0 %*", gold: "—", gummy: "—", galaxy: "—", holofoil: "—" },
+  { name: "Pollo Sprite", rarity: "Mythique", base: "0 %*", gold: "—", gummy: "—", galaxy: "—", holofoil: "—" }
 ];
 
-const UNRELEASED_SPRITES = [
-  { name: "Pollo Sprite", rarity: "Mythique", rate: "0 %", statusKey: "community.statusUnreleased" },
-  { name: "John Wick Sprite", rarity: "Mythique", rate: "0 %", statusKey: "community.statusUnreleasedSimple" }
-];
+const UNRELEASED_SPRITES = [];
 
 const BASE_SPRITE_RANKING = [
   { rank: 1, labelKey: "community.rankRarest", name: "Zero Point Sprite", rate: "0,00093 %" },
