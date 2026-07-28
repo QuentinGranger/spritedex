@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "www");
 
 const FILES = ["index.html", "404.html", "manifest.json", "sw.js", "LogoApp.png", "icon-192.png", "icon-512.png"];
-const DIRS = ["css", "js", "Favicon", "icons", "Sprite"];
+const DIRS = ["css", "js", "Favicon", "icons", "Sprite", "trophet"];
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });

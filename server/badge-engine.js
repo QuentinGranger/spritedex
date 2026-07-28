@@ -4,6 +4,7 @@
 const { pool } = require("./db");
 const eventIdempotency = require("./event-idempotency");
 const pushService = require("../push-service");
+const { getBadgeIconUrl } = require("./passport-badges");
 
 const BADGE_TRIGGERS = Object.freeze({
   "collection.variant_acquired": [
@@ -142,12 +143,14 @@ function resolveBadgeUiCategory(defOrBadge) {
 }
 
 function enrichBadgeProgressItem(def, item) {
+  const code = def.code || item.badgeCode || item.code || "";
   return {
     ...item,
     category: def.category,
     uiCategory: resolveBadgeUiCategory({ ...def, badgeCode: def.code }),
     description: def.description || item.description || "",
-    iconKey: def.iconKey || def.icon_key || item.iconKey || null
+    iconKey: def.iconKey || def.icon_key || item.iconKey || null,
+    iconUrl: getBadgeIconUrl(code)
   };
 }
 

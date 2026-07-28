@@ -158,9 +158,12 @@ function renderPassportContractHtml(data = {}, options = {}) {
     const label = truncateUi(b.label || b.badgeCode || b.code || b.id || "Badge", 40);
     const a11y = formatBadgeAccessibleName(b);
     const unlocked = !b.status || b.status === "unlocked";
+    const iconHtml = b.iconUrl
+      ? `<img class="collector-passport__badge-icon" src="${escapeHtml(b.iconUrl)}" alt="" loading="lazy" aria-hidden="true">`
+      : `<span class="collector-passport__badge-icon" aria-hidden="true">${escapeHtml(label.slice(0, 1).toUpperCase())}</span>`;
     return `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}"`
       + ` tabindex="0" role="listitem" aria-label="${escapeHtml(a11y)}" data-badge-status="${unlocked ? "unlocked" : "locked"}">`
-      + `<span class="collector-passport__badge-icon" aria-hidden="true">${escapeHtml(label.slice(0, 1).toUpperCase())}</span>`
+      + iconHtml
       + `<strong>${escapeHtml(label)}</strong>`
       + `<span class="collector-passport__badge-status">${escapeHtml(unlocked ? _pt("passport.badgeUnlocked") : _pt("passport.badgeLocked"))}</span>`
       + `<small class="collector-passport__badge-declared">${escapeHtml(_pt("passport.badgeDeclared"))}</small></article>`;

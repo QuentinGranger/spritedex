@@ -1835,7 +1835,7 @@
 .account-badge-preview > p { margin: 20px auto; color: rgba(205,217,255,.45); font-size: .72rem; }
 .account-badge-preview__item { display: grid; gap: 5px; justify-items: center; width: 52px; text-align: center; }
 .account-badge-preview__item > span { width: 42px; height: 48px; display: grid; place-items: center; clip-path: polygon(50% 0, 92% 23%, 92% 76%, 50% 100%, 8% 76%, 8% 23%); border: 1px solid #22d6ff; background: linear-gradient(135deg, rgba(0,211,255,.35), rgba(44,77,211,.5)); color: #effbff; font: 800 1.1rem 'Rajdhani', sans-serif; text-shadow: 0 0 13px #00dfff; }
-.account-badge-preview__item small { display: -webkit-box; overflow: hidden; color: rgba(221,230,255,.75); font-size: .58rem; line-height: 1.05; text-align: center; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.account-badge-preview__item small { display: -webkit-box; overflow: hidden; color: rgba(221,230,255,.75); font-size: .58rem; line-height: 1.05; text-align: center; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
 .account-badge-preview__more { width: 48px; height: 54px; display: grid; place-items: center; border: 1px dashed rgba(137,159,255,.35); border-radius: 10px; color: #e2e9ff; font: 800 .95rem 'Rajdhani', sans-serif; }
 
 .account-quick-preferences { display: grid; gap: 3px; margin-bottom: 9px; }
@@ -2026,4 +2026,20 @@
   font-size: .6rem;
   line-height: 1.12;
 }
+
+.collector-passport__badge-icon[src] {
+  object-fit: contain;
+  padding: 5px;
+  background: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+}
+
+.collector-passport__badge-card--locked .collector-passport__badge-icon[src] { opacity: .64; }
+
+.account-badge-preview__item > span > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
 }

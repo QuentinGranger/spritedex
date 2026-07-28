@@ -152,6 +152,7 @@ const PUBLIC_STATIC_DIRECTORIES = new Map([
   ["/icons/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
   ["/assets/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
   ["/logo/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
+  ["/trophet/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
 ]);
 
 function normalizeStaticPath(requestPath) {

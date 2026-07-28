@@ -2,6 +2,8 @@
 
 // Étapes 35–40 — badge_definitions + user_badges (INTEGER user ids).
 const { pool } = require("./db");
+const fs = require("fs");
+const path = require("path");
 
 const VERIFICATION_STATUSES = Object.freeze([
   "declared",
@@ -83,6 +85,53 @@ const BADGE_COPY_EN = Object.freeze({
 
 /** Fixed Early Collector cutoff — never change retroactively once seeded (Étapes 47–48). */
 const EARLY_COLLECTOR_BEFORE = process.env.EARLY_COLLECTOR_BEFORE || "2026-10-01T00:00:00.000Z";
+
+const TROPHET_DIR = path.join(__dirname, "..", "trophet");
+
+function normalizeForMatch(s) {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+const TROPHY_FILENAME_TO_CODE = Object.freeze({
+  archivistepng: "archivist",
+  collection25png: "collection_25",
+  collection50png: "collection_50",
+  collection75png: "collection_75",
+  collection100png: "collection_100",
+  collectioncomplementairepng: "complementary_collection",
+  collectionfiablepng: "reliable_collection",
+  earlycollectorpng: "early_collector",
+  espritescouadepng: "squad_member",
+  explorateurpng: "explorer",
+  evenementcompletepng: "event_completed",
+  fondateurdesquadpng: "squad_founder",
+  premierecollectionpng: "first_collection",
+  socialpng: "social",
+  unevariantedechaqueraretepng: "all_rarities"
+});
+
+const TROPHY_IMAGE_MAP = (() => {
+  const map = {};
+  try {
+    const files = fs.readdirSync(TROPHET_DIR).filter((f) => /\.(png|jpg|jpeg|webp|svg|ico)$/i.test(f));
+    for (const f of files) {
+      const key = normalizeForMatch(f);
+      const code = TROPHY_FILENAME_TO_CODE[key];
+      if (code) map[code] = "trophet/" + encodeURIComponent(f);
+    }
+  } catch (err) {
+    // trophet directory may be missing in tests / CI
+  }
+  return Object.freeze(map);
+})();
+
+function getBadgeIconUrl(code) {
+  return TROPHY_IMAGE_MAP[code] || null;
+}
 
 const BADGE_SEED = [
   {
@@ -527,6 +576,7 @@ async function listBadgeDefinitions(db = pool) {
     nameKey: row.name_key,
     descriptionKey: row.description_key,
     iconKey: row.icon_key,
+    iconUrl: getBadgeIconUrl(row.code),
     label: resolveBadgeCopy(row.name_key),
     description: resolveBadgeCopy(row.description_key),
     // Back-compat for evaluateBadgeCondition callers.
@@ -1161,6 +1211,7 @@ async function listUserBadges(userId, db = pool) {
       description: resolveBadgeCopy(row.description_key),
       category: row.category,
       iconKey: row.icon_key,
+      iconUrl: getBadgeIconUrl(row.code),
       ruleType: row.rule_type,
       ruleConfig: row.rule_config || {},
       unlockedAt: row.unlocked_at,
@@ -1211,5 +1262,6 @@ module.exports = {
   evaluateAllRaritiesOwned,
   awardEventCompletedBadges,
   evaluateAndAwardComplementaryBadge,
-  listUserBadges
+  listUserBadges,
+  getBadgeIconUrl
 };

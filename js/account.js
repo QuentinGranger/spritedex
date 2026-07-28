@@ -274,7 +274,15 @@ function setupAccountPanel() {
           card.dataset.badgeCategory = badge.uiCategory || "progression";
           card.title = badge.label || badge.badgeCode || "Badge";
           const icon = document.createElement("span");
-          icon.textContent = String(badge.label || badge.badgeCode || "?").trim().slice(0, 1).toUpperCase();
+          if (badge.iconUrl) {
+            const img = document.createElement("img");
+            img.src = badge.iconUrl;
+            img.alt = "";
+            img.loading = "lazy";
+            icon.append(img);
+          } else {
+            icon.textContent = String(badge.label || badge.badgeCode || "?").trim().slice(0, 1).toUpperCase();
+          }
           const label = document.createElement("small");
           label.textContent = badge.label || badge.badgeCode || "Badge";
           card.append(icon, label);
@@ -709,10 +717,13 @@ function setupAccountPanel() {
         ? `<button type="button" class="collector-passport__pin" data-passport-action="pin-badge" data-badge-id="${escapeHtml(String(b.badgeId))}" aria-pressed="${isFeatured ? "true" : "false"}">${isFeatured ? t("account.badge.pinned") : t("account.badge.pin")}</button>`
         : "";
       const iconChar = escapeHtml(String(b.label || b.badgeCode || "?").slice(0, 1).toUpperCase());
+      const iconHtml = b.iconUrl
+        ? `<img class="collector-passport__badge-icon" src="${escapeHtml(b.iconUrl)}" alt="" loading="lazy" aria-hidden="true">`
+        : `<div class="collector-passport__badge-icon" aria-hidden="true">${iconChar}</div>`;
       const a11yName = formatBadgeAccessibleName(b);
       const statusLabel = unlocked ? t("account.badge.unlocked") : t("account.badge.locked");
       return `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}${isFeatured ? " collector-passport__badge-card--featured" : ""}" tabindex="0" role="listitem" aria-label="${escapeHtml(a11yName)}" data-passport-action="badge-open" data-badge-code="${escapeHtml(b.badgeCode || "")}" data-badge-status="${unlocked ? "unlocked" : "locked"}" data-badge-category="${escapeHtml(uiCat)}">
-        <div class="collector-passport__badge-icon" aria-hidden="true">${iconChar}</div>
+        ${iconHtml}
         <div class="collector-passport__badge-body">
           <strong>${escapeHtml(b.label || b.badgeCode || b.id)}</strong>
           <span class="collector-passport__badge-status">${statusLabel}${isFeatured ? t("account.badge.pinnedSuffix") : ""}</span>
