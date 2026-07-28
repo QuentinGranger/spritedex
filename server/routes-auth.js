@@ -474,9 +474,10 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
       if (!inserted) return sendResult("authError=server_error");
       userRow = inserted;
     } else {
-      // Update avatar if empty
-      if (!userRow.rows[0].avatar_url && avatarUrl) {
+      // Always refresh the OAuth avatar URL — provider hashes change over time
+      if (avatarUrl && avatarUrl !== userRow.rows[0].avatar_url) {
         await pool.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [avatarUrl, userRow.rows[0].id]);
+        userRow.rows[0].avatar_url = avatarUrl;
       }
       // Mark email as verified (OAuth emails are pre-verified)
       await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [userRow.rows[0].id]);

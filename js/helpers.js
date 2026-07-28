@@ -107,6 +107,11 @@ function safeImageUrl(value) {
       || parsed.pathname === "/MainLogo.png"
       || parsed.pathname === "/js/MainLogo.png";
     if (isBundledAppOrigin && isBundledSpriteAsset) return parsed.href;
+    // Avatar assets served from the same web origin (HTTP or HTTPS).
+    const isSameWebOrigin = parsed.protocol === current.protocol && parsed.host === current.host
+      && (current.protocol === "http:" || current.protocol === "https:");
+    const isAvatarAsset = parsed.pathname.startsWith("/Personna/") || parsed.pathname.startsWith("/personna/");
+    if (isSameWebOrigin && isAvatarAsset) return parsed.href;
   } catch {
     // Invalid URLs are rendered as the normal image placeholder.
   }
