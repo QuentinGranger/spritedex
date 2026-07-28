@@ -29,6 +29,7 @@
   background:
     linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
     radial-gradient(ellipse at 50% 0%, var(--card-color, rgba(141, 124, 255, 0.35)), transparent 70%),
+    url("../Sprite/card_background.png") center / cover no-repeat,
     var(--surface);
   box-shadow:
     var(--shadow),
