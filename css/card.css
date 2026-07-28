@@ -29,7 +29,6 @@
   background:
     linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
     radial-gradient(ellipse at 50% 0%, var(--card-color, rgba(141, 124, 255, 0.35)), transparent 70%),
-    url("../Sprite/card_background.png") center / cover no-repeat,
     var(--surface);
   box-shadow:
     var(--shadow),
@@ -49,13 +48,10 @@
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(160deg, rgba(0, 225, 255, 0.3), transparent 40%, transparent 60%, rgba(141, 124, 255, 0.3));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  background: url("../Sprite/card_background.png") center / cover no-repeat;
+  opacity: 0.5;
   pointer-events: none;
 }
 
