@@ -134,6 +134,7 @@ const PUBLIC_STATIC_ROOT_FILES = new Set([
   "/manifest.webmanifest",
   "/sw.js",
   "/logoapp.png",
+  "/logobackoffice.png",
   "/icon-192.png",
   "/icon-512.png",
   "/icon.svg",

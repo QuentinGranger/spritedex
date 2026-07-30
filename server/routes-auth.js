@@ -191,7 +191,9 @@ app.post("/api/auth/login", security.loginLimiter, security.validateBody(securit
   const { email, password } = req.validatedBody;
   try {
     const result = await pool.query(
-      "SELECT id, username, email_verified, password_hash, password_salt, password_iterations, avatar_url, privacy, created_at, suspended_until FROM users WHERE email = $1 AND deleted_at IS NULL",
+      `SELECT id, username, email_verified, password_hash, password_salt, password_iterations,
+              avatar_url, privacy, created_at, suspended_until, suspension_source
+       FROM users WHERE email = $1 AND deleted_at IS NULL`,
       [email.toLowerCase()]
     );
     // Same generic error whether the email is unknown or the password is wrong,
@@ -227,6 +229,25 @@ app.post("/api/auth/login", security.loginLimiter, security.validateBody(securit
     if (!passwordMatches) {
       secLog.logSecurityEvent(pool, { req, email, event: "login", status: "failed", details: { reason: "wrong_password" } });
       return genericError();
+    }
+    const adminSuspended = user.suspension_source === "admin"
+      && user.suspended_until
+      && new Date(user.suspended_until) > new Date();
+    if (adminSuspended) {
+      secLog.logSecurityEvent(pool, {
+        req,
+        userId: user.id,
+        email,
+        event: "login",
+        status: "blocked",
+        details: { reason: "admin_suspension", suspendedUntil: user.suspended_until }
+      });
+      return res.status(403).json({
+        error: "Compte suspendu par un administrateur",
+        suspended: true,
+        suspensionSource: "admin",
+        suspendedUntil: user.suspended_until
+      });
     }
     secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "login", status: "ok", details: { method: "email" } });
     // Transparent upgrade: if this account was hashed with a weaker (legacy)
@@ -517,12 +538,31 @@ app.post("/api/auth/oauth/exchange", security.oauthExchangeLimiter, async (req, 
       return res.status(401).json({ error: "Réponse OAuth expirée ou déjà utilisée" });
     }
     const userResult = await pool.query(
-      `SELECT id, username, avatar_url, privacy, email_verified, created_at, suspended_until
+      `SELECT id, username, avatar_url, privacy, email_verified, created_at,
+              suspended_until, suspension_source
        FROM users WHERE id = $1 AND deleted_at IS NULL`,
       [claimed.rows[0].user_id]
     );
     if (!userResult.rows.length) return res.status(401).json({ error: "Session indisponible" });
     const user = userResult.rows[0];
+    const adminSuspended = user.suspension_source === "admin"
+      && user.suspended_until
+      && new Date(user.suspended_until) > new Date();
+    if (adminSuspended) {
+      secLog.logSecurityEvent(pool, {
+        req,
+        userId: user.id,
+        event: "login",
+        status: "blocked",
+        details: { method: "oauth", reason: "admin_suspension", suspendedUntil: user.suspended_until }
+      });
+      return res.status(403).json({
+        error: "Compte suspendu par un administrateur",
+        suspended: true,
+        suspensionSource: "admin",
+        suspendedUntil: user.suspended_until
+      });
+    }
     const token = await createSession(user.id);
     pool.query("UPDATE users SET last_active_at = NOW() WHERE id = $1", [user.id]).catch(() => {});
     const isSuspended = user.suspended_until && new Date(user.suspended_until) > new Date();
@@ -570,7 +610,8 @@ app.get("/api/auth/me", async (req, res) => {
   if (!tokenHash) return res.status(401).json({ error: "Session expirée" });
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.avatar_url, u.privacy, u.email_verified, u.created_at, u.last_active_at, u.suspended_until
+      `SELECT u.id, u.username, u.avatar_url, u.privacy, u.email_verified, u.created_at,
+              u.last_active_at, u.suspended_until, u.suspension_source
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token = $1 AND s.expires_at > NOW() AND u.deleted_at IS NULL`,
       [tokenHash]
@@ -585,7 +626,12 @@ app.get("/api/auth/me", async (req, res) => {
     rememberPreferredLanguage(pool, result.rows[0].id, req.get("accept-language")).catch(() => {});
     const row = result.rows[0];
     const isSuspended = row.suspended_until && new Date(row.suspended_until) > new Date();
-    res.json({ ...row, suspended: !!isSuspended, suspendedUntil: isSuspended ? row.suspended_until : null });
+    res.json({
+      ...row,
+      suspended: !!isSuspended,
+      suspensionSource: isSuspended ? row.suspension_source : null,
+      suspendedUntil: isSuspended ? row.suspended_until : null
+    });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }

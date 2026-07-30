@@ -28,6 +28,7 @@ require("./server/routes-squad-invitations");
 require("./server/routes-squad-wishlist");
 require("./server/routes-goals");
 require("./server/routes-admin");
+require("./server/routes-admin-operations");
 require("./server/routes-sprite-graph");
 require("./server/routes-sprite-graph-admin");
 require("./server/notification-events");

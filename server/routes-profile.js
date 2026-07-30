@@ -700,10 +700,21 @@ app.post("/api/profile/:userId/suspend", security.validateBody(security.schemas.
   const { durationMinutes } = req.validatedBody || {};
   const until = new Date(Date.now() + (durationMinutes || 60) * 60 * 1000);
   try {
-    await pool.query(
-      "UPDATE users SET suspended_at = NOW(), suspended_until = $1 WHERE id = $2 AND deleted_at IS NULL",
+    const result = await pool.query(
+      `UPDATE users
+       SET suspended_at = NOW(),
+           suspended_until = $1,
+           suspension_source = 'self',
+           suspension_reason = NULL
+       WHERE id = $2
+         AND deleted_at IS NULL
+         AND (suspension_source IS DISTINCT FROM 'admin' OR suspended_until <= NOW())
+       RETURNING id`,
       [until.toISOString(), userId]
     );
+    if (!result.rows.length) {
+      return res.status(403).json({ error: "Cette suspension a été appliquée par un administrateur" });
+    }
     revokeUserSockets(userId, "Account suspended");
     invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_suspended", status: "ok", details: { until } });
@@ -718,10 +729,21 @@ app.post("/api/profile/:userId/unsuspend", async (req, res) => {
   const { userId } = req.params;
   if (!(await requireSameUser(req, res, userId))) return;
   try {
-    await pool.query(
-      "UPDATE users SET suspended_at = NULL, suspended_until = NULL WHERE id = $1 AND deleted_at IS NULL",
+    const result = await pool.query(
+      `UPDATE users
+       SET suspended_at = NULL,
+           suspended_until = NULL,
+           suspension_source = NULL,
+           suspension_reason = NULL
+       WHERE id = $1
+         AND deleted_at IS NULL
+         AND (suspension_source IS DISTINCT FROM 'admin' OR suspended_until <= NOW())
+       RETURNING id`,
       [userId]
     );
+    if (!result.rows.length) {
+      return res.status(403).json({ error: "Cette suspension ne peut être levée que par un administrateur" });
+    }
     invalidateSquadAnalysisCacheForUser(userId);
     secLog.logSecurityEvent(pool, { req, userId, event: "account_unsuspended", status: "ok" });
     res.json({ ok: true });

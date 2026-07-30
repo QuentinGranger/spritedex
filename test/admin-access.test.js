@@ -84,7 +84,9 @@ async function main() {
 
     const adminPage = await fetch(`${base}/admin`, { headers: { Cookie: cookie } });
     assert.strictEqual(adminPage.status, 200);
-    assert.match(await adminPage.text(), /Sprite Graph, en un coup d’œil/);
+    const adminHtml = await adminPage.text();
+    assert.match(adminHtml, /Vue d’ensemble/);
+    assert.match(adminHtml, /data-admin-tab="privacy"/);
 
     const logout = await fetch(`${base}/api/admin/logout`, { method: "POST", headers: { Cookie: cookie } });
     assert.strictEqual(logout.status, 204);

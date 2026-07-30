@@ -25,6 +25,7 @@
     "test:mobile-swipe": "node test/mobile-swipe.e2e.test.js",
     "test:client-cache": "node test/client-cache.test.js",
     "test:admin": "node test/admin-access.test.js",
+    "test:backoffice": "node test/admin-backoffice.test.js",
     "admin:password": "node scripts/admin-password.js",
     "admin": "node scripts/admin-open.js",
     "sprite-graph:status": "node scripts/sprite-graph-status.js",

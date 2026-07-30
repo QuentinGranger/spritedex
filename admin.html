@@ -11,71 +11,172 @@
   <body class="admin-page">
     <header class="admin-topbar">
       <a class="admin-brand" href="/" aria-label="SPRITE-INDEX">
-        <span class="admin-brand__mark">✦</span>
-        <span>SPRITE-INDEX</span>
-        <b data-copy="backoffice">BACKOFFICE</b>
+        <img class="admin-brand__logo" src="/LogoBackoffice.png" alt="Sprite-Index Backoffice" />
       </a>
       <div class="admin-topbar__actions">
-        <span class="admin-session"><i></i><span data-copy="session">Session terminal sécurisée</span></span>
-        <button class="admin-button admin-button--quiet" id="adminLogout" type="button" data-copy="logout">Fermer la session</button>
+        <span class="admin-session"><i></i><span data-admin-copy="session">Session terminal sécurisée</span></span>
+        <button class="admin-button admin-button--quiet" id="adminLogout" type="button" data-admin-copy="logout">Fermer la session</button>
       </div>
     </header>
 
-    <main class="admin-shell">
-      <section class="admin-hero" aria-labelledby="adminTitle">
-        <div>
-          <p class="admin-eyebrow" data-copy="overviewEyebrow">CONTRÔLE OPÉRATIONNEL</p>
-          <h1 id="adminTitle" data-copy="overviewTitle">Sprite Graph, en un coup d’œil.</h1>
-          <p data-copy="overviewLead">Surveillez l’ingestion, les consolidations et la diffusion des métriques publiques.</p>
+    <div class="admin-app-shell">
+      <aside class="admin-sidebar" aria-label="Navigation du backoffice">
+        <p class="admin-sidebar__label" data-admin-copy="navigation">NAVIGATION</p>
+        <nav class="admin-nav" id="adminNav">
+          <button class="admin-nav__item is-active" type="button" data-admin-tab="overview"><span>◈</span><b data-admin-copy="navOverview">Vue d’ensemble</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="players"><span>♙</span><b data-admin-copy="navPlayers">Joueurs & modération</b><em id="adminReportsBadge" hidden></em></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="catalog"><span>✦</span><b data-admin-copy="navCatalog">Catalogue</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="events"><span>◷</span><b data-admin-copy="navEvents">Événements & actualités</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="collections"><span>▦</span><b data-admin-copy="navCollections">Collections & cohérence</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="social"><span>⌘</span><b data-admin-copy="navSocial">Social & squads</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="notifications"><span>◉</span><b data-admin-copy="navNotifications">Notifications</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="intelligence"><span>⌁</span><b data-admin-copy="navIntelligence">Intelligence & Graph</b></button>
+        </nav>
+        <p class="admin-sidebar__label admin-sidebar__label--advanced" data-admin-copy="advanced">AVANCÉ</p>
+        <nav class="admin-nav">
+          <button class="admin-nav__item" type="button" data-admin-tab="passports"><span>▣</span><b data-admin-copy="navPassports">Passeports & badges</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="privacy"><span>◌</span><b data-admin-copy="navPrivacy">Confidentialité & audit</b></button>
+        </nav>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-page-header">
+          <div>
+            <p class="admin-eyebrow" id="adminEyebrow">CONTRÔLE OPÉRATIONNEL</p>
+            <h1 id="adminTitle">Vue d’ensemble</h1>
+            <p id="adminLead">La santé de Sprite-Index, les alertes et les prochaines actions utiles.</p>
+          </div>
+          <div class="admin-page-header__actions">
+            <span id="adminUpdated" class="admin-updated" aria-live="polite"></span>
+            <button class="admin-button" id="adminRefresh" type="button" data-admin-copy="refresh">Actualiser</button>
+          </div>
+        </header>
+        <p class="admin-alert" id="adminAlert" hidden role="alert"></p>
+        <p class="admin-notice" id="adminNotice" hidden role="status" aria-live="polite"></p>
+
+        <section class="admin-tab is-active" data-admin-panel="overview">
+          <div class="admin-kpis admin-kpis--overview" id="overviewKpis"></div>
+          <div class="admin-grid admin-grid--dashboard">
+            <section class="admin-panel admin-panel--wide">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">À TRAITER</p><h2 data-admin-copy="overviewActionTitle">Priorités opérationnelles</h2></div></header>
+              <div class="admin-action-list" id="overviewActions"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">TEMPS RÉEL</p><h2 data-admin-copy="overviewRealtime">Connexions en direct</h2></div></header>
+              <div class="admin-health" id="overviewRealtime"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">INFRASTRUCTURE</p><h2 data-admin-copy="overviewInfrastructure">API & base de données</h2></div></header>
+              <div class="admin-health" id="overviewInfrastructure"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="players" hidden>
+          <div class="admin-section-toolbar">
+            <div class="admin-search"><span aria-hidden="true">⌕</span><input id="playerSearch" type="search" placeholder="Rechercher un pseudo" data-admin-placeholder="playerSearch" /></div>
+            <select class="admin-select" id="playerState"><option value="all">Tous les comptes</option><option value="reported">Signalés</option><option value="suspended">Suspendus</option><option value="new">Inscrits cette semaine</option></select>
+            <button class="admin-button" id="playerSearchButton" type="button" data-admin-copy="search">Rechercher</button>
+          </div>
+          <div class="admin-split">
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">COMPTES</p><h2 data-admin-copy="playersTitle">Joueurs</h2></div><span id="playersCount" class="admin-panel__meta"></span></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Pseudo</th><th>Collection</th><th>Activité</th><th>État</th><th></th></tr></thead><tbody id="playersList"></tbody></table></div><div class="admin-pagination" id="playersPagination"></div></section>
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">SÛRETÉ</p><h2 data-admin-copy="reportsTitle">Signalements ouverts</h2></div></header><div class="admin-report-list" id="reportsList"></div></section>
+          </div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="catalog" hidden>
+          <div class="admin-section-toolbar"><div class="admin-search"><span aria-hidden="true">⌕</span><input id="catalogSearch" type="search" placeholder="Sprite ou identifiant" data-admin-placeholder="catalogSearch" /></div><select class="admin-select" id="catalogState"><option value="all">Tout le catalogue</option><option value="review">À vérifier</option><option value="unreleased">Non publiés</option></select><button class="admin-button" id="catalogSearchButton" type="button" data-admin-copy="search">Rechercher</button></div>
+          <div class="admin-catalog-layout"><section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">RÉFÉRENTIEL</p><h2 data-admin-copy="catalogTitle">Sprites & variantes</h2></div><span id="catalogCount" class="admin-panel__meta"></span></header><div class="admin-catalog-list" id="catalogList"></div><div class="admin-pagination" id="catalogPagination"></div></section><aside class="admin-panel admin-editor" id="catalogEditor"><p class="admin-empty" data-admin-copy="catalogPick">Sélectionnez un sprite pour contrôler ses données, variantes, disponibilités et historique.</p></aside></div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="events" hidden>
+          <div class="admin-split">
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">CALENDRIER</p><h2 data-admin-copy="eventsTitle">Événements</h2></div><button class="admin-button admin-button--quiet" id="createEvent" type="button" data-admin-copy="create">Créer</button></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Événement</th><th>Fin</th><th>État</th><th></th></tr></thead><tbody id="eventsList"></tbody></table></div></section>
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">ÉDITORIAL</p><h2 data-admin-copy="newsTitle">Actualités</h2></div><button class="admin-button admin-button--quiet" id="createNews" type="button" data-admin-copy="create">Créer</button></header><div class="admin-news-list" id="newsList"></div></section>
+          </div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="collections" hidden>
+          <div class="admin-kpis" id="integrityKpis"></div>
+          <div class="admin-grid"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">RÉPARATION SÛRE</p><h2 data-admin-copy="repairTitle">Références de sprites</h2><p data-admin-copy="repairLead">La correction ne touche jamais aux statuts, priorités ni notes des joueurs.</p></div></header><button class="admin-button" id="repairSpriteReferences" type="button" data-admin-copy="repair">Corriger les références</button></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">RECENT</p><h2 data-admin-copy="migrationTitle">Erreurs de migration</h2></div></header><div class="admin-error-list" id="migrationErrors"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">PASSEPORTS</p><h2 data-admin-copy="integrityQueueTitle">File de recalcul</h2></div></header><div class="admin-status-list" id="integrityPassportQueue"></div></section></div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="social" hidden>
+          <div class="admin-kpis" id="socialKpis"></div>
+          <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">ESCOUADES</p><h2 data-admin-copy="squadsTitle">Santé des squads</h2></div></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Squad</th><th>Membres</th><th>Souhaits</th><th>Activité</th><th>Accès</th></tr></thead><tbody id="squadsList"></tbody></table></div><div class="admin-activity-chips" id="socialActivity"></div></section>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="notifications" hidden>
+          <div class="admin-kpis" id="notificationKpis"></div>
+          <div class="admin-split"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">DISTRIBUTION</p><h2 data-admin-copy="deliveriesTitle">Canaux de livraison</h2></div><button class="admin-button admin-button--quiet" id="processNotifications" type="button" data-admin-copy="process">Traiter la file</button></header><div class="admin-status-list" id="notificationDeliveries"></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">ÉCHECS</p><h2 data-admin-copy="failedJobsTitle">Jobs à relancer</h2></div></header><div class="admin-failure-list" id="failedNotificationJobs"></div></section></div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="intelligence" hidden>
+          <div class="admin-kpis" id="graphKpis"></div>
+          <div class="admin-grid"><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">ACTIVITÉ</p><h2 data-admin-copy="graphActivityTitle">Flux Sprite Graph</h2></div><span id="adminConsolidation" class="admin-panel__meta">—</span></header><div class="admin-events" id="adminEvents"></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">SANTÉ</p><h2 data-admin-copy="graphHealthTitle">Pipeline</h2></div></header><dl class="admin-health" id="adminHealth"></dl></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">VALIDATION</p><h2 data-admin-copy="graphReadinessTitle">État de préparation</h2></div><span class="admin-readiness" id="adminReadinessStatus">—</span></header><ul class="admin-readiness-list" id="adminReadiness"></ul></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">GARDE-FOUS</p><h2 data-admin-copy="graphMetricsTitle">Métriques publiques</h2><p data-admin-copy="graphMetricsLead">Suspendez temporairement une métrique en cas de doute. Une justification est demandée.</p></div><button class="admin-button admin-button--quiet" id="adminExport" type="button" data-admin-copy="export">Exporter les agrégats</button></header><div class="admin-metrics" id="adminMetrics"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">TRAÇABILITÉ</p><h2 data-admin-copy="graphFormulasTitle">Versions de formules</h2></div></header><div class="admin-formulas" id="adminFormulas"></div></section></div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="passports" hidden>
+          <div class="admin-kpis" id="passportKpis"></div>
+          <div class="admin-grid"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">MAINTENANCE</p><h2 data-admin-copy="passportRecalcTitle">Recalcul des passeports</h2><p data-admin-copy="passportRecalcLead">Les recalculs sont placés dans une file, sans notification aux joueurs.</p></div></header><div class="admin-inline-actions"><button class="admin-button" data-passport-scope="stale" type="button" data-admin-copy="recalcStale">Recalculer les obsolètes</button><button class="admin-button admin-button--quiet" data-passport-scope="all" type="button" data-admin-copy="recalcAll">Planifier tout</button></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">VISIBILITÉ</p><h2 data-admin-copy="passportVisibilityTitle">Partage des passeports</h2></div></header><div class="admin-status-list" id="passportVisibility"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">BADGES</p><h2 data-admin-copy="passportBadgesTitle">Badges les plus obtenus</h2></div></header><div class="admin-status-list" id="passportAchievements"></div></section></div>
+        </section>
+
+        <section class="admin-tab" data-admin-panel="privacy" hidden>
+          <div class="admin-kpis" id="privacyKpis"></div>
+          <div class="admin-split"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">CONSENTEMENT</p><h2 data-admin-copy="consentTitle">Versions acceptées</h2></div></header><div class="admin-status-list" id="privacyConsent"></div><p class="admin-note" data-admin-copy="rolesNote">Accès actuel : une session terminal protégée. Les rôles nominatifs pourront s’ajouter sans exposer les comptes joueurs.</p></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">LIENS</p><h2 data-admin-copy="sharingTitle">Capacités actives</h2></div></header><div class="admin-status-list" id="privacySharing"></div></section><section class="admin-panel admin-panel--wide admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">JOURNAL</p><h2 data-admin-copy="auditTitle">Actions administratives</h2></div></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Action</th><th>Cible</th><th>Justification</th><th>Date</th></tr></thead><tbody id="auditList"></tbody></table></div></section></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="admin-dialog" id="playerSuspensionDialog" aria-labelledby="playerSuspensionTitle">
+      <form class="admin-dialog__surface" id="playerSuspensionForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="playerSuspensionEyebrow">SÛRETÉ JOUEUR</p>
+            <h2 id="playerSuspensionTitle">Suspendre un compte</h2>
+            <p id="playerSuspensionSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="playerSuspensionClose" type="button" aria-label="Fermer">×</button>
+        </header>
+
+        <div class="admin-dialog__warning" id="playerSuspensionImpact">
+          La session du joueur sera immédiatement révoquée et toute nouvelle connexion sera bloquée jusqu’à la fin de la suspension.
         </div>
-        <div class="admin-hero__actions">
-          <span id="adminUpdated" class="admin-updated" aria-live="polite"></span>
-          <button class="admin-button" id="adminRefresh" type="button" data-copy="refresh">Actualiser</button>
+
+        <div class="admin-dialog__fields">
+          <label class="admin-field" id="playerSuspensionDurationField">
+            <span>Durée</span>
+            <select id="playerSuspensionDuration">
+              <option value="1">1 heure</option>
+              <option value="24" selected>24 heures</option>
+              <option value="168">7 jours</option>
+              <option value="720">30 jours</option>
+              <option value="custom">Date personnalisée</option>
+            </select>
+          </label>
+          <label class="admin-field" id="playerSuspensionCustomField" hidden>
+            <span>Fin de la suspension</span>
+            <input id="playerSuspensionUntil" type="datetime-local" />
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span id="playerSuspensionReasonLabel">Justification obligatoire</span>
+            <textarea id="playerSuspensionReason" maxlength="1000" required></textarea>
+          </label>
         </div>
-      </section>
 
-      <p class="admin-alert" id="adminAlert" hidden role="alert"></p>
-
-      <section class="admin-kpis" aria-label="Indicateurs opérationnels" data-copy-aria="metricOverview">
-        <article class="admin-kpi"><span data-copy="events24h">Événements · 24 h</span><strong id="kpiEvents">—</strong><small data-copy="eventsHint">Événements Graph enregistrés</small></article>
-        <article class="admin-kpi"><span data-copy="ingestion">Ingestion</span><strong id="kpiIngestion">—</strong><small data-copy="ingestionHint">Événements par minute</small></article>
-        <article class="admin-kpi"><span data-copy="workerLag">Retard du worker</span><strong id="kpiLag">—</strong><small data-copy="workerHint">Plus ancien élément en attente</small></article>
-        <article class="admin-kpi admin-kpi--attention"><span data-copy="rejected">Rejets · 24 h</span><strong id="kpiRejected">—</strong><small data-copy="rejectedHint">Erreurs et messages en échec</small></article>
-      </section>
-
-      <div class="admin-grid">
-        <section class="admin-panel admin-panel--wide" aria-labelledby="activityTitle">
-          <header class="admin-panel__header">
-            <div><p class="admin-eyebrow" data-copy="activityEyebrow">ACTIVITÉ</p><h2 id="activityTitle" data-copy="activityTitle">Flux des dernières 24 heures</h2></div>
-            <span id="adminConsolidation" class="admin-panel__meta">—</span>
-          </header>
-          <div class="admin-events" id="adminEvents" aria-live="polite"><p class="admin-empty" data-copy="loadingData">Chargement des données…</p></div>
+        <section class="admin-dialog__history" aria-labelledby="playerSuspensionHistoryTitle">
+          <h3 id="playerSuspensionHistoryTitle">Historique des décisions</h3>
+          <div id="playerSuspensionHistory" aria-live="polite"></div>
         </section>
 
-        <section class="admin-panel" aria-labelledby="healthTitle">
-          <header class="admin-panel__header"><div><p class="admin-eyebrow" data-copy="healthEyebrow">SANTÉ</p><h2 id="healthTitle" data-copy="healthTitle">Pipeline</h2></div></header>
-          <dl class="admin-health" id="adminHealth"></dl>
-        </section>
+        <p class="admin-dialog__error" id="playerSuspensionError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="playerSuspensionCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--danger" id="playerSuspensionSubmit" type="submit">Confirmer la suspension</button>
+        </footer>
+      </form>
+    </dialog>
 
-        <section class="admin-panel admin-panel--wide" aria-labelledby="metricsTitle">
-          <header class="admin-panel__header">
-            <div><p class="admin-eyebrow" data-copy="publicEyebrow">GARDE-FOUS</p><h2 id="metricsTitle" data-copy="metricsTitle">Métriques publiques</h2><p data-copy="metricsLead">Suspendez temporairement une métrique en cas de doute. Une justification est demandée.</p></div>
-            <button class="admin-button admin-button--quiet" id="adminExport" type="button" data-copy="export">Exporter les agrégats</button>
-          </header>
-          <div class="admin-metrics" id="adminMetrics"></div>
-        </section>
-
-        <section class="admin-panel" aria-labelledby="readinessTitle">
-          <header class="admin-panel__header"><div><p class="admin-eyebrow" data-copy="readinessEyebrow">VALIDATION</p><h2 id="readinessTitle" data-copy="readinessTitle">État de préparation</h2></div><span class="admin-readiness" id="adminReadinessStatus">—</span></header>
-          <ul class="admin-readiness-list" id="adminReadiness"></ul>
-        </section>
-
-        <section class="admin-panel admin-panel--wide" aria-labelledby="formulaTitle">
-          <header class="admin-panel__header"><div><p class="admin-eyebrow" data-copy="formulaEyebrow">TRAÇABILITÉ</p><h2 id="formulaTitle" data-copy="formulaTitle">Versions de formules</h2></div></header>
-          <div class="admin-formulas" id="adminFormulas"></div>
-        </section>
-      </div>
-    </main>
     <script src="/js/admin.js"></script>
   </body>
 </html>

@@ -269,6 +269,8 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_until TIMESTAMPTZ;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_source VARCHAR(20);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS suspension_reason TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS cookie_consent JSONB;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(50);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';
@@ -282,6 +284,18 @@ async function ensureSquadTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS visibility JSONB;
       ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS username_normalized VARCHAR(50) GENERATED ALWAYS AS (LOWER(username)) STORED;
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'users_suspension_source_check'
+            AND conrelid = 'users'::regclass
+        ) THEN
+          ALTER TABLE users
+            ADD CONSTRAINT users_suspension_source_check
+            CHECK (suspension_source IS NULL OR suspension_source IN ('self', 'admin'));
+        END IF;
+      END $$;
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_normalized ON users (username_normalized);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
     `);
@@ -471,6 +485,9 @@ async function ensureSquadTables() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         CHECK (reporter_id <> reported_id)
       );
+      ALTER TABLE user_reports
+        ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS resolution TEXT;
       CREATE INDEX IF NOT EXISTS idx_user_reports_reported ON user_reports (reported_id, status);
 
       CREATE TABLE IF NOT EXISTS friend_invite_links (
@@ -664,6 +681,44 @@ async function ensureSquadTables() {
       );
       CREATE INDEX IF NOT EXISTS idx_change_history_entity ON catalog_change_history (entity_id, changed_at DESC);
       CREATE INDEX IF NOT EXISTS idx_change_history_changed_at ON catalog_change_history (changed_at DESC);
+    `);
+    // Backoffice actions are deliberately separate from the product/security
+    // logs. They contain no session secrets and make every administrative
+    // mutation attributable to the protected terminal session.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id BIGSERIAL PRIMARY KEY,
+        actor VARCHAR(80) NOT NULL DEFAULT 'terminal',
+        action VARCHAR(100) NOT NULL,
+        target_type VARCHAR(60) NOT NULL,
+        target_id VARCHAR(160),
+        justification TEXT,
+        details JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_admin_audit_created
+        ON admin_audit_log (created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_admin_audit_target
+        ON admin_audit_log (target_type, target_id, created_at DESC);
+    `);
+    // Imported news remains visible by default. Drafts created in the
+    // backoffice are intentionally excluded from the public feed until an
+    // operator explicitly publishes them.
+    await pool.query(`
+      ALTER TABLE sprite_news
+        ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'published',
+        ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS editor_note TEXT;
+      UPDATE sprite_news
+      SET status = 'published',
+          published_at = COALESCE(published_at, created_at)
+      WHERE status IS NULL OR status NOT IN ('draft', 'published', 'archived');
+      UPDATE sprite_news
+      SET published_at = COALESCE(published_at, created_at)
+      WHERE status = 'published';
+      CREATE INDEX IF NOT EXISTS idx_sprite_news_status_date
+        ON sprite_news (status, news_date DESC, created_at DESC);
     `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS compare_share_tokens (
