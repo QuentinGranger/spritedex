@@ -5,6 +5,16 @@ const { pool } = require("../db");
 const compare = require("../compare");
 const { getActiveFriendship, canReceiveFriendRequestFrom, recentRequestCooldown } = require("./helpers");
 
+function broadcastRelationshipUpdate(...userIds) {
+  try {
+    require("../ws").broadcastFriendsUpdate(userIds, "relationship");
+  } catch (err) {
+    // Social writes are already committed; a failed live signal must never
+    // make a friendship action fail. The next refresh will still be correct.
+    console.warn("[friends] live update broadcast failed", err.message);
+  }
+}
+
 // Enforce a clean state machine for friend relationships.
 // Only one active row exists per unordered pair (guaranteed by the partial unique index).
 async function applyFriendAction(reqUser, friendId, action, options = {}) {
@@ -73,6 +83,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
             : null
         });
       } catch (_) { /* optional */ }
+      broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true, friendshipId };
     }
 
@@ -87,6 +98,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
         `UPDATE friendships SET status = 'accepted', responded_at = NOW(), updated_at = NOW() WHERE id = $1`,
         [active.id]
       );
+      broadcastRelationshipUpdate(reqUser, friendId);
       return {
         ok: true,
         previousStatus,
@@ -105,6 +117,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
         `UPDATE friendships SET status = 'declined', responded_at = NOW(), updated_at = NOW() WHERE id = $1`,
         [active.id]
       );
+      broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true };
     }
 
@@ -116,6 +129,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
         `UPDATE friendships SET status = 'cancelled', responded_at = NOW(), updated_at = NOW() WHERE id = $1`,
         [active.id]
       );
+      broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true };
     }
 
@@ -127,6 +141,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
         `UPDATE friendships SET status = 'removed', responded_at = NOW(), updated_at = NOW() WHERE id = $1`,
         [active.id]
       );
+      broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true };
     }
 
@@ -162,6 +177,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
       } finally {
         client.release();
       }
+      broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true };
     }
 
@@ -195,6 +211,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
       } finally {
         client.release();
       }
+      broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true };
     }
 

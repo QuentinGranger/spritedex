@@ -1,6 +1,7 @@
 function getVariantList(sprite) {
-  const keys = Object.keys(sprite.variantDetails || {});
-  return keys.length > 0 ? keys : (sprite.variants || ["Base"]);
+  // The checklist is an ownership view: its progress, filters and quick
+  // actions must only expose the released catalogue used everywhere else.
+  return getSpriteCollectionItems(sprite.id).map((item) => item.variantType);
 }
 
 function buildFilterChips() {
@@ -16,7 +17,7 @@ function buildFilterChips() {
       btn.type = "button";
       btn.className = "filter-chip";
       btn.dataset.filter = `rarity:${rarity}`;
-      btn.textContent = rarity;
+      btn.textContent = localizedRarity(rarity);
       btn.setAttribute("aria-pressed", "false");
       bar.appendChild(btn);
     });
@@ -81,6 +82,8 @@ function spriteMatchesFilter(sprite) {
   const filter = state.checklistFilter;
   const query = state.checklistSearch.trim().toLowerCase();
 
+  if (state.commandSeasonId && String(sprite.season?.id || "") !== String(state.commandSeasonId)) return false;
+
   if (query) {
     const nameMatch = sprite.name.toLowerCase().includes(query);
     const rarityMatch = sprite.rarity.toLowerCase().includes(query);
@@ -129,7 +132,7 @@ function sortSprites(sprites) {
   return [...sprites].sort((a, b) => {
     switch (sort) {
       case "alpha":
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name, uiLocale());
       case "progress-asc": {
         const pA = getVariantList(a).filter(v => getEntry(variantId(a.id, v)).status === "owned").length / (getVariantList(a).length || 1);
         const pB = getVariantList(b).filter(v => getEntry(variantId(b.id, v)).status === "owned").length / (getVariantList(b).length || 1);
@@ -163,7 +166,7 @@ function sortSprites(sprites) {
 
 function renderChecklist() {
   buildFilterChips();
-  const filtered = sortSprites(SPRITES.filter(spriteMatchesFilter));
+  const filtered = sortSprites(SPRITES.filter((sprite) => getVariantList(sprite).length > 0 && spriteMatchesFilter(sprite)));
   updateChecklistFilterControls();
   announceChecklistResults(filtered);
   if (!filtered.length) {
@@ -180,7 +183,7 @@ function renderChecklist() {
     }));
     const owned = variants.filter(v => v.entry.status === "owned").length;
     const total = variants.length;
-    const pct = total ? Math.round((owned / total) * 100) : 0;
+    const pct = collectionPercent(owned, total);
     const isExpanded = state.expandedSprite === sprite.id;
     const baseImg = safeImageUrl(getSpriteImg(sprite.id, "Base"));
     const priorityVariant = variants.find((variant) => {
@@ -204,7 +207,7 @@ function renderChecklist() {
           <div class="cl-sprite__avatar">${baseImg ? `<img src="${escapeHtml(baseImg)}" alt="${escapeHtml(sprite.name)}" class="cl-sprite__img" />` : `<span class="avatar-placeholder">?</span>`}</div>
           <div class="cl-sprite__info">
             <h3 class="cl-sprite__name" id="checklist-sprite-${escapeHtml(String(sprite.id || ""))}">${escapeHtml(sprite.name)}</h3>
-            <p class="cl-sprite__meta"><span class="cl-sprite__rarity" data-rarity="${escapeHtml(sprite.rarity)}">${escapeHtml(sprite.rarity)}</span>${priorityVariant ? `<span class="cl-sprite__priority">${escapeHtml(t("checklist.priorityBadge"))}</span>` : ""}${highestMastery === 5 ? `<span class="cl-sprite__master">${escapeHtml(t("checklist.masterBadge"))}</span>` : ""}</p>
+            <p class="cl-sprite__meta"><span class="cl-sprite__rarity" data-rarity="${escapeHtml(sprite.rarity)}">${escapeHtml(localizedRarity(sprite.rarity))}</span>${priorityVariant ? `<span class="cl-sprite__priority">${escapeHtml(t("checklist.priorityBadge"))}</span>` : ""}${highestMastery === 5 ? `<span class="cl-sprite__master">${escapeHtml(t("checklist.masterBadge"))}</span>` : ""}</p>
             <p class="cl-sprite__effect">${escapeHtml(sprite.effect || t("checklist.noEffect"))}</p>
           </div>
           <div class="cl-sprite__progress">

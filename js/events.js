@@ -1,5 +1,6 @@
-const MAIN_VIEWS = ["swipe", "checklist", "missing", "stats", "history", "social"];
+const MAIN_VIEWS = ["home", "swipe", "checklist", "missing", "stats", "history", "social"];
 const DESKTOP_VIEW_COPY = {
+  home: ["nav.home", "view.homeSubtitle"],
   swipe: ["nav.swipe", "view.swipeSubtitle"],
   checklist: ["nav.checklist", "view.checklistSubtitle"],
   missing: ["nav.missing", "view.missingSubtitle"],
@@ -27,13 +28,43 @@ function renderAll() {
   renderChecklist();
   renderMissing();
   renderStats();
+  renderNow();
   renderCard();
   renderCompare();
+  clearCollectionViewDirty();
+  state.homeViewDirty = false;
+}
+
+function markCollectionViewsDirty() {
+  state.collectionViewDirty.checklist = true;
+  state.collectionViewDirty.missing = true;
+  state.collectionViewDirty.stats = true;
+}
+
+function clearCollectionViewDirty() {
+  state.collectionViewDirty.checklist = false;
+  state.collectionViewDirty.missing = false;
+  state.collectionViewDirty.stats = false;
+}
+
+function refreshCollectionViewIfDirty(view) {
+  if (!state.collectionViewDirty?.[view]) return;
+  if (view === "checklist") renderChecklist();
+  else if (view === "missing") renderMissing();
+  else if (view === "stats") renderStats();
+  else return;
+  state.collectionViewDirty[view] = false;
+}
+
+function refreshHomeViewIfDirty(view) {
+  if (view !== "home" || !state.homeViewDirty) return;
+  renderNow();
+  state.homeViewDirty = false;
 }
 
 function getActiveMainView() {
   const active = document.querySelector(".tab.active");
-  return active ? active.dataset.view : "swipe";
+  return active ? active.dataset.view : "home";
 }
 
 function scrollActiveTabIntoView() {
@@ -61,9 +92,16 @@ function activateMainView(view, opts = {}) {
     if (on) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  const moreButton = document.getElementById("mobileMoreButton");
+  if (moreButton) moreButton.classList.toggle("active", ["stats", "history", "social"].includes(view));
   els.views.forEach((section) => {
     section.classList.toggle("active", section.id === `view-${view}`);
   });
+
+  // A swipe only dirties hidden collection views. Render a view at the moment
+  // it becomes useful, rather than rebuilding three large DOM trees mid-swipe.
+  refreshCollectionViewIfDirty(view);
+  refreshHomeViewIfDirty(view);
 
   if (view !== "social") stopSquadPolling();
   if (view === "history" && typeof renderHistory === "function") renderHistory();
@@ -224,6 +262,92 @@ function setupViewSwipe() {
 }
 
 function setupEvents() {
+  setupCommandPalette();
+  setupNowDashboard();
+  setupFarmPlanEvents();
+  setupSquadWishlistEvents();
+  document.getElementById("syncBarRetry")?.addEventListener("click", () => {
+    if (state.userId && navigator.onLine) flushSyncQueue();
+  });
+  const moreButton = document.getElementById("mobileMoreButton");
+  const moreMenu = document.getElementById("mobileMoreMenu");
+  const moreSheet = moreMenu?.querySelector(".mobile-more__sheet");
+  const moreHandle = moreMenu?.querySelector(".mobile-more__sheet header");
+  let moreCloseTimer = null;
+  const setMoreMenu = (open, { fromDrag = false } = {}) => {
+    if (!moreButton || !moreMenu) return;
+    clearTimeout(moreCloseTimer);
+    moreButton.setAttribute("aria-expanded", String(open));
+    if (open) {
+      moreMenu.hidden = false;
+      moreMenu.classList.remove("is-closing");
+      moreSheet?.classList.remove("is-dragging");
+      moreSheet?.style.removeProperty("--mobile-more-drag");
+      document.body.classList.add("mobile-more-open");
+      moreMenu.querySelector("[data-mobile-view]")?.focus();
+      return;
+    }
+    if (moreMenu.hidden) return;
+    if (!fromDrag) {
+      moreSheet?.classList.remove("is-dragging");
+      moreSheet?.style.removeProperty("--mobile-more-drag");
+    } else {
+      // Freeze the sheet at the finger's position before its final descent.
+      void moreSheet?.offsetHeight;
+    }
+    moreMenu.classList.add("is-closing");
+    moreCloseTimer = setTimeout(() => {
+      moreMenu.hidden = true;
+      moreMenu.classList.remove("is-closing");
+      moreSheet?.classList.remove("is-dragging");
+      moreSheet?.style.removeProperty("--mobile-more-drag");
+      document.body.classList.remove("mobile-more-open");
+      moreButton.focus({ preventScroll: true });
+    }, 220);
+  };
+  moreButton?.addEventListener("click", () => setMoreMenu(moreMenu?.hidden || moreMenu?.classList.contains("is-closing")));
+  moreMenu?.querySelectorAll("[data-mobile-more-close]").forEach((button) => button.addEventListener("click", () => setMoreMenu(false)));
+  moreMenu?.querySelectorAll("[data-mobile-view]").forEach((button) => button.addEventListener("click", () => {
+    setMoreMenu(false);
+    activateMainView(button.dataset.mobileView);
+  }));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && moreMenu && !moreMenu.hidden) setMoreMenu(false);
+  });
+  if (moreSheet && moreHandle) {
+    let dragStartY = 0;
+    let dragDistance = 0;
+    let dragPointerId = null;
+
+    moreHandle.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) return;
+      dragStartY = event.clientY;
+      dragDistance = 0;
+      dragPointerId = event.pointerId;
+      moreSheet.classList.add("is-dragging");
+      moreHandle.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+    });
+    moreHandle.addEventListener("pointermove", (event) => {
+      if (dragPointerId !== event.pointerId) return;
+      dragDistance = Math.max(0, Math.min(window.innerHeight, event.clientY - dragStartY));
+      moreSheet.style.setProperty("--mobile-more-drag", `${dragDistance}px`);
+      event.preventDefault();
+    });
+    const endMoreDrag = (event) => {
+      if (dragPointerId !== event.pointerId) return;
+      dragPointerId = null;
+      if (dragDistance >= 72) {
+        setMoreMenu(false, { fromDrag: true });
+      } else {
+        moreSheet.classList.remove("is-dragging");
+        moreSheet.style.removeProperty("--mobile-more-drag");
+      }
+      dragDistance = 0;
+    };
+    moreHandle.addEventListener("pointerup", endMoreDrag);
+    moreHandle.addEventListener("pointercancel", endMoreDrag);
+  }
   document.querySelectorAll(".social-tab").forEach(btn => {
     btn.addEventListener("click", () => setSocialTab(btn.dataset.socialTab));
   });
@@ -238,6 +362,57 @@ function setupEvents() {
   $("#markMissing").addEventListener("click", () => animateAndMark("missing"));
   $("#markPriority").addEventListener("click", () => animateAndMark("priority"));
   $("#markUnsure").addEventListener("click", () => animateAndMark("unsure"));
+  document.getElementById("swipeSessionPause")?.addEventListener("click", toggleSwipeSessionPause);
+  document.getElementById("swipeSessionUndo")?.addEventListener("click", undoSwipeSessionAction);
+  document.getElementById("swipeSessionRestart")?.addEventListener("click", () => buildDeck({ restartSession: true }));
+  const shortcutGuide = document.getElementById("swipeShortcutGuide");
+  const setShortcutGuide = (open) => {
+    if (!shortcutGuide) return;
+    shortcutGuide.hidden = !open;
+    document.getElementById("swipeShortcutsToggle")?.setAttribute("aria-expanded", String(open));
+  };
+  document.getElementById("swipeShortcutsToggle")?.addEventListener("click", () => setShortcutGuide(shortcutGuide?.hidden));
+  document.getElementById("swipeShortcutsClose")?.addEventListener("click", () => setShortcutGuide(false));
+  document.addEventListener("keydown", (event) => {
+    if (getActiveMainView() !== "swipe" || event.defaultPrevented || event.altKey) return;
+    if (event.target.closest("input, textarea, select, button, dialog, [contenteditable='true']")) return;
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      undoSwipeSessionAction();
+      return;
+    }
+    if (event.metaKey || event.ctrlKey) return;
+    if (event.key === "Escape" && !shortcutGuide?.hidden) {
+      event.preventDefault();
+      setShortcutGuide(false);
+      return;
+    }
+    if (event.key === "?") {
+      event.preventDefault();
+      setShortcutGuide(shortcutGuide?.hidden);
+      return;
+    }
+    const shortcuts = { ArrowRight: "owned", ArrowLeft: "missing", ArrowUp: "priority", ArrowDown: "unsure", "1": "missing", "2": "unsure", "3": "priority", "4": "owned" };
+    if (shortcuts[event.key]) {
+      event.preventDefault();
+      const status = shortcuts[event.key];
+      const button = document.getElementById({ owned: "markOwned", missing: "markMissing", priority: "markPriority", unsure: "markUnsure" }[status]);
+      button?.classList.remove("is-shortcut-fired");
+      void button?.offsetWidth;
+      button?.classList.add("is-shortcut-fired");
+      animateAndMark(status);
+      return;
+    }
+    if (event.key === " " || event.key.toLowerCase() === "p") {
+      event.preventDefault();
+      toggleSwipeSessionPause();
+      return;
+    }
+    if (event.key.toLowerCase() === "z") {
+      event.preventDefault();
+      undoSwipeSessionAction();
+    }
+  });
   if (els.cardMasteryLevels) {
     els.cardMasteryLevels.addEventListener("click", (event) => {
       const control = event.target.closest("[data-card-mastery]");
@@ -256,6 +431,7 @@ function setupEvents() {
   els.shuffleDeck.addEventListener("click", shuffleDeck);
 
   els.searchInput.addEventListener("input", (event) => {
+    state.commandSeasonId = null;
     state.checklistSearch = event.target.value;
     if (desktopSearch) desktopSearch.value = event.target.value;
     renderChecklist();
@@ -271,36 +447,6 @@ function setupEvents() {
     renderChecklist();
   });
 
-  const desktopSearch = document.getElementById("desktopSearch");
-  if (desktopSearch) {
-    const shortcutLabel = document.getElementById("desktopSearchShortcut");
-    const platform = String(navigator.userAgentData?.platform || navigator.platform || "");
-    const isMac = /mac|iphone|ipad|ipod/i.test(platform);
-    if (shortcutLabel) shortcutLabel.textContent = isMac ? "⌘ K" : "Ctrl K";
-
-    desktopSearch.addEventListener("input", (event) => {
-      const value = event.target.value;
-      els.searchInput.value = value;
-      state.checklistSearch = value;
-      if (getActiveMainView() !== "checklist") activateMainView("checklist");
-      renderChecklist();
-    });
-    desktopSearch.addEventListener("keydown", (event) => {
-      if (event.key !== "Escape" || !event.currentTarget.value) return;
-      event.preventDefault();
-      event.currentTarget.value = "";
-      els.searchInput.value = "";
-      state.checklistSearch = "";
-      renderChecklist();
-    });
-    document.addEventListener("keydown", (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        desktopSearch.focus();
-      }
-    });
-  }
-
   els.checklistSort.addEventListener("change", (event) => {
     state.checklistSort = event.target.value;
     renderChecklist();
@@ -309,6 +455,7 @@ function setupEvents() {
   els.filterChipsBar.addEventListener("click", (event) => {
     const chip = event.target.closest("[data-filter]");
     if (!chip) return;
+    state.commandSeasonId = null;
     state.checklistFilter = chip.dataset.filter;
     state.passportMissingVariantIds = null;
     state.expandedSprite = null;
@@ -637,6 +784,18 @@ function setupEvents() {
   // shell it would try to intercept capacitor:// requests and conflicts with the
   // native asset loader, so we skip it there.
   if ("serviceWorker" in navigator && !isNativePlatform()) {
-    navigator.serviceWorker.register("sw.js").catch(() => {});
+    // An absolute URL matters on public routes such as /u/:username: a relative
+    // "sw.js" would otherwise resolve to /u/sw.js and silently leave that
+    // session on an old cache. updateViaCache:none pairs with the server's
+    // no-cache worker response, so every app return can discover a deploy.
+    navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" })
+      .then((registration) => {
+        const checkForUpdate = () => registration.update().catch(() => {});
+        window.addEventListener("focus", checkForUpdate, { passive: true });
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") checkForUpdate();
+        });
+      })
+      .catch(() => {});
   }
 }

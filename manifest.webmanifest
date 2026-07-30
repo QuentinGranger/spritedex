@@ -1,7 +1,7 @@
 {
-  "name": "SPRITE-INDEX — Checklist Fortnite",
+  "name": "SPRITE-INDEX — Fortnite Collection Tracker",
   "short_name": "SPRITE-INDEX",
-  "description": "Checklist type Tinder pour suivre les Sprites Fortnite et leurs variantes.",
+  "description": "Swipe-friendly checklist for tracking Fortnite Sprites and their variants.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0c0f1d",

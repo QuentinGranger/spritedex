@@ -9,12 +9,22 @@ const state = {
   collection: Object.create(null),
   currentDeck: [],
   currentIndex: 0,
+  swipeSession: {
+    active: false,
+    paused: false,
+    total: 0,
+    processed: 0,
+    actions: [],
+    counts: Object.create(null),
+    startedAt: null
+  },
   activeDetailId: null,
   userId: null,
   username: null,
   checklistFilter: "all",
   checklistSearch: "",
   checklistSort: "alpha",
+  commandSeasonId: null,
   passportMissingVariantIds: null,
   expandedSprite: null,
   squadMembers: [],
@@ -36,7 +46,16 @@ const state = {
   missingSearch: "",
   missingFilter: "all",
   missingSort: "priority",
-  missingCollapsedSections: Object.create(null)
+  missingCollapsedSections: Object.create(null),
+  farmPlan: null,
+  // Hidden collection views are refreshed lazily after a swipe. Rebuilding
+  // their long lists while the deck is animating caused avoidable mobile jank.
+  collectionViewDirty: {
+    checklist: false,
+    missing: false,
+    stats: false
+  },
+  homeViewDirty: false
 };
 
 const $ = (selector) => document.querySelector(selector);

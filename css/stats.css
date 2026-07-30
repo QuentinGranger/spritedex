@@ -229,7 +229,128 @@
 }
 
 /* ── Community Stats ── */
-.community-module + .community-module { margin-top: 20px; }
+.community-dashboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.community-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(0, 225, 255, .08), transparent 35%),
+    var(--surface);
+}
+
+.community-card--catalogue { grid-column: 1 / -1; }
+
+.community-card__heading { margin-bottom: 14px; }
+
+.community-card__eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  font: 700 .63rem var(--font-heading);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.community-card h3 {
+  margin: 0;
+  color: var(--text);
+  font: 800 1rem/1.1 var(--font-heading);
+  letter-spacing: .02em;
+}
+
+.community-card__heading p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.45;
+}
+
+.community-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(5, 15, 37, .28);
+}
+
+.community-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 0 12px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text);
+  font: 700 .74rem var(--font-heading);
+}
+
+.community-disclosure summary::-webkit-details-marker { display: none; }
+
+.community-disclosure summary::before {
+  content: "+";
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-glow);
+  border-radius: 50%;
+  color: var(--accent);
+  font: 400 1rem/1 sans-serif;
+}
+
+.community-disclosure[open] summary::before { content: "−"; }
+.community-disclosure__action { margin-left: auto; color: var(--accent); font-size: .67rem; text-transform: uppercase; letter-spacing: .06em; }
+.community-disclosure__content { padding: 0 12px 12px; }
+.community-disclosure__content > :first-child { margin-top: 0; }
+
+.community-ranking {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.community-ranking__item {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 39px;
+  padding: 6px 7px;
+  border-radius: 9px;
+}
+
+.community-ranking__item:nth-child(odd) { background: rgba(255, 255, 255, .025); }
+
+.community-ranking__rank {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(0, 225, 255, .28);
+  border-radius: 50%;
+  color: var(--accent);
+  font: 800 .7rem var(--font-heading);
+}
+
+.community-ranking__name { min-width: 0; }
+.community-ranking__name strong {
+  display: block;
+  color: var(--text);
+  font-size: .73rem;
+  line-height: 1.25;
+}
+.community-ranking__name small { display: block; margin-top: 1px; color: var(--muted); font-size: .63rem; }
+.community-ranking__rate { color: var(--accent); font: 800 .76rem var(--font-heading); white-space: nowrap; }
 
 .community-table-wrapper {
   overflow-x: auto;
@@ -309,24 +430,40 @@
   margin: 16px 0 10px;
 }
 
-.community-ownership { text-align: center; }
-
-.community-ownership__text {
-  font-size: 1.1rem;
-  font-family: var(--font-heading);
-  color: var(--text);
-  margin-bottom: 8px;
+.community-ownership__metric {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 13px;
 }
 
-.community-ownership__text strong {
+.community-ownership__metric strong {
   color: var(--accent-2);
+  font: 900 1.6rem/1 var(--font-heading);
   text-shadow: 0 0 10px rgba(0, 225, 255, 0.25);
+}
+
+.community-ownership__metric span { color: var(--muted); font-size: .74rem; }
+
+.community-ownership__privacy {
+  margin: -5px 0 13px;
+  color: var(--muted);
+  font-size: .65rem;
+  line-height: 1.35;
 }
 
 .community-ownership__note {
   font-size: 0.78rem;
   color: var(--muted);
   margin: 0;
+}
+
+@media (max-width: 640px) {
+  .community-dashboard { grid-template-columns: 1fr; }
+  .community-card--catalogue { grid-column: auto; }
+  .community-card { padding: 15px; }
+  .community-disclosure summary { padding: 0 10px; }
+  .community-disclosure__action { font-size: .6rem; }
 }
 
 /* Sprite Graph community UI (Étapes 76–80) */

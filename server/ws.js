@@ -249,6 +249,9 @@ wss.on("connection", (ws) => {
         return;
       }
       registerAuthenticatedSocket(ws, userId, msg.token);
+      recordPresence(ws).catch(() => {});
+    } else if (msg.type === "presence_ping" && ws._userId) {
+      recordPresence(ws).catch(() => {});
     } else if (msg.type === "compare_subscribe" && msg.targetUserId) {
       // SECURITY: live compare updates carry private data (status, priority,
       // notes). Only authenticated users allowed to view the target's
@@ -524,6 +527,51 @@ async function broadcastCompareUpdate(userId, payload) {
   }
 }
 
+// Tell a user that their social list must be refreshed. The message carries no
+// relationship or collection data, so every client still obtains the current,
+// privacy-filtered view through the normal authenticated REST endpoint.
+function broadcastFriendsUpdate(userIds, reason = "relationship") {
+  const ids = new Set((Array.isArray(userIds) ? userIds : [userIds])
+    .filter((id) => id != null)
+    .map((id) => String(id)));
+  if (!ids.size) return;
+  const payload = JSON.stringify({ type: "friends_update", reason, timestamp: new Date().toISOString() });
+  for (const userId of ids) {
+    const sockets = wsClients.get(userId);
+    if (!sockets) continue;
+    for (const ws of sockets) {
+      if (ws.readyState === 1) {
+        try { ws.send(payload); } catch {}
+      }
+    }
+  }
+}
+
+// A collection update changes completion and complementarity in the friends
+// screen. Resolve accepted friends at send time so a removed/blocked user is
+// never notified from a stale in-memory relationship.
+async function broadcastFriendCollectionUpdate(ownerId, reason = "collection") {
+  try {
+    const result = await pool.query(
+      `SELECT CASE WHEN requester_id = $1 THEN addressee_id ELSE requester_id END AS user_id
+       FROM friendships
+       WHERE status = 'accepted' AND (requester_id = $1 OR addressee_id = $1)`,
+      [ownerId]
+    );
+    broadcastFriendsUpdate([ownerId, ...result.rows.map((row) => row.user_id)], reason);
+  } catch (err) {
+    console.warn("broadcastFriendCollectionUpdate error", err);
+  }
+}
+
+async function recordPresence(ws) {
+  const now = Date.now();
+  if (!ws._userId || (ws._presenceLastSeenAt && now - ws._presenceLastSeenAt < 30000)) return;
+  ws._presenceLastSeenAt = now;
+  await pool.query("UPDATE users SET last_active_at = NOW() WHERE id = $1", [ws._userId]);
+  await broadcastFriendCollectionUpdate(ws._userId, "presence");
+}
+
 // Broadcast a goal update to the goal owner and all active squad members.
 async function broadcastGoalUpdate(goal, updateType, squadCode = null) {
   try {
@@ -622,6 +670,8 @@ module.exports = {
   WS_MAX_PAYLOAD_BYTES,
   WS_MESSAGE_WINDOW_MS,
   broadcastCompareUpdate,
+  broadcastFriendCollectionUpdate,
+  broadcastFriendsUpdate,
   broadcastGoalUpdate,
   broadcastNewsUpdate,
   broadcastSquadCompletionUpdate,

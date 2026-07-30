@@ -86,7 +86,7 @@ function renderSquadEngineTab(tab) {
 }
 
 function formatPct(n) {
-  return safeFiniteNumber(n, 0, { min: -100, max: 100 }).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + "%";
+  return new Intl.NumberFormat(uiLocale(), { style: "percent", minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(safeFiniteNumber(n, 0, { min: -100, max: 100 }) / 100);
 }
 
 function uniqueContributionCount(member) {
@@ -193,16 +193,39 @@ async function loadSquadCommunityContext(squadRef) {
       return;
     }
     const data = await res.json();
-    const lines = (data.publicDisplay && data.publicDisplay.lines) || [];
+    const coverage = data.coverage || {};
+    const peerGroup = data.peerGroup || {};
+    const band = {
+      "2": t("engine.peerBand2"),
+      "3": t("engine.peerBand3"),
+      "4_6": t("engine.peerBand4To6"),
+      "7_10": t("engine.peerBand7To10"),
+      "11_plus": t("engine.peerBand11Plus")
+    }[peerGroup.sizeBand?.id] || "—";
+    const lines = [];
+    if (coverage.collectiveCompletionRate != null) {
+      lines.push(t("engine.communityCoverage", {
+        name: data.squadName || t("engine.communitySquadDefault"),
+        rate: formatUiPercent(coverage.collectiveCompletionRate, { maximumFractionDigits: 1 })
+      }));
+    }
+    if (Number(peerGroup.comparableSquadCount) >= 3 && peerGroup.avgWeeklyProgressPoints != null) {
+      const points = Number(peerGroup.avgWeeklyProgressPoints);
+      lines.push(t("engine.communityPeerProgress", {
+        band,
+        points: `${points >= 0 ? "+" : ""}${formatUiNumber(points, { maximumFractionDigits: 1 })}`,
+        s: Math.abs(points) === 1 ? "" : "s"
+      }));
+    } else if (Number(peerGroup.comparableSquadCount) > 0) {
+      lines.push(t("engine.communityPeerLimited", { band }));
+    }
     if (!lines.length) {
       mount.hidden = true;
       return;
     }
     linesEl.innerHTML = lines.map((line) => `
       <p class="engine-community__line">${escapeHtml(t(line))}</p>
-    `).join("") + (data.publicDisplay?.disclaimer
-      ? `<p class="engine-community__disclaimer">${escapeHtml(t(data.publicDisplay.disclaimer))}</p>`
-      : "");
+    `).join("") + `<p class="engine-community__disclaimer">${escapeHtml(t("engine.communityDisclaimer"))}</p>`;
     mount.hidden = false;
   } catch (_e) {
     mount.hidden = true;

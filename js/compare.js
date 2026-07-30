@@ -361,6 +361,63 @@ function renderCompareSection(title, items, renderItem, open = false) {
     </details>`;
 }
 
+function compareHelpDirection(record) {
+  const iCanHelp = compareIsOwned(record.userA.status) && compareIsRecommend(record.userB.status);
+  const friendCanHelp = compareIsOwned(record.userB.status) && compareIsRecommend(record.userA.status);
+  return { iCanHelp, friendCanHelp, aidable: iCanHelp || friendCanHelp };
+}
+
+function compareHelpPriorityWeight(entry) {
+  if (!compareIsPriority(entry)) return 0;
+  const weight = { urgent: 44, important: 34, medium: 24, low: 14 };
+  return weight[entry.priority] || 20;
+}
+
+function compareHelpDeadline(record) {
+  const event = record.eventId ? EVENTS?.[record.eventId] : null;
+  const end = new Date(event?.endDate || "").getTime();
+  if (!Number.isFinite(end)) return null;
+  return Math.ceil((end - Date.now()) / 86400000);
+}
+
+function scoreCompareHelp(record) {
+  const direction = compareHelpDirection(record);
+  if (!direction.aidable) return { score: -1, direction, reasons: [] };
+  const recipient = direction.friendCanHelp ? record.userA : record.userB;
+  const reasons = [];
+  let score = compareHelpPriorityWeight(recipient);
+  if (score) reasons.push("priority");
+  if (isItemAvailable(record)) { score += 12; reasons.push("available"); }
+  const days = compareHelpDeadline(record);
+  if (days !== null && days >= 0 && days <= 14) {
+    score += days <= 2 ? 32 : days <= 7 ? 22 : 12;
+    reasons.push("deadline");
+  }
+  const rarity = { mythic: 20, mythique: 20, legendary: 15, "légendaire": 15, epic: 9, "épique": 9, rare: 5 }[String(record.rarity || "").toLowerCase()] || 0;
+  if (rarity) { score += rarity; reasons.push("rarity"); }
+  return { score, direction, reasons, days };
+}
+
+function getCompareHelpRecords(records, filter = "all") {
+  return records.filter((record) => {
+    const direction = compareHelpDirection(record);
+    if (filter === "aidable") return direction.aidable;
+    if (filter === "i-help") return direction.iCanHelp;
+    if (filter === "friend-helps") return direction.friendCanHelp;
+    return true;
+  });
+}
+
+function renderCompareHelpPanel(result, aName, bName) {
+  const records = result.records || [];
+  const aidable = getCompareHelpRecords(records, "aidable");
+  const iCanHelp = getCompareHelpRecords(records, "i-help");
+  const friendCanHelp = getCompareHelpRecords(records, "friend-helps");
+  const best = aidable.map(record => ({ record, ...scoreCompareHelp(record) })).sort((a, b) => b.score - a.score)[0];
+  const bestCard = best && best.score >= 0 ? `<button type="button" class="compare-help-panel__best" data-compare-help-filter="${best.direction.friendCanHelp ? "friend-helps" : "i-help"}"><span>${escapeHtml(t("compare.smartPick"))}</span><strong>${escapeHtml(`${best.record.spriteName} · ${best.record.variantName || best.record.variantType || "Base"}`)}</strong><small>${escapeHtml(t(best.direction.friendCanHelp ? "compare.smartFriendHelps" : "compare.smartIHelp", { name: best.direction.friendCanHelp ? bName : aName }))} · ${escapeHtml(best.reasons.map(reason => t(`compare.smartReason.${reason}`)).join(" · ") || t("compare.smartReason.default"))}</small></button>` : "";
+  return `<section class="compare-help-panel"><div class="compare-help-panel__lead"><span class="compare-help-panel__icon" aria-hidden="true">↔</span><div><p>${escapeHtml(t("compare.helpKicker"))}</p><h3>${escapeHtml(t("compare.helpTitle", { count: aidable.length }))}</h3><span>${escapeHtml(t("compare.helpDetail", { mine: iCanHelp.length, friend: friendCanHelp.length, friendName: bName }))}</span></div></div>${bestCard}<div class="compare-help-panel__actions"><button type="button" data-compare-help-filter="aidable">${escapeHtml(t("compare.helpAll", { count: aidable.length }))}</button><button type="button" data-compare-help-filter="i-help">${escapeHtml(t("compare.helpMine", { count: iCanHelp.length }))}</button><button type="button" data-compare-help-filter="friend-helps">${escapeHtml(t("compare.helpFriend", { name: bName, count: friendCanHelp.length }))}</button></div></section>`;
+}
+
 function renderCompareSummary(result, aName, bName) {
   const s = result.summary;
   const safeA = escapeHtml(aName);
@@ -372,6 +429,7 @@ function renderCompareSummary(result, aName, bName) {
     : "";
   els.compareSummary.innerHTML = `
     ${warning}
+    ${renderCompareHelpPanel(result, aName, bName)}
     <div class="compare-main-indicators">
       <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.aPossessionRate)}</span><span class="compare-kpi__label">${t("compare.completionOf", { name: safeA })}</span></div>
       <div class="compare-kpi compare-kpi--large"><span class="compare-kpi__value">${pct(s.bPossessionRate)}</span><span class="compare-kpi__label">${t("compare.completionOf", { name: safeB })}</span></div>
@@ -411,6 +469,13 @@ function renderCompareSummary(result, aName, bName) {
         <span class="compare-player__count">${s.bOwnedCount} / ${s.catalogueVariantCount}</span>
       </div>
     </div>`;
+  els.compareSummary.querySelectorAll("[data-compare-help-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.compareHelpFilter = button.dataset.compareHelpFilter || "all";
+      logCompareAnalytics("comparison_filter_used", { filter: "help", value: state.compareHelpFilter, source: "summary" });
+      renderCompare();
+    });
+  });
 }
 
 /** Étape 82 — secondary community lines under the personal compare summary. */
@@ -449,10 +514,32 @@ async function loadCompareCommunityContext(result, aName, bName) {
       mount.hidden = true;
       return;
     }
+    const variantLabel = (variantId) => {
+      const item = typeof getAllItems === "function"
+        ? getAllItems().find((candidate) => String(candidate.id) === String(variantId))
+        : null;
+      return item ? [item.spriteName, item.variantName || item.variant].filter(Boolean).join(" · ") : String(variantId || "?");
+    };
+    const personalLine = (ins) => {
+      const name = variantLabel(ins.variantId);
+      if (ins.relation === "bothMissing") return t("compare.communityBothMissing", { name, a: aName, b: bName });
+      if (ins.relation === "onlyA") return t("compare.communityOnlyA", { name, a: aName, b: bName });
+      if (ins.relation === "onlyB") return t("compare.communityOnlyB", { name, a: aName, b: bName });
+      return ins.personalLine ? t(ins.personalLine) : "";
+    };
+    const communityLine = (ins) => {
+      if (ins.relation !== "bothMissing" && ins.priorityRateAmongMissing != null) {
+        return t("compare.communityPriority", { rate: formatUiPercent(ins.priorityRateAmongMissing, { maximumFractionDigits: 0 }) });
+      }
+      if (ins.ownershipRate != null) {
+        return t("compare.communityOwnership", { rate: formatUiPercent(ins.ownershipRate, { maximumFractionDigits: 1 }) });
+      }
+      return ins.communityLine ? t(ins.communityLine) : "";
+    };
     list.innerHTML = insights.map((ins) => `
       <div class="compare-community__item">
-        ${ins.personalLine ? `<p class="compare-community__personal">${escapeHtml(t(ins.personalLine))}</p>` : ""}
-        ${ins.communityLine ? `<p class="compare-community__stat">${escapeHtml(t(ins.communityLine))}</p>` : ""}
+        ${personalLine(ins) ? `<p class="compare-community__personal">${escapeHtml(personalLine(ins))}</p>` : ""}
+        ${communityLine(ins) ? `<p class="compare-community__stat">${escapeHtml(communityLine(ins))}</p>` : ""}
       </div>
     `).join("");
     mount.hidden = false;
@@ -511,7 +598,7 @@ function getCompareFilterOptions(records, key, labelFn) {
     if (val === undefined || val === null || val === "") continue;
     if (!seen.has(val)) seen.set(val, labelFn(r));
   }
-  return [...seen.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+  return [...seen.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1]), uiLocale()));
 }
 
 function renderCompareCatalogFilters(records) {
@@ -525,7 +612,7 @@ function renderCompareCatalogFilters(records) {
 
   const seasonOpts = getCompareFilterOptions(records, "seasonId", r => compareSeasonLabel(r.seasonId));
   const eventOpts = getCompareFilterOptions(records, "eventId", r => compareEventLabel(r.eventId));
-  const rarityOpts = getCompareFilterOptions(records, "rarity", r => r.rarity || t("compare.unknownStatus"));
+  const rarityOpts = getCompareFilterOptions(records, "rarity", r => r.rarity ? localizedRarity(r.rarity) : t("compare.unknownStatus"));
   const spriteOpts = getCompareFilterOptions(records, "spriteId", r => r.spriteName);
   const variantOpts = getCompareFilterOptions(records, "variantType", r => compareVariantTypeLabel(r.variantType));
   const availOpts = getCompareFilterOptions(records, "availabilityStatus", r => compareAvailabilityLabel(r.availabilityStatus));
@@ -533,7 +620,7 @@ function renderCompareCatalogFilters(records) {
 
   const hasFilters = Object.keys(filters).some(k => filters[k]);
   return `
-    <details class="compare-catalog-filters" ${hasFilters ? "open" : ""}>
+    <details class="compare-catalog-filters" open>
       <summary class="compare-catalog-filters__summary">${t("compare.catalogFilters")}</summary>
       <div class="compare-catalog-filters__grid">
         ${makeSelect("season", t("compare.seasonLabel"), seasonOpts)}
@@ -635,6 +722,7 @@ function renderCompareTable(result, aName, bName) {
   const catalogFilters = state.compareCatalogFilters || {};
   const sort = state.compareSort || "alpha";
   let records = getCompareFilterRecords(result, filter);
+  records = getCompareHelpRecords(records, state.compareHelpFilter || "all");
   records = records.filter(r => matchesCompareCatalogFilters(r, catalogFilters));
   const focusIds = Array.isArray(state.compareFocusVariantIds) ? state.compareFocusVariantIds : null;
   if (focusIds && focusIds.length) {
@@ -642,6 +730,9 @@ function renderCompareTable(result, aName, bName) {
     if (focused.length) records = focused;
   }
   records = compareSortRecords(records, sort);
+  if ((state.compareHelpFilter || "all") !== "all" && sort === "alpha") {
+    records.sort((a, b) => scoreCompareHelp(b).score - scoreCompareHelp(a).score || String(a.spriteName).localeCompare(String(b.spriteName), uiLocale()));
+  }
 
   const header = `
     <div class="compare-table__header">
@@ -839,7 +930,7 @@ function generateCompareRecommendations(result, aName, bName) {
   for (const rarity of rarities) {
     const items = result.groups.bothMissing.filter(r => r.rarity === rarity);
     if (items.length) {
-      recs.push({ type: "bothMissingRarity", title: t("compare.recBothMissingRarity", { count: items.length, rarity, s: items.length !== 1 ? "s" : "" }), items });
+      recs.push({ type: "bothMissingRarity", title: t("compare.recBothMissingRarity", { count: items.length, rarity: localizedRarity(rarity), s: items.length !== 1 ? "s" : "" }), items });
     }
   }
 
@@ -923,7 +1014,13 @@ function renderCompareActions(result) {
   const select = `<select id="compareFilterSelect" class="compare-filter-select" aria-label="${t("compare.filterLabel")}">${options.map(o => `<option value="${o.value}" ${filter === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
   const sortSelect = `<select id="compareSortSelect" class="compare-filter-select" aria-label="${t("compare.sortLabel")}">${sortOptions.map(o => `<option value="${o.value}" ${sort === o.value ? "selected" : ""}>${o.label}</option>`).join("")}</select>`;
   const catalogFilters = renderCompareCatalogFilters(result && result.records);
+  const helpFilter = state.compareHelpFilter || "all";
   els.compareActions.innerHTML = `
+    <div class="compare-quick-filters" role="group" aria-label="${escapeHtml(t("compare.actionFilters"))}">
+      <button type="button" class="${helpFilter === "all" ? "active" : ""}" data-compare-help-filter="all">${escapeHtml(t("compare.helpFilterAll"))}</button>
+      <button type="button" class="${helpFilter === "aidable" ? "active" : ""}" data-compare-help-filter="aidable">${escapeHtml(t("compare.helpFilterAidable"))}</button>
+      <button type="button" class="${filter === "priorities" ? "active" : ""}" data-compare-status-filter="priorities">${escapeHtml(t("compare.filterPriorities"))}</button>
+    </div>
     <div class="compare-actions-bar">
       <label for="compareFilterSelect" class="compare-actions-label">${t("compare.filterLabel")}</label>
       ${select}
@@ -942,6 +1039,20 @@ function renderCompareActions(result) {
     renderCompare();
   });
 
+  els.compareActions.querySelectorAll("[data-compare-help-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.compareHelpFilter = button.dataset.compareHelpFilter || "all";
+      logCompareAnalytics("comparison_filter_used", { filter: "help", value: state.compareHelpFilter });
+      renderCompare();
+    });
+  });
+  els.compareActions.querySelectorAll("[data-compare-status-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.compareFilter = button.dataset.compareStatusFilter || "all";
+      renderCompare();
+    });
+  });
+
   const sortSelectEl = $("#compareSortSelect");
   if (sortSelectEl) sortSelectEl.addEventListener("change", (e) => {
     state.compareSort = e.target.value;
@@ -953,6 +1064,7 @@ function renderCompareActions(result) {
   const refreshBtn = $("#compareRefreshBtn");
   if (refreshBtn) refreshBtn.addEventListener("click", () => {
     state.compareFilter = "all";
+    state.compareHelpFilter = "all";
     state.compareSort = "alpha";
     state.compareCatalogFilters = createSafeRecord();
     state.compareFocusVariantIds = null;

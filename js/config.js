@@ -92,17 +92,17 @@ function authHeadersOnly() {
 const PRIORITIES = [
   { id: "urgent",    label: "Urgent",    color: "#ff4500" },
   { id: "important", label: "Important", color: "#ffcc00" },
-  { id: "medium",    label: "Moyen",     color: "#f5a623" },
-  { id: "low",       label: "Faible",    color: "#88889a" },
-  { id: "ignored",   label: "Ignoré",    color: "#555" },
+  { id: "medium",    label: "Medium",    color: "#f5a623" },
+  { id: "low",       label: "Low",       color: "#88889a" },
+  { id: "ignored",   label: "Ignored",   color: "#555" },
   { id: "none",      label: "—",         color: "transparent" }
 ];
 
 const RARITY_ORDER = { "Mythique": 0, "Légendaire": 1, "Épique": 2, "Rare": 3 };
 
 const SWIPE_CONFIG = {
-  owned:    { x: 600, y: 0, rot: 18, label: "JE L'AI",     color: "#00ff87", dir: "out-right" },
-  missing:  { x: -600, y: 0, rot: -18, label: "MANQUANT",   color: "#ff3a6e", dir: "out-left" },
-  priority: { x: 0, y: -600, rot: 0, label: "PRIORITÉ",    color: "#ffcc00", dir: "out-up" },
-  unsure:   { x: 0, y: 600, rot: 0, label: "À VÉRIFIER", color: "#8d7cff", dir: "out-down" }
+  owned:    { x: 600, y: 0, rot: 18, label: "OWNED",      color: "#00ff87", dir: "out-right" },
+  missing:  { x: -600, y: 0, rot: -18, label: "MISSING",    color: "#ff3a6e", dir: "out-left" },
+  priority: { x: 0, y: -600, rot: 0, label: "PRIORITY",   color: "#ffcc00", dir: "out-up" },
+  unsure:   { x: 0, y: 600, rot: 0, label: "TO CHECK",   color: "#8d7cff", dir: "out-down" }
 };

@@ -244,6 +244,19 @@ async function run() {
       assert.strictEqual(status, 403, "non-friend should not be invitable");
     });
 
+    await test("le QR d'escouade contient le lien d'adhésion et reste réservé aux membres", async () => {
+      const squad = await createSquad(alice.token, "QR Squad");
+      const res = await fetch(`${API}/squads/${encodeURIComponent(squad.code)}/qr`, { headers: auth(alice.token) });
+      assert.strictEqual(res.status, 200, `squad QR failed: ${await res.text()}`);
+      const data = await res.json();
+      assert.strictEqual(data.code, squad.code);
+      assert.ok(data.qr.startsWith("data:image/png;base64,"), "squad QR is not a base64 png");
+      assert.ok(data.url.includes(`joinSquad=${encodeURIComponent(squad.code)}`), "squad QR URL has no join code");
+
+      const forbidden = await fetch(`${API}/squads/${encodeURIComponent(squad.code)}/qr`, { headers: auth(charlie.token) });
+      assert.strictEqual(forbidden.status, 403, "a non-member must not be able to generate a squad QR");
+    });
+
     await test("une invitation en double est refusée", async () => {
       await sendFriendRequest(alice.token, charlie.id);
       await acceptFriendRequest(charlie.token, alice.id);

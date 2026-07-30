@@ -9,7 +9,7 @@ const { classifyEventUrgency } = require("./compare");
 app.get("/api/sprites", async (req, res) => {
   try {
     const spritesResult = await pool.query(
-      `SELECT id, name, rarity, color, effect, variants, available, added_date,
+      `SELECT id, name, rarity, color, effect, variants, available, is_released, added_date,
               slug, official_name, season_id, event_id, image,
               first_observed_at, last_verified_at, officially_announced_at,
               acquisition, availability, recurrence, dates, missing_fields, sources, data_status
@@ -214,7 +214,11 @@ app.get("/api/sprites", async (req, res) => {
         variants: s.variants,
         images: images[s.id] || {},
         variantDetails: variantDetails[s.id] || {},
-        available: availability.status,
+        // `available` is the authoritative boolean also used by server-side
+        // passport/squad progress. Keep the descriptive status separately.
+        available: s.available !== false,
+        isReleased: s.is_released !== false,
+        availabilityStatus: availability.status,
         addedDate: s.added_date,
       };
     });

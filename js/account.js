@@ -123,30 +123,26 @@ function setupAccountPanel() {
     renderAvatar(avatarDisplay, avatarUrl);
 
     // Stats
-    const coll = state.collection || {};
-    const entries = Object.values(coll);
-    const ownedVariants = entries.filter(e => e.status === "owned").length;
-    const totalVariants = SPRITES.reduce((sum, s) => sum + (Object.keys(s.variantDetails || {}).length || (Array.isArray(s.variants) ? s.variants.length : 1)), 0);
-    const percent = totalVariants ? Math.round((ownedVariants / totalVariants) * 100) : 0;
+    const catalogueItems = getAllItems();
+    const releasedItems = getReleasedCollectionItems(catalogueItems);
+    const metrics = getCollectionMetrics(catalogueItems);
+    const ownedVariants = metrics.owned;
+    const totalVariants = metrics.releasedTotal;
+    const percent = metrics.percent;
     panel.style.setProperty("--account-progress", `${Math.min(100, Math.max(0, percent))}%`);
 
     // Sprites completed = sprites where ALL variants are owned
     const spriteVariantMap = {};
-    SPRITES.forEach(s => {
-      const variantTypes = Object.keys(s.variantDetails || {});
-      const variants = variantTypes.length > 0 ? variantTypes : (s.variants || ["Base"]);
-      variants.forEach(v => {
-        const key = variantId(s.id, v);
-        if (!spriteVariantMap[s.id]) spriteVariantMap[s.id] = { total: 0, owned: 0 };
-        spriteVariantMap[s.id].total++;
-        if (coll[key] && coll[key].status === "owned") spriteVariantMap[s.id].owned++;
-      });
+    releasedItems.forEach((item) => {
+      if (!spriteVariantMap[item.spriteId]) spriteVariantMap[item.spriteId] = { total: 0, owned: 0 };
+      spriteVariantMap[item.spriteId].total++;
+      if (getEntry(item.id).status === "owned") spriteVariantMap[item.spriteId].owned++;
     });
     const totalSprites = Object.keys(spriteVariantMap).length;
     const completedSprites = Object.values(spriteVariantMap).filter(s => s.owned === s.total && s.total > 0).length;
 
     // Priorities
-    const priorities = entries.filter(e => e.status === "priority").length;
+    const priorities = releasedItems.filter((item) => getEntry(item.id).status === "priority").length;
 
     document.getElementById("accountPercent").textContent = percent + "%";
     document.getElementById("accountCompleted").textContent = `${completedSprites} / ${totalSprites}`;
@@ -163,7 +159,7 @@ function setupAccountPanel() {
     // Last sync
     const lastSync = localStorage.getItem("sprite-index_last_sync");
     document.getElementById("accountLastSync").textContent = lastSync
-      ? new Date(lastSync).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })
+      ? new Date(lastSync).toLocaleString(uiLocale(), { dateStyle: "short", timeStyle: "short" })
       : t("account.neverSynced");
 
     // Member since
@@ -173,7 +169,7 @@ function setupAccountPanel() {
         const u = JSON.parse(userRaw);
         if (u.created_at) {
           document.getElementById("accountSince").textContent =
-            t("account.memberSince", { date: new Date(u.created_at).toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) });
+            t("account.memberSince", { date: new Date(u.created_at).toLocaleDateString(uiLocale(), { month: "long", year: "numeric" }) });
         }
       } catch {}
     }
@@ -217,11 +213,17 @@ function setupAccountPanel() {
     const badges = Array.isArray(data?.badgeProgress) && data.badgeProgress.length
       ? data.badgeProgress
       : (Array.isArray(data?.badges) ? data.badges.map((badge) => ({ ...badge, status: "unlocked" })) : []);
+    globalThis.spriteIndexBadges = badges;
     const unlockedBadges = badges.filter((badge) => !badge.status || badge.status === "unlocked");
     const primarySquad = data?.primarySquad;
     setAccountOverviewValue("accountHeroBadges", String(unlockedBadges.length));
     setAccountOverviewValue("accountHeroSquad", primarySquad?.name ? String(primarySquad.memberCount || 1) : "0");
-    setAccountOverviewValue("accountHeroReliability", `${Math.round(Math.max(0, Math.min(100, Number(reliability.rate) || 0)))}%`);
+    const reliabilityRate = Math.max(0, Math.min(100, Number(reliability.rate) || 0));
+    const reliabilityExplicit = Math.max(0, Number(reliability.explicitVariantCount) || 0);
+    const reliabilityTotal = Math.max(0, Number(reliability.totalVariantCount) || released);
+    const reliabilityLabel = reliabilityRate.toLocaleString(isEnglish ? "en-US" : "fr-FR", { maximumFractionDigits: 1 });
+    setAccountOverviewValue("accountHeroReliability", `${reliabilityLabel}%`);
+    setAccountOverviewValue("accountHeroReliabilityDetail", t("account.reliabilityDetail", { count: reliabilityExplicit, total: reliabilityTotal }));
 
     const events = data?.events || {};
     const completedEvents = Array.isArray(events.completed) ? events.completed : [];
@@ -262,15 +264,31 @@ function setupAccountPanel() {
     const badgePreview = document.getElementById("accountBadgePreview");
     if (badgePreview) {
       badgePreview.replaceChildren();
-      const preview = unlockedBadges.slice(0, 4);
+      delete badgePreview.dataset.badgeCount;
+      const preview = unlockedBadges.slice(0, 3);
       if (!preview.length) {
         const empty = document.createElement("p");
         empty.textContent = t("account.noBadge");
         badgePreview.append(empty);
       } else {
+        badgePreview.dataset.badgeCount = String(unlockedBadges.length);
+        const summary = document.createElement("div");
+        summary.className = "account-badge-preview__summary";
+        const count = document.createElement("strong");
+        count.textContent = String(unlockedBadges.length);
+        const countLabel = document.createElement("span");
+        countLabel.textContent = unlockedBadges.length === 1
+          ? t("account.badgePreviewCountOne")
+          : t("account.badgePreviewCountMany");
+        summary.append(count, countLabel);
+
+        const tray = document.createElement("div");
+        tray.className = "account-badge-preview__tray";
+        tray.setAttribute("role", "list");
         preview.forEach((badge) => {
           const card = document.createElement("div");
           card.className = "account-badge-preview__item";
+          card.setAttribute("role", "listitem");
           card.dataset.badgeCategory = badge.uiCategory || "progression";
           card.title = badge.label || badge.badgeCode || "Badge";
           const icon = document.createElement("span");
@@ -286,25 +304,49 @@ function setupAccountPanel() {
           const label = document.createElement("small");
           label.textContent = badge.label || badge.badgeCode || "Badge";
           card.append(icon, label);
-          badgePreview.append(card);
+          tray.append(card);
         });
-      }
-      if (unlockedBadges.length > 4) {
-        const rest = document.createElement("span");
-        rest.className = "account-badge-preview__more";
-        rest.textContent = `+${unlockedBadges.length - 4}`;
-        badgePreview.append(rest);
+        if (unlockedBadges.length > preview.length) {
+          const rest = document.createElement("span");
+          rest.className = "account-badge-preview__more";
+          rest.textContent = `+${unlockedBadges.length - preview.length}`;
+          rest.setAttribute("aria-label", t("account.badgePreviewMore", { count: unlockedBadges.length - preview.length }));
+          tray.append(rest);
+        }
+        badgePreview.append(summary, tray);
       }
     }
 
+    const squadMembers = Number(primarySquad?.memberCount) || 1;
     const squadLabel = primarySquad?.name
-      ? `${primarySquad.name} · ${Number(primarySquad.memberCount) || 1} membre${Number(primarySquad.memberCount) === 1 ? "" : "s"}`
-      : "Aucune squad principale";
+      ? `${primarySquad.name} · ${t("squad.memberCount", { count: squadMembers, s: squadMembers === 1 ? "" : "s" })}`
+      : t("account.passport.noSquad");
     document.getElementById("accountHeroSquad")?.setAttribute("title", squadLabel);
     document.getElementById("accountHeroBadges")?.setAttribute("title", t("account.badgesObtainedTitle", { count: unlockedBadges.length }));
-    document.getElementById("accountHeroReliability")?.setAttribute("title", t("account.reliabilityTitle", { percent: Math.round(Math.max(0, Math.min(100, Number(reliability.rate) || 0))) }));
+    document.getElementById("accountHeroReliability")?.setAttribute("title", t("account.reliabilityTitle", { percent: reliabilityLabel }));
     document.getElementById("accountHeroVariants")?.setAttribute("title", t("account.variantsOwnedTitle", { count: owned }));
     void social;
+  }
+
+  function withCurrentLocalCollection(data) {
+    const metrics = getCollectionMetrics(getAllItems());
+    const collection = data?.collection || {};
+    const catalogue = data?.catalogue || {};
+    return {
+      ...data,
+      collection: {
+        ...collection,
+        ownedVariantCount: metrics.owned,
+        releasedVariantCount: metrics.releasedTotal,
+        completionRate: metrics.percent,
+        completionRatePrecise: metrics.precisePercent,
+        completionRateDisplay: metrics.percent
+      },
+      catalogue: {
+        ...catalogue,
+        releasedVariantCount: metrics.releasedTotal
+      }
+    };
   }
 
   function refreshAccountQuickPreferences() {
@@ -319,8 +361,8 @@ function setupAccountPanel() {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return fallback;
     return withTime
-      ? date.toLocaleString("fr-FR", { dateStyle: "long", timeStyle: "short" })
-      : date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+      ? date.toLocaleString(uiLocale(), { dateStyle: "long", timeStyle: "short" })
+      : date.toLocaleDateString(uiLocale(), { day: "numeric", month: "long", year: "numeric" });
   }
 
   function passportRelativeUpdate(value) {
@@ -331,7 +373,7 @@ function setupAccountPanel() {
     const sameDay = date.toDateString() === now.toDateString();
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    const time = date.toLocaleTimeString("fr-FR", { hour: "numeric", minute: "2-digit" }).replace(":", " h ");
+    const time = date.toLocaleTimeString(uiLocale(), { hour: "numeric", minute: "2-digit" });
     if (sameDay) return t("account.todayAt", { time });
     if (date.toDateString() === yesterday.toDateString()) return t("account.yesterdayAt", { time });
     return passportDate(value);
@@ -348,7 +390,7 @@ function setupAccountPanel() {
     if (!value) return t("account.joinDateHidden");
     const start = new Date(value);
     if (Number.isNaN(start.getTime())) return "—";
-    const monthYear = start.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    const monthYear = start.toLocaleDateString(uiLocale(), { month: "long", year: "numeric" });
     return t("account.collectorSince", { monthYear });
   }
 
@@ -369,9 +411,11 @@ function setupAccountPanel() {
     const r = Math.max(0, Number(released) || 0);
     const rate = Number(rateDisplay);
     const rateStr = Number.isFinite(rate)
-      ? rate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+      ? formatUiNumber(rate, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
       : "—";
-    return `Progression de la collection : ${o} variante${o === 1 ? "" : "s"} sur ${r}, soit ${rateStr} %.`;
+    return uiLocale() === "en-US"
+      ? `Collection progress: ${o} variant${o === 1 ? "" : "s"} out of ${r}, that is ${rateStr}%.`
+      : `Progression de la collection : ${o} variante${o === 1 ? "" : "s"} sur ${r}, soit ${rateStr} %.`;
   }
 
   function formatBadgeAccessibleName(badge) {
@@ -441,7 +485,7 @@ function setupAccountPanel() {
         return data.percent != null ? t("account.activity.milestonePercent", { percent: data.percent }) : t("account.activity.milestone");
       case "collective_goal_completed":
         return data.goalTitle
-          ? t("account.activity.goalReached", { squad: data.squadName || "La squad", goal: data.goalTitle })
+          ? t("account.activity.goalReached", { squad: data.squadName || t("account.activity.squadDefault"), goal: data.goalTitle })
           : (data.squadName
             ? t("account.activity.squadProgress", { squad: data.squadName })
             : t("account.activity.goalCompleted"));
@@ -461,7 +505,7 @@ function setupAccountPanel() {
     const diffDays = Math.round((startToday - startThat) / 86400000);
     if (diffDays === 0) return t("account.today");
     if (diffDays === 1) return t("account.yesterday");
-    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: startThat.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+    return d.toLocaleDateString(uiLocale(), { day: "numeric", month: "long", year: startThat.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
   }
 
   function groupPassportActivityByDay(items) {
@@ -577,6 +621,7 @@ function setupAccountPanel() {
     const badges = badgeProgress.length
       ? badgeProgress
       : (Array.isArray(data.badges) ? data.badges.map((b) => ({ ...b, badgeCode: b.code || b.id, status: "unlocked" })) : []);
+    globalThis.spriteIndexBadges = badges;
     const unlockedBadges = badges.filter((b) => !b.status || b.status === "unlocked");
     const featuredBadge = data.featuredBadge || identity.featuredBadge || null;
     const featuredId = featuredBadge && featuredBadge.badgeId ? String(featuredBadge.badgeId) : "";
@@ -584,10 +629,11 @@ function setupAccountPanel() {
     const completedEvents = Array.isArray(events.completed) ? events.completed : [];
     const inProgressEvents = Array.isArray(events.inProgress) ? events.inProgress : [];
     const historicalEvents = Array.isArray(events.historical) ? events.historical : [];
+    const completedEventCount = safeFiniteNumber(data.eventsCompleted != null ? data.eventsCompleted : completedEvents.length, 0, { min: 0, max: 1000000 });
     const officialRarity = c.highestOfficialRarity || null;
     const specialVariant = c.rarestSpecialVariant || null;
     const rarityLabel = officialRarity
-      ? officialRarity.label
+      ? localizedRarity(officialRarity.label)
       : (c.highestRarity || t("account.passport.noRarityUnlocked"));
     const rarityCount = officialRarity && officialRarity.ownedCountAtRarity
       ? (() => {
@@ -600,7 +646,7 @@ function setupAccountPanel() {
             epic: t("account.passport.rarityAdj.epic"),
             legendary: t("account.passport.rarityAdj.legendary"),
             mythic: t("account.passport.rarityAdj.mythic")
-          }[key] || String(officialRarity.label || "").toLowerCase();
+          }[key] || localizedRarity(officialRarity.label).toLowerCase();
           return n === 1
             ? t("account.passport.rarityCountOne", { adjective })
             : t("account.passport.rarityCountMany", { count: n, adjective });
@@ -620,10 +666,10 @@ function setupAccountPanel() {
       primarySquadLine = primarySquad.name;
       const members = safeFiniteNumber(primarySquad.memberCount, 0, { min: 0, max: 1000000 });
       const collective = primarySquad.collectiveCompletionDisplay != null
-        ? Number(primarySquad.collectiveCompletionDisplay).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+        ? formatUiNumber(Number(primarySquad.collectiveCompletionDisplay), { minimumFractionDigits: 0, maximumFractionDigits: 1 })
         : null;
       const meta = [
-        members ? `${members} membre${members === 1 ? "" : "s"}` : null,
+        members ? t("squad.memberCount", { count: members, s: members === 1 ? "" : "s" }) : null,
         collective != null ? t("account.passport.collectiveCompletion", { rate: collective }) : null,
         primarySquad.role || null
       ].filter(Boolean).join(" · ");
@@ -679,8 +725,8 @@ function setupAccountPanel() {
       return `<li>
         <div>
           <strong>${escapeHtml(ev.eventName || ev.eventId)}</strong>
-          <span>${t("account.passport.variantCount", { owned: safeFiniteNumber(ev.ownedCount, 0, { min: 0, max: 1000000 }), total: safeFiniteNumber(ev.requiredCount, 0, { min: 0, max: 1000000 }) })}${rate != null ? ` · ${rate.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : ""}</span>
-          <small>${endLabel || `Plus que ${safeFiniteNumber(ev.remainingCount, 0, { min: 0, max: 1000000 })}`}</small>
+          <span>${t("account.passport.variantCount", { owned: safeFiniteNumber(ev.ownedCount, 0, { min: 0, max: 1000000 }), total: safeFiniteNumber(ev.requiredCount, 0, { min: 0, max: 1000000 }) })}${rate != null ? ` · ${formatUiPercent(rate, { maximumFractionDigits: 1 })}` : ""}</span>
+          <small>${endLabel || t("account.event.remaining", { count: safeFiniteNumber(ev.remainingCount, 0, { min: 0, max: 1000000 }) })}</small>
           ${missingAction}
         </div>
       </li>`;
@@ -708,7 +754,7 @@ function setupAccountPanel() {
         progressLine = historical || (b.unlockedAt ? t("account.badge.obtainedOn", { date: passportDate(b.unlockedAt, "—", { withTime: false }) }) : t("account.badge.unlocked"));
       } else if (progressValue != null && targetValue != null) {
         progressLine = [
-          progressRate != null ? `${progressRate.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %` : null,
+          progressRate != null ? formatUiPercent(progressRate, { maximumFractionDigits: 2 }) : null,
           `${progressValue} / ${targetValue}`,
           remaining != null && remaining > 0 ? (remaining === 1 ? t("account.badge.remainingOne") : t("account.badge.remainingMany", { count: remaining })) : null
         ].filter(Boolean).join(" · ");
@@ -718,20 +764,37 @@ function setupAccountPanel() {
         : "";
       const iconChar = escapeHtml(String(b.label || b.badgeCode || "?").slice(0, 1).toUpperCase());
       const iconHtml = b.iconUrl
-        ? `<img class="collector-passport__badge-icon" src="${escapeHtml(b.iconUrl)}" alt="" loading="lazy" aria-hidden="true">`
-        : `<div class="collector-passport__badge-icon" aria-hidden="true">${iconChar}</div>`;
+        ? `<img class="collector-passport__badge-icon collector-passport__badge-icon--art" src="${escapeHtml(b.iconUrl)}" alt="" loading="lazy" aria-hidden="true">`
+        : `<div class="collector-passport__badge-icon collector-passport__badge-icon--fallback" aria-hidden="true">${iconChar}</div>`;
       const a11yName = formatBadgeAccessibleName(b);
       const statusLabel = unlocked ? t("account.badge.unlocked") : t("account.badge.locked");
-      return `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}${isFeatured ? " collector-passport__badge-card--featured" : ""}" tabindex="0" role="listitem" aria-label="${escapeHtml(a11yName)}" data-passport-action="badge-open" data-badge-code="${escapeHtml(b.badgeCode || "")}" data-badge-status="${unlocked ? "unlocked" : "locked"}" data-badge-category="${escapeHtml(uiCat)}">
-        ${iconHtml}
+      const barWidth = unlocked
+        ? 100
+        : Math.max(0, Math.min(100, progressRate != null ? progressRate : (targetValue ? Math.round((progressValue / targetValue) * 100) : 0)));
+      const showProgress = !unlocked && targetValue != null;
+      const verifyRaw = passportVerificationLabel(b.verificationStatus || (unlocked ? "declared" : "—"));
+      const showVerify = verifyRaw && verifyRaw !== "—" && verifyRaw !== "-";
+      return `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}${isFeatured ? " collector-passport__badge-card--featured" : ""}${b.iconUrl ? " collector-passport__badge-card--art" : ""}" tabindex="0" role="listitem" aria-label="${escapeHtml(a11yName)}" data-passport-action="badge-open" data-badge-code="${escapeHtml(b.badgeCode || "")}" data-badge-status="${unlocked ? "unlocked" : "locked"}" data-badge-category="${escapeHtml(uiCat)}"${unlocked ? "" : " hidden"}>
+        <div class="collector-passport__badge-medal${b.iconUrl ? " collector-passport__badge-medal--art" : ""}">${iconHtml}</div>
         <div class="collector-passport__badge-body">
-          <strong>${escapeHtml(b.label || b.badgeCode || b.id)}</strong>
-          <span class="collector-passport__badge-status">${statusLabel}${isFeatured ? t("account.badge.pinnedSuffix") : ""}</span>
-          <p>${escapeHtml(b.description || "")}</p>
-          <small>${escapeHtml(progressLine || (unlocked ? t("account.badge.unlocked") : t("account.badge.locked")))}</small>
-          <small class="collector-passport__badge-verify">${t("account.badge.verificationPrefix")}${escapeHtml(passportVerificationLabel(b.verificationStatus || (unlocked ? "declared" : "—")))}</small>
-          <small class="collector-passport__badge-declared">${t("account.badge.declaredCalc")}</small>
-          ${pinBtn}
+          <div class="collector-passport__badge-topline">
+            <strong>${escapeHtml(b.label || b.badgeCode || b.id)}</strong>
+            <span class="collector-passport__badge-status">${statusLabel}${isFeatured ? t("account.badge.pinnedSuffix") : ""}</span>
+          </div>
+          ${b.description ? `<p class="collector-passport__badge-desc">${escapeHtml(b.description)}</p>` : ""}
+          ${showProgress ? `
+            <div class="collector-passport__badge-progress" aria-hidden="true">
+              <div class="collector-passport__badge-progress-track">
+                <div class="collector-passport__badge-progress-fill" style="width:${barWidth}%"></div>
+              </div>
+              <span class="collector-passport__badge-progress-label">${escapeHtml(progressLine || `${barWidth} %`)}</span>
+            </div>
+          ` : (progressLine ? `<p class="collector-passport__badge-meta">${escapeHtml(progressLine)}</p>` : "")}
+          ${(showVerify || pinBtn) ? `
+          <div class="collector-passport__badge-foot">
+            ${showVerify ? `<small class="collector-passport__badge-verify">${t("account.badge.verificationPrefix")}${escapeHtml(verifyRaw)}</small>` : ""}
+            ${pinBtn}
+          </div>` : ""}
         </div>
       </article>`;
     };
@@ -764,23 +827,27 @@ function setupAccountPanel() {
         <div class="collector-passport__grid collector-passport__grid--progress">
           <div><strong>${discovered} / ${releasedSprites}</strong><span>${t("account.passport.spritesDiscovered")}</span></div>
           <div><strong>${owned} / ${released}</strong><span>${t("account.passport.variantsOwned")}</span></div>
-          <div><strong>${displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 })} %</strong><span>${t("account.passport.completion")}</span></div>
+          <div><strong>${formatUiPercent(displayRate, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}</strong><span>${t("account.passport.completion")}</span></div>
         </div>
         <div class="collector-passport__progress">
           <div class="collector-passport__progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${escapeHtml(String(barWidth))}" aria-valuetext="${escapeHtml(formatCollectionProgressText(owned, released, displayRate))}" aria-describedby="passport-progress-text">
             <div class="collector-passport__progress-fill" style="width:${barWidth}%"></div>
           </div>
           <p id="passport-progress-text" class="collector-passport__progress-text">${escapeHtml(formatCollectionProgressText(owned, released, displayRate))}</p>
-          ${showPeak ? `<p class="collector-passport__progress-peak">${t("account.passport.peakRecord", { peak: Number(peak.completionRateDisplay).toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }), current: displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) })}</p>` : `<p class="collector-passport__progress-peak">${t("account.passport.currentRate", { current: displayRate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) })}</p>`}
+          ${showPeak ? `<p class="collector-passport__progress-peak">${t("account.passport.peakRecord", { peak: formatUiNumber(Number(peak.completionRateDisplay), { minimumFractionDigits: 0, maximumFractionDigits: 1 }), current: formatUiNumber(displayRate, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) })}</p>` : `<p class="collector-passport__progress-peak">${t("account.passport.currentRate", { current: formatUiNumber(displayRate, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) })}</p>`}
           ${nextStep ? `<p class="collector-passport__progress-next">${escapeHtml(nextStep.label)}</p>` : ""}
           <p class="collector-passport__progress-meta">${t("account.passport.lastUpdate", { date: escapeHtml(passportRelativeUpdate(c.lastUpdatedAt)), quality: escapeHtml(qualityLabel), rate: safePercentage(reliability.rate, 0) })}</p>
         </div>
         ${reliabilityWarning}
       </section>
 
-      <section class="collector-passport__section collector-passport__section--collection" aria-labelledby="passport-collection-heading">
-        <h4 id="passport-collection-heading">${t("account.passport.collection")}</h4>
-        <div class="collector-passport__breakdown">
+      <details class="collector-passport__section collector-passport__disclosure collector-passport__section--collection">
+        <summary aria-labelledby="passport-collection-heading">
+          <span><strong id="passport-collection-heading">${t("account.passport.collection")}</strong><small>${t("account.passport.collectionSummary")}</small></span>
+          <span class="collector-passport__disclosure-icon" aria-hidden="true"></span>
+        </summary>
+        <div class="collector-passport__disclosure-body">
+          <div class="collector-passport__breakdown">
           <h5>${t("account.passport.rarities")}</h5>
           <ul class="collector-passport__filter-list">${rarityBreakdown.length ? rarityBreakdown.map((row) => `
             <li><button type="button" class="collector-passport__filter-row" data-passport-action="open-filter" data-filter="${escapeHtml(row.filter)}">
@@ -793,42 +860,48 @@ function setupAccountPanel() {
               <span>${escapeHtml(row.label)}</span>
               <strong>${safeFiniteNumber(row.ownedCount, 0, { min: 0, max: 1000000 })} / ${safeFiniteNumber(row.releasedCount, 0, { min: 0, max: 1000000 })}</strong>
             </button></li>`).join("") : `<li><em>${t("account.passport.noTypes")}</em></li>`}</ul>
-        </div>
-        <dl class="collector-passport__details">
+          </div>
+          <dl class="collector-passport__details">
           <div><dt>${t("account.passport.highestRarity")}</dt><dd>${escapeHtml(rarityLabel)}${rarityCount ? `<br><small>${escapeHtml(rarityCount)}</small>` : ""}</dd></div>
           <div><dt>${t("account.passport.rarestSpecial")}</dt><dd>${escapeHtml((specialVariant && specialVariant.label) || t("account.passport.noneF"))}</dd></div>
           <div><dt>${t("account.passport.mainSquad")}</dt><dd>${primarySquadHtml}</dd></div>
-          <div><dt>${t("account.passport.socialActivity")}</dt><dd>${safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 })} ami${safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s"} · ${safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 })} squad${safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s"}</dd></div>
+          <div><dt>${t("account.passport.socialActivity")}</dt><dd>${t("squad.friendCount", { count: safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 }), s: safeFiniteNumber(social.friendCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s" })} · ${t("account.passport.squadCount", { count: safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 }), s: safeFiniteNumber(social.squadCount, 0, { min: 0, max: 1000000 }) === 1 ? "" : "s" })}</dd></div>
           <div><dt>${t("account.passport.comparisons")}</dt><dd>${comparisonsHtml}</dd></div>
-          <div><dt>${t("account.passport.reliability")}</dt><dd>${safePercentage(reliability.rate, 0)} % (${safeFiniteNumber(reliability.explicitVariantCount, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(reliability.totalVariantCount, 0, { min: 0, max: 1000000 })})</dd></div>
-        </dl>
-        <p class="collector-passport__footnote">${released === 1 ? t("account.passport.footnoteOne") : t("account.passport.footnoteMany", { count: released })}${c.catalogueVersion || cat.version ? ` · catalogue ${escapeHtml(c.catalogueVersion || cat.version)}` : ""}.</p>
-        <p class="collector-passport__disclaimer">${t("account.passport.userDeclared")}</p>
-      </section>
+          <div><dt>${t("account.passport.reliability")}</dt><dd>${formatUiPercent(reliability.rate, { maximumFractionDigits: 0 })} (${safeFiniteNumber(reliability.explicitVariantCount, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(reliability.totalVariantCount, 0, { min: 0, max: 1000000 })})</dd></div>
+          </dl>
+          <p class="collector-passport__footnote">${released === 1 ? t("account.passport.footnoteOne") : t("account.passport.footnoteMany", { count: released })}${c.catalogueVersion || cat.version ? ` · catalogue ${escapeHtml(c.catalogueVersion || cat.version)}` : ""}.</p>
+          <p class="collector-passport__disclaimer">${t("account.passport.userDeclared")}</p>
+        </div>
+      </details>
 
-      <section class="collector-passport__section collector-passport__section--events" aria-labelledby="passport-events-heading">
-        <h4 id="passport-events-heading">${t("account.passport.events")}</h4>
-        <p class="collector-passport__events-summary">${(() => { const _n = safeFiniteNumber(data.eventsCompleted != null ? data.eventsCompleted : completedEvents.length, 0, { min: 0, max: 1000000 }); return _n === 1 ? `<strong>1</strong> ${t("account.passport.eventsCompletedOne").replace("1 ", "")}` : `<strong>${_n}</strong> ${t("account.passport.eventsCompletedMany", { count: _n }).replace(`${_n} `, "")}`; })()}</p>
-        <div class="collector-passport__block">
+      <details class="collector-passport__section collector-passport__disclosure collector-passport__section--events"${inProgressEvents.length ? " open" : ""}>
+        <summary aria-labelledby="passport-events-heading">
+          <span><strong id="passport-events-heading">${t("account.passport.events")}</strong><small>${t("account.passport.eventsSummary", { count: completedEventCount })}</small></span>
+          <span class="collector-passport__disclosure-icon" aria-hidden="true"></span>
+        </summary>
+        <div class="collector-passport__disclosure-body">
+          <p class="collector-passport__events-summary">${completedEventCount === 1 ? `<strong>1</strong> ${t("account.passport.eventsCompletedOne").replace("1 ", "")}` : `<strong>${completedEventCount}</strong> ${t("account.passport.eventsCompletedMany", { count: completedEventCount }).replace(`${completedEventCount} `, "")}`}</p>
+          <div class="collector-passport__block">
           <h5>${t("account.passport.recentlyCompleted")}</h5>
           <ul class="collector-passport__events">${recentlyCompleted.length ? recentlyCompleted.map((ev) => renderEventItem(ev, "completed")).join("") : `<li><em>${t("account.passport.noRecentEvents")}</em></li>`}</ul>
-        </div>
-        <div class="collector-passport__block">
+          </div>
+          <div class="collector-passport__block">
           <h5>${t("account.passport.inProgress", { count: inProgressEvents.length })}</h5>
           <ul class="collector-passport__events">${inProgressEvents.length ? inProgressEvents.map((ev) => renderEventItem(ev, "progress")).join("") : `<li><em>${t("account.passport.noEventsInProgress")}</em></li>`}</ul>
-        </div>
-        <div class="collector-passport__block">
+          </div>
+          <div class="collector-passport__block">
           <h5>${t("account.passport.historical", { count: historicalEvents.length })}</h5>
           <ul class="collector-passport__events">${historicalEvents.length ? historicalEvents.map((ev) => renderEventItem(ev, "historical")).join("") : `<li><em>${t("account.passport.noHistoricalEvents")}</em></li>`}</ul>
+          </div>
         </div>
-      </section>`}
+      </details>`}
 
       <section class="collector-passport__section collector-passport__section--badges" aria-labelledby="passport-badges-heading">
         <h4 id="passport-badges-heading">${t("account.passport.badgesCount", { count: unlockedBadges.length })}</h4>
         <div class="collector-passport__badge-filters" role="toolbar" aria-label="${t("account.passport.badgeFiltersLabel")}">
           ${[
-            ["all", t("account.badge.filterAll")],
             ["unlocked", t("account.badge.filterUnlocked")],
+            ["all", t("account.badge.filterAll")],
             ["locked", t("account.badge.filterLocked")],
             ["progression", passportBadgeCategoryLabel("progression")],
             ["social", passportBadgeCategoryLabel("social")],
@@ -839,23 +912,28 @@ function setupAccountPanel() {
         </div>
         <div class="collector-passport__badge-grid" role="list" data-badge-grid>
           ${badgesByCategory.length ? badgesByCategory.map((group) => `
-            <div class="collector-passport__badge-group" data-badge-group="${escapeHtml(group.cat)}">
+            <div class="collector-passport__badge-group" data-badge-group="${escapeHtml(group.cat)}"${group.items.some((badge) => !badge.status || badge.status === "unlocked") ? "" : " hidden"}>
               <h5>${escapeHtml(group.label)}</h5>
               <div class="collector-passport__badge-cards" role="presentation">${group.items.map(renderBadgeCard).join("")}</div>
             </div>`).join("") : `<em>${t("account.passport.noBadges")}</em>`}
         </div>
       </section>
 
-      <section class="collector-passport__section collector-passport__section--activity" aria-labelledby="passport-activity-heading">
-        <h4 id="passport-activity-heading">${t("account.passport.recentActivity")}</h4>
-        ${activityGroups.length ? activityGroups.map((group) => `
+      <details class="collector-passport__section collector-passport__disclosure collector-passport__section--activity">
+        <summary aria-labelledby="passport-activity-heading">
+          <span><strong id="passport-activity-heading">${t("account.passport.recentActivity")}</strong><small>${t("account.passport.activitySummary")}</small></span>
+          <span class="collector-passport__disclosure-icon" aria-hidden="true"></span>
+        </summary>
+        <div class="collector-passport__disclosure-body">
+          ${activityGroups.length ? activityGroups.map((group) => `
           <div class="collector-passport__activity-day">
             <h5>${escapeHtml(group.label)}</h5>
             <ul class="collector-passport__activity">${group.items.map((a) =>
               `<li><span>${escapeHtml(passportActivityLabel(a))}</span></li>`
             ).join("")}</ul>
           </div>`).join("") : `<p class="collector-passport__empty" role="status">${t("account.passport.noRecentActivity")}</p>`}
-      </section>
+        </div>
+      </details>
     `;
   }
 
@@ -1002,14 +1080,15 @@ function setupAccountPanel() {
       showBadges: avail.badges !== false && !!card.featuredBadgeLabel,
       showJoinedAt: avail.joinedAt !== false && !!card.joinedAt,
       showCompletion: avail.completion !== false,
-      showEvents: avail.events !== false && card.completedEventCount != null
+      showEvents: avail.events !== false && card.completedEventCount != null,
+      includeInvite: false
     };
   }
 
   function formatPassportJoinDate(value) {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    return d.toLocaleDateString(uiLocale(), { day: "numeric", month: "long", year: "numeric" });
   }
 
   function buildPassportCardLines(card, opts) {
@@ -1020,7 +1099,7 @@ function setupAccountPanel() {
       lines.push({ kind: "sub", text: `@${card.username}` });
     }
     if (opts.showCompletion && card.completionRateDisplay != null) {
-      const rate = String(card.completionRateDisplay).replace(".", ",");
+      const rate = formatUiNumber(card.completionRateDisplay, { maximumFractionDigits: 1 });
       lines.push({ kind: "stat", text: t("account.share.completionRate", { rate }) });
     }
     if (opts.showCompletion && card.ownedVariantCount != null && card.releasedVariantCount != null) {
@@ -1039,16 +1118,22 @@ function setupAccountPanel() {
     if (opts.showJoinedAt && card.joinedAt) {
       lines.push({ kind: "meta", text: t("account.share.joinedOn", { date: formatPassportJoinDate(card.joinedAt) }) });
     }
+    if (opts.includeInvite) {
+      lines.push({ kind: "meta", text: t("passport.shareInviteCardLine") });
+    }
     return lines;
   }
 
   function renderPassportSharePreviewBody(card, opts) {
     const lines = buildPassportCardLines(card, opts);
+    const shareTarget = opts.includeInvite
+      ? t("passport.shareInvitePreviewUrl")
+      : ((card.publicUrl && `${webOrigin()}${card.publicUrl}`) || "");
     return `
       <ul class="passport-share-preview__list">
         ${lines.map((l) => `<li class="passport-share-preview__${escapeHtml(l.kind)}">${escapeHtml(l.text)}</li>`).join("")}
       </ul>
-      <p class="passport-share-preview__url">${escapeHtml((card.publicUrl && `${webOrigin()}${card.publicUrl}`) || "")}</p>
+      <p class="passport-share-preview__url">${escapeHtml(shareTarget)}</p>
       <p class="passport-share-preview__note">${t("account.passportShareNote")}</p>
     `;
   }
@@ -1062,6 +1147,69 @@ function setupAccountPanel() {
     return data;
   }
 
+  let passportSharePreviewUrl = "";
+
+  function resetPassportShareResult() {
+    const result = document.getElementById("passportShareResult");
+    const image = document.getElementById("passportShareResultImage");
+    if (passportSharePreviewUrl) URL.revokeObjectURL(passportSharePreviewUrl);
+    passportSharePreviewUrl = "";
+    if (image) image.removeAttribute("src");
+    if (result) result.hidden = true;
+  }
+
+  function showPassportShareResult(result) {
+    const root = document.getElementById("passportShareResult");
+    const image = document.getElementById("passportShareResultImage");
+    const download = document.getElementById("passportShareDownload");
+    const copy = document.getElementById("passportShareCopyLink");
+    const nativeShare = document.getElementById("passportShareNative");
+    if (!root || !image || !result) return;
+
+    resetPassportShareResult();
+    passportSharePreviewUrl = URL.createObjectURL(result.blob);
+    image.src = passportSharePreviewUrl;
+    image.alt = t("passport.shareReadyTitle");
+    root.hidden = false;
+
+    if (download) {
+      download.onclick = () => {
+        const url = URL.createObjectURL(result.blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = result.fileName;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      };
+    }
+    if (copy) {
+      copy.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(result.shareUrl);
+          toast(t("passport.shareLinkCopied"));
+        } catch (_) {
+          toast(result.shareUrl);
+        }
+      };
+    }
+    const nativeSupported = !!(navigator.canShare && navigator.canShare({ files: [result.file] }));
+    if (nativeShare) {
+      nativeShare.hidden = !nativeSupported;
+      nativeShare.onclick = nativeSupported ? async () => {
+        try {
+          await navigator.share({
+            title: result.title,
+            text: result.text,
+            url: result.shareUrl,
+            files: [result.file]
+          });
+        } catch (err) {
+          if (err?.name !== "AbortError") toastError(err, "account.cantGenerateCard");
+        }
+      } : null;
+    }
+  }
+
   function openPassportSharePreview(passportData) {
     const username = passportData.user && passportData.user.username;
     if (!username) {
@@ -1073,18 +1221,21 @@ function setupAccountPanel() {
     const generateBtn = document.getElementById("passportShareGenerate");
     if (!dialog || !preview) return;
 
+    resetPassportShareResult();
     preview.innerHTML = `<p class="collector-passport__empty">${t("account.sharePreviewLoading")}</p>`;
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
 
     fetchPassportCardPayload(username).then((card) => {
       const opts = passportShareDefaults(card);
+      let invitation = null;
       const sync = () => {
         opts.showSquad = !!document.getElementById("passportShareOptSquad")?.checked;
         opts.showBadges = !!document.getElementById("passportShareOptBadges")?.checked;
         opts.showJoinedAt = !!document.getElementById("passportShareOptJoined")?.checked;
         opts.showCompletion = !!document.getElementById("passportShareOptCompletion")?.checked;
         opts.showEvents = !!document.getElementById("passportShareOptEvents")?.checked;
+        opts.includeInvite = !!document.getElementById("passportShareOptInvite")?.checked;
         preview.innerHTML = renderPassportSharePreviewBody(card, opts);
       };
       const squadEl = document.getElementById("passportShareOptSquad");
@@ -1092,6 +1243,7 @@ function setupAccountPanel() {
       const joinedEl = document.getElementById("passportShareOptJoined");
       const completionEl = document.getElementById("passportShareOptCompletion");
       const eventsEl = document.getElementById("passportShareOptEvents");
+      const inviteEl = document.getElementById("passportShareOptInvite");
       if (squadEl) {
         squadEl.checked = opts.showSquad;
         squadEl.disabled = !card.primarySquadName;
@@ -1109,7 +1261,8 @@ function setupAccountPanel() {
         eventsEl.checked = opts.showEvents;
         eventsEl.disabled = card.completedEventCount == null;
       }
-      ["passportShareOptSquad", "passportShareOptBadges", "passportShareOptJoined", "passportShareOptCompletion", "passportShareOptEvents"]
+      if (inviteEl) inviteEl.checked = false;
+      ["passportShareOptSquad", "passportShareOptBadges", "passportShareOptJoined", "passportShareOptCompletion", "passportShareOptEvents", "passportShareOptInvite"]
         .forEach((id) => document.getElementById(id)?.addEventListener("change", sync));
       sync();
 
@@ -1117,13 +1270,18 @@ function setupAccountPanel() {
         generateBtn.onclick = async () => {
           sync();
           const format = document.getElementById("passportShareFormat")?.value || "1080x1080";
+          const originalLabel = generateBtn.textContent;
           generateBtn.disabled = true;
+          generateBtn.textContent = t("passport.shareGenerating");
           try {
-            await generateAndSharePassportCard(card, opts, format);
+            if (opts.includeInvite && !invitation) invitation = await createPassportShareInvitation();
+            const result = await generateAndSharePassportCard(card, opts, format, opts.includeInvite ? invitation : null);
+            showPassportShareResult(result);
           } catch (err) {
             toastError(err, "account.cantGenerateCard");
           } finally {
             generateBtn.disabled = false;
+            generateBtn.textContent = originalLabel;
           }
         };
       }
@@ -1138,7 +1296,24 @@ function setupAccountPanel() {
     return { w: 1080, h: 1080 };
   }
 
-  async function generateAndSharePassportCard(card, opts, format) {
+  async function createPassportShareInvitation() {
+    const res = await fetch(`${API_BASE}/friends/invite-links`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ duration: "permanent" })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.token) throw new Error(data.error || t("passport.shareInviteFailed"));
+    return { token: String(data.token) };
+  }
+
+  function passportShareUrl(card, invitation) {
+    const base = new URL(card.publicUrl || "/", webOrigin());
+    if (invitation?.token) base.searchParams.set("invite", invitation.token);
+    return base.toString();
+  }
+
+  async function generateAndSharePassportCard(card, opts, format, invitation = null) {
     try {
       await fetch(`${API_BASE}/passport/share-card`, {
         method: "POST",
@@ -1149,11 +1324,13 @@ function setupAccountPanel() {
           showBadges: !!opts.showBadges,
           showJoinedAt: !!opts.showJoinedAt,
           showCompletion: opts.showCompletion !== false,
-          showEvents: !!opts.showEvents
+          showEvents: !!opts.showEvents,
+          includesInvitation: !!invitation
         })
       });
     } catch (_) {}
 
+    const shareUrl = passportShareUrl(card, invitation);
     const { w, h } = passportCardSize(format);
     const canvas = document.createElement("canvas");
     canvas.width = w;
@@ -1161,94 +1338,280 @@ function setupAccountPanel() {
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas unavailable");
 
-    const grad = ctx.createLinearGradient(0, 0, w, h);
-    grad.addColorStop(0, "#0b1220");
-    grad.addColorStop(0.55, "#14233a");
-    grad.addColorStop(1, "#1a1030");
-    ctx.fillStyle = grad;
+    const s = w / 1080;
+    const isWide = h / w < 0.78;
+    const isTall = h / w > 1.35;
+    const px = (value) => Math.round(value * s);
+    const roundRect = (x, y, width, height, radius) => {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    };
+    const ellipsis = (value, maxWidth) => {
+      const text = String(value || "");
+      if (ctx.measureText(text).width <= maxWidth) return text;
+      let out = text;
+      while (out.length > 1 && ctx.measureText(`${out}…`).width > maxWidth) out = out.slice(0, -1);
+      return `${out}…`;
+    };
+    const panel = (x, y, width, height, fill, stroke = "rgba(186,224,255,0.14)") => {
+      roundRect(x, y, width, height, px(24));
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = px(1);
+      ctx.stroke();
+    };
+    const line = (x1, y1, x2, y2, color, width = 1) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = px(width);
+      ctx.stroke();
+    };
+    const spark = (cx, cy, radius, color, alpha = 1) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - radius);
+      ctx.quadraticCurveTo(cx + radius * 0.18, cy - radius * 0.18, cx + radius, cy);
+      ctx.quadraticCurveTo(cx + radius * 0.18, cy + radius * 0.18, cx, cy + radius);
+      ctx.quadraticCurveTo(cx - radius * 0.18, cy + radius * 0.18, cx - radius, cy);
+      ctx.quadraticCurveTo(cx - radius * 0.18, cy - radius * 0.18, cx, cy - radius);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.restore();
+    };
+    const hexagon = (cx, cy, radius, fill, stroke) => {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = Math.PI / 6 + i * Math.PI / 3;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = px(2); ctx.stroke(); }
+    };
+    const idIcon = (x, y, size, color) => {
+      ctx.strokeStyle = color; ctx.lineWidth = px(1.8);
+      roundRect(x, y, size, size * 0.72, px(3)); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + size * 0.27, y + size * 0.28, size * 0.1, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + size * 0.27, y + size * 0.5, size * 0.16, Math.PI, 0); ctx.stroke();
+      line(x + size * 0.53, y + size * 0.27, x + size * 0.78, y + size * 0.27, color, 1.4);
+      line(x + size * 0.53, y + size * 0.47, x + size * 0.72, y + size * 0.47, color, 1.4);
+    };
+    const factIcon = (kind, x, y, size, color) => {
+      const midX = x + size / 2;
+      const midY = y + size / 2;
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = px(2);
+      if (kind === "badge") {
+        hexagon(midX, midY, size * 0.28, "rgba(255,215,109,0.12)", color);
+        spark(midX, midY, size * 0.15, color);
+      } else if (kind === "events") {
+        roundRect(x + size * 0.22, y + size * 0.22, size * 0.56, size * 0.56, px(4)); ctx.stroke();
+        line(x + size * 0.22, y + size * 0.4, x + size * 0.78, y + size * 0.4, color, 1.8);
+        line(x + size * 0.38, y + size * 0.57, x + size * 0.47, y + size * 0.65, color, 1.8);
+        line(x + size * 0.47, y + size * 0.65, x + size * 0.66, y + size * 0.48, color, 1.8);
+      } else if (kind === "member") {
+        ctx.beginPath(); ctx.arc(midX, y + size * 0.38, size * 0.14, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(midX, y + size * 0.82, size * 0.27, Math.PI, 0); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(midX, midY, size * 0.2, 0, Math.PI * 2); ctx.stroke();
+      }
+    };
+
+    const backdrop = ctx.createLinearGradient(0, 0, w, h);
+    backdrop.addColorStop(0, "#050a1b");
+    backdrop.addColorStop(0.52, "#111d46");
+    backdrop.addColorStop(1, "#160d31");
+    ctx.fillStyle = backdrop;
+    ctx.fillRect(0, 0, w, h);
+    const glow = ctx.createRadialGradient(w * 0.8, h * 0.13, 0, w * 0.8, h * 0.13, w * 0.7);
+    glow.addColorStop(0, "rgba(85, 77, 255, 0.2)");
+    glow.addColorStop(1, "rgba(0,225,255,0)");
+    ctx.fillStyle = glow;
     ctx.fillRect(0, 0, w, h);
 
-    ctx.fillStyle = "rgba(255,255,255,0.06)";
-    ctx.fillRect(Math.round(w * 0.06), Math.round(h * 0.08), Math.round(w * 0.88), Math.round(h * 0.84));
+    const inset = px(isWide ? 32 : 42);
+    const cardX = inset;
+    const cardY = inset;
+    const cardW = w - inset * 2;
+    const cardH = h - inset * 2;
+    panel(cardX, cardY, cardW, cardH, "rgba(5, 13, 36, 0.82)", "rgba(80, 166, 255, 0.3)");
 
-    const lines = buildPassportCardLines(card, opts);
-    const padX = w * 0.12;
-    let y = h * (h > w * 1.2 ? 0.22 : 0.28);
-    const titleSize = Math.round(w * (format === "1200x630" ? 0.055 : 0.07));
-    const bodySize = Math.round(w * (format === "1200x630" ? 0.032 : 0.038));
+    // Sparse stars keep the card alive without competing with the information.
+    [[0.21, 0.08, 2], [0.66, 0.04, 1.5], [0.9, 0.16, 2], [0.83, 0.42, 1.5], [0.12, 0.83, 1.5]].forEach(([rx, ry, r]) => {
+      spark(cardX + cardW * rx, cardY + cardH * ry, px(r), "#5f8dff", 0.42);
+    });
 
-    ctx.fillStyle = "#9ec5ff";
-    ctx.font = `600 ${Math.round(bodySize * 0.85)}px system-ui, sans-serif`;
-    ctx.fillText(t("passport.canvasBrand"), padX, y - bodySize * 1.6);
+    const contentX = cardX + px(isWide ? 38 : 52);
+    const contentW = cardW - px(isWide ? 76 : 104);
+    let y = cardY + px(isWide ? 45 : 58);
+    const brandSize = px(isWide ? 16 : 19);
+    const nameSize = px(isWide ? 42 : 55);
+    const markSize = px(isWide ? 15 : 18);
+    hexagon(contentX + markSize, y - markSize * 0.35, markSize, "rgba(46, 108, 255, 0.24)", "#557eff");
+    spark(contentX + markSize, y - markSize * 0.35, markSize * 0.48, "#d9faff");
+    ctx.font = `800 ${brandSize}px system-ui, sans-serif`;
+    const brandX = contentX + markSize * 2 + px(10);
+    const brandPrefix = "SPRITE-INDEX";
+    ctx.fillStyle = "#42e9ff";
+    ctx.fillText(brandPrefix, brandX, y);
+    const prefixWidth = ctx.measureText(brandPrefix).width;
+    ctx.fillStyle = "#c8d5ff";
+    ctx.fillText(" · ", brandX + prefixWidth, y);
+    ctx.fillStyle = "#ae83ff";
+    ctx.fillText("PASSEPORT", brandX + prefixWidth + ctx.measureText(" · ").width, y);
+    const status = invitation ? t("passport.cardInvite") : t("passport.cardPublic");
+    ctx.font = `700 ${px(isWide ? 14 : 16)}px system-ui, sans-serif`;
+    const statusW = ctx.measureText(status).width + px(52);
+    const statusX = contentX + contentW - statusW;
+    panel(statusX, y - px(25), statusW, px(34), invitation ? "rgba(100, 238, 190, 0.13)" : "rgba(126, 102, 255, 0.15)", invitation ? "rgba(100, 238, 190, 0.35)" : "rgba(162, 143, 255, 0.5)");
+    ctx.fillStyle = invitation ? "#a3ffe2" : "#cdc4ff";
+    idIcon(statusX + px(12), y - px(16), px(19), ctx.fillStyle);
+    ctx.fillText(status, statusX + px(39), y - px(1));
 
-    for (const line of lines) {
-      if (line.kind === "title") {
-        ctx.fillStyle = "#ffffff";
-        ctx.font = `700 ${titleSize}px system-ui, sans-serif`;
-        ctx.fillText(line.text, padX, y);
-        y += titleSize * 1.25;
-      } else if (line.kind === "sub") {
-        ctx.fillStyle = "rgba(255,255,255,0.65)";
-        ctx.font = `500 ${bodySize}px system-ui, sans-serif`;
-        ctx.fillText(line.text, padX, y);
-        y += bodySize * 1.4;
-      } else if (line.kind === "stat") {
-        ctx.fillStyle = "#e8f0ff";
-        ctx.font = `600 ${bodySize}px system-ui, sans-serif`;
-        ctx.fillText(line.text, padX, y);
-        y += bodySize * 1.45;
-      } else {
-        ctx.fillStyle = "rgba(255,255,255,0.78)";
-        ctx.font = `500 ${Math.round(bodySize * 0.92)}px system-ui, sans-serif`;
-        ctx.fillText(line.text, padX, y);
-        y += bodySize * 1.35;
-      }
+    y += px(isWide ? 49 : 61);
+    const name = card.displayName || card.username || "SPRITE-INDEX";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `800 ${nameSize}px system-ui, sans-serif`;
+    ctx.fillText(ellipsis(name, contentW), contentX, y);
+    if (card.username && card.username !== name) {
+      y += px(isWide ? 27 : 31);
+      ctx.fillStyle = "rgba(216, 231, 255, 0.65)";
+      ctx.font = `600 ${px(isWide ? 17 : 20)}px system-ui, sans-serif`;
+      ctx.fillText(ellipsis(`@${card.username}`, contentW), contentX, y);
     }
 
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.font = `500 ${Math.round(bodySize * 0.7)}px system-ui, sans-serif`;
-    const url = card.publicUrl ? `${location.host}${card.publicUrl}` : "sprite-index";
-    ctx.fillText(url, padX, h * 0.9);
+    const progressY = y + px(isWide ? 25 : 32);
+    const progressH = px(isWide ? 158 : (isTall ? 274 : 232));
+    const progressBg = ctx.createLinearGradient(contentX, progressY, contentX + contentW, progressY + progressH);
+    progressBg.addColorStop(0, "rgba(12, 61, 121, 0.96)");
+    progressBg.addColorStop(0.55, "rgba(16, 43, 104, 0.95)");
+    progressBg.addColorStop(1, "rgba(48, 20, 112, 0.96)");
+    panel(contentX, progressY, contentW, progressH, progressBg, "rgba(104, 216, 255, 0.72)");
+
+    const emblemX = contentX + px(isWide ? 62 : 94);
+    const emblemY = progressY + px(isWide ? 65 : 91);
+    const emblemR = px(isWide ? 32 : 48);
+    const emblemGlow = ctx.createRadialGradient(emblemX, emblemY, 0, emblemX, emblemY, emblemR * 1.8);
+    emblemGlow.addColorStop(0, "rgba(44, 234, 255, 0.35)"); emblemGlow.addColorStop(1, "rgba(44, 234, 255, 0)");
+    ctx.fillStyle = emblemGlow; ctx.fillRect(emblemX - emblemR * 2, emblemY - emblemR * 2, emblemR * 4, emblemR * 4);
+    hexagon(emblemX, emblemY, emblemR, "rgba(6, 40, 98, 0.7)", "#5ad9ff");
+    hexagon(emblemX, emblemY, emblemR * 0.78, null, "rgba(119, 137, 255, 0.65)");
+    spark(emblemX, emblemY, emblemR * 0.62, "#dcffff");
+    const dividerX = contentX + px(isWide ? 126 : 182);
+    line(dividerX, progressY + px(isWide ? 27 : 44), dividerX, progressY + progressH - px(isWide ? 42 : 60), "rgba(109, 208, 255, 0.42)", 1);
+
+    const rate = Number(card.completionRateDisplay);
+    const safeRate = Number.isFinite(rate) ? Math.max(0, Math.min(100, rate)) : 0;
+    const statsX = dividerX + px(isWide ? 25 : 42);
+    ctx.fillStyle = "#f8fcff";
+    ctx.font = `800 ${px(isWide ? 52 : 76)}px system-ui, sans-serif`;
+    ctx.fillText(opts.showCompletion ? formatUiPercent(safeRate, { maximumFractionDigits: 1 }) : "—", statsX, progressY + px(isWide ? 70 : 96));
+    ctx.fillStyle = "#58d8ff";
+    ctx.font = `800 ${px(isWide ? 14 : 19)}px system-ui, sans-serif`;
+    ctx.fillText(t("passport.cardCollection"), statsX, progressY + px(isWide ? 96 : 127));
+    if (opts.showCompletion && card.ownedVariantCount != null && card.releasedVariantCount != null) {
+      ctx.fillStyle = "rgba(233, 247, 255, 0.82)";
+      ctx.font = `600 ${px(isWide ? 15 : 19)}px system-ui, sans-serif`;
+      ctx.fillText(t("account.share.variantsOf", { owned: card.ownedVariantCount, total: card.releasedVariantCount }), statsX, progressY + px(isWide ? 120 : 164));
+    }
+    const orbitX = contentX + contentW - px(isWide ? 88 : 143);
+    const orbitY = progressY + progressH * 0.46;
+    ctx.save(); ctx.globalAlpha = 0.42;
+    ctx.strokeStyle = "#7756ff"; ctx.lineWidth = px(1);
+    [px(isWide ? 28 : 50), px(isWide ? 46 : 78)].forEach((radius) => { ctx.beginPath(); ctx.arc(orbitX, orbitY, radius, 0, Math.PI * 2); ctx.stroke(); });
+    ctx.beginPath(); ctx.ellipse(orbitX, orbitY, px(isWide ? 58 : 100), px(isWide ? 19 : 34), -0.55, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    spark(orbitX, orbitY, px(isWide ? 15 : 25), "#8d70ff", 0.7);
+    ctx.fillStyle = "#346ddc"; ctx.beginPath(); ctx.arc(orbitX - px(isWide ? 46 : 86), orbitY + px(isWide ? 9 : 15), px(5), 0, Math.PI * 2); ctx.fill();
+
+    const barX = contentX + px(isWide ? 24 : 34);
+    const barY = progressY + progressH - px(isWide ? 30 : 39);
+    const barW = contentW - px(isWide ? 48 : 68);
+    const barH = px(isWide ? 13 : 18);
+    panel(barX, barY, barW, barH, "rgba(2, 10, 41, 0.56)", "rgba(170, 217, 255, 0.17)");
+    if (opts.showCompletion && safeRate > 0) {
+      const fillW = Math.max(barH, barW * (safeRate / 100));
+      const fill = ctx.createLinearGradient(barX, barY, barX + fillW, barY);
+      fill.addColorStop(0, "#00e1ff");
+      fill.addColorStop(0.55, "#2586ff");
+      fill.addColorStop(1, "#9a6dff");
+      panel(barX, barY, fillW, barH, fill, "rgba(255,255,255,0)");
+      const tipGlow = ctx.createRadialGradient(barX + fillW, barY + barH / 2, 0, barX + fillW, barY + barH / 2, barH * 1.5);
+      tipGlow.addColorStop(0, "rgba(231, 207, 255, 0.9)"); tipGlow.addColorStop(1, "rgba(157, 110, 255, 0)");
+      ctx.fillStyle = tipGlow; ctx.fillRect(barX + fillW - barH * 1.5, barY - barH, barH * 3, barH * 3);
+    }
+
+    const facts = [];
+    if (opts.showBadges && card.featuredBadgeLabel) facts.push({ kind: "badge", label: t("passport.cardBadge"), value: card.featuredBadgeLabel, color: "#ffd560" });
+    if (opts.showEvents && card.completedEventCount != null) facts.push({ kind: "events", label: t("passport.cardEvents"), value: String(card.completedEventCount), color: "#74ec9d" });
+    if (opts.showJoinedAt && card.joinedAt) facts.push({ kind: "member", label: t("passport.cardMemberSince"), value: formatPassportJoinDate(card.joinedAt), color: "#af83ff" });
+    if (opts.showSquad && card.primarySquadName) facts.push({ kind: "squad", label: t("passport.cardSquad"), value: card.primarySquadName, color: "#72dcff" });
+    if (invitation) facts.push({ kind: "invite", label: t("passport.cardInvite"), value: t("passport.cardInviteValue"), color: "#8ff9e1" });
+
+    const factsY = progressY + progressH + px(isWide ? 20 : 26);
+    const maxFacts = isWide ? 4 : 5;
+    const displayedFacts = facts.slice(0, maxFacts);
+    const columns = isWide ? 2 : 1;
+    const factGap = px(10);
+    const factW = columns === 2 ? (contentW - factGap) / 2 : contentW;
+    const factH = px(isWide ? 58 : 78);
+    displayedFacts.forEach((fact, index) => {
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+      const x = contentX + col * (factW + factGap);
+      const fy = factsY + row * (factH + factGap);
+      panel(x, fy, factW, factH, "rgba(11, 29, 69, 0.78)", "rgba(112, 167, 255, 0.22)");
+      const iconSize = px(isWide ? 39 : 54);
+      const iconX = x + px(isWide ? 9 : 14);
+      const iconY = fy + (factH - iconSize) / 2;
+      panel(iconX, iconY, iconSize, iconSize, "rgba(18, 41, 86, 0.86)", `${fact.color}66`);
+      factIcon(fact.kind, iconX, iconY, iconSize, fact.color);
+      const factDividerX = iconX + iconSize + px(isWide ? 11 : 18);
+      line(factDividerX, fy + px(12), factDividerX, fy + factH - px(12), "rgba(115, 180, 255, 0.26)", 1);
+      const factTextX = factDividerX + px(isWide ? 12 : 22);
+      ctx.fillStyle = fact.color;
+      ctx.font = `800 ${px(isWide ? 12 : 14)}px system-ui, sans-serif`;
+      ctx.fillText(ellipsis(fact.label.toUpperCase(), factW - (factTextX - x) - px(42)), factTextX, fy + px(isWide ? 22 : 29));
+      ctx.fillStyle = "rgba(248, 252, 255, 0.93)";
+      ctx.font = `700 ${px(isWide ? 16 : 19)}px system-ui, sans-serif`;
+      ctx.fillText(ellipsis(fact.value, factW - (factTextX - x) - px(42)), factTextX, fy + factH - px(isWide ? 15 : 18));
+      spark(x + factW - px(isWide ? 19 : 34), fy + factH / 2, px(isWide ? 7 : 10), fact.color, 0.46);
+    });
+
+    const footerY = cardY + cardH - px(isWide ? 32 : 40);
+    ctx.fillStyle = "rgba(211, 231, 255, 0.55)";
+    ctx.font = `600 ${px(isWide ? 14 : 16)}px system-ui, sans-serif`;
+    const footer = invitation ? t("passport.shareInviteCardFooter") : t("passport.cardFooter");
+    ctx.fillText(ellipsis(footer, contentW), contentX, footerY);
 
     const blob = await new Promise((resolve, reject) => {
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t("account.cardExportFailed")))), "image/png");
     });
     const fileName = `sprite-index-passeport-${card.username || "carte"}-${w}x${h}.png`;
     const file = new File([blob], fileName, { type: "image/png" });
-    const shareUrl = card.publicUrl ? `${webOrigin()}${card.publicUrl}` : webOrigin();
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          title: t("passport.shareNativeTitle", { name: card.displayName || card.username }),
-          text: t("passport.shareNativeText"),
-          url: shareUrl,
-          files: [file]
-        });
-        return;
-      } catch (err) {
-        if (err && err.name === "AbortError") return;
-      }
-    }
-
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(objectUrl);
-    if (navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast(t("account.cardDownloadedLinkCopied"));
-        return;
-      } catch {}
-    }
-    toast(t("account.cardDownloaded"));
+    return {
+      blob,
+      file,
+      fileName,
+      shareUrl,
+      title: t("passport.shareNativeTitle", { name: card.displayName || card.username }),
+      text: invitation ? t("passport.shareNativeTextInvite") : t("passport.shareNativeText")
+    };
   }
 
   async function fetchCollectorPassport(userId) {
-    const res = await fetch(`${API_BASE}/profile/${encodeURIComponent(userId)}/passport`, { headers: authHeadersOnly() });
+    const res = await fetch(`${API_BASE}/profile/${encodeURIComponent(userId)}/passport`, { headers: authHeadersOnly(), cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || t("account.passportUnavailable"));
     return data;
@@ -1262,7 +1625,8 @@ function setupAccountPanel() {
     content.innerHTML = `<p class="collector-passport__empty">${t("account.passportLoading")}</p>`;
     if (actionsEl) actionsEl.innerHTML = "";
     try {
-      const data = await fetchCollectorPassport(state.userId);
+      const serverData = await fetchCollectorPassport(state.userId);
+      const data = withCurrentLocalCollection(serverData);
       const reliability = (data.collection && data.collection.reliability) || {};
       if (reliabilityEl) {
         reliabilityEl.textContent = passportReliabilityLabel(reliability);
@@ -1693,7 +2057,7 @@ function setupAccountPanel() {
     }
     const url = `${webOrigin()}/?share=${token}`;
     if (navigator.share) {
-      try { await navigator.share({ title: `Profil de ${state.username}`, url }); } catch {}
+      try { await navigator.share({ title: t("passport.shareNativeTitle", { name: state.username }), url }); } catch {}
     } else if (navigator.clipboard) {
       await navigator.clipboard.writeText(url);
       toast(t("account.shareLinkCopied"));
@@ -1711,7 +2075,7 @@ function setupAccountPanel() {
     await fullSync();
     localStorage.setItem("sprite-index_last_sync", new Date().toISOString());
     document.getElementById("accountLastSync").textContent =
-      new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+      new Date().toLocaleString(uiLocale(), { dateStyle: "short", timeStyle: "short" });
     toast(t("account.syncDone"));
   });
 
@@ -2080,10 +2444,12 @@ function renderPublicPassportOverlay(normalized) {
   const squad = p.primarySquad && !p.primarySquad.private ? p.primarySquad.name : null;
   const badge = p.featuredBadge ? p.featuredBadge.label : null;
   const actions = Array.isArray(normalized.actions) ? normalized.actions : [];
+  let invitationPending = false;
+  try { invitationPending = !!sessionStorage.getItem("sprite-index_pending_friend_invite"); } catch (_) { /* storage unavailable */ }
   const actionLabels = {
-    view_public_collection: "Voir la collection",
-    add_friend: "Ajouter comme ami",
-    compare_collections: "Comparer"
+    view_public_collection: t("account.action.viewPublicCollection"),
+    add_friend: t("account.action.addFriend"),
+    compare_collections: t("account.action.compareCollections")
   };
   overlay.innerHTML = `
     <div class="shared-view__card">
@@ -2115,7 +2481,8 @@ function renderPublicPassportOverlay(normalized) {
           `<button type="button" class="ghost-button" data-public-passport-action="${escapeHtml(a)}">${actionLabels[a]}</button>`
         ).join("")}
       </div>
-      <a href="${webOrigin()}/" class="shared-view__cta">${t("account.passport.openApp")}</a>
+      ${invitationPending ? `<p class="public-passport-view__invite">${t("passport.publicInviteHint")}</p>` : ""}
+      <a href="${webOrigin()}/" class="shared-view__cta">${invitationPending ? t("passport.publicInviteCta") : t("account.passport.openApp")}</a>
     </div>`;
   document.body.appendChild(overlay);
   overlay.querySelectorAll("[data-public-passport-action]").forEach((btn) => {

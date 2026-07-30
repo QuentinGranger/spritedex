@@ -30,10 +30,12 @@ function renderInsight({ tone, icon, label, value, detail }) {
 }
 
 function renderStats() {
-  const items = getAllItems();
-  const totalVariants = items.length;
-  const ownedVariants = items.filter(i => getEntry(i.id).status === "owned").length;
-  const pct = totalVariants ? Math.round((ownedVariants / totalVariants) * 100) : 0;
+  const catalogueItems = getAllItems();
+  const items = getReleasedCollectionItems(catalogueItems);
+  const metrics = getCollectionMetrics(catalogueItems);
+  const totalVariants = metrics.releasedTotal;
+  const ownedVariants = metrics.owned;
+  const pct = metrics.percent;
 
   const circumference = 327;
   const offset = circumference - (circumference * pct / 100);
@@ -48,15 +50,17 @@ function renderStats() {
       : t("stats.heroComplete");
   }
 
-  const spritesCompleted = SPRITES.filter(s => {
-    const vl = Object.keys(s.variantDetails || {}).length ? Object.keys(s.variantDetails) : (s.variants || ["Base"]);
-    return vl.every(v => getEntry(variantId(s.id, v)).status === "owned");
-  }).length;
-  const spritesPartial = SPRITES.filter(s => {
-    const vl = Object.keys(s.variantDetails || {}).length ? Object.keys(s.variantDetails) : (s.variants || ["Base"]);
-    return vl.some(v => getEntry(variantId(s.id, v)).status === "owned");
-  }).length;
-  els.kpiSprites.textContent = `${spritesPartial} / ${SPRITES.length}`;
+  const releasedBySprite = new Map();
+  items.forEach((item) => {
+    const list = releasedBySprite.get(String(item.spriteId)) || [];
+    list.push(item);
+    releasedBySprite.set(String(item.spriteId), list);
+  });
+  const spritesCompleted = [...releasedBySprite.values()]
+    .filter((variants) => variants.every((item) => getEntry(item.id).status === "owned")).length;
+  const spritesPartial = [...releasedBySprite.values()]
+    .filter((variants) => variants.some((item) => getEntry(item.id).status === "owned")).length;
+  els.kpiSprites.textContent = `${spritesPartial} / ${releasedBySprite.size}`;
   els.kpiVariants.textContent = `${ownedVariants} / ${totalVariants}`;
   if (els.kpiSpritesHint) {
     els.kpiSpritesHint.textContent = spritesCompleted
@@ -81,13 +85,13 @@ function renderStats() {
     .map(rarity => {
       const group = items.filter(i => i.rarity === rarity);
       const owned = group.filter(i => getEntry(i.id).status === "owned").length;
-      return { label: rarity, icon: { Mythique: "♛", "Légendaire": "★", "Épique": "◆", Rare: "◇" }[rarity] || "◇", total: group.length, owned, percent: group.length ? Math.round((owned / group.length) * 100) : 0 };
+      return { label: localizedRarity(rarity), icon: { Mythique: "♛", "Légendaire": "★", "Épique": "◆", Rare: "◇" }[rarity] || "◇", total: group.length, owned, percent: collectionPercent(owned, group.length) };
     }).filter(row => row.total > 0);
 
   const variants = Object.keys(VARIANT_META).map(variant => {
     const group = items.filter(i => i.variant === variant);
     const owned = group.filter(i => getEntry(i.id).status === "owned").length;
-    return { label: VARIANT_META[variant]?.label || variant, icon: "▱", total: group.length, owned, percent: group.length ? Math.round((owned / group.length) * 100) : 0 };
+    return { label: VARIANT_META[variant]?.label || variant, icon: "▱", total: group.length, owned, percent: collectionPercent(owned, group.length) };
   }).filter(row => row.total > 0);
 
   renderBars(els.rarityBars, rarities);
@@ -98,11 +102,11 @@ function renderStats() {
   const worstVariant = variants.length ? variants.reduce((a, b) => a.percent <= b.percent ? a : b) : null;
 
   const topRarity = Object.entries(RARITY_ORDER).sort((a, b) => a[1] - b[1])[0]?.[0] || "";
-  const mythCompleted = SPRITES.filter(s => {
-    const vl = Object.keys(s.variantDetails || {}).length ? Object.keys(s.variantDetails) : (s.variants || ["Base"]);
-    return s.rarity === topRarity && vl.every(v => getEntry(variantId(s.id, v)).status === "owned");
-  }).length;
-  const mythTotal = SPRITES.filter(s => s.rarity === topRarity).length;
+  const topRaritySprites = [...releasedBySprite.entries()]
+    .filter(([spriteId, variants]) => variants[0]?.rarity === topRarity && spriteId);
+  const mythCompleted = topRaritySprites
+    .filter(([, variants]) => variants.every((item) => getEntry(item.id).status === "owned")).length;
+  const mythTotal = topRaritySprites.length;
 
   const insights = [];
   if (bestRarity) {
@@ -138,7 +142,7 @@ function renderStats() {
     label: t("stats.mythCompleted", { rarity: topRarity }),
     value: `${mythCompleted} / ${mythTotal}`,
     detail: mythTotal
-      ? t("stats.mythPercent", { pct: Math.round((mythCompleted / mythTotal) * 100), rarity: topRarity.toLowerCase() })
+      ? t("stats.mythPercent", { pct: collectionPercent(mythCompleted, mythTotal), rarity: topRarity.toLowerCase() })
       : t("stats.mythNone")
   }));
   insights.push(renderInsight({

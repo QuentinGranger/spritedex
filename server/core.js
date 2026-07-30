@@ -6,6 +6,7 @@ const cors = require("cors");
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const { renderServiceWorker } = require("../scripts/client-cache");
 const { Resend } = require("resend");
 const { WebSocketServer } = require("ws");
 const { localizeErrorResponse } = require("./i18n");
@@ -204,6 +205,17 @@ app.use(security.rejectUnsafeBodyKeys);
 // Block server-side source / config files, then serve static assets (dotfiles
 // such as .env and .git are denied outright).
 app.use(security.blockSensitiveFiles);
+// A service worker is checked byte-for-byte by browsers. Generate it from the
+// current client shell so a deploy that changes a CSS/JS file always gets a
+// fresh cache namespace, without a human-maintained counter.
+app.get("/sw.js", (req, res, next) => {
+  try {
+    res.set({ "Cache-Control": "no-cache", "Service-Worker-Allowed": "/" });
+    res.type("application/javascript").send(renderServiceWorker(ROOT_DIR));
+  } catch (error) {
+    next(error);
+  }
+});
 const staticAssets = express.static(path.join(ROOT_DIR), { dotfiles: "deny" });
 app.use((req, res, next) => {
   if (!security.isPublicStaticPath(req.path)) return next();

@@ -4,7 +4,7 @@
 // No DOM required: returns HTML strings for regression / a11y tests.
 
 // Local translate: uses window.t when available (browser/locale-aware),
-// falls back to the French source strings for Node / contract tests.
+// falls back to the French source strings for Node-side contract tests.
 const _PASSPORT_FR = {
   "passport.title": "Passeport du collectionneur",
   "passport.identity": "Identité",
@@ -60,23 +60,19 @@ function truncateUi(value, max = 48) {
 function formatLocaleNumber(value, digits = 1) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString("fr-FR", {
+  return n.toLocaleString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: digits
   });
 }
 
-/** Étape 86 — screen-reader progress sentence. */
+/** Screen-reader progress sentence. */
 function formatCollectionProgressText(owned, released, rateDisplay) {
   const o = Math.max(0, Number(owned) || 0);
   const r = Math.max(0, Number(released) || 0);
   const rateStr = formatLocaleNumber(rateDisplay, 1);
-  // Browser: locale-aware via t(). Node/tests: FR string.
-  if (typeof t === "function") {
-    const lang = typeof appLocale === "function" ? appLocale() : "fr";
-    if (lang === "en") {
-      return `Collection progress: ${o} variant${o === 1 ? "" : "s"} out of ${r}, that is ${rateStr}%.`;
-    }
+  if (typeof appLocale === "function" && appLocale() === "en") {
+    return `Collection progress: ${o} variant${o === 1 ? "" : "s"} out of ${r}, that is ${rateStr}%.`;
   }
   return `Progression de la collection : ${o} variante${o === 1 ? "" : "s"} sur ${r}, soit ${rateStr} %.`;
 }

@@ -73,6 +73,46 @@ function safePercentage(value, fallback = 0) {
   return safeFiniteNumber(value, fallback, { min: 0, max: 100 });
 }
 
+// Keep values coming from the (French) catalogue separate from the language
+// shown to the player.  IDs and filters keep their canonical values; only
+// visible labels are localized.
+function uiLocale() {
+  return typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+}
+
+function localizedRarity(value) {
+  const raw = String(value == null ? "" : value).trim();
+  const normalized = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  const key = {
+    mythique: "rarity.mythic",
+    mythic: "rarity.mythic",
+    legendaire: "rarity.legendary",
+    legendary: "rarity.legendary",
+    epique: "rarity.epic",
+    epic: "rarity.epic",
+    rare: "rarity.rare"
+  }[normalized];
+  return key && typeof t === "function" ? t(key) : raw;
+}
+
+function formatUiNumber(value, options = {}) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString(uiLocale(), options) : "—";
+}
+
+function formatUiPercent(value, options = {}) {
+  const percent = safePercentage(value, 0);
+  return new Intl.NumberFormat(uiLocale(), {
+    style: "percent",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+    ...options
+  }).format(percent / 100);
+}
+
 // URL escaping alone is not enough for href/src attributes: `javascript:` and
 // other active schemes remain valid after HTML escaping.  Only web URLs, local
 // paths and PNG/JPEG/GIF/WebP data URLs (used for generated QR codes) are
@@ -261,10 +301,71 @@ function getAllItems() {
         color: safeCssColor(sprite.color),
         effect: (typeof variant.effect === "string" ? variant.effect : null) || sprite.effect,
         variant: variantType,
-        variantBonus: VARIANT_META[variantType]?.bonus ?? t("helpers.variantSpecial")
+        variantBonus: VARIANT_META[variantType]?.bonus ?? t("helpers.variantSpecial"),
+        // Keep client totals aligned with the server-side passport and squad
+        // calculations: only released, active variants count toward completion.
+        releaseStatus: variant.releaseStatus || sprite.releaseStatus || "",
+        dataStatus: variant.dataStatus || sprite.dataStatus || "",
+        available: variant.available !== undefined ? variant.available : sprite.available,
+        enabled: variant.enabled !== undefined ? variant.enabled : sprite.enabled,
+        isReleased: variant.isReleased !== undefined ? variant.isReleased : sprite.isReleased
       };
     });
   });
+}
+
+function isReleasedCollectionItem(item) {
+  const release = String(item?.releaseStatus || "").toLowerCase();
+  if (["unreleased", "upcoming", "coming_soon", "soon", "unknown"].includes(release)) return false;
+  const data = String(item?.dataStatus || "").toLowerCase();
+  if (["archived", "legacy", "disabled"].includes(data)) return false;
+  return item?.available !== false && item?.enabled !== false && item?.isReleased !== false;
+}
+
+function getReleasedCollectionItems(items = getAllItems()) {
+  return (Array.isArray(items) ? items : []).filter(isReleasedCollectionItem);
+}
+
+// Every collection-facing screen must use this same rounding rule. Keeping
+// one decimal is precise enough to make a newly acquired variant visible,
+// while avoiding the contradictory 49% / 49.4% figures that previously
+// appeared for the exact same collection.
+function collectionPercent(owned, total) {
+  const safeOwned = Math.max(0, Number(owned) || 0);
+  const safeTotal = Math.max(0, Number(total) || 0);
+  return safeTotal ? Math.round((safeOwned / safeTotal) * 1000) / 10 : 0;
+}
+
+function getSpriteCollectionItems(spriteId, items = getAllItems()) {
+  return getReleasedCollectionItems(items)
+    .filter((item) => String(item?.spriteId) === String(spriteId));
+}
+
+function getSpriteCollectionMetrics(spriteId, items = getAllItems()) {
+  const releasedItems = getSpriteCollectionItems(spriteId, items);
+  const owned = releasedItems.filter((item) => getEntry(item.id).status === "owned").length;
+  return {
+    total: releasedItems.length,
+    owned,
+    percent: collectionPercent(owned, releasedItems.length)
+  };
+}
+
+function getCollectionMetrics(items = getAllItems()) {
+  const catalogueItems = Array.isArray(items) ? items : [];
+  const releasedItems = getReleasedCollectionItems(catalogueItems);
+  const owned = releasedItems.filter((item) => getEntry(item.id).status === "owned").length;
+  const total = releasedItems.length;
+  const precisePercent = total ? (owned / total) * 100 : 0;
+  return {
+    catalogueTotal: catalogueItems.length,
+    releasedTotal: total,
+    owned,
+    remaining: Math.max(0, total - owned),
+    precisePercent,
+    percent: collectionPercent(owned, total),
+    percentRounded: Math.round(precisePercent)
+  };
 }
 
 function defaultEntry() {
@@ -279,7 +380,8 @@ function defaultEntry() {
 }
 
 function priorityLabel(p) {
-  return PRIORITIES.find(x => x.id === p)?.label ?? "—";
+  if (p === "none" || !p) return "—";
+  return typeof t === "function" ? t(`prio.${p}`) : (PRIORITIES.find(x => x.id === p)?.label ?? "—");
 }
 
 function priorityColor(p) {
@@ -304,7 +406,7 @@ function masteryLabel(level) {
   return level >= 5 ? t("mastery.master") : t("mastery.level", { level: Math.max(1, Number(level) || 1) });
 }
 
-function setEntry(itemId, patch) {
+function setEntry(itemId, patch, { render = true } = {}) {
   if (!isSafeRecordKey(String(itemId))) return;
   state.collection[itemId] = sanitizeCollectionEntry({
     ...defaultEntry(),
@@ -313,7 +415,7 @@ function setEntry(itemId, patch) {
     updatedAt: new Date().toISOString()
   });
   persist(itemId);
-  renderAll();
+  if (render) renderAll();
 }
 
 const STATUS_CATEGORIES = {
@@ -519,14 +621,14 @@ function sourceReliabilityLabel(source) {
 }
 
 function getStats(items = getAllItems()) {
-  const total = items.length;
-  const owned = items.filter((item) => getEntry(item.id).status === "owned").length;
-  const missing = items.filter((item) => getEntry(item.id).status === "missing").length;
-  const priority = items.filter((item) => getEntry(item.id).status === "priority").length;
-  const unsure = items.filter((item) => getEntry(item.id).status === "unsure").length;
-  const unavailable = items.filter((item) => getEntry(item.id).status === "unavailable").length;
-  const spotted = items.filter((item) => getEntry(item.id).status === "spotted").length;
-  return { total, owned, missing, priority, unsure, unavailable, spotted, percent: total ? Math.round((owned / total) * 100) : 0 };
+  const released = getReleasedCollectionItems(items);
+  const metrics = getCollectionMetrics(items);
+  const missing = released.filter((item) => getEntry(item.id).status === "missing").length;
+  const priority = released.filter((item) => getEntry(item.id).status === "priority").length;
+  const unsure = released.filter((item) => getEntry(item.id).status === "unsure").length;
+  const unavailable = released.filter((item) => getEntry(item.id).status === "unavailable").length;
+  const spotted = released.filter((item) => getEntry(item.id).status === "spotted").length;
+  return { total: metrics.releasedTotal, owned: metrics.owned, missing, priority, unsure, unavailable, spotted, percent: metrics.percent, catalogueTotal: metrics.catalogueTotal };
 }
 
 function updateThemeButton() {

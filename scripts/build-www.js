@@ -5,11 +5,12 @@
 
 const fs = require("fs");
 const path = require("path");
+const { renderServiceWorker } = require("./client-cache");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "www");
 
-const FILES = ["index.html", "404.html", "manifest.json", "sw.js", "LogoApp.png", "icon-192.png", "icon-512.png"];
+const FILES = ["index.html", "404.html", "manifest.json", "LogoApp.png", "icon-192.png", "icon-512.png"];
 const DIRS = ["css", "js", "Favicon", "icons", "Sprite", "trophet"];
 
 fs.rmSync(OUT, { recursive: true, force: true });
@@ -33,4 +34,6 @@ for (const d of DIRS) {
   }
 }
 
-console.log(`www/ built for Capacitor (${FILES.length} files + ${DIRS.length} dirs)`);
+fs.writeFileSync(path.join(OUT, "sw.js"), renderServiceWorker(ROOT));
+
+console.log(`www/ built for Capacitor (${FILES.length + 1} files + ${DIRS.length} dirs, cache version generated)`);

@@ -97,6 +97,7 @@ async function loadSquad(code) {
     renderSquad();
     renderSquadRecommendedFriends();
     renderSquadComplementaryPairs();
+    if (typeof loadSquadWishlist === "function") loadSquadWishlist(state.activeSquad);
   } catch (e) {
     toast(t("common.networkError"));
   }
@@ -516,7 +517,7 @@ function renderSquadMembers() {
       ? `<button class="squad-chip__kick" data-kick="${encodeURIComponent(m.userId)}" title="${t('squad.kickBtn')}">✕</button>`
       : "";
     const menu = !isMe
-      ? `<button class="squad-chip__menu" data-member-menu="${encodeURIComponent(m.userId)}" data-member-name="${encodeURIComponent(m.username || t("squad.memberFallback"))}" title="Actions">⋯</button>`
+      ? `<button class="squad-chip__menu" data-member-menu="${encodeURIComponent(m.userId)}" data-member-name="${encodeURIComponent(m.username || t("squad.memberFallback"))}" title="${t("common.actions")}">⋯</button>`
       : "";
     const incomplete = (m.entryCount || 0) === 0 ? `<span class="squad-chip__warn" title="${t('squad.checklistEmpty')}">?</span>` : "";
     const stale = m.lastUpdated
@@ -708,7 +709,7 @@ function renderSquad() {
     return;
   }
 
-  const items = getAllItems();
+  const items = getReleasedCollectionItems(getAllItems());
   const me = state.username || t("squad.me");
   const players = [
     { name: me, collection: state.collection, lastUpdated: new Date().toISOString(), entryCount: Object.keys(state.collection).length },
@@ -760,7 +761,7 @@ function renderSquadTable(rows, players, items) {
     const spriteName = row.item.spriteName;
     if (spriteName !== currentSprite) {
       currentSprite = spriteName;
-      parts.push(`<tr class="squad-table__sprite-header"><td colspan="${colCount + 1}"><span class="squad-table__sprite-name">${escapeHtml(spriteName)}</span><span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></td></tr>`);
+      parts.push(`<tr class="squad-table__sprite-header"><td colspan="${colCount + 1}"><span class="squad-table__sprite-name">${escapeHtml(spriteName)}</span><span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></td></tr>`);
     }
     parts.push(`<tr class="squad-table__row"><td class="squad-table__variant">${escapeHtml(row.item.variant)}</td>`);
     for (const status of row.statuses) {
@@ -785,7 +786,7 @@ function renderSquadCards(rows, players, items) {
     parts.push(`<div class="squad-card__header">`);
     parts.push(`<span class="squad-card__name">${escapeHtml(row.item.spriteName)}</span>`);
     parts.push(`<span class="squad-card__variant">${escapeHtml(row.item.variant)}</span>`);
-    parts.push(`<span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span>`);
+    parts.push(`<span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span>`);
     parts.push(`<span class="squad-card__ratio">${row.ownedCount}/${players.length}</span>`);
     parts.push(`</div>`);
 
@@ -853,7 +854,7 @@ function renderSquadHunt(rows, players, items) {
       const isNewSprite = row.item.spriteName !== currentSprite;
       if (isNewSprite) {
         currentSprite = row.item.spriteName;
-        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
+        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></li>`);
       }
       const priorityByLabel = escapeHtml(row.priorityBy.join(", "));
       const prioTag = row.priorityBy.length > 0
@@ -879,7 +880,7 @@ function renderSquadHunt(rows, players, items) {
       const isNewSprite = row.item.spriteName !== currentSprite;
       if (isNewSprite) {
         currentSprite = row.item.spriteName;
-        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
+        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></li>`);
       }
       parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span><span class="hunt-owners">${escapeHtml(row.ownedBy.join(", "))}</span></li>`);
     }
@@ -902,7 +903,7 @@ function renderSquadHunt(rows, players, items) {
       const isNewSprite = row.item.spriteName !== currentSprite;
       if (isNewSprite) {
         currentSprite = row.item.spriteName;
-        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
+        parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></li>`);
       }
       parts.push(`<li class="hunt-list__item hunt-list__item--done"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span></li>`);
     }
@@ -956,7 +957,7 @@ function renderSquadDuel(rows, players, items) {
       for (const row of sectionRows) {
         if (row.item.spriteName !== currentSprite) {
           currentSprite = row.item.spriteName;
-          parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(row.item.rarity)}</span></li>`);
+          parts.push(`<li class="hunt-list__sprite">${escapeHtml(currentSprite)} <span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></li>`);
         }
         parts.push(`<li class="hunt-list__item"><span class="hunt-list__variant">${escapeHtml(row.item.variant)}</span></li>`);
       }
@@ -1009,7 +1010,7 @@ function renderSquadSession(players, items) {
 
   const total = items.length;
   const atLeastOne = allDiffs.filter(r => r.ownedCount > 0).length;
-  const teamPct = total ? Math.round((atLeastOne / total) * 100) : 0;
+  const teamPct = collectionPercent(atLeastOne, total);
 
   const parts = [];
   parts.push(`<div class="session-view">`);
@@ -1043,7 +1044,7 @@ function renderSquadSession(players, items) {
     for (const r of nobodyItems.slice(0, 20)) {
       parts.push(`<li class="session-list__item">`);
       parts.push(`<span class="session-list__name">${escapeHtml(r.item.spriteName)} <span class="session-list__variant">${escapeHtml(r.item.variant)}</span></span>`);
-      parts.push(`<span class="squad-table__rarity">${escapeHtml(r.item.rarity)}</span>`);
+      parts.push(`<span class="squad-table__rarity">${escapeHtml(localizedRarity(r.item.rarity))}</span>`);
       parts.push(`</li>`);
     }
     if (nobodyItems.length > 20) {
@@ -1190,7 +1191,7 @@ async function renderSquadRecommendations() {
       const rarityParts = Object.entries(m.jointCoverageByRarity || {})
         .sort((a, b) => (b[1].coverage || 0) - (a[1].coverage || 0))
         .slice(0, 3)
-        .map(([r, info]) => `<span class="recommendation-rarity">${escapeHtml(r)} : <strong>${safePercentage(info.coverage, 0)}%</strong> (${safeFiniteNumber(info.owned, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(info.total, 0, { min: 0, max: 1000000 })})</span>`)
+        .map(([r, info]) => `<span class="recommendation-rarity">${escapeHtml(localizedRarity(r))} : <strong>${formatUiPercent(info.coverage, { maximumFractionDigits: 0 })}</strong> (${safeFiniteNumber(info.owned, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(info.total, 0, { min: 0, max: 1000000 })})</span>`)
         .join(" · ");
       parts.push(`<div class="recommendation-card recommendation-card--highlight">`);
       parts.push(`<div class="recommendation-card__header">`);
@@ -1384,12 +1385,12 @@ function buildSquadSummary(players, items) {
   const atLeastOne = items.filter(i => players.some(p => (p.collection[i.id]?.status || "new") === "owned")).length;
   const everyoneCount = items.filter(i => players.every(p => (p.collection[i.id]?.status || "new") === "owned")).length;
   const nobodyCount = total - atLeastOne;
-  const teamPct = Math.round((atLeastOne / total) * 100);
-  const fullPct = Math.round((everyoneCount / total) * 100);
+  const teamPct = collectionPercent(atLeastOne, total);
+  const fullPct = collectionPercent(everyoneCount, total);
 
   const stats = players.map(p => {
     const owned = items.filter(i => (p.collection[i.id]?.status || "new") === "owned").length;
-    return { name: p.name, owned, total, pct: Math.round((owned / total) * 100) };
+    return { name: p.name, owned, total, pct: collectionPercent(owned, total) };
   });
 
   const uniqueMap = players.map((p, pi) => {

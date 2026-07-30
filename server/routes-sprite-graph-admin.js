@@ -6,6 +6,7 @@
 const { app } = require("./core");
 const { pool } = require("./db");
 const { getRequestingUser } = require("./auth");
+const { isAdminSession } = require("./admin-access");
 const {
   getSpriteGraphTechnicalMetrics,
   getSpriteGraphControlBoard,
@@ -20,6 +21,9 @@ const { getGraphMetricCatalog, getGraphMetricDoc } = require("./sprite-graph-met
 const { evaluateGraphV1Readiness } = require("./sprite-graph-v1-validation");
 
 async function requireGraphAdmin(req, res) {
+  if (isAdminSession(req)) {
+    return { source: "terminal", userId: null };
+  }
   const reqUser = await getRequestingUser(req);
   if (!reqUser) {
     res.status(401).json({ error: "Authentification requise" });
@@ -29,7 +33,7 @@ async function requireGraphAdmin(req, res) {
     res.status(403).json({ error: "Accès réservé" });
     return null;
   }
-  return reqUser;
+  return { source: "account", userId: reqUser };
 }
 
 /**
@@ -70,15 +74,15 @@ app.get("/api/admin/sprite-graph/technical-metrics", async (req, res) => {
  */
 app.patch("/api/admin/sprite-graph/flags", async (req, res) => {
   try {
-    const adminId = await requireGraphAdmin(req, res);
-    if (!adminId) return;
+    const admin = await requireGraphAdmin(req, res);
+    if (!admin) return;
     const body = req.body && typeof req.body === "object" ? req.body : {};
     const metricKey = body.metricKey || body.key;
     if (!metricKey) return res.status(400).json({ error: "metricKey requis" });
     const row = await setPublicMetricDisabled(pool, metricKey, {
       disabled: body.disabled !== false,
       reason: body.reason || null,
-      updatedBy: adminId
+      updatedBy: admin.userId
     });
     res.json({
       ok: true,

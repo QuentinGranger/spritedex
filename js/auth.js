@@ -40,6 +40,14 @@ function setupLogin() {
   document.getElementById("goToRegister").addEventListener("click", () => goToStep("onboardingStepRegister"));
   document.getElementById("backFromLogin").addEventListener("click", () => goToStep("onboardingStep1"));
   document.getElementById("backFromRegister").addEventListener("click", () => goToStep("onboardingStep1"));
+  document.getElementById("loginInviteCreate")?.addEventListener("click", () => {
+    goToStep("onboardingStepRegister");
+    document.getElementById("registerUsername")?.focus();
+  });
+  document.getElementById("loginInviteSignIn")?.addEventListener("click", () => {
+    goToStep("onboardingStepLogin");
+    document.getElementById("loginEmail")?.focus();
+  });
 
   async function finishLogin(user) {
     state.userId = user.id;
@@ -56,7 +64,11 @@ function setupLogin() {
     setupAccountPanel();
     buildDeck();
     renderAll();
-    restoreSquad();
+    await restoreSquad();
+    // Keep invitations opened before authentication actionable after email login
+    // or registration, just like the OAuth return flow does.
+    if (typeof handleJoinLink === "function") handleJoinLink();
+    if (typeof handleInviteLink === "function") handleInviteLink();
     setupNotifBell();
     checkNewsNotifications();
     if (window.PushClient) {
@@ -166,7 +178,11 @@ function setupLogin() {
     });
   }
 
-  document.getElementById("loginSkip").addEventListener("click", () => {
+  document.getElementById("loginSkip").addEventListener("click", async () => {
+    // The login controls are available before the catalogue finishes loading.
+    // Do not let a fast "continue as guest" action initialise an empty deck
+    // while that request is still in flight.
+    if (!SPRITES.length) await loadSpritesFromAPI();
     state.userId = null;
     state.username = "Local";
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -178,6 +194,7 @@ function setupLogin() {
     setupAccountPanel();
     buildDeck();
     renderAll();
+    updateSyncStatus();
     setupNotifBell();
     checkNewsNotifications();
   });

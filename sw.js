@@ -1,58 +1,12 @@
-// Bump whenever security-sensitive client code changes so an old cached
-// renderer cannot keep serving a vulnerable version after deployment.
-const CACHE_NAME = "sprite-index-v18";
+// `scripts/client-cache.js` replaces these placeholders for every deployment.
+// Keeping the source file as a template eliminates manual cache-version bumps.
+const CACHE_NAME = "__SPRITE_INDEX_CACHE_VERSION__";
 const TRUSTED_NOTIFICATION_ORIGINS = new Set([
   "https://fortnite.com",
   "https://www.fortnite.com",
   "https://fortnite.gg"
 ]);
-const STATIC_ASSETS = [
-  "/",
-  "/index.html",
-  "/css/base.css",
-  "/css/login.css",
-  "/css/shell.css",
-  "/css/card.css",
-  "/css/checklist.css",
-  "/css/missing.css",
-  "/css/stats.css",
-  "/css/dialogs.css",
-  "/css/squad.css",
-  "/css/compare.css",
-  "/css/utility.css",
-  "/css/responsive.css",
-  "/js/config.js",
-  "/js/state.js",
-  "/js/helpers.js",
-  "/js/legal-content-en.js",
-  "/js/legal-content.js",
-  "/js/legal.js",
-  "/js/api.js",
-  "/js/sync.js",
-  "/js/render-card.js",
-  "/js/render-checklist.js",
-  "/js/render-missing.js",
-  "/js/render-stats.js",
-  "/js/render-squad.js",
-  "/js/compare.js",
-  "/js/dialogs.js",
-  "/js/data-io.js",
-  "/js/swipe.js",
-  "/js/events.js",
-  "/js/auth.js",
-  "/js/push-client.js",
-  "/js/init.js",
-  "/js/mobile.js",
-  "/manifest.json",
-  "/LogoApp.png",
-  "/js/MainLogo.png",
-  "/Favicon/favicon.ico",
-  "/Favicon/favicon-32x32.png",
-  "/Favicon/favicon-16x16.png",
-  "/Favicon/apple-touch-icon.png",
-  "/Favicon/android-chrome-192x192.png",
-  "/Favicon/android-chrome-512x512.png"
-];
+const STATIC_ASSETS = JSON.parse("__SPRITE_INDEX_STATIC_ASSETS__");
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -85,6 +39,20 @@ self.addEventListener("fetch", (event) => {
         headers: { "Content-Type": "application/json" }
       }))
     );
+    return;
+  }
+
+  // The terminal backoffice carries an authenticated HttpOnly session. Keep
+  // its documents and scripts out of both the application cache and offline
+  // fallbacks so a shared device never receives a stale privileged shell.
+  if (
+    url.pathname === "/admin"
+    || url.pathname === "/admin/access"
+    || url.pathname === "/css/admin.css"
+    || url.pathname === "/js/admin.js"
+    || url.pathname === "/js/admin-access.js"
+  ) {
+    event.respondWith(fetch(event.request));
     return;
   }
 

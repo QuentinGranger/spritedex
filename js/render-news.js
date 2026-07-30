@@ -8,13 +8,13 @@ let notifFilter = "all";
 const notifItemsById = new Map();
 
 const NOTIF_FILTER_LABELS = {
-  all: "Toutes",
-  news: "Actualités",
+  all: "All",
+  news: "News",
   social: "Social",
   collection: "Collections",
   squads: "Squads",
-  alerts: "Alertes",
-  unread: "Non lues"
+  alerts: "Alerts",
+  unread: "Unread"
 };
 
 const NOTIF_FILTER_I18N_KEYS = {
@@ -28,10 +28,10 @@ const NOTIF_FILTER_I18N_KEYS = {
 };
 
 const NOTIF_CATEGORY_LABELS = {
-  news: "Actualités",
+  news: "News",
   social: "Social",
   collection: "Collections",
-  alerts: "Alertes",
+  alerts: "Alerts",
   squads: "Squads"
 };
 
@@ -58,12 +58,23 @@ function markNewsSeen(ids) {
 
 function updateNotifBadge(count) {
   const badge = document.getElementById("notifBadge");
-  if (!badge) return;
-  if (count > 0) {
-    badge.textContent = count > 9 ? "9+" : count;
-    badge.style.display = "";
-  } else {
-    badge.style.display = "none";
+  const summary = document.getElementById("notifUnreadSummary");
+  const unreadCount = Math.max(0, Number(count) || 0);
+
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+      badge.style.display = "";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  if (summary) {
+    summary.hidden = unreadCount === 0;
+    summary.textContent = unreadCount > 0
+      ? t("notif.unreadCount", { count: unreadCount })
+      : "";
   }
 }
 
@@ -118,7 +129,12 @@ function setNotifFilter(filter) {
   }
   notifFilter = next;
   document.querySelectorAll(".notif-filter").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.notifFilter === notifFilter);
+    const isActive = btn.dataset.notifFilter === notifFilter;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+    if (isActive && typeof btn.scrollIntoView === "function") {
+      btn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
   });
   if (notifDropdownOpen) resetAndLoadNotifications();
 }
@@ -702,6 +718,19 @@ function setupNotifBell() {
       if (!btn) return;
       e.stopPropagation();
       setNotifFilter(btn.dataset.notifFilter);
+    });
+    filters.addEventListener("keydown", (e) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+      const tabs = [...filters.querySelectorAll('[role="tab"]')];
+      const current = document.activeElement;
+      const currentIndex = tabs.indexOf(current);
+      if (currentIndex < 0) return;
+      e.preventDefault();
+      const nextIndex = e.key === 'Home' ? 0
+        : e.key === 'End' ? tabs.length - 1
+          : (currentIndex + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      tabs[nextIndex].focus();
+      setNotifFilter(tabs[nextIndex].dataset.notifFilter);
     });
   }
 

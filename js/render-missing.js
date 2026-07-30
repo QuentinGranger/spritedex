@@ -33,10 +33,10 @@ function sortMissingItems(items) {
       const byRarity = (rarityOrder[String(a.rarity || "").toLowerCase()] ?? 99) - (rarityOrder[String(b.rarity || "").toLowerCase()] ?? 99);
       if (byRarity) return byRarity;
     } else if (sort === "variant") {
-      const byVariant = String(a.variant || "").localeCompare(String(b.variant || ""), "fr");
+      const byVariant = String(a.variant || "").localeCompare(String(b.variant || ""), uiLocale());
       if (byVariant) return byVariant;
     }
-    return String(a.spriteName || "").localeCompare(String(b.spriteName || ""), "fr");
+    return String(a.spriteName || "").localeCompare(String(b.spriteName || ""), uiLocale());
   });
 }
 
@@ -44,7 +44,7 @@ function getVisibleMissingItems() {
   const eventFilter = state.missingEventFilter;
   const query = String(state.missingSearch || "").trim().toLocaleLowerCase("fr");
   const filter = state.missingFilter || "all";
-  return sortMissingItems(getAllItems().filter((item) => {
+  return sortMissingItems(getReleasedCollectionItems(getAllItems()).filter((item) => {
     const entry = getEntry(item.id);
     if (!isCollectibleMissingStatus(entry.status)) return false;
     if (eventFilter && (!isMissingPriority(entry) || !itemMatchesMissingEventFilter(item, eventFilter))) return false;
@@ -57,7 +57,8 @@ function getVisibleMissingItems() {
 }
 
 function renderMissing() {
-  const allItems = getAllItems();
+  renderFarmPlan();
+  const allItems = getReleasedCollectionItems(getAllItems());
   const eventFilter = state.missingEventFilter;
   const allMissing = allItems.filter(item => isCollectibleMissingStatus(getEntry(item.id).status));
   const notOwned = getVisibleMissingItems();
@@ -117,10 +118,11 @@ function renderMissing() {
     (variantGroups[item.variant] ||= []).push(item);
   }
 
-  const total = allItems.length;
-  const owned = allItems.filter(item => getEntry(item.id).status === "owned").length;
+  const metrics = getCollectionMetrics(getAllItems());
+  const total = metrics.releasedTotal;
+  const owned = metrics.owned;
   const eventName = eventFilter && eventFilter.eventId && typeof EVENTS !== "undefined" ? (EVENTS[eventFilter.eventId]?.name || eventFilter.eventId) : null;
-  const pct = total ? Math.round((owned / total) * 100) : 0;
+  const pct = metrics.percent;
   let html = eventFilter ? `<div class="farm-event-filter" id="missingEventFilterBanner"><div class="farm-event-filter__text">${escapeHtml(t("missing.eventBanner"))}${eventName ? ` · ${escapeHtml(eventName)}` : escapeHtml(t("missing.eventBannerFor"))}</div><button type="button" class="ghost-button" data-missing-action="clear-event">${escapeHtml(t("missing.showAll"))}</button></div>` : "";
   html += `<div class="farm-summary"><div class="farm-summary__count"><strong>${notOwned.length}</strong> ${escapeHtml(eventFilter ? t("missing.prioritiesToFarm") : t("missing.variantsShown"))}</div><div class="farm-summary__bar" aria-label="${escapeHtml(t("missing.progressAria", { pct }))}"><div class="farm-summary__fill" style="width:${pct}%"></div></div><p class="farm-summary__pct">${escapeHtml(t("missing.progressText", { owned, total, pct }))}${notOwned.length !== allMissing.length ? escapeHtml(t("missing.progressTotal", { total: allMissing.length })) : ""}</p></div>`;
 
@@ -143,7 +145,7 @@ function renderMissingItem(item) {
   const priority = missingPriorityValue(entry);
   const prioBadge = priority !== "none" ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(priority)}">${escapeHtml(priorityLabel(priority))}</span>` : "";
   const label = `${item.spriteName} · ${item.variant}`;
-  return `<article class="farm-item" data-id="${escapeHtml(String(item.id || ""))}"><div class="farm-item__avatar">${img ? `<img src="${escapeHtml(img)}" class="farm-item__img" alt="" />` : "<span aria-hidden=\"true\">?</span>"}</div><div class="farm-item__info"><span class="farm-item__name">${escapeHtml(item.spriteName)}</span><span class="farm-item__variant">${escapeHtml(item.variant)} ${prioBadge}</span></div><span class="farm-item__rarity">${escapeHtml(item.rarity)}</span><div class="farm-item__status" aria-label="${escapeHtml(t("status.row", { status: statusLabel(entry.status) }))}">${statusEmoji(entry.status)}</div><div class="farm-item__actions"><button class="farm-item__detail" type="button" data-missing-detail="${escapeHtml(String(item.id || ""))}" aria-label="${escapeHtml(t("missing.viewDetail", { name: label }))}">${escapeHtml(t("common.details"))}</button><button class="farm-item__priority" type="button" data-missing-priority="${escapeHtml(String(item.id || ""))}" aria-pressed="${priority !== "none"}" title="${escapeHtml(priority === "none" ? t("missing.addPriority") : t("missing.removePriority"))}">${priority === "none" ? "☆" : "★"}<span class="sr-only">${escapeHtml(priority === "none" ? t("missing.addPrioritySr", { name: label }) : t("missing.removePrioritySr", { name: label }))}</span></button><button class="farm-item__mark" type="button" data-id="${escapeHtml(String(item.id || ""))}" data-status="owned" title="${escapeHtml(t("missing.markOwned", { name: label }))}" aria-label="${escapeHtml(t("missing.markOwned", { name: label }))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></article>`;
+  return `<article class="farm-item" data-id="${escapeHtml(String(item.id || ""))}"><div class="farm-item__avatar">${img ? `<img src="${escapeHtml(img)}" class="farm-item__img" alt="" />` : "<span aria-hidden=\"true\">?</span>"}</div><div class="farm-item__info"><span class="farm-item__name">${escapeHtml(item.spriteName)}</span><span class="farm-item__variant">${escapeHtml(item.variant)} ${prioBadge}</span></div><span class="farm-item__rarity">${escapeHtml(localizedRarity(item.rarity))}</span><div class="farm-item__status" aria-label="${escapeHtml(t("status.row", { status: statusLabel(entry.status) }))}">${statusEmoji(entry.status)}</div><div class="farm-item__actions"><button class="farm-item__detail" type="button" data-missing-detail="${escapeHtml(String(item.id || ""))}" aria-label="${escapeHtml(t("missing.viewDetail", { name: label }))}">${escapeHtml(t("common.details"))}</button><button class="farm-item__priority" type="button" data-missing-priority="${escapeHtml(String(item.id || ""))}" aria-pressed="${priority !== "none"}" title="${escapeHtml(priority === "none" ? t("missing.addPriority") : t("missing.removePriority"))}">${priority === "none" ? "☆" : "★"}<span class="sr-only">${escapeHtml(priority === "none" ? t("missing.addPrioritySr", { name: label }) : t("missing.removePrioritySr", { name: label }))}</span></button><button class="farm-item__mark" type="button" data-id="${escapeHtml(String(item.id || ""))}" data-status="owned" title="${escapeHtml(t("missing.markOwned", { name: label }))}" aria-label="${escapeHtml(t("missing.markOwned", { name: label }))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></button></div></article>`;
 }
 
 function resetMissingControls() {

@@ -4,7 +4,7 @@ const analytics = require("../analytics");
 const security = require("../security");
 const secLog = require("../security-logger");
 const { areFriends, canViewCollection, checkPrivacyAccess, getCollectionAccessReason, getRequestingUser, getVisibility, hashCapabilityToken, isBlocked, requireNotSuspended, shareSquad } = require("./auth");
-const { buildAcquisitionMethod, buildAvailability, buildRecurrence } = require("./catalog");
+const { buildAcquisitionMethod, buildAvailability, buildRecurrence, dedupeSpritesBySlug } = require("./catalog");
 const { APP_URL, app } = require("./core");
 const { pool } = require("./db");
 const comparisonSessions = require("./comparison-sessions");
@@ -168,17 +168,27 @@ function isVariantReleasedAndActiveServer(item) {
 
 async function getServerCompareCatalogItems() {
   const [spritesRes, variantsRes] = await Promise.all([
-    pool.query(`SELECT id, name, rarity, color, season_id, event_id, acquisition, availability, data_status, is_released, available, added_date FROM sprites`),
+    pool.query(`SELECT id, slug, name, rarity, color, variants, season_id, event_id, acquisition, availability, data_status, is_released, available, added_date FROM sprites`),
     pool.query(`SELECT id, sprite_id, variant_type, name, rarity, release_status, data_status, acquisition, availability, first_observed_at, image_path, suggested_image_path FROM sprite_variants`)
   ]);
-  const spriteMap = Object.fromEntries(spritesRes.rows.map(s => [s.id, s]));
+  // Match /api/sprites exactly: legacy rows may duplicate the same sprite
+  // under different ids. All totals, badges and squad calculations must use
+  // the same canonical catalogue as the client.
+  const canonicalSprites = dedupeSpritesBySlug(spritesRes.rows);
+  const canonicalBySlug = new Map(canonicalSprites.map((sprite) => [sprite.slug || String(sprite.id).replace(/^sprite_/, "").replace(/_/g, "-"), sprite]));
+  const spriteMap = new Map(spritesRes.rows.map((sprite) => {
+    const slug = sprite.slug || String(sprite.id).replace(/^sprite_/, "").replace(/_/g, "-");
+    return [sprite.id, canonicalBySlug.get(slug) || sprite];
+  }));
   const items = [];
+  const knownVariantKeys = new Set();
   for (const v of variantsRes.rows) {
-    const sprite = spriteMap[v.sprite_id];
+    const sprite = spriteMap.get(v.sprite_id);
     if (!sprite) continue;
     const variantAcquisition = buildAcquisitionMethod(v.acquisition && Object.keys(v.acquisition || {}).length ? v.acquisition : sprite.acquisition);
     const variantAvailability = buildAvailability(v.availability && Object.keys(v.availability || {}).length ? v.availability : sprite.availability);
     const variantRecurrence = buildRecurrence(variantAvailability.recurrence);
+    knownVariantKeys.add(`${sprite.id}::${v.variant_type}`);
     items.push({
       id: v.id,
       variantId: v.id,
@@ -203,6 +213,49 @@ async function getServerCompareCatalogItems() {
       available: v.available !== undefined ? v.available : sprite.available,
       isReleased: sprite.is_released
     });
+  }
+
+  // The reference catalogue historically stored some variants only in
+  // sprites.variants.  They are still real collectable variants and use the
+  // same legacy-stable id as the web client (spriteId::variantType).  Without
+  // this fallback, progress endpoints could report 0/0 while the app showed
+  // the complete catalogue.
+  for (const sprite of canonicalSprites) {
+    const variantTypes = Array.isArray(sprite.variants) && sprite.variants.length
+      ? sprite.variants
+      : ["Base"];
+    const availability = buildAvailability(sprite.availability);
+    const recurrence = buildRecurrence(availability.recurrence);
+    for (const rawType of variantTypes) {
+      const variantType = String(rawType || "Base");
+      const key = `${sprite.id}::${variantType}`;
+      if (knownVariantKeys.has(key)) continue;
+      const released = sprite.is_released !== false;
+      items.push({
+        id: key,
+        variantId: key,
+        spriteId: sprite.id,
+        variantType,
+        variantName: variantType,
+        spriteName: sprite.name || sprite.id,
+        img: null,
+        rarity: sprite.rarity,
+        color: sprite.color,
+        seasonId: sprite.season_id,
+        eventId: sprite.event_id,
+        releaseStatus: released ? "released" : "unreleased",
+        dataStatus: sprite.data_status || "",
+        availabilityStatus: availability.status,
+        availabilityEndDate: availability.endDate || null,
+        availability: { ...availability, recurrence },
+        availabilityRecurrenceStatus: recurrence.status,
+        acquisitionMethod: buildAcquisitionMethod(sprite.acquisition).type,
+        releaseDate: availability.startDate || sprite.added_date || null,
+        endDate: availability.endDate || null,
+        available: sprite.available !== false,
+        isReleased: released
+      });
+    }
   }
   return items;
 }

@@ -25,9 +25,21 @@ function addToSyncQueue(spriteId) {
 async function persist(spriteId) {
   // 1. Local save — immediate, always works
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.collection));
+  localStorage.setItem("sprite-index_last_local_save", new Date().toISOString());
 
-  if (!state.userId) return;
+  if (!state.userId) {
+    updateSyncStatus();
+    return;
+  }
   if (!spriteId || spriteId.startsWith("fav_")) return;
+
+  // Never wait for a request doomed by an offline device. The exact variant id
+  // is retained locally and replayed as soon as connectivity comes back.
+  if (!navigator.onLine) {
+    addToSyncQueue(spriteId);
+    updateSyncStatus();
+    return;
+  }
 
   // 2. Cloud save — fire and retry on failure
   const entry = state.collection[spriteId];
@@ -67,6 +79,10 @@ function scheduleSyncRetry() {
 
 async function flushSyncQueue() {
   if (!state.userId || syncInFlight) return;
+  if (!navigator.onLine) {
+    updateSyncStatus();
+    return;
+  }
   const queue = getSyncQueue();
   if (queue.length === 0) return;
 
@@ -176,6 +192,20 @@ async function loadFromServer() {
       }
       state.collection = local;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+
+      // A local entry can be newer than the copy returned by the server (for
+      // example after an offline action). Keep it locally *and* enqueue it so
+      // the passport, public profile and the rest of the API catch up. The
+      // old merge only kept that newer local value, which allowed the app to
+      // show 42/83 while its server passport remained at 41/83 indefinitely.
+      const knownVariantIds = new Set(getAllItems().map((item) => String(item.id)));
+      for (const [id, localEntry] of Object.entries(local)) {
+        if (id.startsWith("fav_") || !knownVariantIds.has(String(id))) continue;
+        const serverEntry = serverData[id];
+        const localTime = localEntry?.updatedAt ? new Date(localEntry.updatedAt).getTime() : 0;
+        const serverTime = serverEntry?.updatedAt ? new Date(serverEntry.updatedAt).getTime() : 0;
+        if (!serverEntry || localTime > serverTime) addToSyncQueue(id);
+      }
       return true;
     }
   } catch (e) {
@@ -202,42 +232,67 @@ async function migrateLocalToServer() {
 
 // ── Sync status indicator ──
 let syncErrorState = false;
-let syncStatusTimer = null;
+
+function syncIcon(kind) {
+  const icons = {
+    local: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg>',
+    offline: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l5.6 5.6M17.4 17.4L23 23"/><path d="M5 12.5a7 7 0 0 1 9.9-1"/><path d="M8.5 16a3.5 3.5 0 0 1 5 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>',
+    error: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    pending: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    synced: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+  };
+  return icons[kind] || icons.local;
+}
 
 function updateSyncStatus() {
   const bar = document.getElementById("syncBar");
   const icon = document.getElementById("syncBarIcon");
   const text = document.getElementById("syncBarText");
-  if (!bar || !state.userId) { if (bar) bar.style.display = "none"; return; }
+  const detail = document.getElementById("syncBarDetail");
+  const retry = document.getElementById("syncBarRetry");
+  if (!bar || !icon || !text || !detail) return;
 
   bar.style.display = "";
   bar.className = "sync-bar";
+  if (retry) retry.hidden = true;
 
-  if (!navigator.onLine) {
-    bar.classList.add("sync-bar--offline");
-    icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l5.6 5.6M17.4 17.4L23 23"/><path d="M5 12.5a7 7 0 0 1 9.9-1"/><path d="M8.5 16a3.5 3.5 0 0 1 5 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>';
-    text.textContent = t("sync.offline");
+  // Guest collections are protected locally too. Showing that explicitly
+  // avoids the false impression that a network account is required to save.
+  if (!state.userId) {
+    bar.classList.add("sync-bar--local");
+    icon.innerHTML = syncIcon("local");
+    text.textContent = t("sync.local");
+    detail.textContent = t("sync.localDetail");
     return;
   }
 
   const queue = getSyncQueue();
+  if (!navigator.onLine) {
+    bar.classList.add("sync-bar--offline");
+    icon.innerHTML = syncIcon("offline");
+    text.textContent = t("sync.offline");
+    detail.textContent = queue.length ? t("sync.offlineQueued", { count: queue.length }) : t("sync.offlineDetail");
+    return;
+  }
+
   if (syncErrorState) {
     bar.classList.add("sync-bar--error");
-    icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    icon.innerHTML = syncIcon("error");
     text.textContent = t("sync.error");
+    detail.textContent = queue.length ? t("sync.errorQueued", { count: queue.length }) : t("sync.errorDetail");
+    if (retry) retry.hidden = false;
   } else if (queue.length > 0) {
     bar.classList.add("sync-bar--pending");
-    icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-    text.textContent = queue.length === 1
-      ? t("sync.pendingOne")
-      : t("sync.pendingMany", { count: queue.length });
+    icon.innerHTML = syncIcon("pending");
+    text.textContent = t("sync.pending");
+    detail.textContent = queue.length === 1 ? t("sync.pendingOne") : t("sync.pendingMany", { count: queue.length });
+    if (retry) retry.hidden = false;
   } else {
     bar.classList.add("sync-bar--synced");
-    icon.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>';
+    icon.innerHTML = syncIcon("synced");
     text.textContent = t("sync.synced");
-    // Auto-hide after 3s
-    clearTimeout(syncStatusTimer);
-    syncStatusTimer = setTimeout(() => { bar.style.display = "none"; }, 3000);
+    const lastSync = localStorage.getItem("sprite-index_last_sync");
+    detail.textContent = lastSync ? t("sync.lastSync", { time: new Date(lastSync).toLocaleTimeString(appLocale() === "en" ? "en-US" : "fr-FR", { hour: "2-digit", minute: "2-digit" }) }) : t("sync.syncedDetail");
   }
 }
 

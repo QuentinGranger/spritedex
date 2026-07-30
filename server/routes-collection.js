@@ -7,7 +7,7 @@ const { normalizeCollection, normalizeVariantId } = require("./catalog");
 const { invalidateCompareCacheForUser } = require("./compare");
 const { app } = require("./core");
 const { pool } = require("./db");
-const { broadcastCompareUpdate, broadcastSquadUpdate, broadcastSquadCompletionUpdate } = require("./ws");
+const { broadcastCompareUpdate, broadcastFriendCollectionUpdate, broadcastSquadUpdate, broadcastSquadCompletionUpdate } = require("./ws");
 const { logSquadCollectionEvent } = require("./squad-activity");
 const { refreshSquadStats, scheduleSquadStatsRefresh } = require("./routes-squad-invitations");
 const { checkAffectedGoals } = require("./routes-goals");
@@ -335,6 +335,7 @@ app.put("/api/collection/:userId/:spriteId", requireNotSuspended, security.valid
         masteryLevel: savedEntry.mastery_level
       }]
     });
+    broadcastFriendCollectionUpdate(userId);
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
     console.error(err);
@@ -521,6 +522,7 @@ app.post("/api/collection/:userId/sync", requireNotSuspended, security.syncLimit
       })().catch(err => console.error("[sync] squad completion refresh failed", err));
     }
     broadcastCompareUpdate(userId, { changes: compareChanges });
+    broadcastFriendCollectionUpdate(userId);
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -719,6 +721,7 @@ app.post("/api/collection/:userId/import", requireNotSuspended, security.syncLim
       console.error("[import] variant_acquired emit failed", err)
     );
     broadcastCompareUpdate(userId, { changes: compareChanges });
+    broadcastFriendCollectionUpdate(userId);
 
     setImmediate(() => {
       const integrity = require("./passport-integrity");
@@ -793,6 +796,7 @@ app.delete("/api/collection/:userId", requireNotSuspended, async (req, res) => {
     );
     broadcastSquadCompletionUpdate(req.params.userId);
     broadcastCompareUpdate(req.params.userId, { type: "compare_reset" });
+    broadcastFriendCollectionUpdate(req.params.userId);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Erreur serveur" });
@@ -835,11 +839,21 @@ app.get("/api/history/:userId", async (req, res) => {
       [userId]
     );
 
+    const monthResult = await pool.query(
+      `SELECT date_trunc('month', created_at) AS month, COUNT(*) AS changes,
+              COUNT(*) FILTER (WHERE new_status = 'owned') AS acquisitions
+       FROM collection_history
+       WHERE user_id = $1 AND created_at > NOW() - INTERVAL '12 months'
+       GROUP BY month ORDER BY month ASC`,
+      [userId]
+    );
+
     res.json({
       history: result.rows,
       total,
       hasMore: offset + result.rows.length < total,
-      weeklyStats: weekResult.rows
+      weeklyStats: weekResult.rows,
+      monthlyStats: monthResult.rows
     });
   } catch (err) {
     console.error(err);

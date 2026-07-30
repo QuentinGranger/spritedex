@@ -5,13 +5,13 @@
 // (status + priority, no notes) is used.
 
 function renderSharedProfile(data) {
-  const items = getAllItems();
+  const items = getReleasedCollectionItems(getAllItems());
   const collection = sanitizeCollection(data.collection);
   const isOwned = (id) => (collection[id]?.status || "new") === "owned";
 
   const total = items.length;
   const ownedTotal = items.filter(i => isOwned(i.id)).length;
-  const pct = total ? Math.round((ownedTotal / total) * 100) : 0;
+  const pct = collectionPercent(ownedTotal, total);
 
   // Per-rarity breakdown (ordered like the rest of the app).
   const rarities = Object.keys(RARITY_ORDER)
@@ -19,7 +19,7 @@ function renderSharedProfile(data) {
     .map(rarity => {
       const group = items.filter(i => i.rarity === rarity);
       const owned = group.filter(i => isOwned(i.id)).length;
-      return { label: rarity, total: group.length, owned, pct: group.length ? Math.round((owned / group.length) * 100) : 0 };
+      return { label: rarity, total: group.length, owned, pct: collectionPercent(owned, group.length) };
     })
     .filter(r => r.total > 0);
 

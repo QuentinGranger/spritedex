@@ -3,11 +3,61 @@ function setupOfflineIndicator() {
   // the status bar. The sync bar already reports offline state when relevant.
 }
 
-function handleInviteLink() {
+const PENDING_FRIEND_INVITE_KEY = "sprite-index_pending_friend_invite";
+const PENDING_SQUAD_JOIN_KEY = "sprite-index_pending_squad_join";
+
+function readPendingLink(paramName, storageKey) {
   const params = new URLSearchParams(location.search);
-  const token = params.get("invite");
+  const value = params.get(paramName);
+  if (value) {
+    try { sessionStorage.setItem(storageKey, value); } catch (_) { /* storage unavailable */ }
+    // Preserve other link parameters (for example a squad link alongside an invite).
+    params.delete(paramName);
+    const query = params.toString();
+    history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}${location.hash}`);
+    return value;
+  }
+  try { return sessionStorage.getItem(storageKey); } catch (_) { return null; }
+}
+
+function clearPendingLink(storageKey) {
+  try { sessionStorage.removeItem(storageKey); } catch (_) { /* storage unavailable */ }
+}
+
+async function setupPendingInvitationOnboarding() {
+  const friendToken = readPendingLink("invite", PENDING_FRIEND_INVITE_KEY);
+  const squadCode = readPendingLink("joinSquad", PENDING_SQUAD_JOIN_KEY);
+  if (!friendToken && !squadCode) return;
+
+  const notice = document.getElementById("loginInviteNotice");
+  const title = document.getElementById("loginInviteTitle");
+  const detail = document.getElementById("loginInviteDetail");
+  if (!notice || !title || !detail) return;
+
+  notice.hidden = false;
+  detail.textContent = t("login.inviteReadyDetail");
+  title.textContent = squadCode && !friendToken
+    ? t("login.squadInviteTitle")
+    : t("login.friendInviteTitleFallback");
+
+  if (!friendToken) return;
+  try {
+    const response = await fetch(`${API_BASE}/friends/invite-links/${encodeURIComponent(friendToken)}`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.owner) {
+      if ([404, 410].includes(response.status)) clearPendingLink(PENDING_FRIEND_INVITE_KEY);
+      return;
+    }
+    const name = data.owner.displayName || data.owner.username;
+    if (name) title.textContent = t("login.friendInviteTitle", { name });
+  } catch (_) {
+    // The account flow remains usable offline; redemption will retry once connected.
+  }
+}
+
+function handleInviteLink() {
+  const token = readPendingLink("invite", PENDING_FRIEND_INVITE_KEY);
   if (!token) return;
-  history.replaceState(null, "", location.pathname);
   const socialTab = document.querySelector('.tab[data-view="social"]');
   if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("friends"); }
   if (!state.userId) {
@@ -20,20 +70,26 @@ function handleInviteLink() {
   }).then(async r => {
     const data = await r.json().catch(() => ({}));
     if (r.ok) {
+      clearPendingLink(PENDING_FRIEND_INVITE_KEY);
       toast(t("init.friendRequestSent"));
       if (typeof loadFriendsData === "function") loadFriendsData();
     } else {
+      // A revoked, expired or unknown link cannot become valid after a retry.
+      if ([400, 403, 404, 409, 410].includes(r.status)) clearPendingLink(PENDING_FRIEND_INVITE_KEY);
       toastError(data, "init.inviteLinkInvalid");
     }
   }).catch(() => toast(t("init.inviteNetworkError")));
 }
 
 function handleJoinLink() {
-  const params = new URLSearchParams(location.search);
-  const code = params.get("joinSquad");
+  const code = readPendingLink("joinSquad", PENDING_SQUAD_JOIN_KEY);
   if (!code) return;
-  history.replaceState(null, "", location.pathname);
+  if (!state.userId) {
+    toast(t("squad.loginFirst"));
+    return;
+  }
   if (state.activeSquad) {
+    clearPendingLink(PENDING_SQUAD_JOIN_KEY);
     toast(t("init.alreadyInSquad"));
     return;
   }
@@ -41,6 +97,7 @@ function handleJoinLink() {
   if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("squad"); }
   if (typeof setCompareMode === "function") setCompareMode("squad");
   els.squadCodeInput.value = code;
+  clearPendingLink(PENDING_SQUAD_JOIN_KEY);
   joinSquad();
 }
 
@@ -205,6 +262,7 @@ async function init() {
   // A slow or unreachable API used to leave Google, Discord and Email buttons
   // inert because setupLogin() only ran after this request completed.
   setupLogin();
+  void setupPendingInvitationOnboarding();
   await loadSpritesFromAPI();
 
   // Read-only shared profile link takes over the whole page.

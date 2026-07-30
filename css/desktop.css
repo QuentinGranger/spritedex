@@ -164,6 +164,7 @@
     grid-template-columns: minmax(400px, 610px) minmax(250px, 360px);
     grid-template-areas:
       "toolbar actions"
+      "session actions"
       "deck actions"
       "hint hint";
     align-items: center;
@@ -173,6 +174,9 @@
   }
 
   #view-swipe .deck-toolbar { grid-area: toolbar; margin: 0; }
+  #view-swipe .swipe-session { grid-area: session; margin: 0; }
+  #view-swipe .swipe-session-summary { grid-area: session; margin: 0; }
+  #view-swipe .swipe-shortcut-guide { grid-area: session; align-self: end; margin: 0; transform: translateY(calc(100% + 10px)); }
   #view-swipe .deck-zone { grid-area: deck; min-height: 560px; }
   #view-swipe .swipe-actions {
     grid-area: actions;
@@ -896,11 +900,12 @@
     grid-template-columns: minmax(360px, 500px) minmax(300px, 420px);
     grid-template-areas:
       "toolbar toolbar"
+      "session actions"
       "deck actions"
       "hint hint";
     align-items: start;
     justify-content: center;
-    gap: 14px 46px;
+    gap: 10px 38px;
     min-height: 0;
     padding-top: 0;
   }
@@ -930,11 +935,12 @@
     font-size: 0.76rem;
   }
 
-  #view-swipe .deck-zone { min-height: 540px; }
+  #view-swipe .deck-zone { min-height: 0; height: clamp(390px, calc(100dvh - 340px), 520px); }
   #view-swipe .sprite-card {
     width: min(100%, 460px);
-    min-height: 520px;
-    padding: 24px 30px 22px;
+    min-height: 0;
+    height: 100%;
+    padding: clamp(15px, 2.2vh, 24px) 30px 18px;
     border-color: rgba(38, 205, 255, 0.72);
     border-radius: 22px;
     background:
@@ -942,22 +948,24 @@
       linear-gradient(165deg, rgba(10, 31, 83, 0.95), rgba(8, 14, 42, 0.96));
     box-shadow: 0 0 0 1px rgba(110, 65, 255, 0.36), 0 18px 60px rgba(0, 0, 0, 0.45), 0 0 28px rgba(0, 208, 255, 0.2);
   }
-  #view-swipe .sprite-avatar { width: 180px; height: 180px; margin-bottom: 6px; }
-  #view-swipe .sprite-card h2 { font-size: clamp(2rem, 3vw, 2.65rem); }
+  #view-swipe .sprite-avatar { width: clamp(118px, 19vh, 180px); height: clamp(118px, 19vh, 180px); margin-bottom: 6px; }
+  #view-swipe .sprite-card h2 { font-size: clamp(1.55rem, 3vw, 2.65rem); }
   #view-swipe .effect { max-width: 350px; }
   #view-swipe .swipe-actions {
     gap: 14px;
     padding-top: 0;
+    grid-auto-rows: 1fr;
   }
   #view-swipe .swipe-actions .action {
-    min-height: 218px;
-    padding: 24px 16px;
+    min-height: 0;
+    padding: clamp(12px, 2.5vh, 24px) 16px;
     border-radius: 21px;
     background: linear-gradient(150deg, rgba(21, 32, 77, 0.78), rgba(8, 15, 39, 0.9));
   }
   #view-swipe .swipe-actions .action-icon { width: 43px; height: 43px; }
   #view-swipe .swipe-actions .action span { color: #f2f4ff; font-family: var(--font-body); font-size: 1rem; font-weight: 750; letter-spacing: -0.02em; text-transform: none; }
   #view-swipe .swipe-actions .action__hint { display: block; color: #aeb9df; font-size: 0.78rem; }
+  #view-swipe .swipe-actions .action__key { display: block; }
   #view-swipe .swipe-actions .action.danger { border-color: rgba(255, 70, 118, 0.62); }
   #view-swipe .swipe-actions .action.neutral { border-color: rgba(154, 102, 255, 0.58); }
   #view-swipe .swipe-actions .action.star { border-color: rgba(255, 196, 49, 0.58); }
@@ -974,6 +982,17 @@
     background: rgba(12, 22, 52, 0.68);
     font-size: 0.72rem;
     text-align: left;
+  }
+
+  @media (max-height: 760px) {
+    #view-swipe.active { gap: 8px 30px; }
+    #view-swipe .deck-toolbar select, #view-swipe .deck-toolbar .ghost-button { height: 44px; }
+    #view-swipe .deck-zone { height: clamp(340px, calc(100dvh - 300px), 430px); }
+    #view-swipe .sprite-card { padding: 13px 22px; }
+    #view-swipe .sprite-avatar { width: clamp(100px, 16vh, 138px); height: clamp(100px, 16vh, 138px); }
+    #view-swipe .swipe-actions .action { padding: 10px; }
+    #view-swipe .swipe-actions .action-icon { width: 32px; height: 32px; }
+    #view-swipe .swipe-actions .action__hint, #view-swipe .hint { display: none; }
   }
 
 }

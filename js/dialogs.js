@@ -8,7 +8,7 @@ function openDetail(itemId) {
   els.dialogAvatar.style.setProperty("--card-color", safeCssColor(item.color));
   // Étape 79 — label official rarity separately from community ownership.
   els.dialogRarity.textContent = item.rarity
-    ? t("dialog.officialRarity", { rarity: item.rarity })
+    ? t("dialog.officialRarity", { rarity: localizedRarity(item.rarity) })
     : t("dialog.officialRarityEmpty");
   els.dialogTitle.textContent = item.spriteName;
   els.dialogVariant.textContent = `${item.variant} · ${statusLabel(entry.status)}`;
@@ -35,8 +35,9 @@ function openSpriteDetail(spriteId) {
   const sprite = SPRITES.find(s => s.id === spriteId);
   if (!sprite) return;
 
-  const variantTypes = Object.keys(sprite.variantDetails || {});
-  const rawVariants = variantTypes.length > 0 ? variantTypes : (sprite.variants || ["Base"]);
+  // Keep the detailed sprite view on the same released/active scope as the
+  // header, checklist, stats and passport.
+  const rawVariants = getSpriteCollectionItems(sprite.id).map((item) => item.variantType);
   const variants = rawVariants.map(v => ({
     id: variantId(sprite.id, v),
     name: v,
@@ -45,12 +46,12 @@ function openSpriteDetail(spriteId) {
   }));
   const owned = variants.filter(v => v.entry.status === "owned").length;
   const total = variants.length;
-  const pct = total ? Math.round((owned / total) * 100) : 0;
+  const pct = collectionPercent(owned, total);
   const baseImg = safeImageUrl(getSpriteImg(sprite.id, "Base"));
   const isFavorite = state.collection[`fav_${sprite.id}`] === true;
 
   const rarityInline = sprite.rarity
-    ? t("dialog.spriteRarityInline", { rarity: sprite.rarity })
+    ? t("dialog.spriteRarityInline", { rarity: localizedRarity(sprite.rarity) })
     : t("dialog.spriteRarityEmpty");
 
   els.spriteDetailContent.innerHTML = `

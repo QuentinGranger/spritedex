@@ -1,7 +1,7 @@
 {
   "name": "SPRITE-INDEX",
   "short_name": "SPRITE-INDEX",
-  "description": "Ta collection de sprites — checklist, farm list, statistiques.",
+  "description": "Your Sprite collection — checklist, farm plan and stats.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

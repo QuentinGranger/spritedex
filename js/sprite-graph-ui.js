@@ -11,7 +11,61 @@ function sgFormatRate(rate, digits = 1) {
   if (rate == null || !Number.isFinite(Number(rate))) return "—";
   const n = Number(rate);
   const rounded = Math.round(n * (10 ** digits)) / (10 ** digits);
-  return String(rounded).replace(".", ",");
+  return formatUiNumber(rounded, { maximumFractionDigits: digits });
+}
+
+function sgFormatPercent(rate, digits = 1) {
+  if (rate == null || !Number.isFinite(Number(rate))) return "—";
+  return formatUiPercent(Number(rate), { maximumFractionDigits: digits });
+}
+
+function sgTrendLabel(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  const key = {
+    strongly_rising: "community.trendStronglyRising",
+    "fortement en hausse": "community.trendStronglyRising",
+    rising: "community.trendRising",
+    "en hausse": "community.trendRising",
+    stable: "community.trendStable",
+    falling: "community.trendFalling",
+    "en baisse": "community.trendFalling",
+    strongly_falling: "community.trendStronglyFalling",
+    "fortement en baisse": "community.trendStronglyFalling"
+  }[normalized];
+  return key ? t(key) : String(value || "");
+}
+
+function sgCommunityLines(data) {
+  const community = data?.community || {};
+  const lines = [];
+  if (community.ownershipRate != null) {
+    lines.push(t("community.graphOwnership", { rate: sgFormatPercent(community.ownershipRate) }));
+  }
+  if (community.priorityRateAmongMissing != null) {
+    lines.push(t("community.graphPriority", { rate: sgFormatPercent(community.priorityRateAmongMissing, 0) }));
+  }
+  if (community.trend || community.trendLabel) {
+    lines.push(t("community.graphTrend", { trend: sgTrendLabel(community.trend || community.trendLabel) }));
+  } else if (community.trendMessage) {
+    lines.push(t("community.notEnoughData"));
+  }
+  if (community.eligibleCollectionCount != null) {
+    const count = Math.max(0, Math.floor(Number(community.eligibleCollectionCount) || 0));
+    lines.push(t("community.graphSample", { count, s: count === 1 ? "" : "s" }));
+  }
+  return lines;
+}
+
+function sgTrendsSectionTitle(key) {
+  return t({
+    mostOwned: "community.trendsMostOwned",
+    rarestInSpriteIndex: "community.trendsRarest",
+    mostSought: "community.trendsMostSought",
+    mostPriorityAdds: "community.trendsPriorityAdds",
+    strongestRisers: "community.trendsStrongestRisers",
+    mostCompared: "community.trendsMostCompared",
+    interestLeaders: "community.trendsInterestLeaders"
+  }[key] || "community.trendsTitle");
 }
 
 // Fine interaction signals are optional and never block the user action. Only
@@ -38,14 +92,8 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
     `;
   }
 
-  const d = data.publicDisplay || {};
   const sep = data.raritySeparation || {};
-  const lines = [
-    d.ownership,
-    d.priority,
-    d.trend,
-    d.sample
-  ].filter(Boolean);
+  const lines = sgCommunityLines(data);
 
   let historyHtml = "";
   if (includeHistory && history && history.showHistory) {
@@ -54,14 +102,14 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
     const lang = typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
     const points = (history.series || []).slice(-5).map((p) => `
       <li><span>${sgEscape(new Date(p.date).toLocaleDateString(lang, { day: "numeric", month: "long" }))}</span>
-          <strong>${sgFormatRate(p.ownershipRate)} %</strong></li>
+          <strong>${sgFormatPercent(p.ownershipRate)}</strong></li>
     `).join("");
     historyHtml = `
       <div class="sg-community__history">
         <h4 class="sg-community__subtitle">${sgEscape(t("community.ownershipHistory"))}</h4>
         <ul class="sg-community__series">${points}</ul>
-        ${own && own.evolutionLabel ? `<p class="sg-community__evo">${sgEscape(t(own.evolutionLabel))}</p>` : ""}
-        ${prio && prio.label ? `<p class="sg-community__prio-evo">${sgEscape(t(prio.label))}</p>` : ""}
+        ${own && own.evolutionPoints != null ? `<p class="sg-community__evo">${sgEscape(t("community.historyOwnershipChange", { delta: `${Number(own.evolutionPoints) >= 0 ? "+" : ""}${sgFormatRate(own.evolutionPoints)}` }))}</p>` : ""}
+        ${prio && prio.from != null && prio.to != null ? `<p class="sg-community__prio-evo">${sgEscape(t("community.historyPriorityChange", { from: prio.from, to: prio.to }))}</p>` : ""}
       </div>
     `;
   }
@@ -72,15 +120,15 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
       ${sep.officialRarity ? `
         <p class="sg-community__official">
           <span class="sg-community__label">${sgEscape(t("community.officialRarityLabel"))}</span>
-          <strong>${sgEscape(sep.officialRarity)}</strong>
+          <strong>${sgEscape(localizedRarity(sep.officialRarity))}</strong>
         </p>
         ${sep.ownershipLabel ? `
           <p class="sg-community__ownership">
             <span class="sg-community__label">${sgEscape(t("community.spriteIndexOwnershipLabel"))}</span>
-            <strong>${sgFormatRate(sep.spriteIndexOwnershipRate)} %</strong>
+            <strong>${sgFormatPercent(sep.spriteIndexOwnershipRate)}</strong>
           </p>
         ` : ""}
-        <p class="sg-community__note">${sgEscape(sep.note ? t(sep.note) : "")}</p>
+        <p class="sg-community__note">${sgEscape(t("community.raritySeparationNote"))}</p>
       ` : ""}
       <ul class="sg-community__lines">
         ${lines.map((l) => `<li>${sgEscape(t(l))}</li>`).join("")}
@@ -181,7 +229,7 @@ async function loadSpriteDetailCommunity(spriteId) {
       .map((v) => {
         const name = v.official?.variantName || v.variantId;
         const rate = v.community.ownershipRate;
-        return `<li><span>${sgEscape(name)}</span><strong>${sgFormatRate(rate)} %</strong></li>`;
+        return `<li><span>${sgEscape(name)}</span><strong>${sgFormatPercent(rate)}</strong></li>`;
       })
       .join("");
 
@@ -212,9 +260,9 @@ async function renderSpriteIndexTrends() {
     if (board.insufficient) {
       container.innerHTML = `
         <div class="stats-module sg-trends sg-trends--gated">
-          <h3 class="stats-module__title">${sgEscape(t(board.label || "community.trendsTitle"))}</h3>
+          <h3 class="stats-module__title">${sgEscape(t("community.trendsTitle"))}</h3>
           <p class="sg-community__muted">${sgEscape(t(board.message || "community.insufficientData"))}</p>
-          <p class="sg-community__disclaimer">${sgEscape(t(board.disclaimer || "community.disclaimer"))}</p>
+          <p class="sg-community__disclaimer">${sgEscape(t("community.disclaimer"))}</p>
         </div>
       `;
       return;
@@ -236,7 +284,7 @@ async function renderSpriteIndexTrends() {
       if (!items.length) {
         return `
           <div class="sg-trends__section">
-            <h4 class="sg-trends__title">${sgEscape(t(sec.title))}</h4>
+            <h4 class="sg-trends__title">${sgEscape(sgTrendsSectionTitle(key))}</h4>
             <p class="sg-community__muted">${sgEscape(t("community.notEnoughData"))}</p>
           </div>
         `;
@@ -246,14 +294,14 @@ async function renderSpriteIndexTrends() {
           ? `${it.spriteName}${it.variantName && it.variantName !== "Base" ? ` · ${it.variantName}` : ""}`
           : (it.variantName || it.variantId || it.spriteId || "?");
         let metric = "";
-        if (it.ownershipRate != null) metric = `${sgFormatRate(it.ownershipRate)} %`;
+        if (it.ownershipRate != null) metric = sgFormatPercent(it.ownershipRate);
         else if (it.priorityUserCount != null) metric = t("community.prioritiesCount", { count: it.priorityUserCount });
         else if (it.priorityAdds7d != null) metric = t("community.priorityAdds7d", { count: it.priorityAdds7d });
-        else if (it.change7d != null) metric = `${it.change7d >= 0 ? "+" : ""}${sgFormatRate(it.change7d, 0)} %`;
+        else if (it.change7d != null) metric = `${it.change7d >= 0 ? "+" : "−"}${sgFormatPercent(Math.abs(it.change7d), 0)}`;
         else if (it.differenceAppearanceCount != null) metric = t("community.diffsCount", { count: it.differenceAppearanceCount });
         else if (it.interestScore != null) metric = `${sgFormatRate(it.interestScore, 0)}`;
         const rarity = it.officialRarity
-          ? `<span class="sg-trends__rarity">${sgEscape(t("community.officialRarityLabel"))} : ${sgEscape(it.officialRarity)}</span>`
+          ? `<span class="sg-trends__rarity">${sgEscape(t("community.officialRarityLabel"))} : ${sgEscape(localizedRarity(it.officialRarity))}</span>`
           : "";
         return `
           <li class="sg-trends__item">
@@ -265,8 +313,8 @@ async function renderSpriteIndexTrends() {
       }).join("");
       return `
         <div class="sg-trends__section">
-          <h4 class="sg-trends__title">${sgEscape(t(sec.title))}</h4>
-          ${sec.note ? `<p class="sg-community__note">${sgEscape(t(sec.note))}</p>` : ""}
+          <h4 class="sg-trends__title">${sgEscape(sgTrendsSectionTitle(key))}</h4>
+          ${sec.note ? `<p class="sg-community__note">${sgEscape(t("community.raritySeparationNote"))}</p>` : ""}
           <ul class="sg-trends__list">${rows}</ul>
         </div>
       `;
@@ -274,8 +322,8 @@ async function renderSpriteIndexTrends() {
 
     container.innerHTML = `
       <div class="stats-module sg-trends">
-        <h3 class="stats-module__title">${sgEscape(t(board.label || "community.trendsTitle"))}</h3>
-        <p class="sg-community__disclaimer">${sgEscape(t(board.disclaimer || "community.disclaimer"))}</p>
+        <h3 class="stats-module__title">${sgEscape(t("community.trendsTitle"))}</h3>
+        <p class="sg-community__disclaimer">${sgEscape(t("community.disclaimer"))}</p>
         ${blocks}
       </div>
     `;

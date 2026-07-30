@@ -1,4 +1,108 @@
 /* ── Farm / Missing Page ── */
+.farm-planner {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.farm-planner__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding: 18px;
+  border: 1px solid rgba(0, 225, 255, .2);
+  border-radius: 18px;
+  background: radial-gradient(circle at 90% 0, rgba(0, 225, 255, .14), transparent 36%), var(--surface);
+  box-shadow: var(--shadow-glow);
+}
+
+.farm-planner__heading .eyebrow { margin: 0 0 3px; color: var(--accent-2); }
+.farm-planner__heading h3 { margin: 0; font: 800 1.22rem var(--font-heading); letter-spacing: .02em; }
+.farm-planner__heading p:last-child { max-width: 620px; margin: 5px 0 0; color: var(--muted); font-size: .83rem; line-height: 1.45; }
+
+.farm-event-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: rgba(8, 16, 42, .46);
+}
+
+.farm-event-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(100deg, rgba(141, 124, 255, .12), rgba(0, 225, 255, .04));
+}
+
+.farm-event-card__header h4 { margin: 2px 0 0; font: 800 1.05rem var(--font-heading); }
+.farm-event-card__header p { margin: 3px 0 0; color: var(--muted); font-size: .74rem; }
+.farm-event-card__deadline { color: var(--warning); font: 800 .7rem var(--font-heading); letter-spacing: .07em; text-transform: uppercase; }
+
+.farm-reminder {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 225, 255, .2);
+  border-radius: 10px;
+  color: var(--text);
+  background: rgba(0, 225, 255, .06);
+  font-size: .74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.farm-reminder input { accent-color: var(--accent-2); }
+.farm-plan__rows { display: grid; }
+
+.farm-plan__row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(100, 140, 255, .1);
+}
+.farm-plan__row:last-child { border-bottom: 0; }
+.farm-plan__row:hover { background: rgba(255, 255, 255, .025); }
+
+.farm-plan__avatar { display: grid; width: 42px; height: 42px; place-items: center; overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: rgba(255,255,255,.04); }
+.farm-plan__avatar img { width: 100%; height: 100%; object-fit: contain; }
+.farm-plan__identity { min-width: 0; }
+.farm-plan__identity strong, .farm-plan__identity > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.farm-plan__identity strong { font-size: .87rem; }
+.farm-plan__identity > span { margin-top: 1px; color: var(--muted); font-size: .72rem; }
+.farm-plan__meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+
+.farm-chip { max-width: 190px; overflow: hidden; padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); font-size: .62rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.farm-chip--available { border-color: rgba(0,255,135,.25); color: #54e9b2; }
+.farm-chip--unavailable { border-color: rgba(255,58,110,.25); color: #ff8ca9; }
+.farm-chip--deadline { border-color: rgba(255,204,0,.22); color: #ffd86d; }
+.farm-chip--confidence { color: #b9c7ff; }
+
+.farm-plan__controls { display: flex; flex-wrap: wrap; justify-content: end; gap: 5px; }
+.farm-plan__status { min-height: 29px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: transparent; font: 700 .67rem var(--font-body); cursor: pointer; transition: .18s ease; }
+.farm-plan__status:hover, .farm-plan__status:focus-visible { border-color: var(--accent-2); color: var(--text); outline: none; }
+.farm-plan__status.is-active { border-color: var(--accent-2); color: #e2fbff; background: rgba(0,225,255,.13); box-shadow: 0 0 13px rgba(0,225,255,.12); }
+.farm-plan__status[data-farm-status="obtained"].is-active { border-color: var(--success); color: var(--success); background: rgba(0,255,135,.09); }
+.farm-plan__status[data-farm-status="abandoned"].is-active { border-color: rgba(255,255,255,.2); color: var(--muted); background: rgba(255,255,255,.05); }
+
+@media (max-width: 640px) {
+  .farm-planner__heading { padding: 15px; }
+  .farm-event-card__header { align-items: flex-start; padding: 13px; }
+  .farm-reminder { padding: 7px; }
+  .farm-reminder span { display: none; }
+  .farm-plan__row { grid-template-columns: 38px minmax(0, 1fr); padding: 11px 12px; }
+  .farm-plan__avatar { width: 38px; height: 38px; }
+  .farm-plan__controls { grid-column: 1 / -1; justify-content: stretch; }
+  .farm-plan__status { flex: 1; }
+  .farm-chip { max-width: 140px; }
+}
+
 .farm-event-filter {
   display: flex;
   align-items: center;

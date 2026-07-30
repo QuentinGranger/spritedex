@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/login.css" />
     <link rel="stylesheet" href="css/shell.css" />
+    <link rel="stylesheet" href="css/home.css" />
     <link rel="stylesheet" href="css/card.css" />
     <link rel="stylesheet" href="css/checklist.css" />
     <link rel="stylesheet" href="css/missing.css" />
@@ -33,6 +34,7 @@
     <link rel="stylesheet" href="css/account.css" />
     <link rel="stylesheet" href="css/shared.css" />
     <link rel="stylesheet" href="css/compare.css" />
+    <link rel="stylesheet" href="css/command-palette.css" />
     <link rel="stylesheet" href="css/legal.css" />
     <link rel="stylesheet" href="css/utility.css" />
     <link rel="stylesheet" href="css/responsive.css" />
@@ -42,6 +44,22 @@
     <div class="login-screen" id="loginScreen">
       <div class="login-card">
         <img src="js/MainLogo.png" alt="Sprite-Index" class="login-logo" />
+
+        <section class="login-invite-notice" id="loginInviteNotice" hidden aria-live="polite">
+          <span class="login-invite-notice__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+          </span>
+          <div>
+            <span class="login-invite-notice__eyebrow" data-i18n="login.inviteEyebrow">Invitation en attente</span>
+            <strong id="loginInviteTitle" data-i18n="login.friendInviteTitleFallback">Friend invitation received</strong>
+            <p id="loginInviteDetail" data-i18n="login.inviteReadyDetail">Create an account or sign in to continue automatically.</p>
+          </div>
+          <div class="login-invite-notice__actions">
+            <button class="login-btn login-invite-notice__primary" id="loginInviteCreate" type="button" data-i18n="login.inviteCreateAction">Créer mon compte et continuer</button>
+            <button class="login-invite-notice__secondary" id="loginInviteSignIn" type="button" data-i18n="login.inviteSignInAction">J'ai déjà un compte</button>
+          </div>
+          <p class="login-invite-notice__trust" data-i18n="login.inviteTrust">L'invitation sera envoyée automatiquement après connexion.</p>
+        </section>
 
         <!-- Step 1: Inscription -->
         <div class="onboarding-step active" id="onboardingStep1">
@@ -255,7 +273,7 @@
           <span class="desktop-page-heading__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
           </span>
-          <div><h1 id="desktopViewTitle" data-i18n="nav.swipe">Swipe</h1><p id="desktopViewSubtitle" data-i18n="view.swipeSubtitle">Explorez, classez et complétez votre collection de sprites.</p></div>
+          <div><h1 id="desktopViewTitle" data-i18n="nav.home">Accueil</h1><p id="desktopViewSubtitle" data-i18n="view.homeSubtitle">Vos prochaines actions de collection, réunies au même endroit.</p></div>
         </div>
         <label class="desktop-command-search" for="desktopSearch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
@@ -263,6 +281,9 @@
           <kbd id="desktopSearchShortcut">⌘ K</kbd>
         </label>
         <div class="topbar-actions">
+          <button class="command-palette-trigger" id="commandPaletteOpen" type="button" aria-label="Recherche globale" title="Recherche globale" data-i18n-aria-label="search.global" data-i18n-title="search.global">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
+          </button>
           <div class="notif-wrap" id="notifWrap">
             <button class="notif-bell" id="notifBell" data-i18n-aria-label="notif.title" aria-label="Notifications" aria-expanded="false" aria-haspopup="dialog" aria-controls="notifDropdown">
               <svg class="notif-bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -270,20 +291,44 @@
             </button>
             <div class="notif-dropdown notif-center" id="notifDropdown" style="display:none" role="dialog" data-i18n-aria-label="notif.title" aria-label="Notifications">
               <div class="notif-dropdown__header">
-                <span class="notif-dropdown__title" data-i18n="notif.title">Notifications</span>
+                <div class="notif-dropdown__heading">
+                  <span class="notif-dropdown__title" data-i18n="notif.title">Notifications</span>
+                  <span class="notif-dropdown__summary" id="notifUnreadSummary" hidden aria-live="polite"></span>
+                </div>
                 <div class="notif-dropdown__header-actions">
                   <button type="button" class="notif-dropdown__mark-read" id="notifMarkAllRead" data-i18n="notif.markAllRead" data-i18n-title="notif.markAllReadTitle" title="Tout marquer comme lu">Tout lu</button>
                   <button type="button" class="notif-dropdown__close" id="notifClose" data-i18n-aria-label="notif.close" aria-label="Fermer">✕</button>
                 </div>
               </div>
               <div class="notif-center__filters" id="notifFilters" role="tablist" data-i18n-aria-label="notif.filters" aria-label="Filtres">
-                <button type="button" class="notif-filter active" data-notif-filter="all" data-i18n="notif.filterAll">Toutes</button>
-                <button type="button" class="notif-filter" data-notif-filter="news" data-i18n="notif.filterNews">Actualités</button>
-                <button type="button" class="notif-filter" data-notif-filter="social" data-i18n="notif.filterSocial">Social</button>
-                <button type="button" class="notif-filter" data-notif-filter="collection" data-i18n="notif.filterCollection">Collections</button>
-                <button type="button" class="notif-filter" data-notif-filter="squads" data-i18n="notif.filterSquads">Squads</button>
-                <button type="button" class="notif-filter" data-notif-filter="alerts" data-i18n="notif.filterAlerts">Alertes</button>
-                <button type="button" class="notif-filter" data-notif-filter="unread" data-i18n="notif.filterUnread">Non lues</button>
+                <button type="button" class="notif-filter notif-filter--all active" role="tab" aria-selected="true" aria-controls="notifList" data-notif-filter="all">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterAll">Toutes</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--unread" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="unread">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="8"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterUnread">Non lues</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--news" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="news">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterNews">Actualités</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--social" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="social">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M17 11a3 3 0 0 0 0-6M21 20v-2a4 4 0 0 0-3-3.87"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterSocial">Social</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--collection" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="collection">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterCollection">Collections</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--squads" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="squads">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-3.5 7-9.5V5l-7-3-7 3v6.5C5 17.5 12 21 12 21Z"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterSquads">Squads</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--alerts" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="alerts">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterAlerts">Alertes</span>
+                </button>
               </div>
               <div class="notif-dropdown__list" id="notifList">
                 <div class="notif-dropdown__empty">
@@ -303,9 +348,10 @@
         </div>
       </header>
 
-      <div class="sync-bar" id="syncBar" style="display:none">
+      <div class="sync-bar" id="syncBar" role="status" aria-live="polite">
         <span class="sync-bar__icon" id="syncBarIcon"></span>
-        <span class="sync-bar__text" id="syncBarText"></span>
+        <span class="sync-bar__copy"><strong class="sync-bar__text" id="syncBarText"></strong><small class="sync-bar__detail" id="syncBarDetail"></small></span>
+        <button class="sync-bar__retry" id="syncBarRetry" type="button" hidden data-i18n="sync.retry">Réessayer</button>
       </div>
 
       <!-- Account Panel -->
@@ -343,7 +389,7 @@
           <div class="profile-hero__identity">
             <h2 class="profile-hero__name" id="accountUsername">—</h2>
             <p class="profile-hero__tagline" data-i18n="account.tagline">Votre passeport, vos variantes et vos squads en un seul endroit.</p>
-            <span class="profile-hero__since" id="accountSince">Membre depuis —</span>
+            <span class="profile-hero__since" id="accountSince" data-i18n="account.memberSincePlaceholder">Membre depuis —</span>
           </div>
 
           <!-- Profile stats -->
@@ -351,7 +397,7 @@
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountPercent">0%</span>
             <span class="profile-stat__label" data-i18n="account.stat.progression">Progression</span>
-            <span class="profile-stat__detail" id="accountVariants">0 / 0 variantes</span>
+            <span class="profile-stat__detail" id="accountVariants" data-i18n="account.stat.variantsPlaceholder">0 / 0 variantes</span>
           </div>
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountHeroBadges">—</span>
@@ -363,7 +409,8 @@
           </div>
           <div class="profile-stat">
             <span class="profile-stat__value" id="accountHeroReliability">—</span>
-            <span class="profile-stat__label" data-i18n="account.stat.reliability">Fiabilité</span>
+            <span class="profile-stat__label" data-i18n="account.stat.reliability">Saisie de collection</span>
+            <span class="profile-stat__detail" id="accountHeroReliabilityDetail">—</span>
           </div>
           </div>
         </div>
@@ -450,7 +497,7 @@
 
           <div class="account-overview-side">
             <article class="account-overview-card account-overview-card--badges">
-              <header class="account-overview-card__header"><h3 data-i18n="account.section.badgePreview">Aperçu des badges</h3><button class="account-overview-card__link" type="button" data-account-overview-action="passport" data-i18n="account.viewAll">Voir tout</button></header>
+              <header class="account-overview-card__header"><h3 data-i18n="account.section.badgePreview">Badges</h3><button class="account-overview-card__link" type="button" data-account-overview-action="passport" data-i18n="account.viewPassport">Voir le passeport</button></header>
               <div class="account-badge-preview" id="accountBadgePreview"><p data-i18n="account.noBadge">Aucun badge débloqué.</p></div>
             </article>
 
@@ -542,7 +589,7 @@
                   </div>
                   <div class="account-row account-row--stack">
                     <span class="account-row__label" data-i18n="account.notif.push">Push</span>
-                    <select class="account-row__select" data-notif-push="friend_acquired_missing_variant" aria-label="Push — variante manquante chez un ami">
+                    <select class="account-row__select" data-notif-push="friend_acquired_missing_variant" aria-label="Push — variante manquante chez un ami" data-i18n-aria-label="account.notif.friendMissingVariantPush">
                       <option value="enabled" data-i18n="account.notif.enabled">Activé</option>
                       <option value="priorities_only" selected data-i18n="account.notif.prioritiesOnly">Activé seulement pour les priorités</option>
                       <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
@@ -585,7 +632,7 @@
                   </div>
                   <div class="account-row account-row--stack">
                     <span class="account-row__label" data-i18n="account.notif.push">Push</span>
-                    <select class="account-row__select" data-notif-push="priority_variant_available" aria-label="Push — variante prioritaire disponible">
+                    <select class="account-row__select" data-notif-push="priority_variant_available" aria-label="Push — variante prioritaire disponible" data-i18n-aria-label="account.notif.priorityVariantPush">
                       <option value="enabled" selected data-i18n="account.notif.enabled">Activé</option>
                       <option value="disabled" data-i18n="account.notif.disabled">Désactivé</option>
                     </select>
@@ -634,7 +681,7 @@
                     </label>
                     <label class="notif-settings__quiet-field">
                       <span data-i18n="account.label.to">à</span>
-                      <select class="account-row__select" id="notifQuietEnd" aria-label="Fin des heures silencieuses"></select>
+                      <select class="account-row__select" id="notifQuietEnd" aria-label="Fin des heures silencieuses" data-i18n-aria-label="account.label.quietHoursEnd"></select>
                     </label>
                   </div>
                   <p class="notif-settings__hint" data-i18n="account.hint.quietHours">Les push non urgents sont reportés pendant cette plage (fuseau local).</p>
@@ -645,7 +692,7 @@
                 </div>
                 <div class="account-row account-row--stack">
                   <span class="account-row__label" data-i18n="account.label.maxPush">Maximum de push par jour</span>
-                  <select class="account-row__select" id="notifMaxPushPerDay" aria-label="Maximum de notifications push par jour">
+                  <select class="account-row__select" id="notifMaxPushPerDay" aria-label="Maximum de push par jour" data-i18n-aria-label="account.label.maxPush">
                     <option value="8" selected data-i18n="account.notif.maxPushRecommended">8 (recommandé)</option>
                     <option value="5">5</option>
                     <option value="10">10</option>
@@ -805,7 +852,11 @@
       </section>
 
       <nav class="tabs" data-i18n-aria-label="nav.main" aria-label="Navigation principale" id="mainTabs">
-        <button class="tab active" data-view="swipe" type="button" aria-current="page">
+        <button class="tab active" data-view="home" type="button" aria-current="page">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+          <span class="tab__label" data-i18n="nav.home">Accueil</span>
+        </button>
+        <button class="tab" data-view="swipe" type="button">
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
           <span class="tab__label" data-i18n="nav.swipe">Swipe</span>
         </button>
@@ -829,10 +880,38 @@
           <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 0v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span class="tab__label" data-i18n="nav.social">Social</span>
         </button>
+        <button class="tab tab--more" id="mobileMoreButton" type="button" aria-expanded="false" aria-haspopup="dialog" aria-controls="mobileMoreMenu">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></svg>
+          <span class="tab__label" data-i18n="nav.more">Plus</span>
+        </button>
       </nav>
 
+      <div class="mobile-more" id="mobileMoreMenu" hidden>
+        <button class="mobile-more__backdrop" type="button" data-mobile-more-close aria-label="Fermer" data-i18n-aria-label="dialog.close"></button>
+        <section class="mobile-more__sheet" role="dialog" aria-modal="true" aria-labelledby="mobileMoreTitle">
+          <header><span class="mobile-more__handle" aria-hidden="true"></span><div><h2 id="mobileMoreTitle" data-i18n="nav.more">Plus</h2><p data-i18n="nav.moreSubtitle">Suivre et partager votre progression</p></div><button class="mobile-more__close" type="button" data-mobile-more-close aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button></header>
+          <button type="button" class="mobile-more__item" data-mobile-view="stats"><span aria-hidden="true">▥</span><span><strong data-i18n="nav.stats">Stats</strong><small data-i18n="nav.moreStats">Progression et tendances</small></span><i aria-hidden="true">→</i></button>
+          <button type="button" class="mobile-more__item" data-mobile-view="history"><span aria-hidden="true">◷</span><span><strong data-i18n="nav.history">Historique</strong><small data-i18n="nav.moreHistory">Vos dernières actions</small></span><i aria-hidden="true">→</i></button>
+          <button type="button" class="mobile-more__item" data-mobile-view="social"><span aria-hidden="true">◎</span><span><strong data-i18n="nav.social">Social</strong><small data-i18n="nav.moreSocial">Amis, comparaisons et squads</small></span><i aria-hidden="true">→</i></button>
+        </section>
+      </div>
+
       <main id="mainViews" class="main-views">
-        <section class="view active" id="view-swipe">
+        <section class="view active" id="view-home" aria-labelledby="nowTitle">
+          <div class="now-dashboard" id="nowDashboard" aria-live="polite">
+            <header class="now-dashboard__hero">
+              <div>
+                <p class="now-dashboard__eyebrow" data-i18n="home.eyebrow">Cockpit collection</p>
+                <h2 id="nowTitle" data-i18n="home.title">Que faire maintenant ?</h2>
+                <p class="now-dashboard__intro" id="nowIntro" data-i18n="home.loading">Préparation de vos prochaines actions…</p>
+              </div>
+            </header>
+            <section class="now-primary-slot" id="nowPrimary" aria-label="Recommandation principale" data-i18n-aria-label="home.primaryAria"></section>
+            <div class="now-dashboard__grid" id="nowDashboardGrid"></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-swipe">
           <div class="deck-toolbar">
             <select id="deckFilter" data-i18n-aria-label="swipe.filterAria" aria-label="Filtre du deck swipe">
               <option value="all" data-i18n="filter.all">Tous</option>
@@ -846,10 +925,39 @@
             <button class="ghost-button" id="shuffleDeck" data-i18n="common.shuffle">Mélanger</button>
           </div>
 
+          <section class="swipe-session" id="swipeSession" aria-live="polite" aria-label="Session de tri" data-i18n-aria-label="swipe.sessionAria">
+            <div class="swipe-session__main">
+              <span class="swipe-session__eyebrow" data-i18n="swipe.sessionLabel">Session de tri</span>
+              <strong id="swipeSessionProgress" data-i18n="swipe.sessionProgressInitial">0 traité · 0 restant</strong>
+              <div class="swipe-session__track" aria-hidden="true"><span id="swipeSessionFill"></span></div>
+            </div>
+            <div class="swipe-session__actions">
+              <button class="swipe-session__button" id="swipeSessionPause" type="button" aria-keyshortcuts="Space P" data-i18n="swipe.pause">Pause</button>
+              <button class="swipe-session__button" id="swipeSessionUndo" type="button" disabled aria-keyshortcuts="Control+Z Meta+Z Z" data-i18n="swipe.undo">Annuler</button>
+              <button class="swipe-session__button swipe-session__help" id="swipeShortcutsToggle" type="button" aria-expanded="false" aria-controls="swipeShortcutGuide" aria-keyshortcuts="?" data-i18n-aria-label="swipe.shortcutsOpen" aria-label="Afficher les raccourcis">?</button>
+            </div>
+          </section>
+          <aside class="swipe-shortcut-guide" id="swipeShortcutGuide" hidden aria-label="Raccourcis du swipe" data-i18n-aria-label="swipe.shortcutsTitle">
+            <div class="swipe-shortcut-guide__heading"><strong data-i18n="swipe.shortcutsTitle">Raccourcis clavier</strong><button type="button" id="swipeShortcutsClose" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button></div>
+            <div class="swipe-shortcut-guide__grid">
+              <span><kbd>←</kbd><kbd>1</kbd><small data-i18n="swipe.shortcutMissing">Manquant</small></span>
+              <span><kbd>↓</kbd><kbd>2</kbd><small data-i18n="swipe.shortcutUnsure">À vérifier</small></span>
+              <span><kbd>↑</kbd><kbd>3</kbd><small data-i18n="swipe.shortcutPriority">Priorité</small></span>
+              <span><kbd>→</kbd><kbd>4</kbd><small data-i18n="swipe.shortcutOwned">Possédé</small></span>
+              <span><kbd>Espace</kbd><small data-i18n="swipe.shortcutPause">Pause / reprendre</small></span>
+              <span><kbd>⌘ Z</kbd><small data-i18n="swipe.shortcutUndo">Annuler</small></span>
+            </div>
+          </aside>
+          <section class="swipe-session-summary" id="swipeSessionSummary" hidden aria-live="polite">
+            <div><span data-i18n="swipe.sessionComplete">Session terminée</span><strong id="swipeSessionSummaryTitle" data-i18n="swipe.sessionSummaryInitial">0 variantes traitées</strong><small id="swipeSessionSummaryDetail"></small></div>
+            <button class="ghost-button" id="swipeSessionRestart" type="button" data-i18n="swipe.restart">Nouvelle session</button>
+          </section>
+
           <div class="deck-zone">
             <article class="sprite-card" id="spriteCard">
               <div class="swipe-badge" id="swipeBadge">OK</div>
               <div class="card-glow"></div>
+              <div class="pokedex-scan" aria-hidden="true"></div>
               <div class="sprite-avatar" id="spriteAvatar">💧</div>
               <p class="rarity-pill" id="cardRarity">Rare</p>
               <h2 id="cardName">Water Sprite</h2>
@@ -874,25 +982,29 @@
           </div>
 
           <div class="swipe-actions" data-i18n-aria-label="swipe.actionsAria" aria-label="Actions de swipe">
-            <button class="action danger" id="markMissing">
+            <button class="action danger" id="markMissing" aria-keyshortcuts="ArrowLeft 1">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               <span data-i18n="swipe.notYet">Pas encore</span>
               <small class="action__hint" data-i18n="swipe.notYetHint">Je ne l’ai pas</small>
+              <kbd class="action__key" aria-hidden="true">← / 1</kbd>
             </button>
-            <button class="action neutral" id="markUnsure">
+            <button class="action neutral" id="markUnsure" aria-keyshortcuts="ArrowDown 2">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
               <span data-i18n="swipe.unsure">À vérifier</span>
               <small class="action__hint" data-i18n="swipe.unsureHint">Je dois vérifier</small>
+              <kbd class="action__key" aria-hidden="true">↓ / 2</kbd>
             </button>
-            <button class="action star" id="markPriority">
+            <button class="action star" id="markPriority" aria-keyshortcuts="ArrowUp 3">
               <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               <span data-i18n="swipe.priority">Priorité</span>
               <small class="action__hint" data-i18n="swipe.priorityHint">À obtenir en priorité</small>
+              <kbd class="action__key" aria-hidden="true">↑ / 3</kbd>
             </button>
-            <button class="action success" id="markOwned">
+            <button class="action success" id="markOwned" aria-keyshortcuts="ArrowRight 4">
               <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               <span data-i18n="swipe.owned">Je l’ai</span>
               <small class="action__hint" data-i18n="swipe.ownedHint">Déjà en ma possession</small>
+              <kbd class="action__key" aria-hidden="true">→ / 4</kbd>
             </button>
           </div>
 
@@ -960,6 +1072,7 @@
             </div>
             <button class="ghost-button" id="copyMissing" type="button" data-i18n="missing.copyVisible">Copier la liste visible</button>
           </div>
+          <section class="farm-planner" id="farmPlanner" aria-live="polite"></section>
           <div class="missing-controls" data-i18n-aria-label="missing.toolsAria" aria-label="Outils de la liste des manquants">
             <div class="search-box missing-controls__search">
               <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -1033,7 +1146,7 @@
         </section>
 
         <section class="view" id="view-social">
-          <nav class="social-tabs" role="tablist" aria-label="Espace social">
+          <nav class="social-tabs" role="tablist" aria-label="Espace social" data-i18n-aria-label="social.tabsAria">
             <button class="social-tab active" id="social-tab-friends" data-social-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="social-panel-friends" data-i18n="social.friends">Amis</button>
             <button class="social-tab" id="social-tab-compare" data-social-tab="compare" type="button" role="tab" aria-selected="false" aria-controls="social-panel-compare" data-i18n="social.compare">Comparer</button>
             <button class="social-tab" id="social-tab-squad" data-social-tab="squad" type="button" role="tab" aria-selected="false" aria-controls="social-panel-squad" data-i18n="social.squad">Escouade</button>
@@ -1056,7 +1169,7 @@
                   <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                   <input id="friendSearch" type="search" placeholder="Rechercher un ami…" data-i18n-placeholder="friends.searchPlaceholder" />
                 </div>
-                <select id="friendFilter" class="sort-bar__select" aria-label="Filtrer les amis">
+                <select id="friendFilter" class="sort-bar__select" aria-label="Filtrer les amis" data-i18n-aria-label="friends.filterAria">
                   <option value="all" data-i18n="friends.filterAll">Tous</option>
                   <option value="online" data-i18n="friends.filterOnline">En ligne</option>
                   <option value="squad" data-i18n="friends.filterSquad">Même squad</option>
@@ -1064,7 +1177,7 @@
                   <option value="complementary" data-i18n="friends.filterComplementary">Variantes complémentaires</option>
                   <option value="pending" data-i18n="friends.filterPending">Demandes en attente</option>
                 </select>
-                <select id="friendSort" class="sort-bar__select" aria-label="Trier les amis">
+                <select id="friendSort" class="sort-bar__select" aria-label="Trier les amis" data-i18n-aria-label="friends.sortAria">
                   <option value="name" data-i18n="friends.sortName">Nom</option>
                   <option value="lastActive" data-i18n="friends.sortLastActive">Dernière activité</option>
                   <option value="complementarity" data-i18n="friends.sortComplementarity">Complémentarité</option>
@@ -1168,7 +1281,7 @@
               <div class="squad-active__info">
                 <h3 class="squad-active__name" id="squadActiveName" data-i18n="squad.defaultName">Mon escouade</h3>
                 <span class="squad-active__code" id="squadActiveCode">SPRITE-0000</span>
-                <button class="squad-copy-code" id="squadCopyCode" title="Copier le code"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                <button class="squad-copy-code" id="squadCopyCode" title="Copier le code" data-i18n-title="squad.copyCodeTitle"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               </div>
               <button class="ghost-button" id="squadEngineBtn" data-i18n="squad.engineBtn">Moteur</button>
               <button class="ghost-button" id="squadShareBtn" data-i18n="squad.shareBtn">Partager</button>
@@ -1219,9 +1332,9 @@
                 <button class="squad-view-btn" data-squad-view="cards" data-i18n-title="squad.viewCards" title="Manque à qui ?">▤</button>
                 <button class="squad-view-btn" data-squad-view="hunt" data-i18n-title="squad.viewHunt" title="À farmer">⊘</button>
                 <button class="squad-view-btn" data-squad-view="duel" data-i18n-title="squad.viewDuel" title="Duel 1v1">⇄</button>
-                <button class="squad-view-btn" data-squad-view="session" title="Session rapide"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
-                <button class="squad-view-btn" data-squad-view="recommendations" title="Recommandations"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
-                <button class="squad-view-btn" data-squad-view="history" title="Historique"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="session" title="Session rapide" data-i18n-title="squad.viewSession"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="recommendations" title="Recommandations" data-i18n-title="squad.recommendations"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="history" title="Historique" data-i18n-title="nav.history"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
               </div>
             </div>
             <div class="squad-duel-bar" id="squadDuelBar" style="display:none">
@@ -1230,6 +1343,7 @@
               <select id="duelPlayerB" class="sort-bar__select duel-select"></select>
             </div>
             <div class="squad-counter" id="squadCounter"></div>
+            <section class="squad-wishlist" id="squadWishlist" aria-live="polite"></section>
             <div class="squad-table-wrap" id="squadTableWrap">
               <p class="squad-empty" data-i18n="squad.loading">Chargement...</p>
             </div>
@@ -1271,6 +1385,7 @@
             <section class="history-kpis" id="historyStats" data-i18n-aria-label="history.kpisAria" aria-label="Résumé de l'activité de collection"></section>
 
             <section class="history-panel history-panel--trend" id="historyWeekly" aria-labelledby="historyTrendTitle" aria-busy="true"></section>
+            <section class="history-panel history-panel--monthly" id="historyMonthly" aria-labelledby="historyMonthlyTitle" aria-busy="true"></section>
 
             <section class="history-panel history-activity" aria-labelledby="historyActivityTitle">
               <header class="history-panel__header history-activity__header">
@@ -1284,6 +1399,27 @@
                   <button class="history-filter__button" type="button" data-history-filter="change" aria-pressed="false" data-i18n="history.filterChanges">Changements</button>
                 </div>
               </header>
+              <div class="history-filter-bar" data-i18n-aria-label="history.advancedFiltersAria" aria-label="Filtres avancés de l'historique">
+                <label class="history-filter-field"><span data-i18n="history.filterEventLabel">Événement</span><select id="historyEventFilter" aria-label="Filtrer par événement" data-i18n-aria-label="history.filterEventAria"><option value="all" data-i18n="history.filterEventAll">Tous les événements</option></select></label>
+                <label class="history-filter-field"><span data-i18n="history.filterDateLabel">Période</span><select id="historyDateFilter" aria-label="Filtrer par date" data-i18n-aria-label="history.filterDateAria">
+                    <option value="all" data-i18n="history.filterDateAll">Toutes les dates</option>
+                    <option value="7" data-i18n="history.filterDate7">7 derniers jours</option>
+                    <option value="30" data-i18n="history.filterDate30">30 derniers jours</option>
+                    <option value="90" data-i18n="history.filterDate90">3 derniers mois</option>
+                    <option value="year" data-i18n="history.filterDateYear">Cette année</option>
+                  </select></label>
+                <label class="history-filter-field"><span data-i18n="history.filterRarityLabel">Rareté</span><select id="historyRarityFilter" aria-label="Filtrer par rareté" data-i18n-aria-label="history.filterRarityAria"><option value="all" data-i18n="history.filterRarityAll">Toutes les raretés</option></select></label>
+                <button class="history-filter-reset" id="historyFilterReset" type="button" hidden data-i18n="history.filterReset">Réinitialiser</button>
+              </div>
+              <div class="history-bulk-actions" id="historyBulkActions" hidden aria-live="polite" role="toolbar" data-i18n-aria-label="history.bulkAria" aria-label="Actions groupées de l'historique">
+                <strong id="historyBulkCount" data-i18n="history.bulkSelectedZero">0 sélection</strong>
+                <div>
+                  <button type="button" class="history-bulk-actions__quiet" id="historyBulkSelectAll" data-i18n="history.bulkSelectVisible">Tout sélectionner</button>
+                  <button type="button" class="history-bulk-actions__quiet" id="historyBulkClear" data-i18n="history.bulkClear">Effacer</button>
+                  <button type="button" class="history-bulk-actions__quiet" id="historyBulkCopy" data-i18n="history.bulkCopy">Copier</button>
+                  <button type="button" class="history-bulk-actions__primary" id="historyBulkPriority" data-i18n="history.bulkPriority">Ajouter aux priorités</button>
+                </div>
+              </div>
               <p class="history-activity__count" id="historyActivityCount" aria-live="polite"></p>
               <div class="history-list" id="historyList" role="feed" aria-busy="true" data-i18n-aria-label="history.feedAria" aria-label="Événements récents de votre collection">
                 <p class="squad-empty" data-i18n="history.loading">Chargement…</p>
@@ -1308,7 +1444,7 @@
         <div class="sprite-avatar dialog-avatar" id="dialogAvatar">💧</div>
         <p class="rarity-pill" id="dialogRarity">Rare</p>
         <h2 id="dialogTitle">Sprite</h2>
-        <p class="variant-name" id="dialogVariant">Variante</p>
+        <p class="variant-name" id="dialogVariant" data-i18n="dialog.variantPlaceholder">Variante</p>
         <p class="effect" id="dialogEffect">Effet</p>
         <div id="dialogCommunityStats" class="sg-community-mount"></div>
         <div class="dialog-priority" id="dialogPriorityBar">
@@ -1381,11 +1517,11 @@
 
     <dialog id="squadInviteDialog" class="squad-invite-dialog">
       <form method="dialog" class="dialog-card squad-invite-form">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <button class="close-button" value="cancel" aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
         <h3 id="squadInviteDialogTitle" data-i18n="squad.inviteDialogTitle">Inviter dans une escouade</h3>
         <div id="squadInviteDialogOptions" class="squad-invite-options"></div>
         <div class="squad-invite-actions">
-          <button type="button" class="ghost-button" value="cancel">Annuler</button>
+          <button type="button" class="ghost-button" value="cancel" data-i18n="common.cancel">Annuler</button>
           <button type="submit" class="login-btn" id="squadInviteDialogConfirm" disabled data-i18n="squad.inviteBtn">Inviter</button>
         </div>
       </form>
@@ -1393,12 +1529,12 @@
 
     <dialog id="passportDialog" class="passport-dialog" aria-labelledby="passportDialogTitle">
       <form method="dialog" class="dialog-card passport-dialog__card">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
+        <button class="close-button" value="cancel" aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
         <div class="collector-passport collector-passport--dialog">
           <div class="collector-passport__header">
             <div>
               <p class="collector-passport__eyebrow">sprite-index</p>
-              <h3 class="collector-passport__title" id="passportDialogTitle">Passeport</h3>
+              <h3 class="collector-passport__title" id="passportDialogTitle" data-i18n="passport.dialogTitle">Passeport</h3>
             </div>
             <span class="collector-passport__status" id="passportDialogReliability" role="status">—</span>
           </div>
@@ -1411,17 +1547,25 @@
 
     <dialog id="passportShareDialog" class="passport-share-dialog" aria-labelledby="passportShareDialogTitle">
       <form method="dialog" class="dialog-card passport-share-dialog__card">
-        <button class="close-button" value="cancel" aria-label="Fermer">×</button>
-        <h3 id="passportShareDialogTitle" data-i18n="passport.shareTitle">Partager mon passeport</h3>
+        <button class="close-button" value="cancel" aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
+        <header class="passport-share-dialog__header">
+          <p class="passport-share-dialog__eyebrow" data-i18n="passport.shareEyebrow">Partage personnalisé</p>
+          <h3 id="passportShareDialogTitle" data-i18n="passport.shareTitle">Partager mon passeport</h3>
+        </header>
         <p class="passport-share-preview__intro" id="passportSharePreviewIntro" data-i18n="passport.sharePreviewIntro">Aperçu exact des informations visibles sur la carte :</p>
         <div id="passportSharePreview" class="passport-share-preview" aria-live="polite" aria-describedby="passportSharePreviewIntro"></div>
         <fieldset class="passport-share-options">
           <legend data-i18n="passport.shareOptions">Options</legend>
-          <label><input type="checkbox" id="passportShareOptSquad" checked /> <span data-i18n="passport.shareOptSquad">Afficher la squad</span></label>
-          <label><input type="checkbox" id="passportShareOptBadges" checked /> <span data-i18n="passport.shareOptBadges">Afficher les badges</span></label>
-          <label><input type="checkbox" id="passportShareOptJoined" /> <span data-i18n="passport.shareOptJoined">Afficher la date d’inscription</span></label>
-          <label><input type="checkbox" id="passportShareOptCompletion" checked /> <span data-i18n="passport.shareOptCompletion">Afficher le taux de complétion</span></label>
-          <label><input type="checkbox" id="passportShareOptEvents" checked /> <span data-i18n="passport.shareOptEvents">Afficher les événements complétés</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptSquad" checked /> <span data-i18n="passport.shareOptSquad">Afficher la squad</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptBadges" checked /> <span data-i18n="passport.shareOptBadges">Afficher les badges</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptJoined" /> <span data-i18n="passport.shareOptJoined">Afficher la date d’inscription</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptCompletion" checked /> <span data-i18n="passport.shareOptCompletion">Afficher le taux de complétion</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptEvents" checked /> <span data-i18n="passport.shareOptEvents">Afficher les événements complétés</span></label>
+        </fieldset>
+        <fieldset class="passport-share-invite">
+          <legend data-i18n="passport.shareInviteTitle">Inviter avec ce partage</legend>
+          <label class="passport-share-option passport-share-option--invite"><input type="checkbox" id="passportShareOptInvite" /> <span data-i18n="passport.shareOptInvite">Ajouter une invitation d'ami au lien</span></label>
+          <p data-i18n="passport.shareInviteHint">Le destinataire verra ton passeport puis pourra créer un compte ou se connecter pour t'ajouter.</p>
         </fieldset>
         <div class="passport-share-format">
           <label for="passportShareFormat" data-i18n="passport.shareFormat">Format</label>
@@ -1431,6 +1575,18 @@
             <option value="1200x630">1200 × 630</option>
           </select>
         </div>
+        <section class="passport-share-result" id="passportShareResult" hidden aria-live="polite">
+          <div class="passport-share-result__preview"><img id="passportShareResultImage" alt="" /></div>
+          <div class="passport-share-result__copy">
+            <strong data-i18n="passport.shareReadyTitle">Carte prête à partager</strong>
+            <p data-i18n="passport.shareReadyHint">Envoie l'image et le lien, ou utilise le partage de ton appareil.</p>
+          </div>
+          <div class="passport-share-result__actions">
+            <button class="ghost-button" id="passportShareDownload" type="button" data-i18n="passport.shareDownload">Télécharger PNG</button>
+            <button class="ghost-button" id="passportShareCopyLink" type="button" data-i18n="passport.shareCopyLink">Copier le lien</button>
+            <button class="login-btn" id="passportShareNative" type="button" data-i18n="passport.shareNow" hidden>Partager</button>
+          </div>
+        </section>
         <div class="passport-share-actions">
           <button type="submit" class="ghost-button" value="cancel" data-i18n="passport.shareCancel">Annuler</button>
           <button type="button" class="login-btn" id="passportShareGenerate" data-i18n="passport.shareGenerate">Générer la carte</button>
@@ -1440,7 +1596,7 @@
 
     <dialog id="memberActionsDialog" class="member-actions-dialog">
       <div class="dialog-card">
-        <button class="close-button" id="memberActionsClose" aria-label="Fermer">×</button>
+        <button class="close-button" id="memberActionsClose" aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
         <h3 id="memberActionsTitle">Actions</h3>
         <div class="member-actions" id="memberActionsList"></div>
       </div>
@@ -1450,6 +1606,26 @@
       <div class="dialog-card">
         <button class="close-button" type="button" data-legal-close>×</button>
         <div class="legal-dialog__content" id="legalContent"></div>
+      </div>
+    </dialog>
+
+    <dialog id="commandPalette" class="command-palette" aria-labelledby="commandPaletteTitle">
+      <div class="command-palette__card">
+        <header class="command-palette__header">
+          <div>
+            <p class="command-palette__eyebrow">SPRITE-INDEX</p>
+            <h2 id="commandPaletteTitle" data-i18n="search.global">Recherche globale</h2>
+          </div>
+          <button class="command-palette__close" type="button" data-command-palette-close aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
+        </header>
+        <label class="command-palette__search" for="commandPaletteInput">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
+          <input id="commandPaletteInput" type="search" placeholder="Sprite, variante, ami, événement, badge…" data-i18n-placeholder="search.globalPlaceholder" autocomplete="off" spellcheck="false" />
+          <kbd>Esc</kbd>
+        </label>
+        <p class="command-palette__hint" id="commandPaletteHint" data-i18n="search.globalHint">Recherche une collection, une personne ou une action.</p>
+        <div class="command-palette__results" id="commandPaletteResults" role="listbox" aria-live="polite"></div>
+        <footer class="command-palette__footer"><span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="search.navigate">naviguer</span></span><span><kbd>↵</kbd> <span data-i18n="search.open">ouvrir</span></footer>
       </div>
     </dialog>
 
@@ -1464,13 +1640,16 @@
     <script src="js/legal.js"></script>
     <script src="js/api.js"></script>
     <script src="js/sync.js"></script>
+    <script src="js/now.js"></script>
     <script src="js/render-card.js"></script>
     <script src="js/render-checklist.js"></script>
+    <script src="js/farm-plan.js"></script>
     <script src="js/render-missing.js"></script>
     <script src="js/community-stats.js"></script>
     <script src="js/sprite-graph-ui.js"></script>
     <script src="js/render-stats.js"></script>
     <script src="js/render-squad.js"></script>
+    <script src="js/squad-wishlist.js"></script>
     <script src="js/squad-engine.js"></script>
     <script src="js/render-news.js"></script>
     <script src="js/render-history.js"></script>
@@ -1480,6 +1659,7 @@
     <script src="js/data-io.js"></script>
     <script src="js/swipe.js"></script>
     <script src="js/friends.js"></script>
+    <script src="js/command-palette.js"></script>
     <script src="js/events.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/passport-render.js"></script>
@@ -1487,6 +1667,7 @@
     <script src="js/push-client.js"></script>
     <script src="js/init.js"></script>
     <script src="js/mobile.js"></script>
+    <script src="js/admin-console.js"></script>
     <script src="js/dev-live-reload.js"></script>
   </body>
 </html>

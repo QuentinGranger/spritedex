@@ -9,10 +9,16 @@ const friendsState = {
   listFilter: "all",
   listSort: "name",
   listSearch: "",
-  loading: false
+  loading: false,
+  loadPromise: null
 };
 
 const pendingSquadInvite = { friendId: null };
+let friendsWs = null;
+let friendsWsReconnectTimer = null;
+let friendsRefreshTimer = null;
+let friendsRefreshQueued = false;
+const FRIENDS_FALLBACK_REFRESH_MS = 30000;
 
 function getFriendsEl(id) {
   return document.getElementById(id);
@@ -124,6 +130,68 @@ function setFriendsTab(tab) {
     panel.classList.toggle("active", active);
     panel.hidden = !active;
   });
+}
+
+function isFriendsPanelVisible() {
+  const panel = document.getElementById("social-panel-friends");
+  return !!panel && !document.hidden && !panel.hidden && panel.style.display !== "none";
+}
+
+async function refreshFriendsRealtime() {
+  if (friendsRefreshQueued || !localStorage.getItem(TOKEN_KEY)) return;
+  friendsRefreshQueued = true;
+  try {
+    await loadFriendsData();
+    renderActivePanel();
+  } finally {
+    friendsRefreshQueued = false;
+  }
+}
+
+function sendFriendsPresence() {
+  if (friendsWs?.readyState !== WebSocket.OPEN) return;
+  try { friendsWs.send(JSON.stringify({ type: "presence_ping" })); } catch {}
+}
+
+function connectFriendsRealtime() {
+  if (typeof WebSocket === "undefined" || !state.userId || !localStorage.getItem(TOKEN_KEY)) return;
+  if (friendsWs && (friendsWs.readyState === WebSocket.CONNECTING || friendsWs.readyState === WebSocket.OPEN)) return;
+
+  friendsWs = new WebSocket(WS_URL);
+  friendsWs.onopen = () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      friendsWs.send(JSON.stringify({ type: "auth", token }));
+      sendFriendsPresence();
+    }
+  };
+  friendsWs.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      if (message.type === "friends_update") void refreshFriendsRealtime();
+    } catch {
+      // Ignore unrelated or malformed socket messages.
+    }
+  };
+  friendsWs.onclose = () => {
+    friendsWs = null;
+    clearTimeout(friendsWsReconnectTimer);
+    if (state.userId && localStorage.getItem(TOKEN_KEY)) {
+      friendsWsReconnectTimer = setTimeout(connectFriendsRealtime, 3000);
+    }
+  };
+  friendsWs.onerror = () => friendsWs?.close();
+}
+
+function startFriendsRealtime() {
+  connectFriendsRealtime();
+  if (friendsRefreshTimer) return;
+  friendsRefreshTimer = setInterval(() => {
+    if (isFriendsPanelVisible()) {
+      sendFriendsPresence();
+      void refreshFriendsRealtime();
+    }
+  }, FRIENDS_FALLBACK_REFRESH_MS);
 }
 
 function getPendingEntries() {
@@ -399,42 +467,46 @@ function renderActivePanel() {
 }
 
 async function loadFriendsData() {
-  if (friendsState.loading) return;
+  if (friendsState.loadPromise) return friendsState.loadPromise;
   const token = localStorage.getItem(TOKEN_KEY);
   if (!token) return;
-  friendsState.loading = true;
+  friendsState.loadPromise = (async () => {
+    friendsState.loading = true;
+    try {
+      const options = { headers: authHeadersOnly(), cache: "no-store" };
+      const [friendsRes, receivedRes, sentRes, blockedRes] = await Promise.all([
+        fetch(`${API_BASE}/friends?preview=true`, options),
+        fetch(`${API_BASE}/friends/requests/received`, options),
+        fetch(`${API_BASE}/friends/requests/sent`, options),
+        fetch(`${API_BASE}/users/blocked`, options)
+      ]);
 
-  try {
-    const [friendsRes, receivedRes, sentRes, blockedRes] = await Promise.all([
-      fetch(`${API_BASE}/friends?preview=true`, { headers: authHeadersOnly() }),
-      fetch(`${API_BASE}/friends/requests/received`, { headers: authHeadersOnly() }),
-      fetch(`${API_BASE}/friends/requests/sent`, { headers: authHeadersOnly() }),
-      fetch(`${API_BASE}/users/blocked`, { headers: authHeadersOnly() })
-    ]);
+      if (!friendsRes.ok) throw new Error("friends");
+      const friendsData = await friendsRes.json();
+      friendsState.friends = friendsData.friends || [];
 
-    if (!friendsRes.ok) throw new Error("friends");
-    const friendsData = await friendsRes.json();
-    friendsState.friends = friendsData.friends || [];
+      if (receivedRes.ok) {
+        const data = await receivedRes.json();
+        friendsState.received = data.requests || [];
+      }
+      if (sentRes.ok) {
+        const data = await sentRes.json();
+        friendsState.sent = data.requests || [];
+      }
+      if (blockedRes.ok) {
+        const data = await blockedRes.json();
+        friendsState.blocked = data.blocked || [];
+      }
 
-    if (receivedRes.ok) {
-      const data = await receivedRes.json();
-      friendsState.received = data.requests || [];
+      await loadSquadSuggestions();
+    } catch (e) {
+      console.error("[friends] load error", e);
+    } finally {
+      friendsState.loading = false;
+      friendsState.loadPromise = null;
     }
-    if (sentRes.ok) {
-      const data = await sentRes.json();
-      friendsState.sent = data.requests || [];
-    }
-    if (blockedRes.ok) {
-      const data = await blockedRes.json();
-      friendsState.blocked = data.blocked || [];
-    }
-
-    await loadSquadSuggestions();
-  } catch (e) {
-    console.error("[friends] load error", e);
-  } finally {
-    friendsState.loading = false;
-  }
+  })();
+  return friendsState.loadPromise;
 }
 
 async function loadSquadSuggestions() {
@@ -858,6 +930,19 @@ function setupFriendsEvents() {
     });
   }
 
+  window.addEventListener("focus", () => {
+    if (isFriendsPanelVisible()) {
+      sendFriendsPresence();
+      void refreshFriendsRealtime();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && isFriendsPanelVisible()) {
+      sendFriendsPresence();
+      void refreshFriendsRealtime();
+    }
+  });
+
   const addFriendSearch = getFriendsEl("addFriendSearch");
   const addFriendSearchBtn = getFriendsEl("addFriendSearchBtn");
   if (addFriendSearchBtn) {
@@ -894,6 +979,7 @@ function setupFriendsEvents() {
 }
 
 async function renderFriends() {
+  startFriendsRealtime();
   setFriendsTab(friendsState.activeTab);
   await loadFriendsData();
   renderActivePanel();

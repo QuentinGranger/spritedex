@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#070b1d" />
+    <title>SPRITE-INDEX — Backoffice</title>
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body class="admin-page">
+    <header class="admin-topbar">
+      <a class="admin-brand" href="/" aria-label="SPRITE-INDEX">
+        <span class="admin-brand__mark">✦</span>
+        <span>SPRITE-INDEX</span>
+        <b data-copy="backoffice">BACKOFFICE</b>
+      </a>
+      <div class="admin-topbar__actions">
+        <span class="admin-session"><i></i><span data-copy="session">Session terminal sécurisée</span></span>
+        <button class="admin-button admin-button--quiet" id="adminLogout" type="button" data-copy="logout">Fermer la session</button>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <section class="admin-hero" aria-labelledby="adminTitle">
+        <div>
+          <p class="admin-eyebrow" data-copy="overviewEyebrow">CONTRÔLE OPÉRATIONNEL</p>
+          <h1 id="adminTitle" data-copy="overviewTitle">Sprite Graph, en un coup d’œil.</h1>
+          <p data-copy="overviewLead">Surveillez l’ingestion, les consolidations et la diffusion des métriques publiques.</p>
+        </div>
+        <div class="admin-hero__actions">
+          <span id="adminUpdated" class="admin-updated" aria-live="polite"></span>
+          <button class="admin-button" id="adminRefresh" type="button" data-copy="refresh">Actualiser</button>
+        </div>
+      </section>
+
+      <p class="admin-alert" id="adminAlert" hidden role="alert"></p>
+
+      <section class="admin-kpis" aria-label="Indicateurs opérationnels" data-copy-aria="metricOverview">
+        <article class="admin-kpi"><span data-copy="events24h">Événements · 24 h</span><strong id="kpiEvents">—</strong><small data-copy="eventsHint">Événements Graph enregistrés</small></article>
+        <article class="admin-kpi"><span data-copy="ingestion">Ingestion</span><strong id="kpiIngestion">—</strong><small data-copy="ingestionHint">Événements par minute</small></article>
+        <article class="admin-kpi"><span data-copy="workerLag">Retard du worker</span><strong id="kpiLag">—</strong><small data-copy="workerHint">Plus ancien élément en attente</small></article>
+        <article class="admin-kpi admin-kpi--attention"><span data-copy="rejected">Rejets · 24 h</span><strong id="kpiRejected">—</strong><small data-copy="rejectedHint">Erreurs et messages en échec</small></article>
+      </section>
+
+      <div class="admin-grid">
+        <section class="admin-panel admin-panel--wide" aria-labelledby="activityTitle">
+          <header class="admin-panel__header">
+            <div><p class="admin-eyebrow" data-copy="activityEyebrow">ACTIVITÉ</p><h2 id="activityTitle" data-copy="activityTitle">Flux des dernières 24 heures</h2></div>
+            <span id="adminConsolidation" class="admin-panel__meta">—</span>
+          </header>
+          <div class="admin-events" id="adminEvents" aria-live="polite"><p class="admin-empty" data-copy="loadingData">Chargement des données…</p></div>
+        </section>
+
+        <section class="admin-panel" aria-labelledby="healthTitle">
+          <header class="admin-panel__header"><div><p class="admin-eyebrow" data-copy="healthEyebrow">SANTÉ</p><h2 id="healthTitle" data-copy="healthTitle">Pipeline</h2></div></header>
+          <dl class="admin-health" id="adminHealth"></dl>
+        </section>
+
+        <section class="admin-panel admin-panel--wide" aria-labelledby="metricsTitle">
+          <header class="admin-panel__header">
+            <div><p class="admin-eyebrow" data-copy="publicEyebrow">GARDE-FOUS</p><h2 id="metricsTitle" data-copy="metricsTitle">Métriques publiques</h2><p data-copy="metricsLead">Suspendez temporairement une métrique en cas de doute. Une justification est demandée.</p></div>
+            <button class="admin-button admin-button--quiet" id="adminExport" type="button" data-copy="export">Exporter les agrégats</button>
+          </header>
+          <div class="admin-metrics" id="adminMetrics"></div>
+        </section>
+
+        <section class="admin-panel" aria-labelledby="readinessTitle">
+          <header class="admin-panel__header"><div><p class="admin-eyebrow" data-copy="readinessEyebrow">VALIDATION</p><h2 id="readinessTitle" data-copy="readinessTitle">État de préparation</h2></div><span class="admin-readiness" id="adminReadinessStatus">—</span></header>
+          <ul class="admin-readiness-list" id="adminReadiness"></ul>
+        </section>
+
+        <section class="admin-panel admin-panel--wide" aria-labelledby="formulaTitle">
+          <header class="admin-panel__header"><div><p class="admin-eyebrow" data-copy="formulaEyebrow">TRAÇABILITÉ</p><h2 id="formulaTitle" data-copy="formulaTitle">Versions de formules</h2></div></header>
+          <div class="admin-formulas" id="adminFormulas"></div>
+        </section>
+      </div>
+    </main>
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

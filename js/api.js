@@ -25,6 +25,7 @@ async function loadSpritesFromAPI() {
       event: s.event,
       acquisitionMethod: s.acquisitionMethod,
       availability: s.availability,
+      availabilityStatus: s.availabilityStatus,
       availabilityPeriods: s.availabilityPeriods || [],
       recurrence: s.recurrence,
       dates: s.dates,
@@ -39,6 +40,10 @@ async function loadSpritesFromAPI() {
       variants: s.variants,
       variantDetails: s.variantDetails || {},
       available: s.available,
+      releaseStatus: s.releaseStatus,
+      dataStatus: s.dataStatus,
+      enabled: s.enabled,
+      isReleased: s.isReleased,
       addedDate: s.addedDate
     }));
 

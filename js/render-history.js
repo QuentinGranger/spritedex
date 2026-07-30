@@ -4,7 +4,21 @@ let historyLoading = false;
 let historyHasMore = true;
 let historyEntries = [];
 let historyFilter = "all";
-let historyMeta = { total: 0, weeklyStats: [] };
+let historyFilters = { eventId: "all", dateDays: "all", rarity: "all" };
+let historyMeta = { total: 0, weeklyStats: [], monthlyStats: [] };
+let historySelection = new Set();
+
+function historyEntryKey(item) {
+  return [item?.sprite_id, item?.old_status, item?.new_status, item?.created_at].map((value) => String(value || "")).join("|");
+}
+
+function historyVariantId(item) {
+  const rawId = String(item?.sprite_id || "");
+  const catalogueItem = typeof getAllItems === "function"
+    ? getAllItems().find((entry) => String(entry.id) === rawId || String(entry.variantId) === rawId)
+    : null;
+  return catalogueItem?.id || "";
+}
 
 function historyStatusLabel(status) {
   const keyMap = {
@@ -44,6 +58,7 @@ function spriteName(spriteId) {
     name: item.spriteName,
     variant: item.variant || item.variantName || "Base",
     image: typeof safeImageUrl === "function" ? safeImageUrl(item.img) : "",
+    rarity: item.rarity || "",
     sprite: SPRITES.find(s => s.id === item.spriteId) || null
   };
 
@@ -54,7 +69,14 @@ function spriteName(spriteId) {
       : [rawId, "Base"];
   const sprite = SPRITES.find(s => s.id === baseId);
   const name = sprite ? sprite.name : baseId.replace(/[_-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  return { name, variant: legacyVariant || "Base", image: "", sprite };
+  return { name, variant: legacyVariant || "Base", image: "", rarity: sprite?.rarity || "", sprite };
+}
+
+function historyEventFor(item) {
+  const details = spriteName(String(item?.sprite_id || ""));
+  const eventId = details.sprite?.eventId || details.sprite?.event?.id || "";
+  const event = eventId && typeof EVENTS !== "undefined" ? EVENTS[eventId] : null;
+  return { id: String(eventId || ""), name: event?.name || details.sprite?.event?.name || "" };
 }
 
 function historyDate(dateStr) {
@@ -105,16 +127,20 @@ function activityLabel(count) {
 }
 
 function renderHistoryItem(item, index) {
-  const { name, variant } = spriteName(String(item.sprite_id || ""));
+  const { name, variant, rarity } = spriteName(String(item.sprite_id || ""));
+  const event = historyEventFor(item);
   const kind = historyItemKind(item);
   const changeText = historyChangeText(item);
   const dateText = t("history.dateAt", { date: formatHistoryDate(item.created_at), time: formatHistoryTime(item.created_at) });
+  const key = historyEntryKey(item);
+  const selected = historySelection.has(key);
   return `
-    <article class="history-item history-item--${kind}${isAcquisition(item) ? " history-item--owned" : ""}" role="article" tabindex="0" aria-label="${escapeHtml(`${name}, ${variant}. ${changeText}. ${dateText}`)}" data-history-index="${index}">
+    <article class="history-item history-item--${kind}${isAcquisition(item) ? " history-item--owned" : ""}${selected ? " is-selected" : ""}" role="article" tabindex="0" aria-label="${escapeHtml(`${name}, ${variant}. ${changeText}. ${dateText}`)}" data-history-index="${index}">
+      <label class="history-item__select"><input type="checkbox" data-history-select="${escapeHtml(key)}" ${selected ? "checked" : ""}><span class="sr-only">${escapeHtml(t("history.selectEntry", { name, variant }))}</span></label>
       <div class="history-item__timeline" aria-hidden="true"><span class="history-item__icon">${statusIcon(item.new_status)}</span></div>
       <div class="history-item__body">
         <p class="history-item__title">${escapeHtml(name)} <span class="history-item__variant">${escapeHtml(variant)}</span></p>
-        <p class="history-item__change"><span>${escapeHtml(historyStatusLabel(item.old_status || "new"))}</span><span class="history-item__arrow" aria-hidden="true">→</span><strong>${escapeHtml(historyStatusLabel(item.new_status))}</strong></p>
+        <p class="history-item__change"><span>${escapeHtml(historyStatusLabel(item.old_status || "new"))}</span><span class="history-item__arrow" aria-hidden="true">→</span><strong>${escapeHtml(historyStatusLabel(item.new_status))}</strong>${rarity ? `<em>${escapeHtml(localizedRarity(rarity))}</em>` : ""}${event.name ? `<em>${escapeHtml(event.name)}</em>` : ""}</p>
       </div>
       <span class="history-item__type history-item__type--${kind}">${kind === "acquisition" ? escapeHtml(t("history.typeAcquisition")) : escapeHtml(t("history.typeChange"))}</span>
       <time class="history-item__date" datetime="${escapeHtml(String(item.created_at || ""))}" title="${escapeHtml(dateText)}">
@@ -130,6 +156,14 @@ function weeklyData(weeks) {
     changes: safeFiniteNumber(week.changes, 0, { min: 0, max: 1000000 }),
     acquisitions: safeFiniteNumber(week.acquisitions, 0, { min: 0, max: 1000000 })
   })).filter(week => week.date).sort((a, b) => a.date - b.date);
+}
+
+function monthlyData(months) {
+  return (Array.isArray(months) ? months : []).map(month => ({
+    date: historyDate(month.month),
+    changes: safeFiniteNumber(month.changes, 0, { min: 0, max: 1000000 }),
+    acquisitions: safeFiniteNumber(month.acquisitions, 0, { min: 0, max: 1000000 })
+  })).filter(month => month.date).sort((a, b) => a.date - b.date);
 }
 
 function historyTotals() {
@@ -180,6 +214,18 @@ function renderWeeklyChart(weeks) {
       <span class="history-panel__meta">${escapeHtml(activityLabel(total))}</span>
     </header>
     <div class="history-trend__plot" role="img" aria-label="${escapeHtml(`${activityLabel(total)} — ${t("history.chartEyebrow")}`)}"><ol class="history-trend__bars">${bars}</ol></div>`;
+}
+
+function renderMonthlyTimeline(months) {
+  const rows = monthlyData(months);
+  const max = Math.max(...rows.map(row => row.changes), 1);
+  const total = rows.reduce((sum, row) => sum + row.acquisitions, 0);
+  const items = rows.length ? rows.map(row => {
+    const label = row.date.toLocaleDateString(historyDateLocale(), { month: "short", year: "2-digit" });
+    const pct = Math.max(8, Math.round((row.changes / max) * 100));
+    return `<li class="history-monthly__item" style="--history-month:${pct}%"><span class="history-monthly__dot"></span><span class="history-monthly__label">${escapeHtml(label)}</span><strong>${row.acquisitions}</strong><small>${escapeHtml(t("history.monthlyAcquisitions"))}</small></li>`;
+  }).join("") : `<li class="history-panel__empty">${escapeHtml(t("history.monthlyEmpty"))}</li>`;
+  return `<header class="history-panel__header"><div><p class="history-panel__eyebrow">${escapeHtml(t("history.monthlyEyebrow"))}</p><h3 id="historyMonthlyTitle">${escapeHtml(t("history.monthlyTitle"))}</h3></div><span class="history-panel__meta">${escapeHtml(t("history.monthlyTotal", { count: total }))}</span></header><ol class="history-monthly__timeline">${items}</ol>`;
 }
 
 function renderRecentAcquisitions() {
@@ -236,7 +282,58 @@ function renderActiveSprites() {
 }
 
 function filteredHistoryEntries() {
-  return historyFilter === "all" ? historyEntries : historyEntries.filter(item => historyItemKind(item) === historyFilter);
+  return historyEntries.filter((item) => {
+    if (historyFilter !== "all" && historyItemKind(item) !== historyFilter) return false;
+    const details = spriteName(String(item.sprite_id || ""));
+    if (historyFilters.rarity !== "all" && String(details.rarity || "").toLowerCase() !== historyFilters.rarity) return false;
+    const event = historyEventFor(item);
+    if (historyFilters.eventId !== "all" && event.id !== historyFilters.eventId) return false;
+    if (historyFilters.dateDays !== "all") {
+      const date = historyDate(item.created_at);
+      if (!date) return false;
+      if (historyFilters.dateDays === "year") {
+        const startOfYear = new Date();
+        startOfYear.setMonth(0, 1);
+        startOfYear.setHours(0, 0, 0, 0);
+        if (date < startOfYear) return false;
+      } else {
+        const days = Number(historyFilters.dateDays);
+        if (!Number.isFinite(days) || date.getTime() < Date.now() - days * 24 * 60 * 60 * 1000) return false;
+      }
+    }
+    return true;
+  });
+}
+
+function renderHistoryFilterOptions() {
+  const eventSelect = document.getElementById("historyEventFilter");
+  const raritySelect = document.getElementById("historyRarityFilter");
+  const dateSelect = document.getElementById("historyDateFilter");
+  if (!eventSelect || !raritySelect || !dateSelect) return;
+  const events = new Map();
+  const rarities = new Set();
+  historyEntries.forEach((item) => {
+    const event = historyEventFor(item);
+    if (event.id) events.set(event.id, event.name || event.id);
+    const rarity = String(spriteName(String(item.sprite_id || "")).rarity || "").trim();
+    if (rarity) rarities.add(rarity);
+  });
+  eventSelect.innerHTML = `<option value="all">${escapeHtml(t("history.filterEventAll"))}</option>${[...events.entries()].sort((a, b) => a[1].localeCompare(b[1], uiLocale())).map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join("")}`;
+  raritySelect.innerHTML = `<option value="all">${escapeHtml(t("history.filterRarityAll"))}</option>${[...rarities].sort((a, b) => localizedRarity(a).localeCompare(localizedRarity(b), uiLocale())).map((rarity) => `<option value="${escapeHtml(rarity.toLowerCase())}">${escapeHtml(localizedRarity(rarity))}</option>`).join("")}`;
+  eventSelect.value = events.has(historyFilters.eventId) ? historyFilters.eventId : "all";
+  raritySelect.value = [...rarities].some((rarity) => rarity.toLowerCase() === historyFilters.rarity) ? historyFilters.rarity : "all";
+  dateSelect.value = historyFilters.dateDays;
+}
+
+function renderHistoryGroups(entries) {
+  const groups = new Map();
+  entries.forEach((item, index) => {
+    const date = historyDate(item.created_at);
+    const key = date ? date.toDateString() : "unknown";
+    if (!groups.has(key)) groups.set(key, { label: date ? formatHistoryDate(item.created_at) : t("history.dateUnknown"), entries: [] });
+    groups.get(key).entries.push({ item, index });
+  });
+  return [...groups.values()].map((group) => `<section class="history-day-group"><header><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(activityLabel(group.entries.length))}</span></header>${group.entries.map(({ item, index }) => renderHistoryItem(item, index)).join("")}</section>`).join("");
 }
 
 function renderHistoryList() {
@@ -251,18 +348,70 @@ function renderHistoryList() {
   list.setAttribute("aria-busy", "false");
   if (!entries.length) {
     list.innerHTML = `<p class="squad-empty">${escapeHtml(historyEntries.length ? t("history.listEmpty") : t("history.listEmptyAll"))}</p>`;
+    renderHistoryBulkActions(entries);
     return;
   }
-  list.innerHTML = entries.map(renderHistoryItem).join("") + (!historyHasMore ? `<p class="history-end">${escapeHtml(t("history.listEnd"))}</p>` : "");
+  list.innerHTML = renderHistoryGroups(entries) + (!historyHasMore ? `<p class="history-end">${escapeHtml(t("history.listEnd"))}</p>` : "");
+  renderHistoryBulkActions(entries);
+}
+
+function selectedHistoryEntries() {
+  return historyEntries.filter((item) => historySelection.has(historyEntryKey(item)));
+}
+
+function renderHistoryBulkActions(visibleEntries = filteredHistoryEntries()) {
+  const root = document.getElementById("historyBulkActions");
+  const count = document.getElementById("historyBulkCount");
+  const selectAll = document.getElementById("historyBulkSelectAll");
+  if (!root || !count || !selectAll) return;
+  const selected = selectedHistoryEntries();
+  const visibleKeys = visibleEntries.map(historyEntryKey);
+  const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((key) => historySelection.has(key));
+  root.hidden = selected.length === 0;
+  count.textContent = t(selected.length === 1 ? "history.bulkSelectedOne" : "history.bulkSelectedMany", { count: selected.length });
+  selectAll.textContent = allVisibleSelected ? t("history.bulkDeselectVisible") : t("history.bulkSelectVisible");
+  selectAll.disabled = visibleKeys.length === 0;
+}
+
+function copySelectedHistoryEntries() {
+  const entries = selectedHistoryEntries();
+  if (!entries.length || !navigator.clipboard?.writeText) {
+    toast(t("history.bulkCopyUnavailable"));
+    return;
+  }
+  const lines = entries.map((item) => {
+    const { name, variant } = spriteName(String(item.sprite_id || ""));
+    return `- ${name} · ${variant} — ${historyChangeText(item)}`;
+  });
+  navigator.clipboard.writeText(lines.join("\n")).then(
+    () => toast(t("history.bulkCopied", { count: entries.length })),
+    () => toast(t("history.bulkCopyUnavailable"))
+  );
+}
+
+function prioritiseSelectedHistoryEntries() {
+  const entries = selectedHistoryEntries();
+  const ids = [...new Set(entries.map(historyVariantId).filter(Boolean))];
+  if (!ids.length) return;
+  ids.forEach((id) => setEntry(id, { priority: "medium" }, { render: false }));
+  historySelection.clear();
+  renderAll();
+  renderHistoryList();
+  toast(t("history.bulkPrioritised", { count: ids.length }));
 }
 
 function renderHistoryDashboard(data) {
-  historyMeta = { total: safeFiniteNumber(data.total, 0, { min: 0, max: 1000000 }), weeklyStats: Array.isArray(data.weeklyStats) ? data.weeklyStats : [] };
+  historyMeta = { total: safeFiniteNumber(data.total, 0, { min: 0, max: 1000000 }), weeklyStats: Array.isArray(data.weeklyStats) ? data.weeklyStats : [], monthlyStats: Array.isArray(data.monthlyStats) ? data.monthlyStats : [] };
   renderHistoryKpis();
   const weeklyEl = document.getElementById("historyWeekly");
   if (weeklyEl) {
     weeklyEl.setAttribute("aria-busy", "false");
     weeklyEl.innerHTML = renderWeeklyChart(historyMeta.weeklyStats);
+  }
+  const monthlyEl = document.getElementById("historyMonthly");
+  if (monthlyEl) {
+    monthlyEl.setAttribute("aria-busy", "false");
+    monthlyEl.innerHTML = renderMonthlyTimeline(historyMeta.monthlyStats);
   }
   renderRecentAcquisitions();
   renderActionSummary();
@@ -279,12 +428,75 @@ function setHistoryFilter(nextFilter) {
   renderHistoryList();
 }
 
+function setHistoryAdvancedFilter() {
+  historyFilters = {
+    eventId: document.getElementById("historyEventFilter")?.value || "all",
+    dateDays: document.getElementById("historyDateFilter")?.value || "all",
+    rarity: document.getElementById("historyRarityFilter")?.value || "all"
+  };
+  const active = Object.values(historyFilters).some((value) => value !== "all");
+  document.getElementById("historyFilterReset")?.toggleAttribute("hidden", !active);
+  renderHistoryList();
+}
+
 function setupHistoryControls() {
   document.querySelectorAll("[data-history-filter]").forEach(button => {
     if (button.dataset.historyBound === "true") return;
     button.dataset.historyBound = "true";
     button.addEventListener("click", () => setHistoryFilter(button.dataset.historyFilter));
   });
+  ["historyEventFilter", "historyDateFilter", "historyRarityFilter"].forEach((id) => {
+    const control = document.getElementById(id);
+    if (!control || control.dataset.historyBound === "true") return;
+    control.dataset.historyBound = "true";
+    control.addEventListener("change", setHistoryAdvancedFilter);
+  });
+  const reset = document.getElementById("historyFilterReset");
+  if (reset && reset.dataset.historyBound !== "true") {
+    reset.dataset.historyBound = "true";
+    reset.addEventListener("click", () => {
+      historyFilters = { eventId: "all", dateDays: "all", rarity: "all" };
+      renderHistoryFilterOptions();
+      setHistoryAdvancedFilter();
+    });
+  }
+  const list = document.getElementById("historyList");
+  if (list && list.dataset.historySelectionBound !== "true") {
+    list.dataset.historySelectionBound = "true";
+    list.addEventListener("change", (event) => {
+      const checkbox = event.target.closest("[data-history-select]");
+      if (!checkbox) return;
+      const key = checkbox.dataset.historySelect;
+      if (checkbox.checked) historySelection.add(key); else historySelection.delete(key);
+      renderHistoryList();
+    });
+  }
+  const selectAll = document.getElementById("historyBulkSelectAll");
+  if (selectAll && selectAll.dataset.historyBound !== "true") {
+    selectAll.dataset.historyBound = "true";
+    selectAll.addEventListener("click", () => {
+      const entries = filteredHistoryEntries();
+      const keys = entries.map(historyEntryKey);
+      const allSelected = keys.length > 0 && keys.every((key) => historySelection.has(key));
+      keys.forEach((key) => allSelected ? historySelection.delete(key) : historySelection.add(key));
+      renderHistoryList();
+    });
+  }
+  const clearSelection = document.getElementById("historyBulkClear");
+  if (clearSelection && clearSelection.dataset.historyBound !== "true") {
+    clearSelection.dataset.historyBound = "true";
+    clearSelection.addEventListener("click", () => { historySelection.clear(); renderHistoryList(); });
+  }
+  const copySelection = document.getElementById("historyBulkCopy");
+  if (copySelection && copySelection.dataset.historyBound !== "true") {
+    copySelection.dataset.historyBound = "true";
+    copySelection.addEventListener("click", copySelectedHistoryEntries);
+  }
+  const prioritiseSelection = document.getElementById("historyBulkPriority");
+  if (prioritiseSelection && prioritiseSelection.dataset.historyBound !== "true") {
+    prioritiseSelection.dataset.historyBound = "true";
+    prioritiseSelection.addEventListener("click", prioritiseSelectedHistoryEntries);
+  }
 }
 
 async function loadMoreHistory() {
@@ -306,6 +518,7 @@ async function loadMoreHistory() {
     if (historyOffset === 0) renderHistoryDashboard(data);
     historyEntries.push(...incoming);
     historyOffset += incoming.length;
+    renderHistoryFilterOptions();
     renderHistoryKpis();
     renderRecentAcquisitions();
     renderActionSummary();
@@ -324,7 +537,9 @@ function renderHistory() {
   historyHasMore = true;
   historyLoading = false;
   historyEntries = [];
-  historyMeta = { total: 0, weeklyStats: [] };
+  historySelection.clear();
+  historyFilters = { eventId: "all", dateDays: "all", rarity: "all" };
+  historyMeta = { total: 0, weeklyStats: [], monthlyStats: [] };
   setupHistoryControls();
   const list = document.getElementById("historyList");
   if (list) {
