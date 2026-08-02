@@ -1,4 +1,5 @@
 // ── SPRITE-INDEX : Security helpers (rate limiting, headers, validation, env checks) ──
+const crypto = require("crypto");
 const { z } = require("zod");
 const path = require("path");
 const { consumeRateLimit, validRedisUrl } = require("./server/rate-limit-store");
@@ -55,6 +56,9 @@ function validateEnv() {
     warnings.push("APNS credentials manquantes : les notifications push iOS natif ne seront pas envoyées.");
   }
   if (process.env.NODE_ENV === "production") {
+    if (process.env.EMAIL_VERIFICATION_REQUIRED === "0") {
+      missing.push("EMAIL_VERIFICATION_REQUIRED ne peut pas être désactivé (0) en production");
+    }
     if (!process.env.DATABASE_URL) {
       warnings.push("DATABASE_URL manquant en production : la connexion Postgres locale par défaut sera utilisée (déconseillé).");
     }
@@ -327,6 +331,19 @@ function rateLimit({ windowMs, max, keyPrefix = "rl", message, keyGenerator = nu
 
 // Preconfigured limiters for sensitive routes
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: "login", message: "Trop de tentatives de connexion. Réessaie dans 15 minutes." });
+// Secondary cap keyed on a digest of the email so credential stuffing against
+// one inbox is throttled even across many source IPs / proxies.
+const loginEmailLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  keyPrefix: "login-email",
+  message: "Trop de tentatives de connexion. Réessaie dans 15 minutes.",
+  keyGenerator: (req) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!email) return "missing-email";
+    return crypto.createHash("sha256").update(`login:${email}`).digest("hex").slice(0, 40);
+  }
+});
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: positiveEnvInteger("REGISTER_RATE_LIMIT_MAX", process.env.NODE_ENV === "production" ? 5 : 500),
@@ -592,6 +609,7 @@ module.exports = {
   rejectUnsafeBodyKeys,
   rateLimit,
   loginLimiter,
+  loginEmailLimiter,
   registerLimiter,
   passwordResetLimiter,
   squadCreateLimiter,

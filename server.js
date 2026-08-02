@@ -21,9 +21,15 @@ const squadCompletion = require("./server/notification-squad-completion");
 const eventEndingScheduler = require("./server/notification-event-ending-scheduler");
 const deliveryQueue = require("./server/notification-delivery-queue");
 
+// Email gate must be mounted before any module that registers /api routes.
+// `server/ws` transitively loads `server/compare`, which registers compare HTTP
+// handlers at require-time — so auth + this middleware come first.
+require("./server/auth");
+const { requireEmailVerified } = require("./server/auth");
+app.use("/api", requireEmailVerified);
+
 // Load helpers and route registrations (order preserved from the original file).
 require("./server/ws");
-require("./server/auth");
 require("./server/compare");
 require("./server/catalog");
 require("./server/routes-sprites");
@@ -52,7 +58,7 @@ require("./server/routes-health");
 require("./server/tail");
 
 // Schema bootstrap, reference-data seed, and periodic maintenance jobs.
-const { ensureReferenceDataSeeded, purgeDeletedAccounts } = require("./server/schema");
+const { ensureReferenceDataSeeded, purgeDeletedAccounts, purgeUnverifiedPasswordAccounts } = require("./server/schema");
 const { migrate } = require("./server/migrations");
 const runtimeHealth = require("./server/runtime-health");
 const { installProcessErrorHandlers, purgeOperationalIncidents, reportError } = require("./server/monitoring");
@@ -119,11 +125,13 @@ async function startBackgroundWorkers() {
   require("./server/sprite-graph-community").startCommunityStatsDailyJob(pool);
   runtimeHealth.markWorkerStarted("sprite_graph_daily");
   purgeDeletedAccounts();
+  purgeUnverifiedPasswordAccounts();
   secLog.purgeOldSecurityLogs(pool);
   eventIdempotency.purgeProcessedEvents(pool);
   purgeOperationalIncidents();
   setInterval(() => {
     purgeDeletedAccounts();
+    purgeUnverifiedPasswordAccounts();
     secLog.purgeOldSecurityLogs(pool);
     eventIdempotency.purgeProcessedEvents(pool);
     purgeOperationalIncidents();

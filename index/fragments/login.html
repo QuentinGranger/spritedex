@@ -114,6 +114,44 @@
           </div>
         </div>
 
+        <!-- Step 3b: Confirm email before accessing the account -->
+        <div class="onboarding-step" id="onboardingStepVerifyEmail">
+          <button class="onboarding-back" id="backFromVerifyEmail" data-i18n-title="login.back" title="Retour">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span data-i18n="login.back">Retour</span>
+          </button>
+
+          <div class="verify-panel" aria-live="polite">
+            <div class="verify-panel__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-10 7L2 7"/>
+              </svg>
+            </div>
+            <p class="verify-panel__eyebrow" data-i18n="login.verifyEyebrow">Dernière étape</p>
+            <h2 class="onboarding-heading verify-panel__title" data-i18n="login.verifyTitle">Confirme ton email</h2>
+            <p class="login-sub verify-panel__lead" id="verifyEmailDetail" data-i18n="login.verifySubtitle">On t’a envoyé un lien. Clique dessus, puis reviens ici — l’app reste verrouillée tant que ce n’est pas fait.</p>
+            <p class="verify-panel__email" id="verifyEmailAddress" hidden></p>
+
+            <ol class="verify-panel__steps">
+              <li data-i18n="login.verifyStep1">Ouvre ta boîte mail (et les spams)</li>
+              <li data-i18n="login.verifyStep2">Clique sur le lien de confirmation</li>
+              <li data-i18n="login.verifyStep3">Reviens ici — on détecte la confirmation automatiquement</li>
+            </ol>
+
+            <div class="verify-panel__status" id="verifyEmailStatus" hidden></div>
+
+            <div class="verify-panel__actions">
+              <button class="login-btn" id="verifyEmailCheckBtn" type="button" data-i18n="login.verifyCheck">J’ai confirmé mon email</button>
+              <button class="login-btn login-btn--secondary" id="verifyEmailResendBtn" type="button" data-i18n="login.verifyResend">Renvoyer l’email</button>
+            </div>
+
+            <p class="onboarding-switch verify-panel__switch">
+              <button class="onboarding-link" id="verifyEmailLogout" type="button" data-i18n="login.verifyUseOther">Utiliser un autre compte</button>
+            </p>
+          </div>
+        </div>
+
         <!-- Step 4: Profile setup (after registration) -->
         <div class="onboarding-step" id="onboardingStepProfile">
           <h2 class="onboarding-heading" data-i18n="login.welcome">Bienvenue dans SPRITE-INDEX</h2>

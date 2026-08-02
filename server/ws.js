@@ -1,6 +1,6 @@
 // ws.js — extracted from server.js
 
-const { validateSession, canViewCollection, hashSessionToken } = require("./auth");
+const { validateSession, canViewCollection, hashSessionToken, accountRequiresEmailVerification } = require("./auth");
 const { wss } = require("./core");
 const { pool, shouldUseSSL } = require("./db");
 const compare = require("./compare");
@@ -141,7 +141,9 @@ async function isSessionStillValid(sessionHash, userId) {
      LIMIT 1`,
     [sessionHash, userId]
   );
-  return result.rows.length > 0;
+  if (!result.rows.length) return false;
+  if (await accountRequiresEmailVerification(userId)) return false;
+  return true;
 }
 
 async function revalidateSocketAuthorization(ws, { force = false } = {}) {
@@ -261,6 +263,12 @@ wss.on("connection", (ws) => {
         try { ws.send(JSON.stringify({ type: "auth_error" })); } catch {}
         wsHealth.authFailures += 1;
         closeWebSocket(ws, "Invalid or suspended session");
+        return;
+      }
+      if (await accountRequiresEmailVerification(userId)) {
+        try { ws.send(JSON.stringify({ type: "auth_error", code: "email_not_verified" })); } catch {}
+        wsHealth.authFailures += 1;
+        closeWebSocket(ws, "Email not verified");
         return;
       }
       registerAuthenticatedSocket(ws, userId, msg.token);

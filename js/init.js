@@ -199,6 +199,27 @@ async function handleOAuthReturn() {
     if (emailVerified === "true") {
       localStorage.setItem("sprite-index_email_verified", "true");
       setTimeout(() => toast(t("login.emailVerified")), 500);
+      // Session may already exist from registration/login — unlock if confirmed.
+      if (localStorage.getItem(TOKEN_KEY) && typeof window.continueAfterEmailVerified === "function") {
+        try {
+          const meRes = await fetch(`${API_BASE}/auth/me`, { headers: authHeadersOnly() });
+          if (meRes.ok) {
+            const me = await meRes.json();
+            if (me.email_verified || me.emailVerified) {
+              await window.continueAfterEmailVerified({
+                id: me.id,
+                username: me.username,
+                created_at: me.created_at,
+                avatar_url: me.avatar_url,
+                privacy: me.privacy,
+                emailVerified: true,
+                token: localStorage.getItem(TOKEN_KEY)
+              });
+              return true;
+            }
+          }
+        } catch { /* fall through to normal boot */ }
+      }
     } else {
       setTimeout(() => toast(t("login.emailVerifyInvalid")), 500);
     }
@@ -284,6 +305,19 @@ async function init() {
         if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
         if (user.privacy) localStorage.setItem("sprite-index_privacy", user.privacy);
         localStorage.setItem("sprite-index_email_verified", user.email_verified ? "true" : "false");
+        if (!user.email_verified) {
+          if (typeof enterEmailVerificationGate === "function") {
+            enterEmailVerificationGate({
+              id: user.id,
+              username: user.username,
+              created_at: user.created_at,
+              token: savedToken,
+              email: user.email || "",
+              emailVerified: false
+            });
+          }
+          return;
+        }
         await load();
         showApp();
         setupEvents();
@@ -309,6 +343,23 @@ async function init() {
         localStorage.removeItem(USER_KEY);
       }
     } catch {
+      // Offline /me failure: never unlock a pending-verify session into the app.
+      if (
+        localStorage.getItem("sprite-index_email_verified") === "false"
+        || localStorage.getItem(typeof PENDING_VERIFY_KEY !== "undefined" ? PENDING_VERIFY_KEY : "sprite-index_pending_email_verify") === "1"
+      ) {
+        if (typeof enterEmailVerificationGate === "function") {
+          const user = JSON.parse(savedUser);
+          enterEmailVerificationGate({
+            id: user.id,
+            username: user.username,
+            created_at: user.created_at,
+            token: savedToken,
+            emailVerified: false
+          });
+        }
+        return;
+      }
       const user = JSON.parse(savedUser);
       state.userId = user.id;
       state.username = user.username;

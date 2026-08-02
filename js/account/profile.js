@@ -12,19 +12,22 @@
   }
 
   resendBtn.addEventListener("click", async () => {
+    if (resendBtn.disabled) return;
+    const previous = resendBtn.textContent;
     resendBtn.disabled = true;
     resendBtn.textContent = t("account.sendingVerification");
     try {
-      await fetch(`${API_BASE}/auth/resend-verification`, {
+      const res = await fetch(`${API_BASE}/auth/resend-verification`, {
         method: "POST",
         headers: authHeadersOnly()
       });
+      if (!res.ok) throw new Error("resend_failed");
       toast(t("account.verificationSent"));
     } catch {
       toast(t("account.errorRetryLater"));
     }
     resendBtn.disabled = false;
-    resendBtn.textContent = t("account.resend");
+    resendBtn.textContent = previous || t("account.resend");
   });
 
   // ── Populate all profile data ──

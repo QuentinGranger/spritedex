@@ -333,11 +333,56 @@ async function revokeActiveShareCapabilities({ db = pool } = {}) {
   };
 }
 
+async function purgeUnverifiedPasswordAccounts({
+  db = pool,
+  olderThanDays = Number(process.env.UNVERIFIED_ACCOUNT_RETENTION_DAYS) || 7,
+  limit = 100
+} = {}) {
+  const days = Number.isFinite(Number(olderThanDays))
+    ? Math.max(1, Math.min(90, Math.floor(Number(olderThanDays))))
+    : 7;
+  const max = Math.max(1, Math.min(500, Number(limit) || 100));
+
+  // Soft-delete frees the email for the legitimate owner while keeping an audit trail.
+  const result = await db.query(
+    `UPDATE users
+     SET deleted_at = NOW()
+     WHERE id IN (
+       SELECT id FROM users
+       WHERE deleted_at IS NULL
+         AND email_verified = FALSE
+         AND password_hash IS NOT NULL
+         AND (oauth_provider IS NULL OR BTRIM(oauth_provider) = '')
+         AND created_at < NOW() - ($1::text || ' days')::interval
+       ORDER BY created_at ASC
+       LIMIT $2
+     )
+     RETURNING id, username, email, created_at`,
+    [String(days), max]
+  );
+
+  if (result.rows.length) {
+    const ids = result.rows.map((row) => row.id);
+    await db.query("DELETE FROM sessions WHERE user_id = ANY($1::int[])", [ids]);
+    console.log(`[PURGE] ${result.rows.length} unverified password account(s) soft-deleted after ${days}d.`);
+  }
+
+  return {
+    retentionDays: days,
+    purged: result.rows.map((row) => ({
+      id: row.id,
+      username: row.username,
+      createdAt: row.created_at
+    }))
+  };
+}
+
 module.exports = {
   retentionDays,
   buildUserDataExport,
   listDeletionQueue,
   purgeDeletedAccounts,
+  purgeUnverifiedPasswordAccounts,
   restoreDeletedAccount,
   revokeActiveShareCapabilities
 };

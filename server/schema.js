@@ -64,4 +64,18 @@ async function purgeDeletedAccounts(options = {}) {
   }
 }
 
-module.exports = { ensureReferenceDataSeeded, ensureSquadTables, purgeDeletedAccounts };
+async function purgeUnverifiedPasswordAccounts(options = {}) {
+  try {
+    return await require("./privacy-ops").purgeUnverifiedPasswordAccounts(options);
+  } catch (err) {
+    console.error("[PURGE] Failed to purge unverified accounts:", err);
+    return { purged: [], retentionDays: 7 };
+  }
+}
+
+module.exports = {
+  ensureReferenceDataSeeded,
+  ensureSquadTables,
+  purgeDeletedAccounts,
+  purgeUnverifiedPasswordAccounts
+};

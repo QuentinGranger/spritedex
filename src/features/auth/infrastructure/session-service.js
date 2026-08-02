@@ -323,6 +323,64 @@ async function requireNotSuspended(req, res, next) {
   }
 }
 
+function isEmailVerificationEnforced() {
+  // Explicit opt-out for local integration-test servers.
+  if (process.env.EMAIL_VERIFICATION_REQUIRED === "0") return false;
+  return true;
+}
+
+/** Password accounts must confirm email; OAuth accounts are already trusted. */
+async function accountRequiresEmailVerification(userId) {
+  if (!userId || !isEmailVerificationEnforced()) return false;
+  const result = await pool.query(
+    `SELECT email_verified, oauth_provider, password_hash
+     FROM users
+     WHERE id = $1 AND deleted_at IS NULL`,
+    [userId]
+  );
+  if (!result.rows.length) return false;
+  const user = result.rows[0];
+  if (user.email_verified) return false;
+  if (user.oauth_provider && String(user.oauth_provider).trim()) return false;
+  return !!(user.password_hash && String(user.password_hash).trim());
+}
+
+const EMAIL_VERIFICATION_ALLOWLIST = [
+  /^\/api\/auth\/(login|register|logout|me|verify-email|resend-verification|forgot-password|reset-password)(?:\/|$|\?)/i,
+  /^\/api\/auth\/oauth(?:\/|$|\?)/i,
+  /^\/api\/auth\/callback(?:\/|$|\?)/i,
+  /^\/api\/health(?:\/|$|\?)/i,
+  /^\/api\/openapi\.json$/i
+];
+
+function isEmailVerificationAllowlisted(req) {
+  // Mounted at `/api`, so `req.path` is relative (e.g. `/auth/me`).
+  const path = String(req.path || req.url || "").split("?")[0];
+  const full = path.startsWith("/api/") ? path : `/api${path.startsWith("/") ? path : `/${path}`}`;
+  return EMAIL_VERIFICATION_ALLOWLIST.some((pattern) => pattern.test(full));
+}
+
+/**
+ * Global gate: an authenticated password account without a verified email may
+ * only hit auth helpers (me / logout / resend). Guests and OAuth sessions pass.
+ */
+async function requireEmailVerified(req, res, next) {
+  try {
+    if (!isEmailVerificationEnforced()) return next();
+    if (isEmailVerificationAllowlisted(req)) return next();
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return next();
+    if (!(await accountRequiresEmailVerification(reqUser))) return next();
+    return res.status(403).json({
+      error: "Email non vérifié",
+      code: "email_not_verified",
+      emailVerified: false
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function areFriends(userA, userB) {
   if (!userA || !userB || String(userA) === String(userB)) return false;
   if (await isBlocked(userA, userB)) return false;
@@ -435,6 +493,9 @@ module.exports = {
   hashSessionToken,
   isAccountSuspended,
   isBlocked,
+  accountRequiresEmailVerification,
+  isEmailVerificationEnforced,
+  requireEmailVerified,
   requireNotSuspended,
   requireSameUser,
   requireSquadMember,

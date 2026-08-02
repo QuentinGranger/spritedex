@@ -69,10 +69,36 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
       ]
     );
     const user = result.rows[0];
+    const emailLower = email.toLowerCase();
+    // Non-production only: integration suites register @example.com inboxes.
+    // Never auto-verify reserved example domains in production (gate bypass).
+    const autoVerifyTestInbox = process.env.NODE_ENV !== "production"
+      && /@(example\.com|example\.org)$/i.test(emailLower);
+    if (autoVerifyTestInbox) {
+      await pool.query(
+        `UPDATE users
+         SET email_verified = TRUE, email_verify_token = NULL, email_verify_token_expires = NULL
+         WHERE id = $1`,
+        [user.id]
+      );
+    } else {
+      const sendResult = await sendVerificationEmail(emailLower, emailToken, resolveLocale(req.get("accept-language")));
+      if (sendResult && sendResult.skipped) {
+        const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${emailToken}`;
+        console.warn(`[AUTH] Verification email not delivered (${sendResult.reason}). Dev verify URL: ${verifyUrl}`);
+      }
+    }
     const token = await createSession(user.id);
-    sendVerificationEmail(email.toLowerCase(), emailToken, resolveLocale(req.get("accept-language")));
     secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "register", status: "ok" });
-    res.json({ id: user.id, username: user.username, displayName: user.display_name, usernameNormalized: user.username.toLowerCase(), token, emailVerified: false, created_at: user.created_at });
+    res.json({
+      id: user.id,
+      username: user.username,
+      displayName: user.display_name,
+      usernameNormalized: user.username.toLowerCase(),
+      token,
+      emailVerified: autoVerifyTestInbox,
+      created_at: user.created_at
+    });
   } catch (err) {
     if (err.code === "23505") {
       return res.status(409).json({ error: "Impossible de créer le compte" });
@@ -188,7 +214,7 @@ app.post("/api/auth/reset-password", security.passwordResetLimiter, security.val
 });
 
 // ── Auth : Email login ──
-app.post("/api/auth/login", security.loginLimiter, security.validateBody(security.schemas.loginSchema), async (req, res) => {
+app.post("/api/auth/login", security.loginLimiter, security.loginEmailLimiter, security.validateBody(security.schemas.loginSchema), async (req, res) => {
   const { email, password } = req.validatedBody;
   try {
     const result = await pool.query(
@@ -464,7 +490,11 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
     if (!providerEmailVerified) return sendResult("authError=unverified_email");
 
     // Find or create user
-    let userRow = await pool.query("SELECT id, username, avatar_url FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
+    let userRow = await pool.query(
+      `SELECT id, username, avatar_url, email_verified, password_hash, oauth_provider
+       FROM users WHERE email = $1 AND deleted_at IS NULL`,
+      [email.toLowerCase()]
+    );
     if (userRow.rows.length === 0) {
       // Provider display names are arbitrary (length, unicode, punctuation) but the
       // username column is VARCHAR(50) with a unique normalized index. Sanitize and
@@ -496,13 +526,52 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
       if (!inserted) return sendResult("authError=server_error");
       userRow = inserted;
     } else {
-      // Always refresh the OAuth avatar URL — provider hashes change over time
-      if (avatarUrl && avatarUrl !== userRow.rows[0].avatar_url) {
-        await pool.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [avatarUrl, userRow.rows[0].id]);
-        userRow.rows[0].avatar_url = avatarUrl;
+      const existing = userRow.rows[0];
+      // An unverified password registration can squat any email. When the real
+      // owner arrives via OAuth, reclaim the row: drop the squatter's password
+      // and sessions, then attach the provider.
+      if (existing.password_hash && !existing.email_verified) {
+        await pool.query(
+          `UPDATE users
+           SET email_verified = TRUE,
+               email_verify_token = NULL,
+               email_verify_token_expires = NULL,
+               password_hash = NULL,
+               password_salt = NULL,
+               password_iterations = NULL,
+               oauth_provider = $2,
+               avatar_url = COALESCE(NULLIF($3, ''), avatar_url)
+           WHERE id = $1`,
+          [existing.id, provider, avatarUrl || ""]
+        );
+        await pool.query("DELETE FROM sessions WHERE user_id = $1", [existing.id]);
+        revokeUserSockets(existing.id, "OAuth reclaim of unverified password account");
+        secLog.logSecurityEvent(pool, {
+          req,
+          userId: existing.id,
+          email,
+          event: "oauth_reclaim_unverified",
+          status: "ok",
+          details: { provider }
+        });
+        if (avatarUrl) existing.avatar_url = avatarUrl;
+      } else {
+        // Always refresh the OAuth avatar URL — provider hashes change over time
+        if (avatarUrl && avatarUrl !== existing.avatar_url) {
+          await pool.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [avatarUrl, existing.id]);
+          existing.avatar_url = avatarUrl;
+        }
+        // Mark email as verified (OAuth emails are pre-verified by the provider)
+        if (!existing.email_verified) {
+          await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [existing.id]);
+        }
+        if (!existing.oauth_provider) {
+          await pool.query(
+            "UPDATE users SET oauth_provider = COALESCE(oauth_provider, $2) WHERE id = $1",
+            [existing.id, provider]
+          );
+        }
       }
-      // Mark email as verified (OAuth emails are pre-verified)
-      await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [userRow.rows[0].id]);
     }
 
     const dbUser = userRow.rows[0];
@@ -611,7 +680,7 @@ app.get("/api/auth/me", async (req, res) => {
   if (!tokenHash) return res.status(401).json({ error: "Session expirée" });
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.avatar_url, u.privacy, u.email_verified, u.created_at,
+      `SELECT u.id, u.username, u.email, u.avatar_url, u.privacy, u.email_verified, u.created_at,
               u.last_active_at, u.suspended_until, u.suspension_source
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.token = $1 AND s.expires_at > NOW() AND u.deleted_at IS NULL`,
