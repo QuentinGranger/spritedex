@@ -12,10 +12,13 @@ async function sendWebPush(subscription, payload) {
     return { ok: false, permanent: true, expired: true, error: "Untrusted web push endpoint" };
   }
   try {
-    await webpush.sendNotification({
-      endpoint: parsed.endpoint,
-      keys: { p256dh: parsed.publicKey, auth: parsed.authSecret }
-    }, JSON.stringify(payload));
+    await webpush.sendNotification(
+      {
+        endpoint: parsed.endpoint,
+        keys: { p256dh: parsed.publicKey, auth: parsed.authSecret }
+      },
+      JSON.stringify(payload)
+    );
     return { ok: true };
   } catch (err) {
     const permanent = pushSubscriptions.isPermanentProviderFailure({
@@ -50,7 +53,7 @@ function sendFcmLegacy(token, payload) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `key=${process.env.FCM_SERVER_KEY}`
+          Authorization: `key=${process.env.FCM_SERVER_KEY}`
         }
       },
       (res) => {
@@ -106,9 +109,7 @@ function derSignatureToP256Raw(der) {
 }
 
 function signApnsJwt() {
-  let keyPem = process.env.APNS_KEY.trim()
-    .replace(/\\\\n/g, "\n")
-    .replace(/\\n/g, "\n");
+  let keyPem = process.env.APNS_KEY.trim().replace(/\\\\n/g, "\n").replace(/\\n/g, "\n");
   const header = JSON.stringify({ alg: "ES256", kid: process.env.APNS_KEY_ID });
   const now = Math.floor(Date.now() / 1000);
   const payload = JSON.stringify({ iss: process.env.APNS_TEAM_ID, iat: now });
@@ -125,8 +126,12 @@ let apnsClient = null;
 function getApnsClient() {
   if (!apnsClient) {
     apnsClient = http2.connect("https://api.push.apple.com");
-    apnsClient.on("error", () => { apnsClient = null; });
-    apnsClient.on("goaway", () => { apnsClient = null; });
+    apnsClient.on("error", () => {
+      apnsClient = null;
+    });
+    apnsClient.on("goaway", () => {
+      apnsClient = null;
+    });
   }
   return apnsClient;
 }
@@ -149,7 +154,7 @@ function sendApns(deviceToken, payload) {
     const req = client.request({
       ":method": "POST",
       ":path": `/3/device/${deviceToken}`,
-      "authorization": `bearer ${jwt}`,
+      authorization: `bearer ${jwt}`,
       "apns-topic": process.env.APNS_TOPIC,
       "content-type": "application/json",
       "content-length": Buffer.byteLength(apnsPayload)
@@ -158,7 +163,9 @@ function sendApns(deviceToken, payload) {
     let responseData = "";
     req.on("response", (headers) => {
       const status = headers[":status"];
-      req.on("data", (chunk) => { responseData += chunk; });
+      req.on("data", (chunk) => {
+        responseData += chunk;
+      });
       req.on("end", () => {
         if (status === 200) return resolve({ ok: true });
         const errMsg = responseData || `APNS status ${status}`;
@@ -179,8 +186,8 @@ function sendApns(deviceToken, payload) {
 async function dispatchNotification({ pool: _pool, target, payload }) {
   const platform = pushSubscriptions.normalizePlatform(target.platform);
   if (platform === "web") {
-    const subscription = target.subscription
-      || (typeof target.token === "string" ? JSON.parse(target.token) : target.token);
+    const subscription =
+      target.subscription || (typeof target.token === "string" ? JSON.parse(target.token) : target.token);
     if (!subscription || !subscription.endpoint) {
       return { ok: false, error: "Invalid web push subscription", endpoint: target.endpoint };
     }
@@ -203,8 +210,7 @@ async function handleDispatchResult(pool, target, result) {
     await pushSubscriptions.touchSubscription(pool, target.id);
     return { ...result, permanent: false };
   }
-  const permanent = !!(result.permanent || result.expired
-    || pushSubscriptions.isPermanentProviderFailure(result));
+  const permanent = !!(result.permanent || result.expired || pushSubscriptions.isPermanentProviderFailure(result));
   if (permanent) {
     // Étape 45 — deactivate invalid token; do not keep retrying it.
     await pushSubscriptions.deactivateInvalidSubscription(pool, {
@@ -216,6 +222,5 @@ async function handleDispatchResult(pool, target, result) {
   }
   return { ...result, permanent };
 }
-
 
 module.exports = { dispatchNotification, handleDispatchResult };

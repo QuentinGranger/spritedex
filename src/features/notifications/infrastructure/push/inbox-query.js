@@ -1,7 +1,5 @@
 "use strict";
 
-
-
 // Anti-spam helper: has a similar notification (same recipient + type + entity)
 // been created within the last `withinHours`? Used by the notification service
 // to avoid flooding a user with duplicates.
@@ -27,17 +25,8 @@ async function recentNotificationExists(pool, { recipientId, type, entityId = nu
 
 // Inbox filters for the notification center (Étape 46).
 // Pure helper — exported for unit tests.
-function buildNotificationInboxFilters(userId, {
-  unreadOnly = false,
-  category = null,
-  filter = null
-} = {}) {
-  const conditions = [
-    "recipient_id = $1",
-    "archived_at IS NULL",
-    "hidden_at IS NULL",
-    "status <> 'cancelled'"
-  ];
+function buildNotificationInboxFilters(userId, { unreadOnly = false, category = null, filter = null } = {}) {
+  const conditions = ["recipient_id = $1", "archived_at IS NULL", "hidden_at IS NULL", "status <> 'cancelled'"];
   const args = [userId];
   const f = String(filter || category || "").toLowerCase();
   if (unreadOnly || f === "unread") conditions.push("read_at IS NULL");
@@ -61,9 +50,8 @@ function buildNotificationInboxFilters(userId, {
 // Étape 59 — opaque cursor for keyset pagination (created_at, id).
 function encodeNotificationCursor(row) {
   if (!row || row.id == null || row.created_at == null) return null;
-  const createdAt = row.created_at instanceof Date
-    ? row.created_at.toISOString()
-    : new Date(row.created_at).toISOString();
+  const createdAt =
+    row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString();
   if (Number.isNaN(new Date(createdAt).getTime())) return null;
   return Buffer.from(JSON.stringify({ t: createdAt, i: Number(row.id) }), "utf8").toString("base64url");
 }
@@ -95,15 +83,11 @@ async function getUnreadNotificationCount(pool, userId) {
   return res.rows[0]?.c || 0;
 }
 
-async function getNotifications(pool, userId, {
-  limit = 50,
-  offset = 0,
-  cursor = null,
-  unreadOnly = false,
-  category = null,
-  filter = null,
-  lang = null
-} = {}) {
+async function getNotifications(
+  pool,
+  userId,
+  { limit = 50, offset = 0, cursor = null, unreadOnly = false, category = null, filter = null, lang = null } = {}
+) {
   const { conditions, args } = buildNotificationInboxFilters(userId, {
     unreadOnly,
     category,
@@ -112,9 +96,7 @@ async function getNotifications(pool, userId, {
   const decoded = decodeNotificationCursor(cursor);
   if (decoded) {
     args.push(decoded.createdAt, decoded.id);
-    conditions.push(
-      `(created_at, id) < ($${args.length - 1}::timestamptz, $${args.length}::int)`
-    );
+    conditions.push(`(created_at, id) < ($${args.length - 1}::timestamptz, $${args.length}::int)`);
   }
   const pageSize = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
   const where = conditions.join(" AND ");
@@ -155,28 +137,29 @@ async function getNotifications(pool, userId, {
   if (!resolvedLang) {
     try {
       const { resolveNotificationLanguage } = require("../../../../../server/i18n");
-      const langRes = await pool.query(
-        "SELECT preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL",
-        [userId]
-      );
+      const langRes = await pool.query("SELECT preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL", [
+        userId
+      ]);
       resolvedLang = resolveNotificationLanguage(langRes.rows[0]?.preferred_language, null);
     } catch (_err) {
       resolvedLang = "fr";
     }
   }
-  const normalized = await serialize.normalizeNotificationList(pool, page.map((row) => ({
-    ...row,
-    data: row.data || {}
-  })), resolvedLang);
+  const normalized = await serialize.normalizeNotificationList(
+    pool,
+    page.map((row) => ({
+      ...row,
+      data: row.data || {}
+    })),
+    resolvedLang
+  );
   // Attach legacy fields so older clients keep working during the transition.
   const notifications = normalized.map((item, idx) => {
     const row = page[idx];
     const rawData = row.data || {};
     // Keep legacy `data.image` in sync with the normalized scraped imageUrl so
     // older clients (and the dropdown) can render news art without a second hop.
-    const data = item.imageUrl && !rawData.image
-      ? { ...rawData, image: item.imageUrl }
-      : rawData;
+    const data = item.imageUrl && !rawData.image ? { ...rawData, image: item.imageUrl } : rawData;
     return {
       ...item,
       // Legacy aliases
@@ -194,10 +177,15 @@ async function getNotifications(pool, userId, {
       archived_at: row.archived_at
     };
   });
-  const nextCursor = hasMore && page.length
-    ? encodeNotificationCursor(page[page.length - 1])
-    : null;
+  const nextCursor = hasMore && page.length ? encodeNotificationCursor(page[page.length - 1]) : null;
   return { notifications, nextCursor, hasMore };
 }
 
-module.exports = { recentNotificationExists, encodeNotificationCursor, decodeNotificationCursor, buildNotificationInboxFilters, getUnreadNotificationCount, getNotifications };
+module.exports = {
+  recentNotificationExists,
+  encodeNotificationCursor,
+  decodeNotificationCursor,
+  buildNotificationInboxFilters,
+  getUnreadNotificationCount,
+  getNotifications
+};

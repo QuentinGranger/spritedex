@@ -2,12 +2,24 @@
 
 const pushService = require("../../../../../push-service");
 const security = require("../../../../../security");
-const { areFriends, canViewCollection, getRequestingUser, getVisibility, requireNotSuspended, requireSameUser } = require("../../../../../server/auth");
+const {
+  areFriends,
+  canViewCollection,
+  getRequestingUser,
+  getVisibility,
+  requireNotSuspended,
+  requireSameUser
+} = require("../../../../../server/auth");
 const { normalizeCollection, normalizeVariantId } = require("../../../../../server/catalog");
 const { invalidateCompareCacheForUser } = require("../../../../../server/compare");
 const { app } = require("../../../../../server/core");
 const { pool } = require("../../../../../server/db");
-const { broadcastCompareUpdate, broadcastFriendCollectionUpdate, broadcastSquadUpdate, broadcastSquadCompletionUpdate } = require("../../../../../server/ws");
+const {
+  broadcastCompareUpdate,
+  broadcastFriendCollectionUpdate,
+  broadcastSquadUpdate,
+  broadcastSquadCompletionUpdate
+} = require("../../../../../server/ws");
 const { logSquadCollectionEvent } = require("../../../../../server/squad-activity");
 const { refreshSquadStats, scheduleSquadStatsRefresh } = require("../../../../../server/routes-squad-invitations");
 const { checkAffectedGoals } = require("../../../../../server/routes-goals");
@@ -25,12 +37,31 @@ function normalizeMasteryLevel(entry, status) {
 }
 
 module.exports = {
-  app, pool, security, pushService, areFriends, canViewCollection,
-  getRequestingUser, getVisibility, requireNotSuspended, requireSameUser,
-  normalizeCollection, normalizeVariantId, normalizeMasteryLevel,
-  invalidateCompareCacheForUser, invalidateSquadAnalysisCacheForUser,
-  broadcastCompareUpdate, broadcastFriendCollectionUpdate, broadcastSquadUpdate,
-  broadcastSquadCompletionUpdate, logSquadCollectionEvent, refreshSquadStats,
-  scheduleSquadStatsRefresh, checkAffectedGoals, emitDomainEvent, DOMAIN_EVENTS,
-  isAcquiredFromStatus, acquisition
+  app,
+  pool,
+  security,
+  pushService,
+  areFriends,
+  canViewCollection,
+  getRequestingUser,
+  getVisibility,
+  requireNotSuspended,
+  requireSameUser,
+  normalizeCollection,
+  normalizeVariantId,
+  normalizeMasteryLevel,
+  invalidateCompareCacheForUser,
+  invalidateSquadAnalysisCacheForUser,
+  broadcastCompareUpdate,
+  broadcastFriendCollectionUpdate,
+  broadcastSquadUpdate,
+  broadcastSquadCompletionUpdate,
+  logSquadCollectionEvent,
+  refreshSquadStats,
+  scheduleSquadStatsRefresh,
+  checkAffectedGoals,
+  emitDomainEvent,
+  DOMAIN_EVENTS,
+  isAcquiredFromStatus,
+  acquisition
 };

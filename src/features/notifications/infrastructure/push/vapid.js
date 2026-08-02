@@ -14,8 +14,10 @@ const DEFAULT_VAPID_SUBJECT = "mailto:contact@sprite-index.com";
 function isValidVapidKeys(value) {
   return !!(
     value &&
-    typeof value.publicKey === "string" && value.publicKey.length > 0 &&
-    typeof value.privateKey === "string" && value.privateKey.length > 0
+    typeof value.publicKey === "string" &&
+    value.publicKey.length > 0 &&
+    typeof value.privateKey === "string" &&
+    value.privateKey.length > 0
   );
 }
 
@@ -120,15 +122,10 @@ function loadOrCreateVapidKeys(filePath = VAPID_FILE) {
 }
 
 const vapidKeys = loadOrCreateVapidKeys();
-webpush.setVapidDetails(
-  vapidKeys.subject,
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
+webpush.setVapidDetails(vapidKeys.subject, vapidKeys.publicKey, vapidKeys.privateKey);
 
 function getVapidPublicKey() {
   return vapidKeys.publicKey;
 }
-
 
 module.exports = { getVapidPublicKey };

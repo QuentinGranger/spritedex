@@ -1,16 +1,11 @@
 "use strict";
 
-
-
 /**
  * Étape 47 — mark a notification as read.
  * When `clicked` is true (user opened the notification), also set clicked_at
  * (first click only). Already-read rows can still receive clicked_at.
  */
-async function markNotificationRead(pool, userId, notificationId, {
-  clicked = false,
-  channel = null
-} = {}) {
+async function markNotificationRead(pool, userId, notificationId, { clicked = false, channel = null } = {}) {
   const serialize = require("../../../../../server/notification-serialize");
   const id = serialize.fromPublicNotificationId(notificationId);
   if (!Number.isFinite(id)) return null;
@@ -63,27 +58,29 @@ async function markNotificationRead(pool, userId, notificationId, {
         GRAPH_EVENT_TYPES,
         buildNotificationOpenedContext
       } = require("../../../../../server/sprite-graph");
-      await recordGraphEvent(client, {
-        eventType: GRAPH_EVENT_TYPES.NOTIFICATION_OPENED,
-        actorUserId: userId,
-        notificationId: row.id,
-        source: "api",
-        origin: "notifications.open",
-        context: {
-          ...buildNotificationOpenedContext(row, {
-            channel,
-            openedAt: row.clicked_at || new Date().toISOString()
-          }),
-          status: row.status
+      await recordGraphEvent(
+        client,
+        {
+          eventType: GRAPH_EVENT_TYPES.NOTIFICATION_OPENED,
+          actorUserId: userId,
+          notificationId: row.id,
+          source: "api",
+          origin: "notifications.open",
+          context: {
+            ...buildNotificationOpenedContext(row, {
+              channel,
+              openedAt: row.clicked_at || new Date().toISOString()
+            }),
+            status: row.status
+          },
+          deduplicationKey: `${GRAPH_EVENT_TYPES.NOTIFICATION_OPENED}:${row.id}`
         },
-        deduplicationKey: `${GRAPH_EVENT_TYPES.NOTIFICATION_OPENED}:${row.id}`
-      }, { throwOnError: true });
+        { throwOnError: true }
+      );
     }
 
     await client.query("COMMIT");
-    return row
-      ? { id: row.id, read_at: row.read_at, clicked_at: row.clicked_at, status: row.status }
-      : null;
+    return row ? { id: row.id, read_at: row.read_at, clicked_at: row.clicked_at, status: row.status } : null;
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
     console.error("[markNotificationRead]", err.message || err);
@@ -160,16 +157,18 @@ async function flushDeferredPushes(pool) {
   let enqueued = 0;
   for (const row of res.rows) {
     const data = row.data || {};
-    const id = await deliveryQueue.enqueueDelivery(pool, {
-      notificationId: row.id,
-      recipientId: row.recipient_id,
-      channels: ["push"],
-      notBefore: data.pushDeliverAt,
-      deadline: data.pushDeadline || data.endingAt || data.endDate || null,
-      title: row.title,
-      body: row.body,
-      url: data.actionUrl || "/"
-    }).catch(() => null);
+    const id = await deliveryQueue
+      .enqueueDelivery(pool, {
+        notificationId: row.id,
+        recipientId: row.recipient_id,
+        channels: ["push"],
+        notBefore: data.pushDeliverAt,
+        deadline: data.pushDeadline || data.endingAt || data.endDate || null,
+        title: row.title,
+        body: row.body,
+        url: data.actionUrl || "/"
+      })
+      .catch(() => null);
     if (id) enqueued++;
   }
 
@@ -189,11 +188,19 @@ async function deleteNotification(pool, userId, notificationId) {
   const serialize = require("../../../../../server/notification-serialize");
   const id = serialize.fromPublicNotificationId(notificationId);
   if (!Number.isFinite(id)) return false;
-  const result = await pool.query(
-    "DELETE FROM notifications WHERE id = $1 AND recipient_id = $2 RETURNING id",
-    [id, userId]
-  );
+  const result = await pool.query("DELETE FROM notifications WHERE id = $1 AND recipient_id = $2 RETURNING id", [
+    id,
+    userId
+  ]);
   return result.rows.length > 0;
 }
 
-module.exports = { markNotificationRead, markAllNotificationsRead, archiveNotification, cancelNotification, deleteNotification, flushDeferredPushes, startQuietHoursFlushSweep };
+module.exports = {
+  markNotificationRead,
+  markAllNotificationsRead,
+  archiveNotification,
+  cancelNotification,
+  deleteNotification,
+  flushDeferredPushes,
+  startQuietHoursFlushSweep
+};

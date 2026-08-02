@@ -27,7 +27,7 @@ function defaultConsent(now = new Date()) {
 function normalizeCookieConsent(value, { now = new Date() } = {}) {
   if (value == null) return defaultConsent(now);
   if (!isPlainRecord(value)) return null;
-  if (Object.keys(value).some(key => !CONSENT_KEYS.has(key))) return null;
+  if (Object.keys(value).some((key) => !CONSENT_KEYS.has(key))) return null;
   if (value.necessary !== undefined && value.necessary !== true) return null;
   if (value.analytics !== undefined && typeof value.analytics !== "boolean") return null;
 

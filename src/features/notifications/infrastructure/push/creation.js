@@ -32,19 +32,31 @@ async function setNotificationStatus(pool, notificationId, status, { recipientId
 
 // ── Inbox notifications ──
 // Persists a notification for the recipient and dispatches a push when allowed.
-async function createNotification(pool, {
-  recipientId, actorId, type,
-  category, entityType, entityId,
-  context = {}, data, title, body, message, url,
-  status = "created",
-  // null/undefined → resolve from recipient.preferred_language (client Accept-Language).
-  // Pass an explicit lang only when a caller must force wording.
-  lang = null,
-  allowPush = true,
-  // When true, persist the row (typically status='queued') but do not push/email
-  // yet — callers revalidate then deliver or cancel (Étape 38).
-  deferDelivery = false
-}) {
+async function createNotification(
+  pool,
+  {
+    recipientId,
+    actorId,
+    type,
+    category,
+    entityType,
+    entityId,
+    context = {},
+    data,
+    title,
+    body,
+    message,
+    url,
+    status = "created",
+    // null/undefined → resolve from recipient.preferred_language (client Accept-Language).
+    // Pass an explicit lang only when a caller must force wording.
+    lang = null,
+    allowPush = true,
+    // When true, persist the row (typically status='queued') but do not push/email
+    // yet — callers revalidate then deliver or cancel (Étape 38).
+    deferDelivery = false
+  }
+) {
   if (!recipientId) return null;
   if (actorId && String(actorId) === String(recipientId)) return null;
 
@@ -90,7 +102,13 @@ async function createNotification(pool, {
     baseContext.timezone = baseContext.timeZone;
 
     // Enrich actor display name for localized templates when missing.
-    if (actorId && !baseContext.actorName && !baseContext.friendName && !baseContext.ownerName && !baseContext.joinerName) {
+    if (
+      actorId &&
+      !baseContext.actorName &&
+      !baseContext.friendName &&
+      !baseContext.ownerName &&
+      !baseContext.joinerName
+    ) {
       const actorRes = await pool.query(
         "SELECT username, display_name FROM users WHERE id = $1 AND deleted_at IS NULL",
         [actorId]
@@ -112,7 +130,9 @@ async function createNotification(pool, {
           baseContext.badgeLabels = codes.map((code) => badges.labelForBadgeCode(code, resolvedLang) || code);
           baseContext.count = baseContext.badgeLabels.length;
         }
-      } catch (_err) { /* keep provided labels */ }
+      } catch (_err) {
+        /* keep provided labels */
+      }
     }
 
     // Étape 40/62 — render with timezone-aware context and localized catalog names.
@@ -120,24 +140,15 @@ async function createNotification(pool, {
       ? await notificationCatalog.renderNotificationLocalized(pool, type, baseContext, resolvedLang)
       : null;
     // Prefer catalog copy for known types so callers cannot freeze French strings.
-    const finalTitle = (rendered && rendered.title)
-      || title
-      || "SPRITE-INDEX";
-    const finalBody = (rendered && rendered.body)
-      || body
-      || message
-      || "";
+    const finalTitle = (rendered && rendered.title) || title || "SPRITE-INDEX";
+    const finalBody = (rendered && rendered.body) || body || message || "";
     const finalUrl = url || (rendered ? rendered.url : "/");
 
     // `data` holds everything needed to render/navigate later: caller context,
     // then the catalog payload (friendId, actionUrl, actions…) so structured
     // fields stay canonical, plus related ids.
-    const catalogData = (rendered && rendered.data && typeof rendered.data === "object")
-      ? rendered.data
-      : {};
-    const baseData = (data && typeof data === "object")
-      ? data
-      : baseContext;
+    const catalogData = rendered && rendered.data && typeof rendered.data === "object" ? rendered.data : {};
+    const baseData = data && typeof data === "object" ? data : baseContext;
     // Étape 53 — send-priority score (used when the daily push cap is hit).
     const sendPriority = notificationCatalog.resolveSendPriority(type, baseContext);
     const sendPriorityLevel = notificationCatalog.classifySendPriority(sendPriority);
@@ -158,10 +169,12 @@ async function createNotification(pool, {
       ...(recipientId ? { recipientId: String(recipientId) } : {}),
       ...(entityId ? { entityId: String(entityId) } : {}),
       ...(rendered && rendered.actions ? { actions: rendered.actions } : {}),
-      ...(translation ? {
-        translationKey: translation.translationKey,
-        translationParams: translation.translationParams
-      } : {})
+      ...(translation
+        ? {
+            translationKey: translation.translationKey,
+            translationParams: translation.translationParams
+          }
+        : {})
     };
 
     // Étape 3: persist the notification FIRST (in-app is served by this row),
@@ -172,8 +185,16 @@ async function createNotification(pool, {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10)
        RETURNING id`,
       [
-        recipientId, actorId || null, type, finalCategory, finalTitle, finalBody,
-        entityType || null, entityId || null, JSON.stringify(storedData), status
+        recipientId,
+        actorId || null,
+        type,
+        finalCategory,
+        finalTitle,
+        finalBody,
+        entityType || null,
+        entityId || null,
+        JSON.stringify(storedData),
+        status
       ]
     );
     const notificationId = inserted.rows[0]?.id;
@@ -181,28 +202,27 @@ async function createNotification(pool, {
     // Étape 43 — in_app delivery is recorded as soon as the inbox row exists.
     if (notificationId) {
       const deliveries = require("../../../../../server/notification-deliveries");
-      await deliveries.recordInAppDelivery(pool, notificationId)
-        .catch(err => console.error("[createNotification] in_app delivery row failed:", err.message));
+      await deliveries
+        .recordInAppDelivery(pool, notificationId)
+        .catch((err) => console.error("[createNotification] in_app delivery row failed:", err.message));
     }
 
     // Resolve delivery channels (Étape 7): combines the type's target channels,
     // the étape 6 subject gates (category+type) and per-channel toggles, plus the
     // push runtime constraints (consent, quiet hours, frequency, token state).
     // Étape 41 — quiet hours defer non-urgent push instead of dropping it.
-    const resolved = await notificationChannels.resolveDeliveryChannels(
-      pool, recipientId, type, {
-        category: finalCategory,
-        user,
-        context: baseContext
-      }
-    );
+    const resolved = await notificationChannels.resolveDeliveryChannels(pool, recipientId, type, {
+      category: finalCategory,
+      user,
+      context: baseContext
+    });
     let targetChannels = resolved.channels;
     const dropped = { ...resolved.dropped };
     let pushDeferral = resolved.deferral || null;
     // Étape 21 — callers may suppress push (e.g. per-friend daily push cap).
     if (allowPush === false) {
       if (targetChannels.includes("push")) {
-        targetChannels = targetChannels.filter(c => c !== "push");
+        targetChannels = targetChannels.filter((c) => c !== "push");
         dropped.push = "friend_daily_limit";
       }
       pushDeferral = null;
@@ -216,17 +236,18 @@ async function createNotification(pool, {
       ...(Object.keys(dropped).length ? { channelsDropped: dropped } : {}),
       ...(deferDelivery ? { deferred: true } : {}),
       // Étape 41 — schedule push for after the quiet window (in-app already stored).
-      ...(pushDeferral ? {
-        pushDeferred: true,
-        pushDeliverAt: pushDeferral.deliverAt,
-        ...(pushDeferral.deadline ? { pushDeadline: pushDeferral.deadline } : {})
-      } : {})
+      ...(pushDeferral
+        ? {
+            pushDeferred: true,
+            pushDeliverAt: pushDeferral.deliverAt,
+            ...(pushDeferral.deadline ? { pushDeadline: pushDeferral.deadline } : {})
+          }
+        : {})
     };
     if (notificationId) {
-      await pool.query(
-        `UPDATE notifications SET data = $1::jsonb WHERE id = $2`,
-        [JSON.stringify(finalData), notificationId]
-      ).catch(err => console.error("[createNotification] data update failed:", err.message));
+      await pool
+        .query(`UPDATE notifications SET data = $1::jsonb WHERE id = $2`, [JSON.stringify(finalData), notificationId])
+        .catch((err) => console.error("[createNotification] data update failed:", err.message));
 
       // Étape 42 — never send push/email in the request path. Enqueue jobs; a
       // background worker performs deliverExternalChannels and updates status.
@@ -235,45 +256,53 @@ async function createNotification(pool, {
       if (!deferDelivery) {
         const deliveryQueue = require("../../../../../server/notification-delivery-queue");
         const deliveries = require("../../../../../server/notification-deliveries");
-        const immediate = targetChannels.filter(c => c === "email" || c === "push");
+        const immediate = targetChannels.filter((c) => c === "email" || c === "push");
         if (immediate.length) {
           for (const ch of immediate) {
-            await deliveries.ensureDelivery(pool, {
-              notificationId,
-              channel: ch,
-              status: "queued",
-              provider: ch === "push" ? "web_push" : "email",
-              scheduledAt: new Date()
-            }).catch(() => {});
+            await deliveries
+              .ensureDelivery(pool, {
+                notificationId,
+                channel: ch,
+                status: "queued",
+                provider: ch === "push" ? "web_push" : "email",
+                scheduledAt: new Date()
+              })
+              .catch(() => {});
           }
-          await deliveryQueue.enqueueDelivery(pool, {
-            notificationId,
-            recipientId,
-            channels: immediate,
-            notBefore: new Date(),
-            title: finalTitle,
-            body: finalBody,
-            url: finalUrl
-          }).catch(err => console.error("[createNotification] enqueue failed:", err.message));
+          await deliveryQueue
+            .enqueueDelivery(pool, {
+              notificationId,
+              recipientId,
+              channels: immediate,
+              notBefore: new Date(),
+              title: finalTitle,
+              body: finalBody,
+              url: finalUrl
+            })
+            .catch((err) => console.error("[createNotification] enqueue failed:", err.message));
         }
         if (pushDeferral) {
-          await deliveries.ensureDelivery(pool, {
-            notificationId,
-            channel: "push",
-            status: "queued",
-            provider: "web_push",
-            scheduledAt: pushDeferral.deliverAt
-          }).catch(() => {});
-          await deliveryQueue.enqueueDelivery(pool, {
-            notificationId,
-            recipientId,
-            channels: ["push"],
-            notBefore: pushDeferral.deliverAt,
-            deadline: pushDeferral.deadline,
-            title: finalTitle,
-            body: finalBody,
-            url: finalUrl
-          }).catch(err => console.error("[createNotification] quiet-hours enqueue failed:", err.message));
+          await deliveries
+            .ensureDelivery(pool, {
+              notificationId,
+              channel: "push",
+              status: "queued",
+              provider: "web_push",
+              scheduledAt: pushDeferral.deliverAt
+            })
+            .catch(() => {});
+          await deliveryQueue
+            .enqueueDelivery(pool, {
+              notificationId,
+              recipientId,
+              channels: ["push"],
+              notBefore: pushDeferral.deliverAt,
+              deadline: pushDeferral.deadline,
+              title: finalTitle,
+              body: finalBody,
+              url: finalUrl
+            })
+            .catch((err) => console.error("[createNotification] quiet-hours enqueue failed:", err.message));
         }
       }
     }

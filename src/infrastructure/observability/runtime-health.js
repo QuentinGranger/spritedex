@@ -8,11 +8,21 @@ let referenceDataComplete = false;
 let startupError = null;
 let processRole = "all";
 
-function markMigrationsComplete() { migrationsComplete = true; }
-function markReferenceDataComplete() { referenceDataComplete = true; }
-function markWorkerStarted(name) { if (name) workers.add(name); }
-function markStartupError(error) { startupError = error?.message || String(error || "startup failed"); }
-function setProcessRole(role) { processRole = role; }
+function markMigrationsComplete() {
+  migrationsComplete = true;
+}
+function markReferenceDataComplete() {
+  referenceDataComplete = true;
+}
+function markWorkerStarted(name) {
+  if (name) workers.add(name);
+}
+function markStartupError(error) {
+  startupError = error?.message || String(error || "startup failed");
+}
+function setProcessRole(role) {
+  processRole = role;
+}
 
 function snapshot() {
   return {
@@ -30,4 +40,12 @@ function isReady() {
   return migrationsComplete && referenceDataComplete && !startupError;
 }
 
-module.exports = { isReady, markMigrationsComplete, markReferenceDataComplete, markStartupError, markWorkerStarted, setProcessRole, snapshot };
+module.exports = {
+  isReady,
+  markMigrationsComplete,
+  markReferenceDataComplete,
+  markStartupError,
+  markWorkerStarted,
+  setProcessRole,
+  snapshot
+};

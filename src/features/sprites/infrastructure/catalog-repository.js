@@ -24,7 +24,7 @@ function ownRecordValue(record, key) {
 
 async function getCatalogIdMaps() {
   const now = Date.now();
-  if (catalogIdMapCache && (now - catalogIdMapCacheTs) < CATALOG_MAP_TTL) {
+  if (catalogIdMapCache && now - catalogIdMapCacheTs < CATALOG_MAP_TTL) {
     return catalogIdMapCache;
   }
   const [variants, sprites] = await Promise.all([
@@ -75,9 +75,7 @@ function normalizeVariantIdWithMaps(raw, maps) {
     const baseRaw = raw.slice(0, sepIndex);
     const typeRaw = raw.slice(sepIndex + 2);
     if (!isSafeRecordKey(baseRaw) || !typeRaw) return { variantId: null, spriteId: null };
-    const baseId = ownRecordValue(maps.spriteById, baseRaw)
-      || ownRecordValue(maps.spriteBySlug, baseRaw)
-      || baseRaw;
+    const baseId = ownRecordValue(maps.spriteById, baseRaw) || ownRecordValue(maps.spriteBySlug, baseRaw) || baseRaw;
     if (!isSafeRecordKey(baseId)) return { variantId: null, spriteId: null };
     const key = `${baseId}::${typeRaw}`;
     const knownVariantId = ownRecordValue(maps.typeToVariantId, key);
@@ -108,7 +106,10 @@ async function normalizeCollection(collection) {
   const normalized = Object.create(null);
   for (const [rawKey, entry] of Object.entries(collection)) {
     if (!isSafeRecordKey(rawKey)) continue;
-    if (rawKey.startsWith("fav_")) { normalized[rawKey] = entry; continue; }
+    if (rawKey.startsWith("fav_")) {
+      normalized[rawKey] = entry;
+      continue;
+    }
     const { variantId, spriteId } = normalizeVariantIdWithMaps(rawKey, maps);
     if (!isSafeRecordKey(variantId)) continue;
     normalized[variantId] = { ...entry, spriteId };
@@ -122,7 +123,17 @@ async function normalizeSpriteEntryId(spriteId) {
   return variantId;
 }
 
-const ACQUISITION_TYPES = new Set(["quest", "event", "exploration", "interaction", "reward", "challenge", "purchase", "automatic", "unknown"]);
+const ACQUISITION_TYPES = new Set([
+  "quest",
+  "event",
+  "exploration",
+  "interaction",
+  "reward",
+  "challenge",
+  "purchase",
+  "automatic",
+  "unknown"
+]);
 
 function normalizeAcquisitionType(type) {
   if (!type) return "unknown";
@@ -144,7 +155,7 @@ function buildAcquisitionMethod(acquisition) {
     description: a.descriptionFr || a.descriptionEn || a.description || null,
     location: a.location || null,
     requirements: Array.isArray(a.requirements) ? a.requirements : [],
-    confidence: a.confidence || "unknown",
+    confidence: a.confidence || "unknown"
   };
 }
 
@@ -166,7 +177,14 @@ function normalizeAvailabilityStatus(status, startDate, endDate) {
     if (start && start > now) return "upcoming";
     return "unknown";
   }
-  if (s === "unavailable" || s === "inactive" || s === "discontinued" || s === "expired" || s === "removed" || s === "over") {
+  if (
+    s === "unavailable" ||
+    s === "inactive" ||
+    s === "discontinued" ||
+    s === "expired" ||
+    s === "removed" ||
+    s === "over"
+  ) {
     if (end && end < now) return "ended";
     return "not_observed";
   }
@@ -184,7 +202,7 @@ function buildAvailability(availability) {
     startDate: a.startDate || null,
     endDate: a.endDate || null,
     recurrence: a.recurrence || "unknown",
-    confidence: a.confidence || "unknown",
+    confidence: a.confidence || "unknown"
   };
 }
 
@@ -195,7 +213,8 @@ function normalizeRecurrenceStatus(status) {
   if (RECURRENCE_STATUSES.has(s)) return s;
   if (s.includes("recurring") || s.includes("confirmed_return") || s === "yes") return "confirmed_recurring";
   if (s.includes("possible") || s.includes("maybe") || s.includes("return")) return "possible_return";
-  if (s.includes("never") || s.includes("not_confirmed") || s.includes("no_return") || s.includes("exclusive")) return "not_confirmed";
+  if (s.includes("never") || s.includes("not_confirmed") || s.includes("no_return") || s.includes("exclusive"))
+    return "not_confirmed";
   return "unknown";
 }
 
@@ -204,14 +223,14 @@ function buildRecurrence(recurrence) {
     return {
       status: normalizeRecurrenceStatus(recurrence.status),
       officiallyConfirmed: !!recurrence.officiallyConfirmed,
-      evidence: recurrence.evidence || null,
+      evidence: recurrence.evidence || null
     };
   }
   const status = normalizeRecurrenceStatus(recurrence);
   return {
     status,
     officiallyConfirmed: status === "confirmed_recurring",
-    evidence: null,
+    evidence: null
   };
 }
 
@@ -220,7 +239,7 @@ function buildDates(dates, firstObservedAt, lastVerifiedAt, officiallyAnnouncedA
   return {
     firstObservedAt: d.firstObservedAt || firstObservedAt || null,
     officiallyAnnouncedAt: d.officiallyAnnouncedAt || officiallyAnnouncedAt || null,
-    lastVerifiedAt: d.lastVerifiedAt || lastVerifiedAt || null,
+    lastVerifiedAt: d.lastVerifiedAt || lastVerifiedAt || null
   };
 }
 
@@ -259,14 +278,16 @@ function computeMissingFields(sprite) {
   if (!d.lastVerifiedAt) missing.push("dates.lastVerifiedAt");
   if (!d.officiallyAnnouncedAt) missing.push("dates.officiallyAnnouncedAt");
   if (!Array.isArray(sprite.sources) || sprite.sources.length === 0) missing.push("sources");
-  if (!Array.isArray(sprite.availabilityPeriods) || sprite.availabilityPeriods.length === 0) missing.push("availabilityPeriods");
+  if (!Array.isArray(sprite.availabilityPeriods) || sprite.availabilityPeriods.length === 0)
+    missing.push("availabilityPeriods");
 
   return missing;
 }
 
 function inferSourceType(sourceId) {
   const s = (sourceId || "").toLowerCase();
-  if (s.includes("official") || s.includes("epic") || s.includes("fortnite.com") || s.includes("fortnite-api")) return "official";
+  if (s.includes("official") || s.includes("epic") || s.includes("fortnite.com") || s.includes("fortnite-api"))
+    return "official";
   if (s.includes("in_game") || s.includes("observed")) return "in_game";
   if (s.includes("creator") || s.includes("youtuber") || s.includes("streamer")) return "creator";
   if (s.includes("community") || s.includes("discord") || s.includes("reddit")) return "community";
@@ -348,9 +369,12 @@ function dedupeSpritesBySlug(sprites) {
 
   const result = [];
   for (const group of groups.values()) {
-    if (group.length === 1) { result.push(group[0]); continue; }
+    if (group.length === 1) {
+      result.push(group[0]);
+      continue;
+    }
     // Canonical: the "sprite_"-prefixed row if present, else the first.
-    const canonical = group.find(s => s.id.startsWith("sprite_")) || group[0];
+    const canonical = group.find((s) => s.id.startsWith("sprite_")) || group[0];
     let merged = canonical;
     for (const other of group) {
       if (other === canonical) continue;
@@ -361,4 +385,32 @@ function dedupeSpritesBySlug(sprites) {
   return result;
 }
 
-module.exports = { ACQUISITION_TYPES, CATALOG_MAP_TTL, HONEST_AVAILABILITY_STATUSES, RECURRENCE_STATUSES, UNSAFE_RECORD_KEYS, VALID_DATA_STATUSES, buildAcquisitionMethod, buildAvailability, buildDates, buildRecurrence, catalogIdMapCache, catalogIdMapCacheTs, computeMissingFields, dedupeSpritesBySlug, ensureSource, getCatalogIdMaps, inferSourceReliability, inferSourceType, isSafeRecordKey, normalizeAcquisitionType, normalizeAvailabilityStatus, normalizeCollection, normalizeDataStatus, normalizeRecurrenceStatus, normalizeSpriteEntryId, normalizeVariantId, normalizeVariantIdWithMaps };
+module.exports = {
+  ACQUISITION_TYPES,
+  CATALOG_MAP_TTL,
+  HONEST_AVAILABILITY_STATUSES,
+  RECURRENCE_STATUSES,
+  UNSAFE_RECORD_KEYS,
+  VALID_DATA_STATUSES,
+  buildAcquisitionMethod,
+  buildAvailability,
+  buildDates,
+  buildRecurrence,
+  catalogIdMapCache,
+  catalogIdMapCacheTs,
+  computeMissingFields,
+  dedupeSpritesBySlug,
+  ensureSource,
+  getCatalogIdMaps,
+  inferSourceReliability,
+  inferSourceType,
+  isSafeRecordKey,
+  normalizeAcquisitionType,
+  normalizeAvailabilityStatus,
+  normalizeCollection,
+  normalizeDataStatus,
+  normalizeRecurrenceStatus,
+  normalizeSpriteEntryId,
+  normalizeVariantId,
+  normalizeVariantIdWithMaps
+};

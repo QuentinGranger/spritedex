@@ -17,7 +17,7 @@ app.get("/api/collection-goals", async (req, res) => {
       [reqUser]
     );
     res.json({
-      goals: result.rows.map(g => ({
+      goals: result.rows.map((g) => ({
         id: g.id,
         userId: g.user_id,
         squadId: g.squad_id,
@@ -26,7 +26,7 @@ app.get("/api/collection-goals", async (req, res) => {
         title: g.title,
         description: g.description,
         variantId: g.variant_id,
-        variantIds: Array.isArray(g.target_variant_ids) ? g.target_variant_ids : (g.variant_id ? [g.variant_id] : []),
+        variantIds: Array.isArray(g.target_variant_ids) ? g.target_variant_ids : g.variant_id ? [g.variant_id] : [],
         status: g.status,
         createdAt: g.created_at,
         updatedAt: g.updated_at

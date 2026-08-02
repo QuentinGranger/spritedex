@@ -99,4 +99,12 @@ pool.on("connect", (client) => {
   attachClientErrorGuard(client);
 });
 
-module.exports = { databasePoolConfig, getDatabaseHost, isLocalDatabaseUrl, isRenderInternalDatabaseUrl, pool, sanitizeConnectionString, shouldUseSSL };
+module.exports = {
+  databasePoolConfig,
+  getDatabaseHost,
+  isLocalDatabaseUrl,
+  isRenderInternalDatabaseUrl,
+  pool,
+  sanitizeConnectionString,
+  shouldUseSSL
+};

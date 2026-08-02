@@ -24,7 +24,7 @@ module.exports = [
       "no-dupe-keys": "error",
       "no-fallthrough": "error",
       "no-redeclare": "error",
-      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }]
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }]
     }
   }
 ];

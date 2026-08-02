@@ -23,7 +23,9 @@ function safeWebhookUrl() {
 }
 
 function truncate(value, max = 500) {
-  const text = String(value || "").replace(/[\r\n\t]+/g, " ").trim();
+  const text = String(value || "")
+    .replace(/[\r\n\t]+/g, " ")
+    .trim();
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
@@ -35,7 +37,8 @@ function sanitizeMessage(value) {
 }
 
 function fingerprint(component, error) {
-  return crypto.createHash("sha256")
+  return crypto
+    .createHash("sha256")
     .update(`${component}\n${error?.name || "Error"}\n${error?.message || String(error)}`)
     .digest("hex");
 }
@@ -96,12 +99,14 @@ async function claimAlert(fingerprintValue) {
 }
 
 async function releaseAlertClaim(fingerprintValue) {
-  await pool.query(
-    `UPDATE operational_incidents
+  await pool
+    .query(
+      `UPDATE operational_incidents
      SET last_alerted_at = NULL
      WHERE fingerprint = $1`,
-    [fingerprintValue]
-  ).catch((error) => console.error("[monitoring] unable to release incident alert claim:", error.message));
+      [fingerprintValue]
+    )
+    .catch((error) => console.error("[monitoring] unable to release incident alert claim:", error.message));
 }
 
 async function purgeOperationalIncidents({ retentionDays = 90 } = {}) {
@@ -141,7 +146,9 @@ async function reportError({ component = "application", error, context = {} } = 
   if (!webhook) return { sent: false, event, incident };
   const alertClaim = incident
     ? await claimAlert(fingerprintValue)
-    : (shouldSendInMemory(fingerprintValue) ? new Date().toISOString() : null);
+    : shouldSendInMemory(fingerprintValue)
+      ? new Date().toISOString()
+      : null;
   if (!alertClaim) return { sent: false, event, incident };
 
   const text = `[${event.environment}] ${event.component}: ${event.message}`;
@@ -178,4 +185,11 @@ function installProcessErrorHandlers({ server } = {}) {
   });
 }
 
-module.exports = { installProcessErrorHandlers, purgeOperationalIncidents, reportError, safeWebhookUrl, sanitizeMessage, truncate };
+module.exports = {
+  installProcessErrorHandlers,
+  purgeOperationalIncidents,
+  reportError,
+  safeWebhookUrl,
+  sanitizeMessage,
+  truncate
+};

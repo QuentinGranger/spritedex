@@ -19,7 +19,8 @@ function checksum(source) {
 
 function readMigrationFiles(directory = MIGRATIONS_DIR) {
   if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory)
+  return fs
+    .readdirSync(directory)
     .filter((file) => MIGRATION_FILE_RE.test(file))
     .sort((a, b) => a.localeCompare(b, "en"));
 }
@@ -89,7 +90,9 @@ function validateHistory(migrations, applied) {
   for (const row of applied) {
     const migration = byId.get(row.id);
     if (!migration) {
-      throw new Error(`Applied migration '${row.id}' is missing from this release. Restore its immutable file before deploying.`);
+      throw new Error(
+        `Applied migration '${row.id}' is missing from this release. Restore its immutable file before deploying.`
+      );
     }
     if (migration.checksum !== row.checksum) {
       throw new Error(`Checksum mismatch for applied migration '${row.id}'. Applied migrations must never be edited.`);
@@ -179,12 +182,15 @@ async function rollback({ steps = 1 } = {}) {
     validateHistory(migrations, applied);
     const byId = new Map(migrations.map((migration) => [migration.id, migration]));
     const targets = applied.slice(-count).reverse();
-    if (targets.length !== count) throw new Error(`Cannot rollback ${count} migration(s); only ${targets.length} applied.`);
+    if (targets.length !== count)
+      throw new Error(`Cannot rollback ${count} migration(s); only ${targets.length} applied.`);
     const rolledBack = [];
     for (const row of targets) {
       const migration = byId.get(row.id);
       if (migration.irreversible === true || typeof migration.down !== "function") {
-        throw new Error(`Migration ${migration.id} is irreversible. Restore from a database backup instead of forcing a rollback.`);
+        throw new Error(
+          `Migration ${migration.id} is irreversible. Restore from a database backup instead of forcing a rollback.`
+        );
       }
       if (migration.transaction) await client.query("BEGIN");
       try {

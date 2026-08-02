@@ -1,6 +1,11 @@
 const {
-  pool, canViewCollection, broadcastGoalUpdate, analytics, pushService,
-  logSquadGoalCompleted, invalidateSquadAnalysisCache
+  pool,
+  canViewCollection,
+  broadcastGoalUpdate,
+  analytics,
+  pushService,
+  logSquadGoalCompleted,
+  invalidateSquadAnalysisCache
 } = require("./shared");
 
 async function checkAffectedGoals(userId, variantId) {
@@ -22,9 +27,12 @@ async function checkAffectedGoals(userId, variantId) {
     );
 
     for (const goal of goals.rows) {
-      const targetIds = Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length
-        ? goal.target_variant_ids
-        : (goal.variant_id ? [goal.variant_id] : []);
+      const targetIds =
+        Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length
+          ? goal.target_variant_ids
+          : goal.variant_id
+            ? [goal.variant_id]
+            : [];
       if (!targetIds.length) continue;
 
       let completed = false;
@@ -33,7 +41,7 @@ async function checkAffectedGoals(userId, variantId) {
           "SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'",
           [goal.squad_id]
         );
-        const memberIds = membersRes.rows.map(r => r.user_id);
+        const memberIds = membersRes.rows.map((r) => r.user_id);
         const ownedRes = await pool.query(
           "SELECT DISTINCT variant_id FROM sprite_entries WHERE user_id = ANY($1) AND variant_id = ANY($2) AND status = 'owned'",
           [memberIds, targetIds]
@@ -48,15 +56,19 @@ async function checkAffectedGoals(userId, variantId) {
       }
 
       if (completed) {
-        await pool.query(
-          "UPDATE collection_goals SET status = 'completed', updated_at = NOW() WHERE id = $1",
-          [goal.id]
-        );
+        await pool.query("UPDATE collection_goals SET status = 'completed', updated_at = NOW() WHERE id = $1", [
+          goal.id
+        ]);
         if (goal.squad_id) invalidateSquadAnalysisCache(goal.squad_id);
         goal.status = "completed";
         goal.updated_at = new Date().toISOString();
-        broadcastGoalUpdate(goal, "completed").catch(err => console.error("[goals] broadcast failed", err));
-        analytics.logProductAnalyticsEvent(pool, { userId, squadId: goal.squad_id || null, event: "shared_goal_completed", details: { goalId: goal.id, variantIds: targetIds } });
+        broadcastGoalUpdate(goal, "completed").catch((err) => console.error("[goals] broadcast failed", err));
+        analytics.logProductAnalyticsEvent(pool, {
+          userId,
+          squadId: goal.squad_id || null,
+          event: "shared_goal_completed",
+          details: { goalId: goal.id, variantIds: targetIds }
+        });
         try {
           const {
             recordGraphEventSafe,
@@ -91,9 +103,13 @@ async function checkAffectedGoals(userId, variantId) {
             },
             deduplicationKey: `${GRAPH_EVENT_TYPES.GOAL_COMPLETED}:${goal.id}`
           });
-        } catch (_) { /* optional */ }
+        } catch (_) {
+          /* optional */
+        }
         if (goal.squad_id) {
-          logSquadGoalCompleted(goal.squad_id, userId, goal.title || null, targetIds.join(", ")).catch(err => console.error("[goals] squad goal completed log failed", err));
+          logSquadGoalCompleted(goal.squad_id, userId, goal.title || null, targetIds.join(", ")).catch((err) =>
+            console.error("[goals] squad goal completed log failed", err)
+          );
           try {
             const { writeActivity } = require("../../../../../server/passport-activity");
             await writeActivity({

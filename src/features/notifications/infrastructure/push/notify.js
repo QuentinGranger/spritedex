@@ -73,14 +73,13 @@ async function notifyNewsSubscribersLocalized(pool, { render, icon, url } = {}) 
   }
   const targets = await getNewsSubscriberTokens(pool);
   // Attach preferred_language
-  const userIds = [...new Set(targets.map(t => t.user_id).filter(Boolean))];
+  const userIds = [...new Set(targets.map((t) => t.user_id).filter(Boolean))];
   const langByUser = new Map();
   if (userIds.length) {
     const { resolveNotificationLanguage } = require("../../../../../server/i18n");
-    const langRes = await pool.query(
-      `SELECT id, preferred_language FROM users WHERE id = ANY($1::integer[])`,
-      [userIds]
-    );
+    const langRes = await pool.query(`SELECT id, preferred_language FROM users WHERE id = ANY($1::integer[])`, [
+      userIds
+    ]);
     for (const row of langRes.rows) {
       langByUser.set(Number(row.id), resolveNotificationLanguage(row.preferred_language, null));
     }
@@ -107,4 +106,10 @@ async function notifyNewsSubscribersLocalized(pool, { render, icon, url } = {}) 
   return results;
 }
 
-module.exports = { notifyUser, sendNotificationToUser, notifySquadMembers, notifyNewsSubscribers, notifyNewsSubscribersLocalized };
+module.exports = {
+  notifyUser,
+  sendNotificationToUser,
+  notifySquadMembers,
+  notifyNewsSubscribers,
+  notifyNewsSubscribersLocalized
+};

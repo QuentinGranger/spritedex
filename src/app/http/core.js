@@ -12,6 +12,7 @@ const { renderIndexPage } = require("../../../scripts/index-page");
 const { Resend } = require("resend");
 const { WebSocketServer } = require("ws");
 const { localizeErrorResponse } = require("../../../server/i18n");
+const openApiDocument = require("../../../openapi.json");
 
 const ROOT_DIR = path.join(__dirname, "..", "..", "..");
 
@@ -45,14 +46,15 @@ function escapeHtml(str) {
 }
 
 // ── Resend : email service ──
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 // A verified sender is mandatory.  Falling back to a personal or unverified
 // address causes provider rejections and weakens domain alignment.
 const FROM_EMAIL = String(process.env.FROM_EMAIL || "").trim();
 const REPLY_TO_EMAIL = String(process.env.REPLY_TO_EMAIL || "").trim();
-const RESEND_FROM_DOMAIN = String(process.env.RESEND_FROM_DOMAIN || "").trim().toLowerCase().replace(/\.$/, "");
+const RESEND_FROM_DOMAIN = String(process.env.RESEND_FROM_DOMAIN || "")
+  .trim()
+  .toLowerCase()
+  .replace(/\.$/, "");
 const EMAIL_ADDRESS_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 
 const EMAIL_COPY = Object.freeze({
@@ -92,7 +94,9 @@ const EMAIL_COPY = Object.freeze({
 });
 
 function emailLocale(lang) {
-  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  const locale = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
   return locale === "en" || locale === "nl" ? locale : "fr";
 }
 
@@ -140,7 +144,9 @@ function emailText({ heading, intro, ctaLabel, href, footer }) {
     `${String(ctaLabel || "")}: ${href}`,
     "",
     String(footer || "")
-  ].filter(value => value !== null).join("\n");
+  ]
+    .filter((value) => value !== null)
+    .join("\n");
 }
 
 function emailIdempotencyKey(kind, value) {
@@ -160,7 +166,8 @@ function emailDeliveryUnavailable(toEmail) {
   const fromAddress = extractEmailAddress(FROM_EMAIL);
   if (!resend) reason = "RESEND_API_KEY not configured";
   else if (!fromAddress) reason = "FROM_EMAIL is invalid or not configured";
-  else if (RESEND_FROM_DOMAIN && fromAddress.split("@")[1] !== RESEND_FROM_DOMAIN) reason = "FROM_EMAIL does not match RESEND_FROM_DOMAIN";
+  else if (RESEND_FROM_DOMAIN && fromAddress.split("@")[1] !== RESEND_FROM_DOMAIN)
+    reason = "FROM_EMAIL does not match RESEND_FROM_DOMAIN";
   else if (REPLY_TO_EMAIL && !extractEmailAddress(REPLY_TO_EMAIL)) reason = "REPLY_TO_EMAIL is invalid";
   else if (!extractEmailAddress(toEmail)) reason = "recipient address is invalid";
   if (!reason) return null;
@@ -195,13 +202,16 @@ async function sendVerificationEmail(toEmail, token, lang = "fr") {
     footer: copy.verifyIgnore
   };
   try {
-    const result = await resend.emails.send(transactionalEmail({
-      to: toEmail,
-      subject: copy.verifySubject,
-      html: emailShell(content),
-      text: emailText(content),
-      tag: "account_verification"
-    }), { idempotencyKey: emailIdempotencyKey("verify", token) });
+    const result = await resend.emails.send(
+      transactionalEmail({
+        to: toEmail,
+        subject: copy.verifySubject,
+        html: emailShell(content),
+        text: emailText(content),
+        tag: "account_verification"
+      }),
+      { idempotencyKey: emailIdempotencyKey("verify", token) }
+    );
     const response = resendResponse(result);
     if (!response.ok) {
       console.error("[RESEND] Failed to send verification email:", response.error);
@@ -228,13 +238,16 @@ async function sendPasswordResetEmail(toEmail, token, lang = "fr") {
     footer: copy.resetIgnore
   };
   try {
-    const result = await resend.emails.send(transactionalEmail({
-      to: toEmail,
-      subject: copy.resetSubject,
-      html: emailShell(content),
-      text: emailText(content),
-      tag: "password_reset"
-    }), { idempotencyKey: emailIdempotencyKey("password-reset", token) });
+    const result = await resend.emails.send(
+      transactionalEmail({
+        to: toEmail,
+        subject: copy.resetSubject,
+        html: emailShell(content),
+        text: emailText(content),
+        tag: "password_reset"
+      }),
+      { idempotencyKey: emailIdempotencyKey("password-reset", token) }
+    );
     const response = resendResponse(result);
     if (!response.ok) {
       console.error("[RESEND] Failed to send password reset email:", response.error);
@@ -272,13 +285,16 @@ async function sendNotificationEmail(toEmail, { title, body, url, lang, idempote
     footer: ""
   };
   try {
-    const result = await resend.emails.send(transactionalEmail({
-      to: toEmail,
-      subject: `${title || "SPRITE-INDEX"} — SPRITE-INDEX`,
-      html: emailShell(content),
-      text: emailText(content),
-      tag: "notification"
-    }), idempotencyKey ? { idempotencyKey: `sprite-index:notification:${idempotencyKey}` } : undefined);
+    const result = await resend.emails.send(
+      transactionalEmail({
+        to: toEmail,
+        subject: `${title || "SPRITE-INDEX"} — SPRITE-INDEX`,
+        html: emailShell(content),
+        text: emailText(content),
+        tag: "notification"
+      }),
+      idempotencyKey ? { idempotencyKey: `sprite-index:notification:${idempotencyKey}` } : undefined
+    );
     const response = resendResponse(result);
     if (!response.ok) console.error("[RESEND] Failed to send notification email:", response.error);
     return response;
@@ -295,12 +311,14 @@ async function sendNotificationEmail(toEmail, { title, body, url, lang, idempote
 app.set("trust proxy", process.env.TRUST_PROXY === "1" ? 1 : false);
 
 const corsOrigins = security.resolveCorsOrigins();
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(
+  cors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
 // Localize JSON error responses before any API route is registered. The
 // client supplies Accept-Language on every request; no geolocation is used.
 app.use(localizeErrorResponse);
@@ -316,6 +334,9 @@ app.use(security.rejectUnsafeBodyKeys);
 // Block server-side source / config files, then serve static assets (dotfiles
 // such as .env and .git are denied outright).
 app.use(security.blockSensitiveFiles);
+app.get("/api/openapi.json", (req, res) => {
+  res.type("application/json").send(openApiDocument);
+});
 // A service worker is checked byte-for-byte by browsers. Generate it from the
 // current client shell so a deploy that changes a CSS/JS file always gets a
 // fresh cache namespace, without a human-maintained counter.
@@ -343,4 +364,23 @@ app.use((req, res, next) => {
   return staticAssets(req, res, next);
 });
 
-module.exports = { APP_URL, EMAIL_COPY, FROM_EMAIL, PORT, REPLY_TO_EMAIL, app, corsOrigins, emailCopy, emailLocale, emailText, escapeHtml, localizedAppUrl, resend, sendNotificationEmail, sendPasswordResetEmail, sendVerificationEmail, server, wss };
+module.exports = {
+  APP_URL,
+  EMAIL_COPY,
+  FROM_EMAIL,
+  PORT,
+  REPLY_TO_EMAIL,
+  app,
+  corsOrigins,
+  emailCopy,
+  emailLocale,
+  emailText,
+  escapeHtml,
+  localizedAppUrl,
+  resend,
+  sendNotificationEmail,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+  server,
+  wss
+};

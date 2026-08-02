@@ -1,15 +1,21 @@
 const {
-  pool, areFriends, canViewCollection, pushService, isAcquiredFromStatus,
-  acquisition, emitDomainEvent, DOMAIN_EVENTS, scheduleSquadStatsRefresh
+  pool,
+  areFriends,
+  canViewCollection,
+  pushService,
+  isAcquiredFromStatus,
+  acquisition,
+  emitDomainEvent,
+  DOMAIN_EVENTS,
+  scheduleSquadStatsRefresh
 } = require("./shared");
 
 async function notifyCollectionChanges(ownerId, changes) {
   if (!changes || !changes.length) return;
   try {
-    const ownerRes = await pool.query(
-      `SELECT username FROM users WHERE id = $1::integer AND deleted_at IS NULL`,
-      [ownerId]
-    );
+    const ownerRes = await pool.query(`SELECT username FROM users WHERE id = $1::integer AND deleted_at IS NULL`, [
+      ownerId
+    ]);
     if (!ownerRes.rows.length) return;
     const ownerName = ownerRes.rows[0].username || "Quelqu'un";
 
@@ -73,9 +79,7 @@ async function scheduleSquadStatsForUser(userId) {
      WHERE user_id = $1 AND status = 'active'`,
     [userId]
   );
-  await Promise.all(squads.rows.map(({ squad_id: squadId }) =>
-    scheduleSquadStatsRefresh(squadId)
-  ));
+  await Promise.all(squads.rows.map(({ squad_id: squadId }) => scheduleSquadStatsRefresh(squadId)));
 }
 
 module.exports = { emitVariantAcquiredEvents, notifyCollectionChanges, scheduleSquadStatsForUser };

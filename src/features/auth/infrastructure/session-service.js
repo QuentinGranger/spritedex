@@ -24,10 +24,11 @@ function hashSessionToken(token) {
 async function createSession(userId) {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-  await pool.query(
-    "INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)",
-    [userId, hashSessionToken(token), expiresAt]
-  );
+  await pool.query("INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)", [
+    userId,
+    hashSessionToken(token),
+    expiresAt
+  ]);
   return token;
 }
 
@@ -140,13 +141,12 @@ async function canViewPassportSection(viewerId, ownerId, section) {
 
   if (await isBlocked(viewerId, ownerId)) return false;
 
-  const accounts = await pool.query(
-    `SELECT id, deleted_at, suspended_until FROM users WHERE id = ANY($1::integer[])`,
-    [[Number(viewerId), Number(ownerId)]]
-  );
+  const accounts = await pool.query(`SELECT id, deleted_at, suspended_until FROM users WHERE id = ANY($1::integer[])`, [
+    [Number(viewerId), Number(ownerId)]
+  ]);
   if (
-    accounts.rows.length !== 2
-    || accounts.rows.some((row) => row.deleted_at || (row.suspended_until && new Date(row.suspended_until) > new Date()))
+    accounts.rows.length !== 2 ||
+    accounts.rows.some((row) => row.deleted_at || (row.suspended_until && new Date(row.suspended_until) > new Date()))
   ) {
     return false;
   }
@@ -314,7 +314,7 @@ async function isAccountSuspended(userId) {
 async function requireNotSuspended(req, res, next) {
   try {
     const reqUser = await getRequestingUser(req);
-    if (reqUser && await isAccountSuspended(reqUser)) {
+    if (reqUser && (await isAccountSuspended(reqUser))) {
       return res.status(403).json({ error: "Compte suspendu" });
     }
     return next();
@@ -359,8 +359,10 @@ async function checkPrivacyAccess(req, targetUserId, visibility) {
   if (String(reqUser) === String(targetUserId)) return "full";
   if (visibility === "public") return "full";
   if (!reqUser) return "blocked";
-  if ((visibility === "friends" || visibility === "friends_only") && await areFriends(reqUser, targetUserId)) return "full";
-  if ((visibility === "squad" || visibility === "squad_only") && await shareSquad(reqUser, targetUserId)) return "full";
+  if ((visibility === "friends" || visibility === "friends_only") && (await areFriends(reqUser, targetUserId)))
+    return "full";
+  if ((visibility === "squad" || visibility === "squad_only") && (await shareSquad(reqUser, targetUserId)))
+    return "full";
   return "blocked";
 }
 
@@ -412,4 +414,32 @@ async function burnPasswordWork(password, iterations = PBKDF2_ITERATIONS) {
 // a valid session for that account with zero credentials. It was unused by the
 // current UI (no button called it), so removing it does not affect any feature.
 
-module.exports = { DEFAULT_VISIBILITY, LEGACY_PBKDF2_ITERATIONS, PASSPORT_VISIBILITY_FIELDS, PBKDF2_ITERATIONS, areFriends, burnPasswordWork, canViewCollection, canViewPassportSection, checkPrivacyAccess, createSession, generateToken, getCollectionAccessReason, getRelationship, getRequestingUser, getVisibility, hashCapabilityToken, hashPassword, hashSessionToken, isAccountSuspended, isBlocked, requireNotSuspended, requireSameUser, requireSquadMember, shareActiveSquad, shareSquad, validateSession, verifyPassword };
+module.exports = {
+  DEFAULT_VISIBILITY,
+  LEGACY_PBKDF2_ITERATIONS,
+  PASSPORT_VISIBILITY_FIELDS,
+  PBKDF2_ITERATIONS,
+  areFriends,
+  burnPasswordWork,
+  canViewCollection,
+  canViewPassportSection,
+  checkPrivacyAccess,
+  createSession,
+  generateToken,
+  getCollectionAccessReason,
+  getRelationship,
+  getRequestingUser,
+  getVisibility,
+  hashCapabilityToken,
+  hashPassword,
+  hashSessionToken,
+  isAccountSuspended,
+  isBlocked,
+  requireNotSuspended,
+  requireSameUser,
+  requireSquadMember,
+  shareActiveSquad,
+  shareSquad,
+  validateSession,
+  verifyPassword
+};

@@ -23,13 +23,20 @@ function logRedisError(error) {
   const now = Date.now();
   if (now - lastErrorLogAt >= 60_000) {
     lastErrorLogAt = now;
-    console.warn(`[rate-limit] Redis indisponible, repli ${redisRequired ? "bloquant" : "mémoire locale"}: ${lastError}`);
+    console.warn(
+      `[rate-limit] Redis indisponible, repli ${redisRequired ? "bloquant" : "mémoire locale"}: ${lastError}`
+    );
   }
 }
 
 function buildBucketKey(prefix, identifier) {
-  const safePrefix = String(prefix || "rl").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
-  const digest = crypto.createHash("sha256").update(String(identifier || "unknown")).digest("hex");
+  const safePrefix = String(prefix || "rl")
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .slice(0, 80);
+  const digest = crypto
+    .createHash("sha256")
+    .update(String(identifier || "unknown"))
+    .digest("hex");
   return `${namespace}:${safePrefix}:${digest}`;
 }
 
@@ -41,7 +48,11 @@ function consumeInMemory(key, windowMs) {
     memoryBuckets.set(key, entry);
   }
   entry.count += 1;
-  return { count: entry.count, retryAfterSeconds: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)), store: "memory" };
+  return {
+    count: entry.count,
+    retryAfterSeconds: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+    store: "memory"
+  };
 }
 
 function validRedisUrl(value) {
@@ -74,10 +85,7 @@ async function waitForConnection(redisClient) {
   if (!connectPromise) return false;
   // Do not let a Redis outage consume the HTTP request timeout. The client can
   // finish reconnecting in the background for subsequent requests.
-  await Promise.race([
-    connectPromise,
-    new Promise((resolve) => setTimeout(resolve, 200))
-  ]);
+  await Promise.race([connectPromise, new Promise((resolve) => setTimeout(resolve, 200))]);
   return redisClient.isReady;
 }
 
@@ -90,7 +98,7 @@ async function consumeRateLimit({ prefix, identifier, windowMs }) {
   }
 
   try {
-    if (!await waitForConnection(redisClient)) {
+    if (!(await waitForConnection(redisClient))) {
       if (redisRequired) return { unavailable: true, store: "redis" };
       return consumeInMemory(key, windowMs);
     }
@@ -125,11 +133,14 @@ function getRateLimitStoreHealth() {
   };
 }
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of memoryBuckets) {
-    if (entry.resetAt <= now) memoryBuckets.delete(key);
-  }
-}, 5 * 60 * 1000).unref();
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, entry] of memoryBuckets) {
+      if (entry.resetAt <= now) memoryBuckets.delete(key);
+    }
+  },
+  5 * 60 * 1000
+).unref();
 
 module.exports = { buildBucketKey, consumeInMemory, consumeRateLimit, getRateLimitStoreHealth, validRedisUrl };

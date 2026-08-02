@@ -36,12 +36,20 @@ async function ensurePushTables(pool) {
       ADD COLUMN IF NOT EXISTS push_reactivation_needed BOOLEAN NOT NULL DEFAULT FALSE;
   `);
   // Étape 52 — safety default is 8/day (migrate the previous schema default of 20).
-  await pool.query(`
+  await pool
+    .query(
+      `
     ALTER TABLE users ALTER COLUMN push_max_per_day SET DEFAULT 8
-  `).catch(() => {});
-  await pool.query(`
+  `
+    )
+    .catch(() => {});
+  await pool
+    .query(
+      `
     UPDATE users SET push_max_per_day = 8 WHERE push_max_per_day = 20
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
 }
 
 async function registerToken(pool, userId, token, platform = "web", extras = {}) {
@@ -55,10 +63,7 @@ async function registerToken(pool, userId, token, platform = "web", extras = {})
 async function unregisterToken(pool, userId, token) {
   await pushSubscriptions.unregisterSubscription(pool, userId, { token, endpoint: token });
   // Legacy cleanup.
-  await pool.query(
-    "DELETE FROM push_tokens WHERE user_id = $1 AND token = $2",
-    [userId, token]
-  ).catch(() => {});
+  await pool.query("DELETE FROM push_tokens WHERE user_id = $1 AND token = $2", [userId, token]).catch(() => {});
 }
 
 async function unregisterAllTokens(pool, userId) {
@@ -83,10 +88,12 @@ async function getNewsSubscriberTokens(pool) {
        AND u.push_pref_news = TRUE
        AND u.deleted_at IS NULL`
   );
-  return result.rows.map(row => {
-    const target = pushSubscriptions.toDispatchTarget(row);
-    return target ? { ...target, user_id: row.user_id } : null;
-  }).filter(Boolean);
+  return result.rows
+    .map((row) => {
+      const target = pushSubscriptions.toDispatchTarget(row);
+      return target ? { ...target, user_id: row.user_id } : null;
+    })
+    .filter(Boolean);
 }
 
 async function getSquadMemberTokens(pool, squadId, excludeUserId) {
@@ -106,11 +113,20 @@ async function getSquadMemberTokens(pool, squadId, excludeUserId) {
        AND u.id <> $2`,
     [squadId, excludeUserId]
   );
-  return result.rows.map(row => {
-    const target = pushSubscriptions.toDispatchTarget(row);
-    return target ? { ...target, push_pref_squad_activity: row.push_pref_squad_activity } : null;
-  }).filter(Boolean);
+  return result.rows
+    .map((row) => {
+      const target = pushSubscriptions.toDispatchTarget(row);
+      return target ? { ...target, push_pref_squad_activity: row.push_pref_squad_activity } : null;
+    })
+    .filter(Boolean);
 }
 
-
-module.exports = { ensurePushTables, registerToken, unregisterToken, unregisterAllTokens, getEnabledTokensForUser, getNewsSubscriberTokens, getSquadMemberTokens };
+module.exports = {
+  ensurePushTables,
+  registerToken,
+  unregisterToken,
+  unregisterAllTokens,
+  getEnabledTokensForUser,
+  getNewsSubscriberTokens,
+  getSquadMemberTokens
+};

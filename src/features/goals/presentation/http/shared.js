@@ -24,7 +24,7 @@ const recommendationGoalLimiter = security.rateLimit({
 });
 
 async function hasBlockedPair(userIds) {
-  const ids = [...new Set(userIds.map(Number).filter(id => Number.isInteger(id) && id > 0 && id <= MAX_USER_ID))];
+  const ids = [...new Set(userIds.map(Number).filter((id) => Number.isInteger(id) && id > 0 && id <= MAX_USER_ID))];
   if (ids.length < 2) return false;
   const result = await pool.query(
     `SELECT 1
@@ -99,7 +99,13 @@ function normalizeRecommendationMemberIds(rawMemberIds) {
 
 function normalizeRecommendationNumber(value, { field, min, max, fallback = null, integer = false } = {}) {
   if (value === undefined || value === null || value === "") return { value: fallback };
-  if (typeof value !== "number" || !Number.isFinite(value) || (integer && !Number.isInteger(value)) || value < min || value > max) {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    (integer && !Number.isInteger(value)) ||
+    value < min ||
+    value > max
+  ) {
     return { error: `${field} invalide` };
   }
   return { value };
@@ -117,7 +123,11 @@ function normalizeRecommendationDeadline(value) {
 }
 
 function getRawAssignedMemberIds(recommendation, overrides) {
-  if (overrides && Object.prototype.hasOwnProperty.call(overrides, "assignedMemberIds") && overrides.assignedMemberIds !== null) {
+  if (
+    overrides &&
+    Object.prototype.hasOwnProperty.call(overrides, "assignedMemberIds") &&
+    overrides.assignedMemberIds !== null
+  ) {
     return normalizeRecommendationMemberIds(overrides.assignedMemberIds);
   }
 

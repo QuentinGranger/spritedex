@@ -1,8 +1,17 @@
 const {
-  app, getRequestingUser, requireNotSuspended, compare, MAX_USER_ID,
-  normalizeRecommendationText, normalizeRecommendationVariantIds,
-  insertCollectionGoalWithCapacity, logSquadGoalCreated, analytics,
-  pool, broadcastGoalUpdate, invalidateSquadAnalysisCache
+  app,
+  getRequestingUser,
+  requireNotSuspended,
+  compare,
+  MAX_USER_ID,
+  normalizeRecommendationText,
+  normalizeRecommendationVariantIds,
+  insertCollectionGoalWithCapacity,
+  logSquadGoalCreated,
+  analytics,
+  pool,
+  broadcastGoalUpdate,
+  invalidateSquadAnalysisCache
 } = require("./shared");
 
 // ── Collection goals : create ──
@@ -16,9 +25,12 @@ app.post("/api/collection-goals", requireNotSuspended, async (req, res) => {
   const cleanTitle = normalizedTitle.value;
   if (!cleanTitle) return res.status(400).json({ error: "Titre requis" });
 
-  const rawVariantIds = variantIds !== undefined && variantIds !== null
-    ? variantIds
-    : (variantId !== undefined && variantId !== null && variantId !== "" ? [variantId] : []);
+  const rawVariantIds =
+    variantIds !== undefined && variantIds !== null
+      ? variantIds
+      : variantId !== undefined && variantId !== null && variantId !== ""
+        ? [variantId]
+        : [];
   const normalizedVariantIds = normalizeRecommendationVariantIds(rawVariantIds);
   if (normalizedVariantIds.error) return res.status(400).json({ error: normalizedVariantIds.error });
   const targetVariantIds = normalizedVariantIds.value;
@@ -27,8 +39,8 @@ app.post("/api/collection-goals", requireNotSuspended, async (req, res) => {
   if (targetVariantIds.length) {
     try {
       const catalogue = await compare.getServerCompareCatalogItemsCached();
-      const knownVariantIds = new Set(catalogue.map(item => String(item.id)));
-      if (targetVariantIds.some(id => !knownVariantIds.has(id))) {
+      const knownVariantIds = new Set(catalogue.map((item) => String(item.id)));
+      if (targetVariantIds.some((id) => !knownVariantIds.has(id))) {
         return res.status(400).json({ error: "Une ou plusieurs variantes sont inconnues" });
       }
     } catch (err) {
@@ -60,21 +72,31 @@ app.post("/api/collection-goals", requireNotSuspended, async (req, res) => {
     });
 
     if (squadIdNum) {
-      logSquadGoalCreated(squadIdNum, reqUser, cleanTitle).catch(err => console.error("[goals] squad activity log failed", err));
-      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squadIdNum, event: "shared_goal_created", details: { goalId: result.id, title: cleanTitle, variantId: primaryVariantId } });
+      logSquadGoalCreated(squadIdNum, reqUser, cleanTitle).catch((err) =>
+        console.error("[goals] squad activity log failed", err)
+      );
+      analytics.logProductAnalyticsEvent(pool, {
+        userId: reqUser,
+        squadId: squadIdNum,
+        event: "shared_goal_created",
+        details: { goalId: result.id, title: cleanTitle, variantId: primaryVariantId }
+      });
     }
 
-    broadcastGoalUpdate({
-      id: result.id,
-      title: cleanTitle,
-      description: cleanDescription,
-      variant_id: primaryVariantId,
-      target_variant_ids: targetVariantIds.length ? targetVariantIds : null,
-      squad_id: squadIdNum,
-      user_id: reqUser,
-      status: "active",
-      created_at: result.created_at
-    }, "created").catch(err => console.error("[goals] broadcast failed", err));
+    broadcastGoalUpdate(
+      {
+        id: result.id,
+        title: cleanTitle,
+        description: cleanDescription,
+        variant_id: primaryVariantId,
+        target_variant_ids: targetVariantIds.length ? targetVariantIds : null,
+        squad_id: squadIdNum,
+        user_id: reqUser,
+        status: "active",
+        created_at: result.created_at
+      },
+      "created"
+    ).catch((err) => console.error("[goals] broadcast failed", err));
 
     if (squadIdNum) invalidateSquadAnalysisCache(squadIdNum);
 

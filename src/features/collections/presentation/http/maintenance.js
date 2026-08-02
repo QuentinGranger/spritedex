@@ -1,7 +1,13 @@
 const {
-  app, pool, requireNotSuspended, requireSameUser, invalidateCompareCacheForUser,
-  invalidateSquadAnalysisCacheForUser, broadcastSquadCompletionUpdate,
-  broadcastCompareUpdate, broadcastFriendCollectionUpdate
+  app,
+  pool,
+  requireNotSuspended,
+  requireSameUser,
+  invalidateCompareCacheForUser,
+  invalidateSquadAnalysisCacheForUser,
+  broadcastSquadCompletionUpdate,
+  broadcastCompareUpdate,
+  broadcastFriendCollectionUpdate
 } = require("./shared");
 const { scheduleSquadStatsForUser } = require("./effects");
 
@@ -12,7 +18,7 @@ app.delete("/api/collection/:userId", requireNotSuspended, async (req, res) => {
     res.json({ ok: true });
     invalidateCompareCacheForUser(req.params.userId);
     invalidateSquadAnalysisCacheForUser(req.params.userId);
-    scheduleSquadStatsForUser(req.params.userId).catch(err =>
+    scheduleSquadStatsForUser(req.params.userId).catch((err) =>
       console.error("[reset collection] squad stats refresh failed", err)
     );
     broadcastSquadCompletionUpdate(req.params.userId);
@@ -45,10 +51,7 @@ app.get("/api/history/:userId", async (req, res) => {
       [userId, limit, offset]
     );
 
-    const countResult = await pool.query(
-      `SELECT COUNT(*) FROM collection_history WHERE user_id = $1`,
-      [userId]
-    );
+    const countResult = await pool.query(`SELECT COUNT(*) FROM collection_history WHERE user_id = $1`, [userId]);
     const total = parseInt(countResult.rows[0].count);
 
     const weekResult = await pool.query(

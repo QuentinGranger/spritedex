@@ -29,11 +29,11 @@ app.get("/api/collection/:userId", async (req, res) => {
       collection[row.variant_id] = {
         spriteId: row.sprite_id,
         status: row.status,
-        note: canSeeNotes ? (row.note || "") : "",
-        priority: canSeePriority ? (row.priority || "none") : "none",
+        note: canSeeNotes ? row.note || "" : "",
+        priority: canSeePriority ? row.priority || "none" : "none",
         masteryLevel: row.status === "owned" ? Math.max(1, Number(row.mastery_level) || 1) : 0,
         obtainedAt: row.obtained_at || null,
-        updatedAt: row.updated_at,
+        updatedAt: row.updated_at
       };
     }
     res.json(collection);

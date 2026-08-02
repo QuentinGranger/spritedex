@@ -1,0 +1,242 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SPRITE-INDEX API",
+    "version": "1.0.0",
+    "description": "Contrat public des endpoints HTTP principaux."
+  },
+  "servers": [
+    {
+      "url": "https://sprite-index.com",
+      "description": "Production"
+    },
+    {
+      "url": "http://127.0.0.1:3000",
+      "description": "Local"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "session token"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "Sprite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "username", "ageConfirmed", "cguAccepted"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "username": {
+            "type": "string"
+          },
+          "ageConfirmed": {
+            "type": "boolean"
+          },
+          "cguAccepted": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health/live": {
+      "get": {
+        "summary": "Liveness",
+        "responses": {
+          "200": {
+            "description": "Process active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Readiness",
+        "responses": {
+          "200": {
+            "description": "Application prête"
+          },
+          "503": {
+            "description": "Dépendance indisponible"
+          }
+        }
+      }
+    },
+    "/api/sprites": {
+      "get": {
+        "summary": "Liste le catalogue de sprites",
+        "responses": {
+          "200": {
+            "description": "Catalogue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sprite"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "Crée un compte",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Compte créé"
+          },
+          "400": {
+            "description": "Payload invalide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Compte existant"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Ouvre une session",
+        "responses": {
+          "200": {
+            "description": "Session ouverte"
+          },
+          "401": {
+            "description": "Identifiants invalides"
+          }
+        }
+      }
+    },
+    "/api/auth/forgot-password": {
+      "post": {
+        "summary": "Demande un lien de réinitialisation",
+        "responses": {
+          "200": {
+            "description": "Réponse générique"
+          }
+        }
+      }
+    },
+    "/api/collection/{userId}": {
+      "get": {
+        "summary": "Lit une collection visible",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection"
+          },
+          "403": {
+            "description": "Collection privée"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "summary": "Liste les notifications",
+        "responses": {
+          "200": {
+            "description": "Notifications"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/push/vapid-key": {
+      "get": {
+        "summary": "Clé publique VAPID",
+        "responses": {
+          "200": {
+            "description": "Clé Web Push"
+          }
+        }
+      }
+    }
+  }
+}

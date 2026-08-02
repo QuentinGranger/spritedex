@@ -1,25 +1,26 @@
 const { app, pool, compare } = require("./shared");
 
 async function getGoalFeasibility(goal, _reqUser) {
-  const variantId = goal.variant_id || (Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length ? goal.target_variant_ids[0] : null);
+  const variantId =
+    goal.variant_id ||
+    (Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length ? goal.target_variant_ids[0] : null);
   if (!variantId) {
     return { error: "Cet objectif n'est pas lié à une variante" };
   }
 
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const item = activeCatalogue.find(i => i.id === variantId);
+  const item = activeCatalogue.find((i) => i.id === variantId);
   if (!item) {
     return { error: "Variante non trouvée dans le catalogue actif" };
   }
 
   let memberIds = [];
   if (goal.squad_id) {
-    const membersRes = await pool.query(
-      "SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'",
-      [goal.squad_id]
-    );
-    memberIds = membersRes.rows.map(r => r.user_id);
+    const membersRes = await pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [
+      goal.squad_id
+    ]);
+    memberIds = membersRes.rows.map((r) => r.user_id);
   } else {
     memberIds = [goal.user_id];
   }
@@ -52,34 +53,37 @@ async function getGoalFeasibility(goal, _reqUser) {
   }
 
   const availability = String(item.availabilityStatus || item.availability?.status || "unknown").toLowerCase();
-  const availabilityFactor = {
-    available_now: 1,
-    available: 1,
-    upcoming: 1.2,
-    event: 1.2,
-    not_observed: 3,
-    ended: 3,
-    unknown: 2
-  }[availability] || 2;
+  const availabilityFactor =
+    {
+      available_now: 1,
+      available: 1,
+      upcoming: 1.2,
+      event: 1.2,
+      not_observed: 3,
+      ended: 3,
+      unknown: 2
+    }[availability] || 2;
 
   const rarity = String(item.rarity || "_none").toLowerCase();
-  const rarityFactor = {
-    common: 1,
-    uncommon: 1.2,
-    rare: 1.5,
-    epic: 2,
-    legendary: 2.5,
-    mythic: 3
-  }[rarity] || 2;
+  const rarityFactor =
+    {
+      common: 1,
+      uncommon: 1.2,
+      rare: 1.5,
+      epic: 2,
+      legendary: 2.5,
+      mythic: 3
+    }[rarity] || 2;
 
   const acquisition = String(item.acquisitionMethod || item.acquisition?.type || "unknown").toLowerCase();
-  const acquisitionFactor = {
-    shop: 1,
-    event: 1.5,
-    quest: 2,
-    boss: 2.5,
-    unknown: 2
-  }[acquisition] || 2;
+  const acquisitionFactor =
+    {
+      shop: 1,
+      event: 1.5,
+      quest: 2,
+      boss: 2.5,
+      unknown: 2
+    }[acquisition] || 2;
 
   const totalActiveRes = await pool.query(
     "SELECT COUNT(*)::int AS cnt FROM users WHERE deleted_at IS NULL AND (suspended_until IS NULL OR suspended_until < NOW())"
@@ -102,7 +106,8 @@ async function getGoalFeasibility(goal, _reqUser) {
   const recentGains = recentRes.rows[0].cnt || 0;
   const progressionFactor = 1 / (1 + recentGains / 7);
 
-  const difficulty = availabilityFactor * rarityFactor * acquisitionFactor * communityFactor * memberHelpFactor * progressionFactor;
+  const difficulty =
+    availabilityFactor * rarityFactor * acquisitionFactor * communityFactor * memberHelpFactor * progressionFactor;
 
   if (missingCount <= 0) {
     return {
