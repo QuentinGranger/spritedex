@@ -138,7 +138,10 @@ app.post("/api/auth/resend-verification", security.emailVerifLimiter, async (req
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const user = await pool.query("SELECT id, email, email_verified FROM users WHERE id = $1 AND deleted_at IS NULL", [reqUser]);
+    const user = await pool.query(
+      "SELECT id, email, email_verified, preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL",
+      [reqUser]
+    );
     if (!user.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     if (user.rows[0].email_verified) return res.json({ ok: true, message: "Email déjà vérifié" });
     const emailToken = crypto.randomBytes(32).toString("hex");
@@ -146,7 +149,10 @@ app.post("/api/auth/resend-verification", security.emailVerifLimiter, async (req
       "UPDATE users SET email_verify_token = $1, email_verify_token_expires = $2 WHERE id = $3",
       [hashOpaqueToken(emailToken), new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS), reqUser]
     );
-    sendVerificationEmail(user.rows[0].email, emailToken, resolveLocale(req.get("accept-language")));
+    const mailLang = resolveLocale(
+      req.get("accept-language") || user.rows[0].preferred_language || "fr"
+    );
+    sendVerificationEmail(user.rows[0].email, emailToken, mailLang);
     res.json({ ok: true, message: "Email de vérification renvoyé" });
   } catch (err) {
     console.error(err);
@@ -167,7 +173,7 @@ app.post("/api/auth/forgot-password", security.passwordResetLimiter, security.va
       `UPDATE users
        SET reset_token = $1, reset_token_expires = $2
        WHERE email = $3 AND deleted_at IS NULL
-       RETURNING id, email`,
+       RETURNING id, email, preferred_language`,
       [hashOpaqueToken(resetToken), resetExpires, email.toLowerCase()]
     );
     res.json({ ok: true, message: "Si un compte existe, un email a été envoyé" });
@@ -175,8 +181,11 @@ app.post("/api/auth/forgot-password", security.passwordResetLimiter, security.va
     // happens after it has been sent and never reveals account existence.
     if (updated.rows.length) {
       const user = updated.rows[0];
+      const mailLang = resolveLocale(
+        user.preferred_language || req.get("accept-language") || "fr"
+      );
       setImmediate(() => {
-        sendPasswordResetEmail(user.email, resetToken, resolveLocale(req.get("accept-language")));
+        sendPasswordResetEmail(user.email, resetToken, mailLang);
         secLog.logSecurityEvent(pool, { req, userId: user.id, email: user.email, event: "password_reset_request", status: "ok" });
       });
     }
