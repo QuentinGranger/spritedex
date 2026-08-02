@@ -28,7 +28,7 @@ function test(name, fn) {
 console.log("\nRunning SPRITE-INDEX notification catalog tests\n");
 
 // ── Stable technical identifiers ──
-const EXPECTED_IDS = {
+const EXPECTED_CONTEXTUAL_IDS = {
   FRIEND_REQUEST_ACCEPTED: "friend_request_accepted",
   FRIEND_ACQUIRED_MISSING_VARIANT: "friend_acquired_missing_variant",
   SQUAD_COMPLETION_INCREASED: "squad_completion_increased",
@@ -36,19 +36,48 @@ const EXPECTED_IDS = {
   WANTED_EVENT_ENDING_SOON: "wanted_event_ending_soon"
 };
 
-test("exposes exactly the five stable type ids", () => {
-  assert.deepStrictEqual(catalog.NOTIFICATION_TYPES, EXPECTED_IDS);
+const EXPECTED_NOTIFICATION_TYPES = {
+  ...EXPECTED_CONTEXTUAL_IDS,
+  FRIEND_REQUEST_RECEIVED: "friend_request_received",
+  FRIEND_REMOVED: "friend_removed",
+  FRIEND_COLLECTION_UPDATED: "friend_collection_updated",
+  SQUAD_MEMBER_JOINED: "squad_member_joined",
+  GOAL_COMPLETED: "goal_completed",
+  BADGE_UNLOCKED: "badge_unlocked",
+  PASSPORT_CATALOGUE_UPDATED: "passport_catalogue_updated",
+  NEWS_ARTICLE: "news_article",
+  SQUAD_ACTIVITY: "squad_activity"
+};
+
+const EXPECTED_DOMAIN_EVENTS = {
+  FRIENDSHIP_ACCEPTED: "friendship.accepted",
+  COLLECTION_VARIANT_ACQUIRED: "collection.variant_acquired",
+  COLLECTION_UPDATED: "collection.updated",
+  SQUAD_COMPLETION_CHANGED: "squad.completion_changed",
+  CATALOGUE_VARIANT_AVAILABLE: "catalogue.variant_available",
+  CATALOGUE_EVENT_ENDING_SOON: "catalogue.event_ending_soon",
+  CATALOGUE_PUBLISHED: "catalogue.published",
+  COMPARISON_GENERATED: "comparison.generated",
+  SQUAD_MEMBER_JOINED: "squad.member_joined",
+  SQUAD_CREATED: "squad.created"
+};
+
+test("exposes stable notification type ids and the five contextual types", () => {
+  assert.deepStrictEqual(catalog.NOTIFICATION_TYPES, EXPECTED_NOTIFICATION_TYPES);
   assert.strictEqual(catalog.CONTEXTUAL_NOTIFICATION_TYPES.length, 5);
-  for (const id of Object.values(EXPECTED_IDS)) {
-    assert.ok(catalog.CONTEXTUAL_NOTIFICATION_TYPES.includes(id), `missing ${id}`);
+  assert.deepStrictEqual(catalog.CONTEXTUAL_NOTIFICATION_TYPES, Object.values(EXPECTED_CONTEXTUAL_IDS));
+  for (const id of Object.values(EXPECTED_NOTIFICATION_TYPES)) {
     assert.ok(catalog.isKnownType(id), `isKnownType false for ${id}`);
+  }
+  for (const id of Object.values(EXPECTED_CONTEXTUAL_IDS)) {
+    assert.ok(catalog.CONTEXTUAL_NOTIFICATION_TYPES.includes(id), `missing ${id}`);
   }
 });
 
 test("type ids do not depend on displayed text or language", () => {
   // Same id yields different wording per language, proving the id is stable
   // and language-independent.
-  for (const id of Object.values(EXPECTED_IDS)) {
+  for (const id of Object.values(EXPECTED_CONTEXTUAL_IDS)) {
     const fr = catalog.renderNotification(id, sampleContext(id), "fr");
     const en = catalog.renderNotification(id, sampleContext(id), "en");
     assert.ok(fr && en, `render null for ${id}`);
@@ -58,7 +87,7 @@ test("type ids do not depend on displayed text or language", () => {
 });
 
 test("French and English are generated separately for every type", () => {
-  for (const id of Object.values(EXPECTED_IDS)) {
+  for (const id of Object.values(EXPECTED_CONTEXTUAL_IDS)) {
     const both = catalog.renderAllLocales(id, sampleContext(id));
     assert.ok(both.fr && both.en, `renderAllLocales missing locale for ${id}`);
     for (const loc of ["fr", "en"]) {
@@ -107,7 +136,7 @@ test("unknown type returns null and is not considered known", () => {
 });
 
 test("missing context degrades gracefully with fallbacks", () => {
-  for (const id of Object.values(EXPECTED_IDS)) {
+  for (const id of Object.values(EXPECTED_CONTEXTUAL_IDS)) {
     const fr = catalog.renderNotification(id, {}, "fr");
     const en = catalog.renderNotification(id, {}, "en");
     assert.ok(fr.body.length > 0 && en.body.length > 0, `empty body without context for ${id}`);
@@ -656,14 +685,8 @@ async function asyncTest(name, fn) {
     bus.removeAllDomainListeners(EV);
   });
 
-  await asyncTest("the five domain event ids are stable", () => {
-    assert.deepStrictEqual(bus.DOMAIN_EVENTS, {
-      FRIENDSHIP_ACCEPTED: "friendship.accepted",
-      COLLECTION_VARIANT_ACQUIRED: "collection.variant_acquired",
-      SQUAD_COMPLETION_CHANGED: "squad.completion_changed",
-      CATALOGUE_VARIANT_AVAILABLE: "catalogue.variant_available",
-      CATALOGUE_EVENT_ENDING_SOON: "catalogue.event_ending_soon"
-    });
+  await asyncTest("domain event ids are stable", () => {
+    assert.deepStrictEqual(bus.DOMAIN_EVENTS, EXPECTED_DOMAIN_EVENTS);
   });
 
   // Étapes 15–21 — acquisition gates / content
@@ -2013,9 +2036,15 @@ async function asyncTest(name, fn) {
   await asyncTest("markNotificationRead sets read_at and optional clicked_at (Étape 47)", async () => {
     const { markNotificationRead, markAllNotificationsRead } = require("../push-service");
     const calls = [];
-    const pool = {
+    const client = {
       async query(sql, params) {
         calls.push({ sql, params });
+        if (/^BEGIN$|^COMMIT$|^ROLLBACK$/i.test(sql.trim())) return { rows: [] };
+        if (/SELECT id, type, category, data, status, created_at, delivered_at, clicked_at, read_at/i.test(sql)) {
+          // A previous click avoids exercising graph persistence here; this test
+          // is scoped to the read/click update transaction itself.
+          return { rows: [{ id: params[0], clicked_at: new Date("2026-07-25T08:00:00Z") }] };
+        }
         if (/UPDATE notifications SET[\s\S]*read_at = COALESCE/i.test(sql)) {
           return {
             rows: [{
@@ -2030,6 +2059,13 @@ async function asyncTest(name, fn) {
           return { rowCount: 3, rows: [{ id: 1 }, { id: 2 }, { id: 3 }] };
         }
         throw new Error(`unexpected SQL: ${sql}`);
+      },
+      release() {}
+    };
+    const pool = {
+      connect: async () => client,
+      async query(sql, params) {
+        return client.query(sql, params);
       }
     };
 
@@ -2037,11 +2073,15 @@ async function asyncTest(name, fn) {
     assert.ok(clicked);
     assert.strictEqual(clicked.status, "read");
     assert.ok(clicked.clicked_at);
-    assert.strictEqual(calls[0].params[2], true);
+    assert.strictEqual(
+      calls.find(({ sql }) => /UPDATE notifications SET[\s\S]*read_at = COALESCE/i.test(sql)).params[2],
+      true
+    );
 
     const readOnly = await markNotificationRead(pool, 42, 100, { clicked: false });
     assert.ok(readOnly);
-    assert.strictEqual(calls[1].params[2], false);
+    const notificationUpdates = calls.filter(({ sql }) => /UPDATE notifications SET[\s\S]*read_at = COALESCE/i.test(sql));
+    assert.strictEqual(notificationUpdates[1].params[2], false);
 
     const missing = await markNotificationRead(pool, 42, "nope");
     assert.strictEqual(missing, null);
@@ -2127,13 +2167,7 @@ async function asyncTest(name, fn) {
     }
 
     // 2) Precise triggers (stable domain event ids)
-    assert.deepStrictEqual(bus.DOMAIN_EVENTS, {
-      FRIENDSHIP_ACCEPTED: "friendship.accepted",
-      COLLECTION_VARIANT_ACQUIRED: "collection.variant_acquired",
-      SQUAD_COMPLETION_CHANGED: "squad.completion_changed",
-      CATALOGUE_VARIANT_AVAILABLE: "catalogue.variant_available",
-      CATALOGUE_EVENT_ENDING_SOON: "catalogue.event_ending_soon"
-    });
+    assert.deepStrictEqual(bus.DOMAIN_EVENTS, EXPECTED_DOMAIN_EVENTS);
 
     // 3–4) Preferences + separate categories
     assert.strictEqual(
