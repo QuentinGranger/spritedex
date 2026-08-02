@@ -13,6 +13,14 @@ const { Resend } = require("resend");
 const { WebSocketServer } = require("ws");
 const { localizeErrorResponse } = require("../../../server/i18n");
 const openApiDocument = require("../../../openapi.json");
+const {
+  EMAIL_COPY,
+  emailCopy,
+  emailLocale,
+  emailShell: renderEmailShell,
+  emailText: renderEmailText,
+  escapeHtml
+} = require("./email-templates");
 
 const ROOT_DIR = path.join(__dirname, "..", "..", "..");
 
@@ -36,13 +44,12 @@ const wss = new WebSocketServer({ server });
 const PORT = process.env.PORT || 3000;
 const APP_URL = security.resolvePublicAppUrl({ fallback: `http://localhost:${PORT}` });
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function emailShell(content) {
+  return renderEmailShell({ ...content, appUrl: APP_URL });
+}
+
+function emailText(content) {
+  return renderEmailText(content);
 }
 
 // ── Resend : email service ──
@@ -57,53 +64,6 @@ const RESEND_FROM_DOMAIN = String(process.env.RESEND_FROM_DOMAIN || "")
   .replace(/\.$/, "");
 const EMAIL_ADDRESS_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 
-const EMAIL_COPY = Object.freeze({
-  fr: Object.freeze({
-    verifySubject: "Vérifie ton email — SPRITE-INDEX",
-    verifyIntro: "Confirme ton adresse email pour activer ton compte.",
-    verifyCta: "Vérifier mon email",
-    verifyIgnore: "Si tu n'as pas créé de compte, ignore cet email.",
-    resetSubject: "Réinitialisation de mot de passe — SPRITE-INDEX",
-    resetIntro: "Une demande de réinitialisation de mot de passe a été effectuée. Ce lien expire dans 1 heure.",
-    resetCta: "Réinitialiser mon mot de passe",
-    resetIgnore: "Si tu n'as pas fait cette demande, ignore cet email — ton mot de passe reste inchangé.",
-    notifOpen: "Ouvrir SPRITE-INDEX"
-  }),
-  en: Object.freeze({
-    verifySubject: "Verify your email — SPRITE-INDEX",
-    verifyIntro: "Confirm your email address to activate your account.",
-    verifyCta: "Verify my email",
-    verifyIgnore: "If you did not create an account, ignore this email.",
-    resetSubject: "Password reset — SPRITE-INDEX",
-    resetIntro: "A password reset was requested. This link expires in 1 hour.",
-    resetCta: "Reset my password",
-    resetIgnore: "If you did not make this request, ignore this email — your password remains unchanged.",
-    notifOpen: "Open SPRITE-INDEX"
-  }),
-  nl: Object.freeze({
-    verifySubject: "Bevestig je e-mailadres — SPRITE-INDEX",
-    verifyIntro: "Bevestig je e-mailadres om je account te activeren.",
-    verifyCta: "Mijn e-mailadres bevestigen",
-    verifyIgnore: "Heb je geen account aangemaakt? Negeer deze e-mail.",
-    resetSubject: "Wachtwoord opnieuw instellen — SPRITE-INDEX",
-    resetIntro: "Er is een verzoek ingediend om je wachtwoord opnieuw in te stellen. Deze link verloopt over 1 uur.",
-    resetCta: "Mijn wachtwoord opnieuw instellen",
-    resetIgnore: "Heb je dit verzoek niet gedaan? Negeer deze e-mail — je wachtwoord blijft ongewijzigd.",
-    notifOpen: "SPRITE-INDEX openen"
-  })
-});
-
-function emailLocale(lang) {
-  const locale = String(lang || "fr")
-    .toLowerCase()
-    .slice(0, 2);
-  return locale === "en" || locale === "nl" ? locale : "fr";
-}
-
-function emailCopy(lang) {
-  return EMAIL_COPY[emailLocale(lang)];
-}
-
 function localizedAppUrl(pathname, params, lang) {
   const url = new URL(pathname, APP_URL);
   for (const [key, value] of Object.entries(params || {})) {
@@ -111,42 +71,6 @@ function localizedAppUrl(pathname, params, lang) {
   }
   url.searchParams.set("lang", emailLocale(lang));
   return url.toString();
-}
-
-function emailShell({ heading, intro, ctaLabel, href, footer }) {
-  const preheader = [heading, intro].filter(Boolean).join(" — ");
-  const safeHref = escapeHtml(href);
-  return `
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preheader)}</div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f6fb;margin:0;padding:24px 0;font-family:Arial,sans-serif;">
-      <tr><td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;">
-          <tr><td style="padding:32px 28px;color:#172033;">
-            <div style="font-size:22px;font-weight:700;letter-spacing:0.2px;color:#2454d3;margin:0 0 20px;">SPRITE-INDEX</div>
-            ${heading ? `<h1 style="font-size:20px;line-height:28px;margin:0 0 14px;color:#172033;">${escapeHtml(heading)}</h1>` : ""}
-            <p style="font-size:16px;line-height:24px;margin:0 0 24px;color:#42526e;white-space:pre-line;">${escapeHtml(intro)}</p>
-            <a href="${safeHref}" style="display:inline-block;padding:12px 20px;background:#2454d3;border-radius:7px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;">${escapeHtml(ctaLabel)}</a>
-            ${footer ? `<p style="font-size:13px;line-height:20px;margin:28px 0 0;color:#667085;">${escapeHtml(footer)}</p>` : ""}
-          </td></tr>
-        </table>
-      </td></tr>
-    </table>`;
-}
-
-function emailText({ heading, intro, ctaLabel, href, footer }) {
-  return [
-    "SPRITE-INDEX",
-    "",
-    heading ? String(heading) : null,
-    heading ? "" : null,
-    String(intro || ""),
-    "",
-    `${String(ctaLabel || "")}: ${href}`,
-    "",
-    String(footer || "")
-  ]
-    .filter((value) => value !== null)
-    .join("\n");
 }
 
 function emailIdempotencyKey(kind, value) {
@@ -195,11 +119,18 @@ async function sendVerificationEmail(toEmail, token, lang = "fr") {
   const copy = emailCopy(lang);
   const verifyUrl = localizedAppUrl("/api/auth/verify-email", { token }, lang);
   const content = {
-    heading: "",
+    eyebrow: copy.verifyEyebrow,
+    heading: copy.verifyHeading,
     intro: copy.verifyIntro,
     ctaLabel: copy.verifyCta,
     href: verifyUrl,
-    footer: copy.verifyIgnore
+    footer: copy.verifyIgnore,
+    linkFallback: copy.linkFallback,
+    footerNote: copy.footerNote,
+    brandTagline: copy.brandTagline,
+    brandKicker: copy.brandKicker,
+    fanDisclaimer: copy.fanDisclaimer,
+    lang
   };
   try {
     const result = await resend.emails.send(
@@ -231,11 +162,18 @@ async function sendPasswordResetEmail(toEmail, token, lang = "fr") {
   const copy = emailCopy(lang);
   const resetUrl = localizedAppUrl("/", { resetToken: token }, lang);
   const content = {
-    heading: "",
+    eyebrow: copy.resetEyebrow,
+    heading: copy.resetHeading,
     intro: copy.resetIntro,
     ctaLabel: copy.resetCta,
     href: resetUrl,
-    footer: copy.resetIgnore
+    footer: copy.resetIgnore,
+    linkFallback: copy.linkFallback,
+    footerNote: copy.footerNote,
+    brandTagline: copy.brandTagline,
+    brandKicker: copy.brandKicker,
+    fanDisclaimer: copy.fanDisclaimer,
+    lang
   };
   try {
     const result = await resend.emails.send(
@@ -278,11 +216,18 @@ async function sendNotificationEmail(toEmail, { title, body, url, lang, idempote
     // Keep the safe application homepage fallback.
   }
   const content = {
+    eyebrow: copy.notifEyebrow,
     heading: title || "",
     intro: body || "",
     ctaLabel: copy.notifOpen,
     href: link,
-    footer: ""
+    footer: "",
+    linkFallback: copy.linkFallback,
+    footerNote: copy.footerNote,
+    brandTagline: copy.brandTagline,
+    brandKicker: copy.brandKicker,
+    fanDisclaimer: copy.fanDisclaimer,
+    lang
   };
   try {
     const result = await resend.emails.send(
@@ -374,6 +319,7 @@ module.exports = {
   corsOrigins,
   emailCopy,
   emailLocale,
+  emailShell,
   emailText,
   escapeHtml,
   localizedAppUrl,
