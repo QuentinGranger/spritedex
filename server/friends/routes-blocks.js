@@ -101,20 +101,28 @@ app.post("/api/users/:userId/report", requireNotSuspended, async (req, res) => {
     return res.status(400).json({ error: "Identifiant invalide" });
   }
 
-  const { reason } = req.body || {};
+  const { reason, context } = req.body || {};
   const cleanReason = typeof reason === "string" ? reason.trim() : "";
   if (!cleanReason || cleanReason.length > 500) {
     return res.status(400).json({ error: "Motif invalide (1-500 caractères)" });
   }
 
+  const cleanContext = {};
+  if (context && typeof context === "object" && !Array.isArray(context)) {
+    for (const key of ["source", "page", "spriteId", "variantId", "eventId"]) {
+      if (typeof context[key] === "string" || typeof context[key] === "number") {
+        cleanContext[key] = String(context[key]).trim().slice(0, 160);
+      }
+    }
+  }
   const exists = await pool.query("SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
   if (!exists.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
 
   try {
     await pool.query(
-      `INSERT INTO user_reports (reporter_id, reported_id, reason, status, created_at)
-       VALUES ($1, $2, $3, 'open', NOW())`,
-      [reqUser, userId, cleanReason]
+      `INSERT INTO user_reports (reporter_id, reported_id, reason, status, context, created_at)
+       VALUES ($1, $2, $3, 'open', $4::jsonb, NOW())`,
+      [reqUser, userId, cleanReason, JSON.stringify(cleanContext)]
     );
     res.json({ ok: true });
   } catch (err) {

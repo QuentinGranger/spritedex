@@ -85,6 +85,7 @@ app.post("/api/auth/register", security.registerLimiter, security.validateBody(s
 // ── Auth : Verify email ──
 app.get("/api/auth/verify-email", async (req, res) => {
   const { token } = req.query;
+  const lang = resolveLocale(req.query?.lang);
   const tokenHash = hashOpaqueToken(token);
   if (!tokenHash) return res.status(400).json({ error: "Token invalide" });
   try {
@@ -96,13 +97,13 @@ app.get("/api/auth/verify-email", async (req, res) => {
       [tokenHash]
     );
     if (!result.rows.length) {
-      return res.redirect("/?emailVerified=error");
+      return res.redirect(`/?emailVerified=error&lang=${encodeURIComponent(lang)}`);
     }
     secLog.logSecurityEvent(pool, { req, userId: result.rows[0].id, event: "email_verified", status: "ok" });
-    res.redirect("/?emailVerified=true");
+    res.redirect(`/?emailVerified=true&lang=${encodeURIComponent(lang)}`);
   } catch (err) {
     console.error(err);
-    res.redirect("/?emailVerified=error");
+    res.redirect(`/?emailVerified=error&lang=${encodeURIComponent(lang)}`);
   }
 });
 

@@ -31,13 +31,14 @@ function openBrowser(url) {
 
 (async () => {
   const origin = resolveAdminOrigin();
+  const username = String(process.env.ADMIN_OPERATOR_USERNAME || "").trim().toLowerCase();
   const password = await promptHidden("Admin password: ");
   if (!password) throw new Error("No password entered.");
 
   const response = await fetch(new URL("/api/admin/terminal/ticket", origin), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ username: username || undefined, password })
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.accessUrl) {

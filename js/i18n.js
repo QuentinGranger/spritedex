@@ -1,7 +1,11 @@
 /* ── Application language ────────────────────────────────────────────────
-   French for browser language `fr`, or for a francophone region. Everywhere
-   else uses English. The choice is local (no geolocation or account data) and
-   is forwarded as Accept-Language for API errors and notifications. */
+   French for browser language `fr`, or for a francophone region.
+   Dutch for browser language `nl`, or for a Dutch-speaking region
+   (Netherlands, Flanders via nl-BE, Suriname, Aruba, Curaçao, Sint Maarten,
+   and the BES islands Bonaire / Sint Eustatius / Saba).
+   Everywhere else uses English. The choice is local (no IP geolocation or
+   account data) and is forwarded as Accept-Language for API errors and
+   notifications. */
 (function setupApplicationLanguage() {
   const FRANCOPHONE_REGIONS = new Set([
     "BJ", "BI", "CM", "KM", "CI", "DJ", "GA", "GN", "GQ", "MG",
@@ -12,16 +16,33 @@
     "NC", "TF", "CP"
   ]);
 
+  // Country / territory codes where Dutch is an official or primary language.
+  // Belgium (BE) is intentionally omitted here: Wallonia must stay French via
+  // FRANCOPHONE_REGIONS / `fr-BE`, while Flanders and Dutch-speaking Brussels
+  // resolve through language tag `nl` / `nl-BE`.
+  const DUTCH_REGIONS = new Set([
+    "NL", // Netherlands
+    "SR", // Suriname
+    "AW", // Aruba
+    "CW", // Curaçao
+    "SX", // Sint Maarten (Dutch side)
+    "BQ"  // Bonaire, Sint Eustatius, Saba
+  ]);
+
   function deviceLanguage() {
     const forced = new URLSearchParams(window.location.search).get("lang");
-    if (forced === "fr" || forced === "en") return forced;
+    if (forced === "fr" || forced === "en" || forced === "nl") return forced;
     const locales = Array.isArray(navigator.languages) && navigator.languages.length
       ? navigator.languages
       : [navigator.language || "en"];
     for (const value of locales) {
       const [language, region] = String(value || "").replace(/_/g, "-").split("-");
-      if (String(language).toLowerCase() === "fr") return "fr";
-      if (FRANCOPHONE_REGIONS.has(String(region || "").toUpperCase())) return "fr";
+      const lang = String(language || "").toLowerCase();
+      const regionCode = String(region || "").toUpperCase();
+      if (lang === "nl") return "nl";
+      if (lang === "fr") return "fr";
+      if (DUTCH_REGIONS.has(regionCode)) return "nl";
+      if (FRANCOPHONE_REGIONS.has(regionCode)) return "fr";
     }
     return "en";
   }
@@ -99,6 +120,7 @@
       "search.navigate": "naviguer",
       "search.open": "ouvrir",
       "admin.consolePrompt": "Mot de passe administrateur",
+      "admin.consoleUsernamePrompt": "Identifiant administrateur (laisser vide pour l’accès de transition)",
       "admin.consoleUnavailable": "Mot de passe requis.",
       "admin.consoleError": "Accès administrateur refusé.",
       "login.createAccount": "Créer un compte",
@@ -1920,6 +1942,7 @@
       "search.navigate": "navigate",
       "search.open": "open",
       "admin.consolePrompt": "Admin password",
+      "admin.consoleUsernamePrompt": "Admin username (leave empty for transition access)",
       "admin.consoleUnavailable": "Password required.",
       "admin.consoleError": "Admin access denied.",
       "login.createAccount": "Create an account",
@@ -3673,7 +3696,8 @@
       "community.priorityAdds7d": "+{count} / 7d",
       "community.diffsCount": "{count} diffs",
       "shared.disclaimerShort": "SPRITE-INDEX is an unofficial app. Not affiliated with Epic Games. Fortnite is a trademark of Epic Games."
-    })
+    }),
+    nl: Object.freeze(window.__SPRITE_INDEX_I18N_NL__ || {})
   });
 
   const KEY_RE = /^[a-z][a-z0-9]*(?:\.[a-z0-9_]+)+$/i;
@@ -4062,14 +4086,35 @@
     "Notification masquée": "Hidden notification",
   });
 
-  const PATTERNS = [
+  // French HTML source → Dutch (loaded from js/i18n-nl-legacy-data.js).
+  const NL = Object.freeze(window.__SPRITE_INDEX_I18N_NL_LEGACY__ || {});
+
+  const TIME_UNIT_EN = Object.freeze({
+    minute: "minute", minutes: "minutes",
+    heure: "hour", heures: "hours",
+    jour: "day", jours: "days",
+    semaine: "week", semaines: "weeks",
+    mois: "month"
+  });
+  const TIME_UNIT_NL = Object.freeze({
+    minute: "minuut", minutes: "minuten",
+    heure: "uur", heures: "uur",
+    jour: "dag", jours: "dagen",
+    semaine: "week", semaines: "weken",
+    mois: "maand"
+  });
+
+  const PATTERNS_EN = [
     [/^Niveau (\d+)$/, "Level $1"],
     [/^(\d+) variantes? obtenues$/, "$1 variants collected"],
     [/^(\d+) variantes? possédées$/, "$1 variants owned"],
     [/^(\d+) variantes? à découvrir$/, "$1 variants left to discover"],
     [/^(\d+) actions$/, "$1 actions"],
     [/^(\d+) semaines? actives$/, "$1 active weeks"],
-    [/^Il y a (\d+) (minute|heure|jour|semaine|mois)s?$/, "$1 $2 ago"],
+    [/^Il y a (\d+) (minute|heure|jour|semaine|mois)s?$/, (full, n, unit) => {
+      const key = full.includes(`${unit}s`) && unit !== "mois" ? `${unit}s` : unit;
+      return `${n} ${TIME_UNIT_EN[key] || unit} ago`;
+    }],
     [/^Aujourd’hui · (.+)$/, "Today · $1"],
     [/^Hier · (.+)$/, "Yesterday · $1"],
     [/^Aucune activité ne correspond à ce filtre\.$/, "No activity matches this filter."],
@@ -4101,27 +4146,78 @@
     [/^(.+) est possédée par (.+) mais manque à (.+)\.$/, "$1 is owned by $2 but missing for $3."],
     [/^Seulement (.+) % de la communauté sprite-index la possède\.$/, "Only $1% of the sprite-index community owns it."],
     [/^Cette variante est prioritaire chez (.+) % des utilisateurs auxquels elle manque\.$/, "This variant is a priority for $1% of users who are missing it."],
-
-
-
   ];
+
+  const PATTERNS_NL = [
+    [/^Niveau (\d+)$/, "Niveau $1"],
+    [/^(\d+) variantes? obtenues$/, "$1 varianten verzameld"],
+    [/^(\d+) variantes? possédées$/, "$1 varianten in bezit"],
+    [/^(\d+) variantes? à découvrir$/, "$1 varianten te ontdekken"],
+    [/^(\d+) actions$/, "$1 acties"],
+    [/^(\d+) semaines? actives$/, "$1 actieve weken"],
+    [/^Il y a (\d+) (minute|heure|jour|semaine|mois)s?$/, (full, n, unit) => {
+      const key = full.includes(`${unit}s`) && unit !== "mois" ? `${unit}s` : unit;
+      return `${n} ${TIME_UNIT_NL[key] || unit} geleden`;
+    }],
+    [/^Aujourd’hui · (.+)$/, "Vandaag · $1"],
+    [/^Hier · (.+)$/, "Gisteren · $1"],
+    [/^Aucune activité ne correspond à ce filtre\.$/, "Geen activiteit komt overeen met dit filter."],
+    [/^Impossible de charger (.+)\.$/, "Kan $1 niet laden."],
+    [/^Erreur réseau\.$/, "Netwerkfout."],
+    [/^Statut : (.+)$/, "Status: $1"],
+    [/^(.+) invalide$/, "Ongeldige $1"],
+    [/^(.+) invalides$/, "Ongeldige $1"],
+    [/^(.+) requis$/, "$1 verplicht"],
+    [/^(.+) introuvable$/, "$1 niet gevonden"],
+    [/^Trop de variantes \((\d+) max\)$/, "Te veel varianten ($1 max)"],
+    [/^Trop de membres assignés \((\d+) max\)$/, "Te veel toegewezen leden ($1 max)"],
+    [/^Trop de participants \((\d+) max\)$/, "Te veel deelnemers ($1 max)"],
+    [/^Trop de changements \((\d+) max\)$/, "Te veel wijzigingen ($1 max)"],
+    [/^Trop de (.+) \((\d+) max\)$/, "Te veel $1 ($2 max)"],
+    [/^(.+) trop long \((\d+) max\)$/, "$1 te lang ($2 max)"],
+    [/^(.+) trop volumineux$/, "$1 te groot"],
+    [/^Provider (.+) non configuré$/, "Provider $1 is niet geconfigureerd"],
+    [/^Possession communautaire : (.+) %$/, "Communitybezit: $1%"],
+    [/^Prioritaire chez (.+) % des collectionneurs auxquels elle manque$/, "Prioriteit voor $1% van de verzamelaars die hem missen"],
+    [/^Tendance : (.+)$/, "Trend: $1"],
+    [/^Rareté officielle : (.+)$/, "Officiële zeldzaamheid: $1"],
+    [/^Taux de possession sprite-index : (.+) %$/, "sprite-index-bezitspercentage: $1%"],
+    [/^Évolution : ([+-]?.+) points$/, "Verandering: $1 punten"],
+    [/^(\d+) priorités → (\d+) priorités en 7 jours$/, "$1 prioriteiten → $2 prioriteiten in 7 dagen"],
+    [/^échantillon de (\d+) collections? renseignées?$/, "steekproef van $1 ingevulde collectie(s)"],
+    [/^\+(\d+) ajouts? en priorité sur (\d+) jours$/, "+$1 prioriteitstoevoeging(en) over $2 dagen"],
+    [/^(.+) manque à (.+) et (.+)\.$/, "$1 ontbreekt bij $2 en $3."],
+    [/^(.+) est possédée par (.+) mais manque à (.+)\.$/, "$1 is in bezit van $2 maar ontbreekt bij $3."],
+    [/^Seulement (.+) % de la communauté sprite-index la possède\.$/, "Slechts $1% van de sprite-index-community heeft hem."],
+    [/^Cette variante est prioritaire chez (.+) % des utilisateurs auxquels elle manque\.$/, "Deze variant is een prioriteit voor $1% van de gebruikers die hem missen."],
+  ];
+
+  function applyPattern(trimmed, pattern, replacement) {
+    if (typeof replacement === "function") {
+      if (!pattern.test(trimmed)) return null;
+      return trimmed.replace(pattern, replacement);
+    }
+    if (!pattern.test(trimmed)) return null;
+    return trimmed.replace(pattern, replacement);
+  }
 
   function translateLegacy(value) {
     const source = String(value == null ? "" : value);
     if (locale === "fr" || !source) return source;
+    const dict = locale === "nl" ? NL : EN;
+    const patterns = locale === "nl" ? PATTERNS_NL : PATTERNS_EN;
     const trimmed = source.trim();
-    const direct = EN[trimmed];
+    const direct = dict[trimmed];
     if (direct) return source.replace(trimmed, direct);
-    for (const [pattern, replacement] of PATTERNS) {
-      if (pattern.test(trimmed)) {
-        const replaced = trimmed.replace(pattern, replacement);
-        // Second pass for nested FR fragments (e.g. "Trend: en hausse").
-        const nested = EN[replaced] || (() => {
-          const m = replaced.match(/^Trend: (.+)$/);
-          return m && EN[m[1]] ? `Trend: ${EN[m[1]]}` : null;
-        })();
-        return source.replace(trimmed, nested || replaced);
-      }
+    for (const [pattern, replacement] of patterns) {
+      const replaced = applyPattern(trimmed, pattern, replacement);
+      if (replaced == null) continue;
+      // Second pass for nested FR fragments (e.g. "Trend: en hausse").
+      const nested = dict[replaced] || (() => {
+        const m = replaced.match(/^Trend: (.+)$/);
+        return m && dict[m[1]] ? `Trend: ${dict[m[1]]}` : null;
+      })();
+      return source.replace(trimmed, nested || replaced);
     }
     return source;
   }
@@ -4141,15 +4237,18 @@
   window.MESSAGES = MESSAGES;
 
   function applyDocumentMetadata() {
-    const english = locale === "en";
-    document.title = english
+    document.title = locale === "en"
       ? "SPRITE-INDEX — Fortnite Collection Tracker"
-      : "SPRITE-INDEX — Checklist Fortnite";
+      : locale === "nl"
+        ? "SPRITE-INDEX — Fortnite-collectietracker"
+        : "SPRITE-INDEX — Checklist Fortnite";
     const description = document.querySelector('meta[name="description"]');
     if (description) {
-      description.setAttribute("content", english
+      description.setAttribute("content", locale === "en"
         ? "Your Sprite collection — checklist, farm plan and stats. Works offline."
-        : "Ta collection de sprites — checklist, farm list, statistiques. Fonctionne hors ligne.");
+        : locale === "nl"
+          ? "Jouw Sprite-collectie — checklist, farmlijst en stats. Werkt offline."
+          : "Ta collection de sprites — checklist, farm list, statistiques. Fonctionne hors ligne.");
     }
   }
 

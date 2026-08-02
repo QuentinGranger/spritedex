@@ -9,6 +9,11 @@
 //          DZ BF ML MA MU MR NE TN
 // Europe: BE FR LU MC CH AD · Amérique: CA HT · Moyen-Orient: LB · Océanie: VU
 // DROM: GP MQ GF RE YT · COM: PF BL MF PM WF · Particulier: NC TF CP
+//
+// Dutch when Accept-Language is `nl*`, or the region is one of:
+// NL (Netherlands) · SR (Suriname) · AW (Aruba) · CW (Curaçao)
+// SX (Sint Maarten) · BQ (Bonaire, Sint Eustatius, Saba)
+// Flanders / Dutch-speaking Brussels resolve via `nl` / `nl-BE` language tags.
 const FRANCOPHONE_REGIONS = new Set([
   "BJ", "BI", "CM", "KM", "CI", "DJ", "GA", "GN", "GQ", "MG",
   "CF", "CD", "CG", "RW", "SN", "SC", "TD", "TG",
@@ -22,12 +27,20 @@ const FRANCOPHONE_REGIONS = new Set([
   "NC", "TF", "CP"
 ]);
 
+const DUTCH_REGIONS = new Set([
+  "NL", "SR", "AW", "CW", "SX", "BQ"
+]);
+
 function resolveLocale(acceptLanguage) {
   const candidates = String(acceptLanguage || "").split(",").map((value) => value.trim().split(";")[0]);
   for (const candidate of candidates) {
     const [language, region] = candidate.replace(/_/g, "-").split("-");
-    if (String(language).toLowerCase() === "fr") return "fr";
-    if (FRANCOPHONE_REGIONS.has(String(region || "").toUpperCase())) return "fr";
+    const lang = String(language || "").toLowerCase();
+    const regionCode = String(region || "").toUpperCase();
+    if (lang === "nl") return "nl";
+    if (lang === "fr") return "fr";
+    if (DUTCH_REGIONS.has(regionCode)) return "nl";
+    if (FRANCOPHONE_REGIONS.has(regionCode)) return "fr";
   }
   return "en";
 }
@@ -246,32 +259,289 @@ const ERROR_EN = Object.freeze({
   "Vous ne pouvez pas interagir avec cet utilisateur": "You cannot interact with this user"
 });
 
+
+const ERROR_NL = Object.freeze({
+  "Abonnement push invalide": "Ongeldig push-abonnement",
+  "Accès interdit : vous ne pouvez modifier que votre propre collection": "Verboden: u kunt alleen uw eigen collectie wijzigen",
+  "Accès refusé": "Toegang geweigerd",
+  "Accès réservé": "Toegang beperkt",
+  "Activité non accessible": "Activiteit niet toegankelijk",
+  "Alerte forte : variante prioritaire, peu possédée, événement bientôt terminé.": "Sterke waarschuwing: prioriteitsvariant, zelden in bezit, evenement eindigt binnenkort.",
+  "Appareil introuvable": "Apparaat niet gevonden",
+  "Aucun membre dans le périmètre de l'objectif": "Geen leden in het doelbereik",
+  "Aucune équipe ne peut couvrir l'objectif": "Geen enkel team kan het doel bereiken",
+  "Aucune invitation à annuler": "Geen uitnodiging om te annuleren",
+  "Aucune invitation en attente": "Geen openstaande uitnodiging",
+  "Aucune invitation en attente pour cette escouade": "Er is geen openstaande uitnodiging voor dit team",
+  "Aucune préférence à mettre à jour": "Geen voorkeuren om bij te werken",
+  "Authentification requise": "Authenticatie vereist",
+  "Badge épinglé invalide": "Ongeldige vastgezette badge",
+  "Badges non accessibles": "Badges niet toegankelijk",
+  "Carte non disponible": "Kaart niet beschikbaar",
+  "Ce compte est suspendu": "Dit account is opgeschort",
+  "Ce pseudo est déjà pris": "Deze gebruikersnaam is al in gebruik",
+  "Ce pseudo est déjà pris ou temporairement réservé": "Deze gebruikersnaam is al in gebruik of tijdelijk gereserveerd",
+  "Cet objectif n'est pas lié à une variante": "Dit doel is niet gekoppeld aan een variant",
+  "Cet utilisateur est déjà membre de l'escouade": "Deze gebruiker is al een teamlid",
+  "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune": "Deze gebruiker accepteert alleen uitnodigingen van leden van een gedeeld team",
+  "Cet utilisateur n'accepte pas les invitations": "Deze gebruiker accepteert geen uitnodigingen",
+  "Cet utilisateur n'accepte pas les invitations d'escouade": "Deze gebruiker accepteert geen teamuitnodigingen",
+  "Cet utilisateur n'est pas bloqué": "Deze gebruiker is niet geblokkeerd",
+  "Cet utilisateur ne peut pas être invité": "Deze gebruiker kan niet worden uitgenodigd",
+  "Cette escouade n'accepte plus de nouveaux membres": "Deze ploeg accepteert geen nieuwe leden meer",
+  "Champ de préférence invalide": "Ongeldig voorkeursveld",
+  "Changement de simulation invalide": "Ongeldige simulatiewijziging",
+  "changes doit être un tableau": "wijzigingen moeten een array zijn",
+  "Cible de recommendation invalide": "Ongeldig aanbevelingsdoel",
+  "Clé d'objet invalide": "Ongeldige objectsleutel",
+  "Client OAuth obsolète : recharge l'application avant de réessayer.": "Verouderde OAuth-client: laad de applicatie opnieuw en probeer het opnieuw.",
+  "Code d'escouade introuvable": "Teamcode niet gevonden",
+  "Code déjà pris, réessayez": "Code al in gebruik, probeer het opnieuw",
+  "Collection non accessible": "Collectie niet toegankelijk",
+  "Collection trop volumineuse": "Collectie te groot",
+  "Collision de code, réessayez": "Codebotsing, probeer het opnieuw",
+  "Collision de token, réessayez": "Tokenbotsing, probeer het opnieuw",
+  "Comparaison impossible": "Vergelijking niet mogelijk",
+  "Compte invalide": "Ongeldig account",
+  "Compte suspendu": "Account opgeschort",
+  "Confirmation invalide": "Ongeldige bevestiging",
+  "Consentement invalide": "Ongeldige toestemming",
+  "cursor invalide": "Ongeldige cursor",
+  "Date limite invalide": "Ongeldige deadline",
+  "Demande introuvable": "Verzoek niet gevonden",
+  "Destinataire requis": "Ontvanger vereist",
+  "Données communautaires insuffisantes": "Onvoldoende gemeenschapsgegevens",
+  "Durée de partage invalide": "Ongeldige deelduur",
+  "Email de vérification renvoyé": "Verificatie-e-mail opnieuw verzonden",
+  "Email déjà vérifié": "E-mailadres al geverifieerd",
+  "Email ou mot de passe incorrect": "Onjuist e-mailadres of wachtwoord",
+  "Erreur import": "Importfout",
+  "Erreur serveur": "Serverfout",
+  "Erreur serveur OAuth": "OAuth-serverfout",
+  "Erreur sync": "Synchronisatiefout",
+  "Escouade introuvable": "Squad niet gevonden",
+  "Escouade pleine (max 10)": "Squad is vol (max 10)",
+  "Événement inconnu": "Onbekende gebeurtenis",
+  "eventId requis pour le mode event": "eventId vereist voor gebeurtenismodus",
+  "Filtre invalide": "Ongeldig filter",
+  "Fréquence invalide": "Ongeldige frequentie",
+  "Fréquences invalides": "Ongeldige frequenties",
+  "friendId invalide": "Ongeldige vriend-ID",
+  "Fuseau horaire invalide": "Ongeldige tijdzone",
+  "Heures silencieuses invalides": "Ongeldige rustige uren",
+  "Identifiant de membre invalide": "Ongeldige lid-ID",
+  "Identifiant de variante invalide": "Ongeldige variant-ID",
+  "Identifiant invalide": "Ongeldige identificatie",
+  "Impossible d'enregistrer les réglages du passeport": "Kan paspoortinstellingen niet opslaan",
+  "Impossible d'épingler le badge": "Kan badge niet vastzetten",
+  "Impossible de calculer le passeport": "Kan paspoort niet berekenen",
+  "Impossible de charger l'activité": "Kan activiteit niet laden",
+  "Impossible de charger le passeport": "Kan paspoort niet laden",
+  "Impossible de charger les badges": "Kan badges niet laden",
+  "Impossible de charger les réglages du passeport": "Kan paspoortinstellingen niet laden",
+  "Impossible de choisir la squad principale": "Kan het primaire team niet instellen",
+  "Impossible de créer le compte": "Kan account niet aanmaken",
+  "Impossible de créer un objectif entre des membres bloqués": "Kan geen doel maken tussen geblokkeerde leden",
+  "Impossible de générer la carte": "Kan kaart niet genereren",
+  "Impossible de partager une collection privée": "Kan een privécollectie niet delen",
+  "Impossible de préparer la carte": "Kan de kaart niet voorbereiden",
+  "JSON invalide": "Ongeldige JSON",
+  "La squad principale doit être une squad active de l'utilisateur": "De primaire squad moet een actieve squad van de gebruiker zijn",
+  "La taille d'équipe doit être entre 2 et 4": "De teamgrootte moet tussen 2 en 4 zijn",
+  "Le badge épinglé doit être débloqué et visible": "De vastgezette badge moet ontgrendeld en zichtbaar zijn",
+  "Le créateur ne peut pas être retiré": "De maker kan niet worden verwijderd",
+  "Le niveau de maîtrise nécessite une variante possédée.": "Beheersingsniveau vereist een eigen variant.",
+  "Les membres assignés doivent être des membres actifs de l'escouade": "Toegewezen leden moeten actieve teamleden zijn",
+  "Lien de partage invalide": "Ongeldige deellink",
+  "Lien de partage invalide ou révoqué": "Ongeldige of ingetrokken deellink",
+  "Lien expiré ou révoqué": "Link verlopen of ingetrokken",
+  "Lien introuvable": "Link niet gevonden",
+  "Lien invalide, expiré ou révoqué": "Ongeldige, verlopen of ingetrokken link",
+  "Lien non trouvé": "Link niet gevonden",
+  "Limite de notifications invalide": "Ongeldige meldingslimiet",
+  "Liste de membres assignés invalide": "Ongeldige lijst met verantwoordelijken",
+  "Liste de participants invalide": "Ongeldige deelnemerslijst",
+  "Liste de variantes invalide": "Ongeldige variantlijst",
+  "maxActiveGoalsPerMember doit être entre 1 et 20": "maxActiveGoalsPerMember moet tussen 1 en 20 liggen",
+  "maxActiveGoalsPerMember requis": "maxActiveGoalsPerMember is vereist",
+  "memberId invalide": "Ongeldige lid-ID",
+  "Membre introuvable dans l'escouade": "Lid niet gevonden in team",
+  "method invalide (auto, greedy, exhaustive)": "Ongeldige methode (automatisch, hebzuchtig, exhaustief)",
+  "metricKey requis": "metrische sleutel vereist",
+  "Métrique introuvable": "Metriek niet gevonden",
+  "Mot de passe réinitialisé": "Wachtwoord opnieuw instellen",
+  "Motif invalide (1-500 caractères)": "Ongeldige reden (1-500 tekens)",
+  "Notification introuvable": "Melding niet gevonden",
+  "notificationId requis": "notificatie-ID vereist",
+  "Objectif introuvable ou terminé": "Doel niet gevonden of voltooid",
+  "Option de livraison invalide": "Ongeldige bezorgoptie",
+  "Option de partage invalide": "Ongeldige deeloptie",
+  "Option invalide": "Ongeldige optie",
+  "Options de livraison invalides": "Ongeldige bezorgopties",
+  "Options de partage invalides": "Ongeldige aandelenopties",
+  "Overrides invalides": "Ongeldige overschrijvingen",
+  "Paramètre manquant pour ce targetType": "Ontbrekende parameter voor dit targetType",
+  "Participant invalide": "Ongeldige deelnemer",
+  "Pas assez de membres visibles pour former une paire": "Niet genoeg zichtbare leden om een ​​paar te vormen",
+  "Passeport non accessible": "Paspoort is niet toegankelijk",
+  "Passeport non trouvé": "Paspoort niet gevonden",
+  "Préférences invalides": "Ongeldige voorkeuren",
+  "Pseudo réservé ou interdit": "Gebruikersnaam gereserveerd of verboden",
+  "pushEnabled invalide": "Ongeldige pushEnabled",
+  "Recherche invalide": "Ongeldige zoekopdracht",
+  "Recommendation requise": "Aanbeveling vereist",
+  "recommendationKey requis": "aanbevelingSleutel vereist",
+  "Réglages invalides": "Ongeldige instellingen",
+  "Réponse OAuth expirée ou déjà utilisée": "Verlopen of al gebruikte OAuth-reactie",
+  "Réponse OAuth invalide": "Ongeldige OAuth-reactie",
+  "Requête invalide": "Ongeldig verzoek",
+  "Requête trop volumineuse": "De hoofdtekst van het verzoek is te groot",
+  "Ressource introuvable": "Bron niet gevonden",
+  "Rien à mettre à jour": "Niets te updaten",
+  "Session expirée": "Sessie verlopen",
+  "Session indisponible": "Sessie niet beschikbaar",
+  "Seul le créateur peut modifier l'accès": "Alleen de maker kan de toegang wijzigen",
+  "Seul le créateur peut modifier les paramètres": "Alleen de maker kan instellingen wijzigen",
+  "Seul le créateur peut régénérer le code": "Alleen de maker kan de code opnieuw genereren",
+  "Seul le créateur peut retirer un membre": "Alleen de maker kan een lid verwijderen",
+  "Seul le créateur peut supprimer l'escouade": "Alleen de maker kan het team verwijderen",
+  "Seuls les amis peuvent être invités dans une escouade": "Alleen vrienden kunnen worden uitgenodigd voor een team",
+  "Si un compte existe, un email a été envoyé": "Als er een account bestaat, is er een e-mail verzonden",
+  "Sprite introuvable": "Sprite niet gevonden",
+  "spriteId invalide": "Ongeldige sprite-ID",
+  "spriteId requis": "spriteId vereist",
+  "Squad introuvable": "Team niet gevonden",
+  "Squad invalide": "Ongeldige ploeg",
+  "squadId invalide": "Ongeldige squadId",
+  "subscriptionId invalide": "Ongeldige abonnements-ID",
+  "Suggestion de comparaison : plus de 15 variantes complémentaires et collections bien renseignées.": "Vergelijkingssuggestie: ruim 15 complementaire varianten en goed gevulde collecties.",
+  "Surface d’interaction invalide": "Ongeldig interactieoppervlak",
+  "targetType invalide": "Ongeldig doeltype",
+  "targetUserId invalide": "Ongeldige targetUserId",
+  "Titre requis": "Titel vereist",
+  "Toi-même ?": "Jezelf?",
+  "Token invalide": "Ongeldige token",
+  "Token invalide ou expiré": "Ongeldig of verlopen token",
+  "Token manquant": "Ontbrekend token",
+  "Token ou endpoint invalide": "Ongeldig token of eindpunt",
+  "Token ou subscription requis": "Token of abonnement vereist",
+  "Trop d'enregistrements d'appareil. Réessaie plus tard.": "Te veel apparaatregistraties. Probeer het later opnieuw.",
+  "Trop d'escouades créées. Réessaie plus tard.": "Er zijn te veel squadrons gemaakt. Probeer het later opnieuw.",
+  "Trop d'événements analytiques. Réessaie plus tard.": "Te veel analysegebeurtenissen. Probeer het later opnieuw.",
+  "Trop de comptes créés depuis cette adresse. Réessaie plus tard.": "Er zijn te veel accounts aangemaakt vanaf dit adres. Probeer het later opnieuw.",
+  "Trop de créations d'objectifs depuis des recommandations. Réessaie dans quelques minutes.": "Te veel doelcreaties op basis van aanbevelingen. Probeer het over een paar minuten opnieuw.",
+  "Trop de demandes de réinitialisation. Réessaie plus tard.": "Te veel resetverzoeken. Probeer het later opnieuw.",
+  "Trop de liens actifs : révoque un lien avant d'en créer un autre": "Te veel actieve links: trek er één in voordat u een nieuwe maakt",
+  "Trop de liens créés. Réessaie plus tard.": "Er zijn te veel links gemaakt. Probeer het later opnieuw.",
+  "Trop de mises à jour des préférences. Réessaie dans quelques minutes.": "Te veel voorkeursupdates. Probeer het over een paar minuten opnieuw.",
+  "Trop de mises à jour du consentement. Réessaie dans quelques minutes.": "Te veel toestemmingsupdates. Probeer het over een paar minuten opnieuw.",
+  "Trop de recherches, ralentis un peu.": "Te veel zoekopdrachten, doe het een beetje langzamer.",
+  "Trop de régénérations de code. Réessaie plus tard.": "Te veel coderegeneraties. Probeer het later opnieuw.",
+  "Trop de renvois d'email. Réessaie plus tard.": "Er worden te veel e-mails opnieuw verzonden. Probeer het later opnieuw.",
+  "Trop de simulations. Réessaie dans une minute.": "Te veel simulaties. Probeer het over een minuut opnieuw.",
+  "Trop de synchronisations. Ralentis un peu.": "Te veel synchronisaties. Doe een beetje langzamer.",
+  "Trop de tentatives de connexion. Réessaie dans 15 minutes.": "Te veel inlogpogingen. Probeer het over 15 minuten opnieuw.",
+  "Trop de tentatives OAuth. Réessaie dans quelques minutes.": "Te veel OAuth-pogingen. Probeer het over een paar minuten opnieuw.",
+  "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard.": "Te veel pogingen om lid te worden van een team. Probeer het later opnieuw.",
+  "Trop de tentatives, réessaie plus tard.": "Te veel pogingen. Probeer het later opnieuw.",
+  "Tu as récemment envoyé une demande. Réessaie dans 7 jours.": "U heeft onlangs een verzoek verzonden. Probeer het over 7 dagen opnieuw.",
+  "Tu as récemment refusé une demande. Réessaie dans 7 jours.": "U heeft onlangs een verzoek afgewezen. Probeer het over 7 dagen opnieuw.",
+  "Tu dois avoir au moins 15 ans pour créer un compte.": "Om een ​​account aan te maken moet je minimaal 15 jaar oud zijn.",
+  "Tu ne peux pas t'interagir toi-même": "Je kunt geen interactie met jezelf aangaan",
+  "Tu ne peux pas t'inviter toi-même": "Je kunt jezelf niet uitnodigen",
+  "Tu ne peux pas te comparer toi-même": "Je kunt jezelf niet vergelijken",
+  "Type d’interaction invalide": "Ongeldig interactietype",
+  "Type de changement invalide": "Ongeldig wijzigingstype",
+  "Un objectif personnel ne peut assigner que son créateur": "Een persoonlijk doel kan alleen de maker ervan toewijzen",
+  "Une invitation est déjà en attente": "Er is al een uitnodiging in behandeling",
+  "Une ou plusieurs variantes sont inconnues": "Eén of meerdere varianten zijn onbekend",
+  "URL d'avatar invalide": "Ongeldige avatar-URL",
+  "Utilisateur déjà bloqué": "Gebruiker al geblokkeerd",
+  "Utilisateur introuvable": "Gebruiker niet gevonden",
+  "Utilisateur invalide": "Ongeldige gebruiker",
+  "Utilisateur non trouvé": "Gebruiker niet gevonden",
+  "Utilisez la route leave pour vous retirer": "Gebruik de verlofroute om jezelf te verwijderen",
+  "Variante non trouvée dans le catalogue actif": "Variant niet gevonden in de actieve catalogus",
+  "variantId requis": "variantId vereist",
+  "Visibilité invalide": "Ongeldige zichtbaarheidsinstelling",
+  "Votre compte est suspendu": "Uw account is opgeschort",
+  "Votre rôle ne permet pas d'inviter dans cette escouade": "Jouw rol kan geen uitnodigingen zijn voor dit team",
+  "Vous êtes déjà amis": "Jullie zijn al vrienden",
+  "Vous n'êtes pas amis": "Jullie zijn geen vrienden",
+  "Vous n'êtes pas membre actif de cette escouade": "Je bent geen actief lid van dit team",
+  "Vous n'êtes pas membre de cette escouade": "Je bent geen lid van dit team",
+  "Vous ne pouvez pas accéder à cette comparaison": "U heeft geen toegang tot deze vergelijking",
+  "Vous ne pouvez pas interagir avec cet utilisateur": "U kunt geen interactie aangaan met deze gebruiker"
+});
+
 function localizeError(message, locale) {
   const source = String(message || "");
-  if (locale !== "en" || !source) return source;
-  if (ERROR_EN[source]) return ERROR_EN[source];
+  if ((locale !== "en" && locale !== "nl") || !source) return source;
+  const dict = locale === "nl" ? ERROR_NL : ERROR_EN;
+  if (dict[source]) return dict[source];
   let match = source.match(/^Provider ([\w-]+) non configuré$/i);
-  if (match) return `Provider ${match[1]} is not configured`;
+  if (match) {
+    return locale === "nl"
+      ? `Provider ${match[1]} is niet geconfigureerd`
+      : `Provider ${match[1]} is not configured`;
+  }
   match = source.match(/^Ce pseudo est déjà pris(?: ou temporairement réservé)?$/i);
-  if (match) return source.includes("temporairement") ? "This username is already taken or temporarily reserved" : "This username is already taken";
+  if (match) {
+    if (locale === "nl") {
+      return source.includes("temporairement")
+        ? "Deze gebruikersnaam is al bezet of tijdelijk gereserveerd"
+        : "Deze gebruikersnaam is al bezet";
+    }
+    return source.includes("temporairement")
+      ? "This username is already taken or temporarily reserved"
+      : "This username is already taken";
+  }
   match = source.match(/^Trop de variantes \((\d+) max\)$/i);
-  if (match) return `Too many variants (${match[1]} max)`;
+  if (match) {
+    return locale === "nl"
+      ? `Te veel varianten (${match[1]} max)`
+      : `Too many variants (${match[1]} max)`;
+  }
   match = source.match(/^Trop de membres assignés \((\d+) max\)$/i);
-  if (match) return `Too many assigned members (${match[1]} max)`;
+  if (match) {
+    return locale === "nl"
+      ? `Te veel toegewezen leden (${match[1]} max)`
+      : `Too many assigned members (${match[1]} max)`;
+  }
   match = source.match(/^Trop de participants \((\d+) max\)$/i);
-  if (match) return `Too many participants (${match[1]} max)`;
+  if (match) {
+    return locale === "nl"
+      ? `Te veel deelnemers (${match[1]} max)`
+      : `Too many participants (${match[1]} max)`;
+  }
   match = source.match(/^Trop de changements \((\d+) max\)$/i);
-  if (match) return `Too many changes (${match[1]} max)`;
+  if (match) {
+    return locale === "nl"
+      ? `Te veel wijzigingen (${match[1]} max)`
+      : `Too many changes (${match[1]} max)`;
+  }
   match = source.match(/^(.+) trop long \((\d+) max\)$/i);
-  if (match) return `${match[1]} too long (${match[2]} max)`;
+  if (match) {
+    return locale === "nl"
+      ? `${match[1]} te lang (${match[2]} max)`
+      : `${match[1]} too long (${match[2]} max)`;
+  }
   match = source.match(/^(.+) trop volumineux$/i);
-  if (match) return `${match[1]} too large`;
+  if (match) {
+    return locale === "nl" ? `${match[1]} te groot` : `${match[1]} too large`;
+  }
   match = source.match(/^(.+) invalides?$/i);
-  if (match) return `Invalid ${match[1]}`;
+  if (match) {
+    return locale === "nl" ? `Ongeldige ${match[1]}` : `Invalid ${match[1]}`;
+  }
   match = source.match(/^(.+) requis$/i);
-  if (match) return `${match[1]} required`;
+  if (match) {
+    return locale === "nl" ? `${match[1]} verplicht` : `${match[1]} required`;
+  }
   match = source.match(/^(.+) introuvable$/i);
-  if (match) return `${match[1]} not found`;
+  if (match) {
+    return locale === "nl" ? `${match[1]} niet gevonden` : `${match[1]} not found`;
+  }
   return source;
 }
 
@@ -279,10 +549,12 @@ function localizeErrorResponse(req, res, next) {
   res.locals.locale = resolveLocale(req.get("accept-language"));
   const sendJson = res.json.bind(res);
   res.json = function localizedJson(payload) {
-    if (res.locals.locale === "en" && payload && typeof payload === "object" && !Array.isArray(payload)) {
+    if ((res.locals.locale === "en" || res.locals.locale === "nl")
+      && payload && typeof payload === "object" && !Array.isArray(payload)) {
       const result = { ...payload };
-      if (typeof result.error === "string") result.error = localizeError(result.error, "en");
-      if (typeof result.message === "string") result.message = localizeError(result.message, "en");
+      const loc = res.locals.locale;
+      if (typeof result.error === "string") result.error = localizeError(result.error, loc);
+      if (typeof result.message === "string") result.message = localizeError(result.message, loc);
       return sendJson(result);
     }
     return sendJson(payload);

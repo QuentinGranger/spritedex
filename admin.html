@@ -6,6 +6,9 @@
     <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#070b1d" />
     <title>SPRITE-INDEX — Backoffice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/admin.css" />
   </head>
   <body class="admin-page">
@@ -14,7 +17,7 @@
         <img class="admin-brand__logo" src="/LogoBackoffice.png" alt="Sprite-Index Backoffice" />
       </a>
       <div class="admin-topbar__actions">
-        <span class="admin-session"><i></i><span data-admin-copy="session">Session terminal sécurisée</span></span>
+        <span class="admin-session" id="adminSessionBadge" title=""><i></i><span data-admin-copy="session" id="adminSessionLabel">Session terminal sécurisée</span></span>
         <button class="admin-button admin-button--quiet" id="adminLogout" type="button" data-admin-copy="logout">Fermer la session</button>
       </div>
     </header>
@@ -47,6 +50,7 @@
             <p id="adminLead">La santé de Sprite-Index, les alertes et les prochaines actions utiles.</p>
           </div>
           <div class="admin-page-header__actions">
+            <button class="admin-button admin-button--quiet admin-global-search-trigger" id="adminUniversalSearch" type="button" aria-haspopup="dialog"><span aria-hidden="true">⌕</span><span>Rechercher</span><kbd>⌘ K</kbd></button>
             <span id="adminUpdated" class="admin-updated" aria-live="polite"></span>
             <button class="admin-button" id="adminRefresh" type="button" data-admin-copy="refresh">Actualiser</button>
           </div>
@@ -60,6 +64,11 @@
             <section class="admin-panel admin-panel--wide">
               <header class="admin-panel__header"><div><p class="admin-eyebrow">À TRAITER</p><h2 data-admin-copy="overviewActionTitle">Priorités opérationnelles</h2></div></header>
               <div class="admin-action-list" id="overviewActions"></div>
+            </section>
+            <section class="admin-panel admin-panel--wide admin-health-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">SANTÉ RÉELLE</p><h2>Fraîcheur & services</h2><p>Mesures relevées à chaque actualisation, pas des valeurs de démonstration.</p></div><span class="admin-health-panel__stamp" id="overviewHealthStamp"></span></header>
+              <div class="admin-health-summary" id="overviewHealthSummary" aria-live="polite"></div>
+              <div class="admin-health-cards" id="overviewHealthCards" aria-live="polite"></div>
             </section>
             <section class="admin-panel">
               <header class="admin-panel__header"><div><p class="admin-eyebrow">TEMPS RÉEL</p><h2 data-admin-copy="overviewRealtime">Connexions en direct</h2></div></header>
@@ -78,37 +87,92 @@
             <select class="admin-select" id="playerState"><option value="all">Tous les comptes</option><option value="reported">Signalés</option><option value="suspended">Suspendus</option><option value="new">Inscrits cette semaine</option></select>
             <button class="admin-button" id="playerSearchButton" type="button" data-admin-copy="search">Rechercher</button>
           </div>
-          <div class="admin-split">
-            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">COMPTES</p><h2 data-admin-copy="playersTitle">Joueurs</h2></div><span id="playersCount" class="admin-panel__meta"></span></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Pseudo</th><th>Collection</th><th>Activité</th><th>État</th><th></th></tr></thead><tbody id="playersList"></tbody></table></div><div class="admin-pagination" id="playersPagination"></div></section>
-            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">SÛRETÉ</p><h2 data-admin-copy="reportsTitle">Signalements ouverts</h2></div></header><div class="admin-report-list" id="reportsList"></div></section>
+          <div class="admin-players-layout">
+            <div class="admin-players-main">
+              <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">COMPTES</p><h2 data-admin-copy="playersTitle">Joueurs</h2></div><span id="playersCount" class="admin-panel__meta"></span></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Pseudo</th><th>Collection</th><th>Activité</th><th>État</th><th></th></tr></thead><tbody id="playersList"></tbody></table></div><div class="admin-pagination" id="playersPagination"></div></section>
+              <section class="admin-panel admin-panel--flush admin-reports-panel"><header class="admin-panel__header admin-panel__header--padded admin-reports-panel__header"><div><p class="admin-eyebrow">SÛRETÉ</p><h2 data-admin-copy="reportsTitle">Signalements ouverts</h2><p class="admin-reports-panel__lead">Traitez d’abord les situations urgentes. Chaque décision est journalisée.</p></div><label class="admin-report-filter"><span>Priorité</span><select id="reportPriorityFilter"><option value="all">Toutes</option><option value="urgent">Urgentes</option><option value="high">Hautes</option><option value="normal">Normales</option><option value="low">Basses</option></select></label></header><div class="admin-report-triage" id="reportTriage" aria-live="polite"></div><div class="admin-report-list" id="reportsList"></div></section>
+            </div>
+            <aside class="admin-panel admin-editor" id="playerDossier">
+              <p class="admin-empty" data-admin-copy="playerPick">Sélectionnez un joueur ou un signalement pour ouvrir la fiche de modération.</p>
+            </aside>
           </div>
         </section>
 
         <section class="admin-tab" data-admin-panel="catalog" hidden>
-          <div class="admin-section-toolbar"><div class="admin-search"><span aria-hidden="true">⌕</span><input id="catalogSearch" type="search" placeholder="Sprite ou identifiant" data-admin-placeholder="catalogSearch" /></div><select class="admin-select" id="catalogState"><option value="all">Tout le catalogue</option><option value="review">À vérifier</option><option value="unreleased">Non publiés</option></select><button class="admin-button" id="catalogSearchButton" type="button" data-admin-copy="search">Rechercher</button></div>
-          <div class="admin-catalog-layout"><section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">RÉFÉRENTIEL</p><h2 data-admin-copy="catalogTitle">Sprites & variantes</h2></div><span id="catalogCount" class="admin-panel__meta"></span></header><div class="admin-catalog-list" id="catalogList"></div><div class="admin-pagination" id="catalogPagination"></div></section><aside class="admin-panel admin-editor" id="catalogEditor"><p class="admin-empty" data-admin-copy="catalogPick">Sélectionnez un sprite pour contrôler ses données, variantes, disponibilités et historique.</p></aside></div>
+          <div class="admin-section-toolbar"><div class="admin-search"><span aria-hidden="true">⌕</span><input id="catalogSearch" type="search" placeholder="Sprite ou identifiant" data-admin-placeholder="catalogSearch" /></div><select class="admin-select" id="catalogState"><option value="all">Tout le catalogue</option><option value="draft">Brouillons</option><option value="review">En relecture</option><option value="published">Publiés</option><option value="needs_review">Données à vérifier</option></select><button class="admin-button" id="catalogSearchButton" type="button" data-admin-copy="search">Rechercher</button></div>
+          <div class="admin-catalog-layout"><section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">RÉFÉRENTIEL</p><h2 data-admin-copy="catalogTitle">Sprites & variantes</h2></div><span id="catalogCount" class="admin-panel__meta"></span></header><div class="admin-bulk-bar" id="catalogBulkBar" hidden aria-live="polite"><div class="admin-bulk-bar__selection"><strong id="catalogBulkCount">0 sélection</strong><small id="catalogBulkHint">La sélection est conservée entre les pages.</small></div><label class="admin-bulk-bar__field"><span>Nouveau statut</span><select id="catalogBulkStatus"><option value="draft">Brouillon</option><option value="review">Envoyer en relecture</option><option value="published">Publier</option></select></label><button class="admin-button" id="catalogBulkApply" type="button">Vérifier l’impact</button><button class="admin-button admin-button--quiet" id="catalogBulkClear" type="button">Tout désélectionner</button></div><div class="admin-catalog-list" id="catalogList"></div><div class="admin-pagination" id="catalogPagination"></div></section><aside class="admin-panel admin-editor" id="catalogEditor"><p class="admin-empty" data-admin-copy="catalogPick">Sélectionnez un sprite pour contrôler ses données, variantes, disponibilités et historique.</p></aside></div>
         </section>
 
         <section class="admin-tab" data-admin-panel="events" hidden>
-          <div class="admin-split">
-            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">CALENDRIER</p><h2 data-admin-copy="eventsTitle">Événements</h2></div><button class="admin-button admin-button--quiet" id="createEvent" type="button" data-admin-copy="create">Créer</button></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Événement</th><th>Fin</th><th>État</th><th></th></tr></thead><tbody id="eventsList"></tbody></table></div></section>
-            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">ÉDITORIAL</p><h2 data-admin-copy="newsTitle">Actualités</h2></div><button class="admin-button admin-button--quiet" id="createNews" type="button" data-admin-copy="create">Créer</button></header><div class="admin-news-list" id="newsList"></div></section>
+          <div class="admin-section-toolbar">
+            <select class="admin-select" id="newsStatusFilter">
+              <option value="all">Toutes les actualités</option>
+              <option value="draft">Brouillons</option>
+              <option value="published">Publiées</option>
+              <option value="archived">Archivées</option>
+            </select>
+            <span id="eventsNewsMeta" class="admin-panel__meta"></span>
+          </div>
+          <div class="admin-bulk-bar" id="eventsBulkBar" hidden aria-live="polite"><div class="admin-bulk-bar__selection"><strong id="eventsBulkCount">0 sélection</strong><small id="eventsBulkHint">La sélection est conservée entre les pages.</small></div><label class="admin-bulk-bar__field"><span>État des données</span><select id="eventsBulkStatus"><option value="incomplete">Incomplet</option><option value="complete">Complet</option><option value="verified">Vérifié</option><option value="unknown">Inconnu</option></select></label><button class="admin-button" id="eventsBulkApply" type="button">Vérifier l’impact</button><button class="admin-button admin-button--quiet" id="eventsBulkClear" type="button">Tout désélectionner</button></div><div class="admin-split">
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">CALENDRIER</p><h2 data-admin-copy="eventsTitle">Événements</h2></div><button class="admin-button admin-button--quiet" id="createEvent" type="button" data-admin-copy="create" data-requires-cap="events.write">Créer</button></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th aria-label="Sélectionner les événements affichés"><input id="eventsBulkSelectPage" type="checkbox" aria-label="Sélectionner les événements affichés" /></th><th>Événement</th><th>Début</th><th>Fin</th><th>État</th><th></th></tr></thead><tbody id="eventsList"></tbody></table></div></section>
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">ÉDITORIAL</p><h2 data-admin-copy="newsTitle">Actualités</h2></div><button class="admin-button admin-button--quiet" id="createNews" type="button" data-admin-copy="create" data-requires-cap="events.write">Créer</button></header><div class="admin-news-list" id="newsList"></div></section>
           </div>
         </section>
 
         <section class="admin-tab" data-admin-panel="collections" hidden>
           <div class="admin-kpis" id="integrityKpis"></div>
-          <div class="admin-grid"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">RÉPARATION SÛRE</p><h2 data-admin-copy="repairTitle">Références de sprites</h2><p data-admin-copy="repairLead">La correction ne touche jamais aux statuts, priorités ni notes des joueurs.</p></div></header><button class="admin-button" id="repairSpriteReferences" type="button" data-admin-copy="repair">Corriger les références</button></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">RECENT</p><h2 data-admin-copy="migrationTitle">Erreurs de migration</h2></div></header><div class="admin-error-list" id="migrationErrors"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">PASSEPORTS</p><h2 data-admin-copy="integrityQueueTitle">File de recalcul</h2></div></header><div class="admin-status-list" id="integrityPassportQueue"></div></section></div>
+          <div class="admin-grid"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">RÉPARATION SÛRE</p><h2 data-admin-copy="repairTitle">Références de sprites</h2><p data-admin-copy="repairLead">La correction ne touche jamais aux statuts, priorités ni notes des joueurs.</p></div></header><button class="admin-button" id="repairSpriteReferences" type="button" data-admin-copy="repair" data-requires-cap="collections.write">Corriger les références</button></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">RECENT</p><h2 data-admin-copy="migrationTitle">Erreurs de migration</h2></div></header><div class="admin-error-list" id="migrationErrors"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">PASSEPORTS</p><h2 data-admin-copy="integrityQueueTitle">File de recalcul</h2></div></header><div class="admin-status-list" id="integrityPassportQueue"></div></section></div>
         </section>
 
         <section class="admin-tab" data-admin-panel="social" hidden>
-          <div class="admin-kpis" id="socialKpis"></div>
-          <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">ESCOUADES</p><h2 data-admin-copy="squadsTitle">Santé des squads</h2></div></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Squad</th><th>Membres</th><th>Souhaits</th><th>Activité</th><th>Accès</th></tr></thead><tbody id="squadsList"></tbody></table></div><div class="admin-activity-chips" id="socialActivity"></div></section>
+          <div class="admin-kpis admin-kpis--social" id="socialKpis"></div>
+          <div class="admin-section-toolbar">
+            <div class="admin-search"><span aria-hidden="true">⌕</span><input id="squadSearch" type="search" placeholder="Nom ou code de squad" data-admin-placeholder="squadSearch" /></div>
+            <select class="admin-select" id="squadJoinFilter">
+              <option value="all">Tous les accès</option>
+              <option value="open">Accès ouverts</option>
+              <option value="closed">Accès fermés</option>
+            </select>
+            <button class="admin-button" id="squadSearchButton" type="button" data-admin-copy="search">Rechercher</button>
+          </div>
+          <div class="admin-catalog-layout">
+            <section class="admin-panel admin-panel--flush">
+              <header class="admin-panel__header admin-panel__header--padded">
+                <div><p class="admin-eyebrow">ESCOUADES</p><h2 data-admin-copy="squadsTitle">Santé des squads</h2></div>
+                <span id="squadsCount" class="admin-panel__meta"></span>
+              </header>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Squad</th><th>Membres</th><th>Souhaits</th><th>Invites</th><th>Activité</th><th></th></tr></thead>
+                  <tbody id="squadsList"></tbody>
+                </table>
+              </div>
+              <div class="admin-pagination" id="squadsPagination"></div>
+              <div class="admin-activity-chips" id="socialActivity"></div>
+            </section>
+            <aside class="admin-panel admin-editor" id="squadDossier">
+              <p class="admin-empty" data-admin-copy="squadPick">Sélectionnez une squad pour voir membres, invitations, souhaits et activité.</p>
+            </aside>
+          </div>
+          <div class="admin-grid admin-grid--social">
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">INVITATIONS</p><h2 data-admin-copy="pendingInvitesTitle">Invitations en attente</h2></div></header>
+              <div class="admin-status-list" id="socialPendingInvites"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">AMITIÉS</p><h2 data-admin-copy="pendingFriendsTitle">Demandes d’amis</h2></div></header>
+              <div class="admin-status-list" id="socialPendingFriends"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">SÛRETÉ</p><h2 data-admin-copy="recentBlocksTitle">Blocages récents</h2></div></header>
+              <div class="admin-status-list" id="socialRecentBlocks"></div>
+            </section>
+          </div>
         </section>
 
         <section class="admin-tab" data-admin-panel="notifications" hidden>
           <div class="admin-kpis" id="notificationKpis"></div>
-          <div class="admin-split"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">DISTRIBUTION</p><h2 data-admin-copy="deliveriesTitle">Canaux de livraison</h2></div><button class="admin-button admin-button--quiet" id="processNotifications" type="button" data-admin-copy="process">Traiter la file</button></header><div class="admin-status-list" id="notificationDeliveries"></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">ÉCHECS</p><h2 data-admin-copy="failedJobsTitle">Jobs à relancer</h2></div></header><div class="admin-failure-list" id="failedNotificationJobs"></div></section></div>
+          <div class="admin-split"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">DISTRIBUTION</p><h2 data-admin-copy="deliveriesTitle">Canaux de livraison</h2></div><button class="admin-button admin-button--quiet" id="processNotifications" type="button" data-admin-copy="process" data-requires-cap="notifications.write">Traiter la file</button></header><div class="admin-status-list" id="notificationDeliveries"></div><div class="admin-status-list" id="notificationHealth"></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">ÉCHECS</p><h2 data-admin-copy="failedJobsTitle">Jobs à relancer</h2><p>Les relances groupées réinitialisent uniquement les tâches récupérables.</p></div><button class="admin-button admin-button--quiet" id="retryFailedNotifications" type="button" data-requires-cap="notifications.write">Relancer les échecs</button></header><div class="admin-failure-list" id="failedNotificationJobs"></div></section></div>
         </section>
 
         <section class="admin-tab" data-admin-panel="intelligence" hidden>
@@ -118,12 +182,89 @@
 
         <section class="admin-tab" data-admin-panel="passports" hidden>
           <div class="admin-kpis" id="passportKpis"></div>
-          <div class="admin-grid"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">MAINTENANCE</p><h2 data-admin-copy="passportRecalcTitle">Recalcul des passeports</h2><p data-admin-copy="passportRecalcLead">Les recalculs sont placés dans une file, sans notification aux joueurs.</p></div></header><div class="admin-inline-actions"><button class="admin-button" data-passport-scope="stale" type="button" data-admin-copy="recalcStale">Recalculer les obsolètes</button><button class="admin-button admin-button--quiet" data-passport-scope="all" type="button" data-admin-copy="recalcAll">Planifier tout</button></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">VISIBILITÉ</p><h2 data-admin-copy="passportVisibilityTitle">Partage des passeports</h2></div></header><div class="admin-status-list" id="passportVisibility"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">BADGES</p><h2 data-admin-copy="passportBadgesTitle">Badges les plus obtenus</h2></div></header><div class="admin-status-list" id="passportAchievements"></div></section></div>
+          <div class="admin-grid"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">MAINTENANCE</p><h2 data-admin-copy="passportRecalcTitle">Recalcul des passeports</h2><p data-admin-copy="passportRecalcLead">Les recalculs sont placés dans une file, sans notification aux joueurs.</p></div></header><div class="admin-inline-actions"><button class="admin-button" data-passport-scope="stale" type="button" data-admin-copy="recalcStale" data-requires-cap="passports.write">Recalculer les obsolètes</button><button class="admin-button admin-button--quiet" data-passport-scope="all" type="button" data-admin-copy="recalcAll" data-requires-cap="passports.write">Planifier tout</button></div></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">VISIBILITÉ</p><h2 data-admin-copy="passportVisibilityTitle">Partage des passeports</h2></div></header><div class="admin-status-list" id="passportVisibility"></div></section><section class="admin-panel admin-panel--wide"><header class="admin-panel__header"><div><p class="admin-eyebrow">BADGES</p><h2 data-admin-copy="passportBadgesTitle">Badges les plus obtenus</h2></div></header><div class="admin-status-list" id="passportAchievements"></div></section></div>
         </section>
 
         <section class="admin-tab" data-admin-panel="privacy" hidden>
           <div class="admin-kpis" id="privacyKpis"></div>
-          <div class="admin-split"><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">CONSENTEMENT</p><h2 data-admin-copy="consentTitle">Versions acceptées</h2></div></header><div class="admin-status-list" id="privacyConsent"></div><p class="admin-note" data-admin-copy="rolesNote">Accès actuel : une session terminal protégée. Les rôles nominatifs pourront s’ajouter sans exposer les comptes joueurs.</p></section><section class="admin-panel"><header class="admin-panel__header"><div><p class="admin-eyebrow">LIENS</p><h2 data-admin-copy="sharingTitle">Capacités actives</h2></div></header><div class="admin-status-list" id="privacySharing"></div></section><section class="admin-panel admin-panel--wide admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">JOURNAL</p><h2 data-admin-copy="auditTitle">Actions administratives</h2></div></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Action</th><th>Cible</th><th>Justification</th><th>Date</th></tr></thead><tbody id="auditList"></tbody></table></div></section></div>
+          <div class="admin-section-toolbar">
+            <div class="admin-search"><span aria-hidden="true">⌕</span><input id="privacyExportSearch" type="search" placeholder="Export : username ou #id" data-admin-placeholder="privacyExportSearch" /></div>
+            <select class="admin-select" id="privacyDeletionFilter">
+              <option value="all">Toute la file</option>
+              <option value="ready">Prêts à purger</option>
+              <option value="pending">En rétention</option>
+            </select>
+            <button class="admin-button" id="privacyExportButton" type="button" data-admin-copy="exportData" data-requires-cap="privacy.export">Exporter les données</button>
+            <button class="admin-button admin-button--quiet" id="privacyPurgeReadyButton" type="button" data-admin-copy="purgeReady" data-requires-cap="privacy.purge">Purger les comptes prêts</button>
+            <button class="admin-button admin-button--quiet" id="privacyRevokeLinksButton" type="button" data-admin-copy="revokeShareLinks" data-requires-cap="privacy.revoke_links">Révoquer les liens actifs</button>
+          </div>
+          <section class="admin-panel admin-panel--flush admin-audit-panel" style="margin-bottom:14px">
+            <header class="admin-panel__header admin-panel__header--padded admin-audit-panel__header">
+              <div><p class="admin-eyebrow">JOURNAL</p><h2 data-admin-copy="auditTitle">Actions administratives</h2><p>Chaque intervention est datée, attribuée et conserve sa justification. Les détails avant/après sont disponibles sans exposer de secrets.</p></div>
+              <button class="admin-button admin-button--quiet" id="auditExportButton" type="button">Exporter le journal</button>
+            </header>
+            <div class="admin-audit-ranges" role="group" aria-label="Période rapide">
+              <span>Lecture rapide</span>
+              <button class="is-active" type="button" data-audit-range="all">Tout</button>
+              <button type="button" data-audit-range="today">Aujourd’hui</button>
+              <button type="button" data-audit-range="7d">7 jours</button>
+              <button type="button" data-audit-range="30d">30 jours</button>
+            </div>
+            <div class="admin-audit-toolbar">
+              <div class="admin-search"><span aria-hidden="true">⌕</span><input id="auditSearch" type="search" placeholder="Rechercher une action, cible ou justification" /></div>
+              <select class="admin-select" id="auditActionFilter"><option value="">Toutes les actions</option></select>
+              <select class="admin-select" id="auditTargetFilter"><option value="">Toutes les cibles</option></select>
+              <input class="admin-date-input" id="auditFrom" type="date" aria-label="À partir du" />
+              <input class="admin-date-input" id="auditTo" type="date" aria-label="Jusqu’au" />
+              <button class="admin-button admin-button--quiet" id="auditResetButton" type="button">Réinitialiser</button>
+            </div>
+            <div class="admin-audit-meta"><span id="auditMeta">—</span><span id="auditPulse">—</span><span>Les exports sont limités à 5 000 lignes et protégés contre les formules de tableur.</span></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-audit-table"><thead><tr><th>Acteur</th><th>Action</th><th>Cible</th><th>Justification</th><th>Modification</th><th>Date</th><th></th></tr></thead><tbody id="auditList"></tbody></table></div>
+            <footer class="admin-audit-pagination" id="auditPagination"></footer>
+          </section>
+          <div class="admin-catalog-layout">
+            <section class="admin-panel admin-panel--flush">
+              <header class="admin-panel__header admin-panel__header--padded">
+                <div>
+                  <p class="admin-eyebrow">SUPPRESSION</p>
+                  <h2 data-admin-copy="deletionQueueTitle">File de purge</h2>
+                  <p data-admin-copy="deletionQueueLead">Soft-delete réversible pendant la rétention, puis purge définitive. Exportez avant toute purge forcée.</p>
+                </div>
+                <span id="privacyDeletionMeta" class="admin-panel__meta"></span>
+              </header>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Compte</th><th>Demandé</th><th>Volume</th><th>Éligible</th><th></th></tr></thead>
+                  <tbody id="privacyDeletionQueue"></tbody>
+                </table>
+              </div>
+            </section>
+            <div class="admin-privacy-side">
+              <section class="admin-panel">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">CONSENTEMENT</p><h2 data-admin-copy="consentTitle">Versions acceptées</h2></div></header>
+                <div class="admin-status-list" id="privacyConsent"></div>
+                <p class="admin-note" id="adminRolesNote" data-admin-copy="rolesNote">Accès actuel : rôle terminal avec capacités least-privilege et MFA optionnel.</p>
+                <div class="admin-cap-list" id="adminCapabilityList" aria-label="Capacités"></div>
+              </section>
+              <section class="admin-panel">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">SESSIONS</p><h2 data-admin-copy="sessionsTitle">Sessions actives</h2><p data-admin-copy="sessionsLead">Révoquez une session concurrente ou toutes les autres si un lien a fuité.</p></div><button class="admin-button admin-button--quiet" id="revokeOtherSessions" type="button" data-admin-copy="revokeOthers" data-requires-cap="sessions.manage">Révoquer les autres</button></header>
+                <div class="admin-status-list" id="privacySessions"></div>
+              </section>
+              <section class="admin-panel" data-requires-cap="admins.manage">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">ACCÈS NOMINATIFS</p><h2>Comptes administrateur</h2><p>Le secret global est temporaire : créez un compte par personne et faites tourner son secret.</p></div><button class="admin-button admin-button--quiet" id="createAdminOperator" type="button">Ajouter</button></header>
+                <div class="admin-access-posture" id="adminAccessPosture" aria-live="polite"></div>
+                <div class="admin-status-list" id="adminOperators"></div>
+              </section>
+              <section class="admin-panel" data-requires-cap="admins.manage">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">VIGILANCE</p><h2>Alertes de connexion</h2><p>Les changements d’IP ou d’appareil sur un compte nominatif restent visibles ici.</p></div></header>
+                <div class="admin-status-list" id="adminSecurityAlerts"></div>
+              </section>
+              <section class="admin-panel">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">LIENS</p><h2 data-admin-copy="sharingTitle">Capacités actives</h2></div></header>
+                <div class="admin-status-list" id="privacySharing"></div>
+              </section>
+            </div>
+          </div>
         </section>
       </main>
     </div>
@@ -175,6 +316,575 @@
           <button class="admin-button admin-button--danger" id="playerSuspensionSubmit" type="submit">Confirmer la suspension</button>
         </footer>
       </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="reportDecisionDialog" aria-labelledby="reportDecisionTitle">
+      <form class="admin-dialog__surface" id="reportDecisionForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="reportDecisionEyebrow">SIGNALEMENT</p>
+            <h2 id="reportDecisionTitle">Traiter le signalement</h2>
+            <p id="reportDecisionSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="reportDecisionClose" type="button" aria-label="Fermer">×</button>
+        </header>
+
+        <div class="admin-dialog__warning" id="reportDecisionImpact" hidden></div>
+
+        <div class="admin-decision-guide" aria-label="Étapes de traitement">
+          <span><b>1</b> Examiner le contexte</span><span><b>2</b> Choisir une action</span><span><b>3</b> Laisser une trace</span>
+        </div>
+
+        <div class="admin-dialog__fields">
+          <label class="admin-field"><span>Priorité de tri</span><select id="reportDecisionPriority"><option value="low">Basse — à surveiller</option><option value="normal" selected>Normale</option><option value="high">Haute — à traiter rapidement</option><option value="urgent">Urgente — à traiter maintenant</option></select><small class="admin-field__hint">Visible uniquement dans le backoffice.</small></label>
+          <label class="admin-field" id="reportDecisionDurationField" hidden>
+            <span>Durée de suspension</span>
+            <select id="reportDecisionDuration">
+              <option value="1">1 heure</option>
+              <option value="24" selected>24 heures</option>
+              <option value="168">7 jours</option>
+              <option value="720">30 jours</option>
+              <option value="custom">Date personnalisée</option>
+            </select>
+          </label>
+          <label class="admin-field" id="reportDecisionCustomField" hidden>
+            <span>Fin de la suspension</span>
+            <input id="reportDecisionUntil" type="datetime-local" />
+          </label>
+          <label class="admin-field admin-field--wide" id="reportDecisionRelatedField" hidden>
+            <span class="admin-check">
+              <input id="reportDecisionCloseRelated" type="checkbox" checked />
+              <span id="reportDecisionCloseRelatedLabel">Classer aussi les autres signalements ouverts sur ce compte</span>
+            </span>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span id="reportDecisionReasonLabel">Note de décision obligatoire</span>
+            <textarea id="reportDecisionReason" maxlength="1500" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide"><span>Note interne (jamais visible par les joueurs)</span><textarea id="reportDecisionInternalNote" maxlength="4000"></textarea></label>
+        </div>
+
+        <p class="admin-dialog__error" id="reportDecisionError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="reportDecisionCancel" type="button">Annuler</button>
+          <button class="admin-button" id="reportDecisionSubmit" type="submit">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog admin-dialog--bulk" id="bulkActionDialog" aria-labelledby="bulkActionTitle"><form class="admin-dialog__surface" id="bulkActionForm"><header class="admin-dialog__header"><div><p class="admin-eyebrow">ACTION DE MASSE · APERÇU</p><h2 id="bulkActionTitle">Confirmer l’action</h2><p id="bulkActionSummary"></p></div><button class="admin-dialog__close" id="bulkActionClose" type="button" aria-label="Fermer">×</button></header><div class="admin-bulk-plan" id="bulkActionPlan" aria-live="polite"></div><div class="admin-dialog__warning" id="bulkActionImpact"></div><div class="admin-bulk-preview" id="bulkActionItems" hidden></div><div class="admin-dialog__fields"><label class="admin-field admin-field--wide"><span>Justification</span><textarea id="bulkActionReason" maxlength="1000" required placeholder="Ex. vérification des sources officielles du 1er août"></textarea></label><label class="admin-bulk-ack" id="bulkActionAcknowledgeWrap" hidden><input id="bulkActionAcknowledge" type="checkbox" /><span><strong id="bulkActionAcknowledgeTitle">J’ai vérifié l’aperçu.</strong><small id="bulkActionAcknowledgeHint">L’action sera appliquée immédiatement et journalisée.</small></span></label></div><div class="admin-bulk-progress" id="bulkActionProgress" hidden role="status"><span id="bulkActionProgressLabel">Préparation…</span><i aria-hidden="true"></i></div><p class="admin-dialog__error" id="bulkActionError" hidden role="alert"></p><footer class="admin-dialog__footer"><button class="admin-button admin-button--quiet" id="bulkActionCancel" type="button">Annuler</button><button class="admin-button" id="bulkActionSubmit" type="submit">Appliquer l’action</button></footer></form></dialog>
+
+    <dialog class="admin-dialog" id="adminOperatorDialog" aria-labelledby="adminOperatorTitle">
+      <form class="admin-dialog__surface" id="adminOperatorForm">
+        <header class="admin-dialog__header"><div><p class="admin-eyebrow">SÉCURITÉ DES ACCÈS</p><h2 id="adminOperatorTitle">Créer un compte administrateur</h2><p id="adminOperatorSummary">Un secret unique sera associé à cet accès.</p></div><button class="admin-dialog__close" id="adminOperatorClose" type="button" aria-label="Fermer">×</button></header>
+        <div class="admin-dialog__warning">La rotation d’un secret révoque immédiatement les sessions de ce compte.</div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field" id="adminOperatorUsernameField"><span>Identifiant</span><input id="adminOperatorUsername" maxlength="40" pattern="[a-z0-9._-]{3,40}" autocomplete="username" /></label>
+          <label class="admin-field" id="adminOperatorDisplayNameField"><span>Nom affiché</span><input id="adminOperatorDisplayName" maxlength="80" autocomplete="name" /></label>
+          <label class="admin-field" id="adminOperatorRoleField"><span>Rôle</span><select id="adminOperatorRole"><option value="owner">Owner</option><option value="ops">Ops</option><option value="moderator">Modérateur</option><option value="editor">Éditeur</option><option value="privacy">Confidentialité</option><option value="readonly">Lecture seule</option></select></label>
+          <label class="admin-field"><span id="adminOperatorPasswordLabel">Nouveau secret</span><input id="adminOperatorPassword" type="password" minlength="12" maxlength="1024" autocomplete="new-password" required /><small class="admin-field__hint">12 caractères minimum, unique et non réutilisé.</small></label>
+          <label class="admin-field"><span>Confirmer le secret</span><input id="adminOperatorPasswordConfirm" type="password" minlength="12" maxlength="1024" autocomplete="new-password" required /></label>
+          <label class="admin-field" data-stepup-field><span>Code MFA</span><input id="adminOperatorMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="6" /></label>
+          <label class="admin-field admin-field--wide"><span>Justification</span><textarea id="adminOperatorReason" maxlength="1000" required></textarea></label>
+        </div>
+        <p class="admin-dialog__error" id="adminOperatorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer"><button class="admin-button admin-button--quiet" id="adminOperatorCancel" type="button">Annuler</button><button class="admin-button" id="adminOperatorSubmit" type="submit">Enregistrer</button></footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="eventEditorDialog" aria-labelledby="eventEditorTitle">
+      <form class="admin-dialog__surface" id="eventEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="eventEditorEyebrow">ÉVÉNEMENT</p>
+            <h2 id="eventEditorTitle">Créer un événement</h2>
+            <p id="eventEditorSummary">Renseignez le calendrier catalogue et une justification.</p>
+          </div>
+          <button class="admin-dialog__close" id="eventEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field" id="eventEditorIdField">
+            <span>Identifiant</span>
+            <input id="eventEditorId" name="id" maxlength="100" pattern="[A-Za-z0-9_-]+" autocomplete="off" />
+          </label>
+          <label class="admin-field">
+            <span>Nom</span>
+            <input id="eventEditorName" name="name" maxlength="100" required />
+          </label>
+          <label class="admin-field">
+            <span>Type</span>
+            <input id="eventEditorType" name="type" maxlength="50" />
+          </label>
+          <label class="admin-field">
+            <span>Saison</span>
+            <input id="eventEditorSeasonId" name="seasonId" maxlength="50" />
+          </label>
+          <label class="admin-field">
+            <span>Début</span>
+            <input id="eventEditorStartDate" name="startDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>Fin</span>
+            <input id="eventEditorEndDate" name="endDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>État des données</span>
+            <select id="eventEditorDataStatus" name="dataStatus">
+              <option value="incomplete">incomplete</option>
+              <option value="complete">complete</option>
+              <option value="verified">verified</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="eventEditorReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="eventEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="eventEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="eventEditorSubmit" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog admin-dialog--wide" id="newsEditorDialog" aria-labelledby="newsEditorTitle">
+      <form class="admin-dialog__surface" id="newsEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="newsEditorEyebrow">ACTUALITÉ</p>
+            <h2 id="newsEditorTitle">Créer une actualité</h2>
+            <p id="newsEditorSummary">Publier déclenche le fan-out inbox, push et WebSocket.</p>
+          </div>
+          <button class="admin-dialog__close" id="newsEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="newsEditorFanoutWarning" hidden>
+          La publication enverra cette actualité à tous les joueurs (inbox, push et live).
+        </div>
+        <div class="admin-news-editor">
+          <div class="admin-dialog__fields admin-dialog__fields--flush">
+            <label class="admin-field admin-field--wide">
+              <span>Titre</span>
+              <input id="newsEditorTitleInput" name="title" maxlength="300" required />
+            </label>
+            <label class="admin-field admin-field--wide">
+              <span>Description</span>
+              <textarea id="newsEditorDescription" name="description" maxlength="4000" rows="4"></textarea>
+            </label>
+            <label class="admin-field">
+              <span>Image (URL)</span>
+              <input id="newsEditorImage" name="image" maxlength="2000" />
+            </label>
+            <label class="admin-field">
+              <span>Lien</span>
+              <input id="newsEditorLink" name="link" maxlength="2000" />
+            </label>
+            <label class="admin-field">
+              <span>Date</span>
+              <input id="newsEditorNewsDate" name="newsDate" type="datetime-local" />
+            </label>
+            <label class="admin-field">
+              <span>Statut</span>
+              <select id="newsEditorStatus" name="status">
+                <option value="draft">Brouillon</option>
+                <option value="published">Publiée</option>
+                <option value="archived">Archivée</option>
+              </select>
+            </label>
+            <label class="admin-field admin-field--wide">
+              <span>Note éditeur</span>
+              <textarea id="newsEditorNote" name="editorNote" maxlength="1000" rows="2"></textarea>
+            </label>
+            <label class="admin-field admin-field--wide">
+              <span>Justification</span>
+              <textarea id="newsEditorReason" name="reason" maxlength="1000" required></textarea>
+            </label>
+          </div>
+          <aside class="admin-news-preview" aria-live="polite">
+            <p class="admin-eyebrow">APERÇU JOUEUR</p>
+            <div class="admin-news-preview__card">
+              <div class="admin-news-preview__media" id="newsEditorPreviewMedia" hidden></div>
+              <strong id="newsEditorPreviewTitle">Sans titre</strong>
+              <p id="newsEditorPreviewBody">La description apparaîtra ici.</p>
+              <small id="newsEditorPreviewMeta">backoffice</small>
+            </div>
+          </aside>
+        </div>
+        <p class="admin-dialog__error" id="newsEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="newsEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="newsEditorSubmit" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="variantEditorDialog" aria-labelledby="variantEditorTitle">
+      <form class="admin-dialog__surface" id="variantEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">VARIANTE</p>
+            <h2 id="variantEditorTitle">Modifier la variante</h2>
+            <p id="variantEditorSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="variantEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field">
+            <span>Nom</span>
+            <input id="variantEditorName" name="name" maxlength="100" required />
+          </label>
+          <label class="admin-field">
+            <span>Rareté</span>
+            <input id="variantEditorRarity" name="rarity" maxlength="30" />
+          </label>
+          <label class="admin-field">
+            <span>Statut de sortie</span>
+            <input id="variantEditorReleaseStatus" name="releaseStatus" maxlength="20" />
+          </label>
+          <label class="admin-field">
+            <span>État des données</span>
+            <select id="variantEditorDataStatus" name="dataStatus">
+              <option value="incomplete">incomplete</option>
+              <option value="complete">complete</option>
+              <option value="verified">verified</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Image (chemin / URL)</span>
+            <input id="variantEditorImagePath" name="imagePath" maxlength="2000" />
+          </label>
+          <details class="admin-editor__advanced admin-field--wide">
+            <summary>Champs avancés de la variante</summary>
+            <div class="admin-dialog__fields">
+              <label class="admin-field"><span>Nom officiel</span><input id="variantEditorOfficialName" name="officialName" maxlength="100" /></label>
+              <label class="admin-field"><span>Slug</span><input id="variantEditorSlug" name="slug" maxlength="100" /></label>
+              <label class="admin-field"><span>Image suggérée</span><input id="variantEditorSuggestedImagePath" name="suggestedImagePath" maxlength="2000" /></label>
+              <label class="admin-field"><span>Première observation</span><input id="variantEditorFirstObservedAt" name="firstObservedAt" type="datetime-local" /></label>
+              <label class="admin-field"><span>Coût d’invocation</span><input id="variantEditorSummonCost" name="summonCost" type="number" min="0" /></label>
+              <label class="admin-field"><span>Taux coffre Sprite (%)</span><input id="variantEditorDropChance" name="spriteChestDropChancePct" type="number" min="0" max="100" step="0.01" /></label>
+              <label class="admin-field"><span>Référence effet</span><input id="variantEditorExtraEffectRef" name="extraEffectRef" maxlength="50" /></label>
+              <label class="admin-field admin-field--wide"><span>Effect (JSON)</span><textarea id="variantEditorEffect" name="effect" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Acquisition (JSON)</span><textarea id="variantEditorAcquisition" name="acquisition" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Availability (JSON)</span><textarea id="variantEditorAvailability" name="availability" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Recurrence (JSON)</span><textarea id="variantEditorRecurrence" name="recurrence" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Dates (JSON)</span><textarea id="variantEditorDates" name="dates" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Champs manquants (JSON)</span><textarea id="variantEditorMissingFields" name="missingFields" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Sources (JSON)</span><textarea id="variantEditorSources" name="sources" rows="3"></textarea></label>
+            </div>
+          </details>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="variantEditorReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="variantEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="variantEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="variantEditorSubmit" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="availabilityEditorDialog" aria-labelledby="availabilityEditorTitle">
+      <form class="admin-dialog__surface" id="availabilityEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">DISPONIBILITÉ</p>
+            <h2 id="availabilityEditorTitle">Ajouter une disponibilité</h2>
+            <p id="availabilityEditorSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="availabilityEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field">
+            <span>Statut</span>
+            <select id="availabilityEditorStatus" name="status">
+              <option value="available">available</option>
+              <option value="upcoming">upcoming</option>
+              <option value="ended">ended</option>
+              <option value="not_observed">not_observed</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>Confiance</span>
+            <select id="availabilityEditorConfidence" name="confidence">
+              <option value="confirmed">confirmed</option>
+              <option value="high">high</option>
+              <option value="medium" selected>medium</option>
+              <option value="low">low</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>Début</span>
+            <input id="availabilityEditorStartDate" name="startDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>Fin</span>
+            <input id="availabilityEditorEndDate" name="endDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>Événement lié</span>
+            <input id="availabilityEditorEventId" name="eventId" maxlength="100" />
+          </label>
+          <label class="admin-field">
+            <span>État des données</span>
+            <select id="availabilityEditorDataStatus" name="dataStatus">
+              <option value="incomplete">incomplete</option>
+              <option value="complete">complete</option>
+              <option value="verified">verified</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="availabilityEditorReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="availabilityEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="availabilityEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="availabilityEditorSubmit" type="submit">Ajouter</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="squadAccessDialog" aria-labelledby="squadAccessTitle">
+      <form class="admin-dialog__surface" id="squadAccessForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">ACCÈS SQUAD</p>
+            <h2 id="squadAccessTitle">Modifier l’accès public</h2>
+            <p id="squadAccessSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="squadAccessClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="squadAccessImpact"></div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="squadAccessReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="squadAccessError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="squadAccessCancel" type="button">Annuler</button>
+          <button class="admin-button" id="squadAccessSubmit" type="submit">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="squadInviteCancelDialog" aria-labelledby="squadInviteCancelTitle">
+      <form class="admin-dialog__surface" id="squadInviteCancelForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">INVITATION</p>
+            <h2 id="squadInviteCancelTitle">Annuler l’invitation</h2>
+            <p id="squadInviteCancelSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="squadInviteCancelClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="squadInviteCancelReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="squadInviteCancelError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="squadInviteCancelCancel" type="button">Annuler</button>
+          <button class="admin-button" id="squadInviteCancelSubmit" type="submit">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="privacyPurgeDialog" aria-labelledby="privacyPurgeTitle">
+      <form class="admin-dialog__surface" id="privacyPurgeForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">PURGE</p>
+            <h2 id="privacyPurgeTitle">Purger définitivement</h2>
+            <p id="privacyPurgeSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="privacyPurgeClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="privacyPurgeImpact">
+          Cette action est irréversible. Les données personnelles du compte seront définitivement supprimées.
+        </div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide" id="privacyPurgeForceField" hidden>
+            <span class="admin-check">
+              <input id="privacyPurgeForce" type="checkbox" />
+              <span id="privacyPurgeForceLabel">Forcer la purge avant la fin du délai de rétention</span>
+            </span>
+          </label>
+          <label class="admin-field admin-field--wide" id="privacyPurgeConfirmField" hidden>
+            <span id="privacyPurgeConfirmLabel">Tapez le username pour confirmer</span>
+            <input id="privacyPurgeConfirm" maxlength="100" autocomplete="off" />
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyPurgeReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyPurgeMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyPurgeError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyPurgeCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--danger" id="privacyPurgeSubmit" type="submit">Purger</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="privacyExportDialog" aria-labelledby="privacyExportTitle">
+      <form class="admin-dialog__surface" id="privacyExportForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">EXPORT</p>
+            <h2 id="privacyExportTitle">Exporter les données</h2>
+            <p id="privacyExportSummary">Génère un JSON administratif pour une demande RGPD ou un contrôle interne.</p>
+          </div>
+          <button class="admin-dialog__close" id="privacyExportClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Compte (username ou #id)</span>
+            <input id="privacyExportTarget" name="target" maxlength="100" required autocomplete="off" />
+          </label>
+          <div class="admin-dialog__warning" id="privacyExportPreview" hidden></div>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyExportReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyExportMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyExportError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyExportCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--quiet" id="privacyExportLookup" type="button">Vérifier</button>
+          <button class="admin-button" id="privacyExportSubmit" type="submit">Télécharger</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="privacyRestoreDialog" aria-labelledby="privacyRestoreTitle">
+      <form class="admin-dialog__surface" id="privacyRestoreForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">RESTAURATION</p>
+            <h2 id="privacyRestoreTitle">Annuler la suppression</h2>
+            <p id="privacyRestoreSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="privacyRestoreClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="privacyRestoreImpact">
+          Le compte redeviendra accessible. Les sessions et liens déjà révoqués lors de la suppression ne sont pas recréés automatiquement.
+        </div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyRestoreReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyRestoreMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyRestoreError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyRestoreCancel" type="button">Annuler</button>
+          <button class="admin-button" id="privacyRestoreSubmit" type="submit">Restaurer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog" id="privacyRevokeLinksDialog" aria-labelledby="privacyRevokeLinksTitle">
+      <form class="admin-dialog__surface" id="privacyRevokeLinksForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">LIENS</p>
+            <h2 id="privacyRevokeLinksTitle">Révoquer les liens actifs</h2>
+            <p id="privacyRevokeLinksSummary">Passeports partagés, comparaisons et invitations d’amis encore valides.</p>
+          </div>
+          <button class="admin-dialog__close" id="privacyRevokeLinksClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning">
+          Tous les liens de partage encore actifs seront immédiatement invalidés.
+        </div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyRevokeLinksReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyRevokeLinksMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyRevokeLinksError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyRevokeLinksCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--danger" id="privacyRevokeLinksSubmit" type="submit">Révoquer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog admin-dialog--reason" id="adminReasonDialog" aria-labelledby="adminReasonTitle">
+      <form class="admin-dialog__surface" id="adminReasonForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" data-admin-copy="reasonDialogEyebrow">ACTION JOURNALISÉE</p>
+            <h2 id="adminReasonTitle" data-admin-copy="reasonDialogTitle">Confirmer l’action</h2>
+            <p id="adminReasonMessage">Une justification est nécessaire pour poursuivre.</p>
+          </div>
+          <button class="admin-dialog__close" id="adminReasonClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span data-admin-copy="reasonDialogLabel">Justification</span>
+            <textarea id="adminReasonInput" maxlength="1000" required autofocus></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="adminReasonError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="adminReasonCancel" type="button" data-admin-copy="cancel">Annuler</button>
+          <button class="admin-button" type="submit" data-admin-copy="confirm">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="admin-dialog admin-dialog--audit" id="auditDetailDialog" aria-labelledby="auditDetailTitle">
+      <section class="admin-dialog__surface">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">TRACE D’AUDIT</p>
+            <h2 id="auditDetailTitle">Détail de l’action</h2>
+            <p id="auditDetailMeta">—</p>
+          </div>
+          <button class="admin-dialog__close" id="auditDetailClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-audit-detail" id="auditDetailBody"></div>
+        <footer class="admin-dialog__footer"><button class="admin-button admin-button--quiet" id="auditDetailDone" type="button">Fermer</button></footer>
+      </section>
+    </dialog>
+
+    <dialog class="admin-dialog admin-dialog--search" id="adminSearchDialog" aria-labelledby="adminSearchTitle">
+      <section class="admin-dialog__surface">
+        <header class="admin-search-dialog__header"><span aria-hidden="true">⌕</span><div><p class="admin-eyebrow">RECHERCHE UNIVERSELLE</p><h2 id="adminSearchTitle">Retrouver n’importe quel élément</h2></div><button class="admin-dialog__close" id="adminSearchClose" type="button" aria-label="Fermer">×</button></header>
+        <label class="admin-global-search"><span class="sr-only">Rechercher dans le backoffice</span><input id="adminSearchInput" type="search" autocomplete="off" aria-controls="adminSearchResults" aria-expanded="false" placeholder="Joueur, sprite, variante, événement, squad, invitation, notification, action…" /><span class="admin-global-search__state" id="adminSearchState" aria-hidden="true"></span><kbd>Échap pour fermer</kbd></label>
+        <div class="admin-search-meta"><p class="admin-global-search__hint" id="adminSearchHint">Saisissez au moins 2 caractères. Les résultats respectent vos droits d’accès.</p><span class="admin-search-shortcuts"><kbd>↑</kbd><kbd>↓</kbd> naviguer <kbd>↵</kbd> ouvrir</span></div>
+        <div class="admin-search-filters" id="adminSearchFilters" hidden aria-label="Filtrer les résultats"></div>
+        <div class="admin-search-results" id="adminSearchResults" role="listbox" aria-live="polite"></div>
+      </section>
     </dialog>
 
     <script src="/js/admin.js"></script>

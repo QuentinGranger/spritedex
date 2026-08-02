@@ -292,7 +292,7 @@ function updateSyncStatus() {
     icon.innerHTML = syncIcon("synced");
     text.textContent = t("sync.synced");
     const lastSync = localStorage.getItem("sprite-index_last_sync");
-    detail.textContent = lastSync ? t("sync.lastSync", { time: new Date(lastSync).toLocaleTimeString(appLocale() === "en" ? "en-US" : "fr-FR", { hour: "2-digit", minute: "2-digit" }) }) : t("sync.syncedDetail");
+    detail.textContent = lastSync ? t("sync.lastSync", { time: new Date(lastSync).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" }) }) : t("sync.syncedDetail");
   }
 }
 

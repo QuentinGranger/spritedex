@@ -77,7 +77,10 @@ function safePercentage(value, fallback = 0) {
 // shown to the player.  IDs and filters keep their canonical values; only
 // visible labels are localized.
 function uiLocale() {
-  return typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+  const lang = typeof appLocale === "function" ? appLocale() : "fr";
+  if (lang === "en") return "en-US";
+  if (lang === "nl") return "nl-NL";
+  return "fr-FR";
 }
 
 function localizedRarity(value) {
@@ -492,7 +495,7 @@ function formatDateFr(iso) {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString(uiLocale(), { day: "numeric", month: "long", year: "numeric" });
 }
 
 // Traduit un niveau de confiance en libellé honnête.

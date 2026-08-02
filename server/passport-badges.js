@@ -83,6 +83,41 @@ const BADGE_COPY_EN = Object.freeze({
   "badge.event_complete.description": "You completed at least one event."
 });
 
+const BADGE_COPY_NL = Object.freeze({
+  "badge.first_collection.name": "Eerste collectie",
+  "badge.first_collection.description": "Je hebt je eerste variant toegevoegd.",
+  "badge.collection_25.name": "Collectie 25%",
+  "badge.collection_25.description": "Je hebt 25% voltooiing van de gepubliceerde catalogus bereikt.",
+  "badge.collection_50.name": "Collectie 50%",
+  "badge.collection_50.description": "Je hebt 50% voltooiing van de gepubliceerde catalogus bereikt.",
+  "badge.collection_75.name": "Collectie 75%",
+  "badge.collection_75.description": "Je hebt 75% voltooiing van de gepubliceerde catalogus bereikt.",
+  "badge.collection_100.name": "Collectie 100%",
+  "badge.collection_100.description": "Je hebt 100% voltooiing van een catalogusversie bereikt.",
+  "badge.explorer.name": "Ontdekker",
+  "badge.explorer.description": "Je hebt 5 Sprite-families ontdekt.",
+  "badge.reliable_collection.name": "Betrouwbare collectie",
+  "badge.reliable_collection.description": "Je collectie is voor minstens 90% ingevuld.",
+  "badge.squad_member.name": "Teamgeest",
+  "badge.squad_member.description": "Je maakt deel uit van een squad.",
+  "badge.squad_founder.name": "Squadoprichter",
+  "badge.squad_founder.description": "Je hebt een squad gemaakt waar een andere verzamelaar zich bij aansloot en die minstens 24 uur actief is.",
+  "badge.complementary_collection.name": "Aanvullende collectie",
+  "badge.complementary_collection.description": "Je collectie vult die van een vriend of teamgenoot daadwerkelijk aan.",
+  "badge.archivist.name": "Archivaris",
+  "badge.archivist.description": "Je hebt drie catalogusupdates lang een volledige, actuele collectie behouden.",
+  "badge.early_collector.name": "Early Collector",
+  "badge.early_collector.description": "Je behoort tot de verzamelaars die er vanaf het begin van sprite-index bij waren.",
+  "badge.all_rarities.name": "Een variant van elke zeldzaamheid",
+  "badge.all_rarities.description": "Je bezit minstens één variant van elke officiële zeldzaamheid in de catalogus.",
+  "badge.event_completed.name": "Evenement voltooid",
+  "badge.event_completed.description": "Je hebt alle varianten van een evenement voltooid.",
+  "badge.social.name": "Sociaal",
+  "badge.social.description": "Je hebt minstens één vriend.",
+  "badge.event_complete.name": "Evenement behaald",
+  "badge.event_complete.description": "Je hebt minstens één evenement voltooid."
+});
+
 /** Fixed Early Collector cutoff — never change retroactively once seeded (Étapes 47–48). */
 const EARLY_COLLECTOR_BEFORE = process.env.EARLY_COLLECTOR_BEFORE || "2026-10-01T00:00:00.000Z";
 
@@ -342,6 +377,7 @@ const LEGACY_CODE_MAP = Object.freeze({
 function resolveBadgeCopy(key, fallback = "", lang = "fr") {
   const locale = String(lang || "fr").toLowerCase().slice(0, 2);
   if (locale === "en" && BADGE_COPY_EN[key]) return BADGE_COPY_EN[key];
+  if (locale === "nl" && BADGE_COPY_NL[key]) return BADGE_COPY_NL[key];
   return BADGE_COPY[key] || BADGE_COPY_EN[key] || fallback || key;
 }
 
@@ -1239,6 +1275,7 @@ module.exports = {
   BADGE_SEED,
   BADGE_COPY,
   BADGE_COPY_EN,
+  BADGE_COPY_NL,
   EARLY_COLLECTOR_BEFORE,
   MILESTONE_BY_CODE,
   LEGACY_CODE_MAP,

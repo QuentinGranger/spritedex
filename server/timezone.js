@@ -96,7 +96,8 @@ function calendarDaysUntil(endDate, now = new Date(), timeZone = DEFAULT_TIMEZON
 function formatDateInTimeZone(value, lang = "fr", timeZone = DEFAULT_TIMEZONE) {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  const locale = lang === "en" ? "en-GB" : "fr-FR";
+  const language = String(lang || "fr").toLowerCase().slice(0, 2);
+  const locale = language === "en" ? "en-GB" : language === "nl" ? "nl-NL" : "fr-FR";
   return d.toLocaleDateString(locale, {
     day: "numeric",
     month: "long",

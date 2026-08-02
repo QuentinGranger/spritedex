@@ -175,7 +175,7 @@ function formatNotifDate(value) {
   if (hours < 24) return t("news.hoursAgo", { hours });
   const days = Math.floor(hours / 24);
   if (days < 7) return t("news.daysAgo", { days });
-  return d.toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR", { day: "numeric", month: "short", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+  return d.toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
 }
 
 /** Étape 48 — stable deep-link for each contextual notification type (never "/"). */

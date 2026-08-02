@@ -99,7 +99,7 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
   if (includeHistory && history && history.showHistory) {
     const own = history.ownership;
     const prio = history.priorities;
-    const lang = typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+    const lang = uiLocale();
     const points = (history.series || []).slice(-5).map((p) => `
       <li><span>${sgEscape(new Date(p.date).toLocaleDateString(lang, { day: "numeric", month: "long" }))}</span>
           <strong>${sgFormatPercent(p.ownershipRate)}</strong></li>

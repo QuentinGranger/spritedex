@@ -15,7 +15,7 @@ const PUBLIC_SQUAD_PROFILE = new Set(["public", "squad", "squad_only"]);
 function buildSquadPushPayload(lang, params = {}) {
   const locale = resolveNotificationLanguage(lang, null);
   const title = notifI18n.tNotif("notifications.squad_activity.title", {}, locale)
-    || (locale === "en" ? "SPRITE-INDEX — Squad" : "SPRITE-INDEX — Escouade");
+    || (locale === "en" ? "SPRITE-INDEX — Squad" : locale === "nl" ? "SPRITE-INDEX — Team" : "SPRITE-INDEX — Escouade");
   const template = params.activityTemplate || "default";
   const bodyKey = `notifications.squad_activity.${template}.body`;
   const localized = {
@@ -24,13 +24,15 @@ function buildSquadPushPayload(lang, params = {}) {
     activityTemplate: template,
     actionLabel: locale === "en"
       ? (params.actionLabelEn || params.actionLabel)
-      : (params.actionLabelFr || params.actionLabel),
-    spriteName: locale === "en"
+      : locale === "nl"
+        ? (params.actionLabelNl || params.actionLabelEn || params.actionLabel)
+        : (params.actionLabelFr || params.actionLabel),
+    spriteName: locale === "en" || locale === "nl"
       ? (params.spriteNameEn || params.spriteName)
       : (params.spriteNameFr || params.spriteName),
     friendName: params.friendName
       || notifI18n.tNotif("notifications.fallback.player", {}, locale)
-      || (locale === "en" ? "A player" : "Un joueur")
+      || (locale === "en" ? "A player" : locale === "nl" ? "Een speler" : "Un joueur")
   };
   const interpolateParams = notifI18n.buildInterpolateParams("squad_activity", localized, locale);
   const body = notifI18n.tNotif(bodyKey, interpolateParams, locale) || "";
@@ -193,6 +195,7 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
           // Recipients re-resolve actionLabel by lang in buildSquadPushPayload via params:
           actionLabelFr: action === "owned" ? "a obtenu" : "a repéré",
           actionLabelEn: action === "owned" ? "obtained" : "spotted",
+          actionLabelNl: action === "owned" ? "heeft verkregen" : "heeft gespot",
           spriteNameFr,
           spriteNameEn
         },

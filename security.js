@@ -275,7 +275,7 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-function rateLimit({ windowMs, max, keyPrefix = "rl", message }) {
+function rateLimit({ windowMs, max, keyPrefix = "rl", message, keyGenerator = null }) {
   if (!Number.isSafeInteger(windowMs) || windowMs <= 0 || !Number.isSafeInteger(max) || max <= 0) {
     throw new Error(`Configuration de limite invalide pour ${keyPrefix}`);
   }
@@ -284,7 +284,8 @@ function rateLimit({ windowMs, max, keyPrefix = "rl", message }) {
     // avoids trusting a spoofable X-Forwarded-For header unless the deployment
     // has been explicitly configured to sit behind a trusted proxy.
     const ip = req.ip || req.socket?.remoteAddress || "unknown";
-    const key = `${keyPrefix}:${ip}`;
+    const suffix = typeof keyGenerator === "function" ? keyGenerator(req, ip) : ip;
+    const key = `${keyPrefix}:${String(suffix || ip).slice(0, 200)}`;
     const now = Date.now();
     let entry = buckets.get(key);
     if (!entry || entry.resetAt < now) {

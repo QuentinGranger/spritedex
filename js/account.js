@@ -195,9 +195,8 @@ function setupAccountPanel() {
     const completion = collection.completionRateDisplay != null
       ? Number(collection.completionRateDisplay)
       : (released ? (owned / released) * 100 : 0);
-    const isEnglish = typeof window.appLocale === "function" && window.appLocale() === "en";
     const rate = Math.max(0, Math.min(100, Number.isFinite(completion) ? completion : 0));
-    const rateLabel = `${rate.toLocaleString(isEnglish ? "en-US" : "fr-FR", { maximumFractionDigits: 1 })}%`;
+    const rateLabel = `${rate.toLocaleString(uiLocale(), { maximumFractionDigits: 1 })}%`;
     const ring = document.getElementById("accountOverviewRing");
     if (ring) {
       ring.style.setProperty("--account-overview-progress", `${rate}%`);

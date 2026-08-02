@@ -70,11 +70,36 @@ const EMAIL_COPY = Object.freeze({
     resetCta: "Reset my password",
     resetIgnore: "If you did not make this request, ignore this email — your password remains unchanged.",
     notifOpen: "Open SPRITE-INDEX"
+  }),
+  nl: Object.freeze({
+    verifySubject: "Bevestig je e-mailadres — SPRITE-INDEX",
+    verifyIntro: "Bevestig je e-mailadres om je account te activeren.",
+    verifyCta: "Mijn e-mailadres bevestigen",
+    verifyIgnore: "Heb je geen account aangemaakt? Negeer deze e-mail.",
+    resetSubject: "Wachtwoord opnieuw instellen — SPRITE-INDEX",
+    resetIntro: "Er is een verzoek ingediend om je wachtwoord opnieuw in te stellen. Deze link verloopt over 1 uur.",
+    resetCta: "Mijn wachtwoord opnieuw instellen",
+    resetIgnore: "Heb je dit verzoek niet gedaan? Negeer deze e-mail — je wachtwoord blijft ongewijzigd.",
+    notifOpen: "SPRITE-INDEX openen"
   })
 });
 
+function emailLocale(lang) {
+  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  return locale === "en" || locale === "nl" ? locale : "fr";
+}
+
 function emailCopy(lang) {
-  return EMAIL_COPY[String(lang || "fr").toLowerCase().slice(0, 2) === "en" ? "en" : "fr"];
+  return EMAIL_COPY[emailLocale(lang)];
+}
+
+function localizedAppUrl(pathname, params, lang) {
+  const url = new URL(pathname, APP_URL);
+  for (const [key, value] of Object.entries(params || {})) {
+    url.searchParams.set(key, value);
+  }
+  url.searchParams.set("lang", emailLocale(lang));
+  return url.toString();
 }
 
 function emailShell({ intro, ctaLabel, href, footer }) {
@@ -94,7 +119,7 @@ async function sendVerificationEmail(toEmail, token, lang = "fr") {
     return;
   }
   const copy = emailCopy(lang);
-  const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${token}`;
+  const verifyUrl = localizedAppUrl("/api/auth/verify-email", { token }, lang);
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
@@ -119,7 +144,7 @@ async function sendPasswordResetEmail(toEmail, token, lang = "fr") {
     return;
   }
   const copy = emailCopy(lang);
-  const resetUrl = `${APP_URL}/?resetToken=${token}`;
+  const resetUrl = localizedAppUrl("/", { resetToken: token }, lang);
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
@@ -222,4 +247,4 @@ app.use((req, res, next) => {
   return staticAssets(req, res, next);
 });
 
-module.exports = { APP_URL, FROM_EMAIL, PORT, app, corsOrigins, escapeHtml, resend, sendNotificationEmail, sendPasswordResetEmail, sendVerificationEmail, server, wss };
+module.exports = { APP_URL, EMAIL_COPY, FROM_EMAIL, PORT, app, corsOrigins, emailCopy, emailLocale, escapeHtml, localizedAppUrl, resend, sendNotificationEmail, sendPasswordResetEmail, sendVerificationEmail, server, wss };

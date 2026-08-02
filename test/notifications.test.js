@@ -1180,6 +1180,11 @@ async function asyncTest(name, fn) {
     assert.strictEqual(appI18n.resolveNotificationLanguage(null, null), "fr");
     assert.strictEqual(appI18n.resolveLocale("en-US,en;q=0.9"), "en");
     assert.strictEqual(appI18n.resolveLocale("fr-FR"), "fr");
+    assert.strictEqual(appI18n.resolveLocale("nl-NL"), "nl");
+    assert.strictEqual(appI18n.resolveLocale("nl-BE"), "nl");
+    assert.strictEqual(appI18n.resolveLocale("en-NL"), "nl");
+    assert.strictEqual(appI18n.resolveLocale("en-SR"), "nl");
+    assert.strictEqual(appI18n.resolveLocale("fr-BE"), "fr");
 
     const catalog = require("../server/notification-catalog");
     const enAccept = catalog.renderNotification(

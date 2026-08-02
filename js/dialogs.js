@@ -77,7 +77,7 @@ function openSpriteDetail(spriteId) {
     <div class="sd-season">
       <strong>${escapeHtml(t("dialog.season"))}</strong>
       <span class="sd-season__name">${escapeHtml(sprite.season.name || `Chapitre ${sprite.season.chapter} — Saison ${sprite.season.season}`)}</span>
-      ${sprite.season.startDate ? `<span class="sd-season__dates">${new Date(sprite.season.startDate).toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR")}${sprite.season.endDate ? ` → ${new Date(sprite.season.endDate).toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR")}` : ""}</span>` : ""}
+      ${sprite.season.startDate ? `<span class="sd-season__dates">${new Date(sprite.season.startDate).toLocaleDateString(uiLocale())}${sprite.season.endDate ? ` → ${new Date(sprite.season.endDate).toLocaleDateString(uiLocale())}` : ""}</span>` : ""}
     </div>
     ` : ""}
 
@@ -86,7 +86,7 @@ function openSpriteDetail(spriteId) {
       <strong>${escapeHtml(t("dialog.event"))}</strong>
       <span class="sd-event__name">${escapeHtml(sprite.event.name || sprite.event.id)}</span>
       ${sprite.event.type ? `<span class="sd-event__type">${escapeHtml(sprite.event.type)}</span>` : ""}
-      ${sprite.event.startDate ? `<span class="sd-event__dates">${new Date(sprite.event.startDate).toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR")}${sprite.event.endDate ? ` → ${new Date(sprite.event.endDate).toLocaleDateString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR")}` : ""}</span>` : ""}
+      ${sprite.event.startDate ? `<span class="sd-event__dates">${new Date(sprite.event.startDate).toLocaleDateString(uiLocale())}${sprite.event.endDate ? ` → ${new Date(sprite.event.endDate).toLocaleDateString(uiLocale())}` : ""}</span>` : ""}
     </div>
     ` : ""}
 
@@ -160,7 +160,7 @@ function openSpriteDetail(spriteId) {
     ${(() => {
       // Étape 20 — Dates de vérification affichées honnêtement.
       const dates = sprite.dates || {};
-      const dateLocale = typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+      const dateLocale = uiLocale();
       const last = formatDateFr(dates.lastVerifiedAt);
       const official = formatDateFr(dates.officiallyAnnouncedAt);
       const first = formatDateFr(dates.firstObservedAt);
@@ -219,7 +219,7 @@ function openSpriteDetail(spriteId) {
         const prioBadge = prio !== "none" && prio !== "ignored"
           ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(prio)}">${priorityLabel(prio)}</span>`
           : "";
-        const dateLocale = typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+        const dateLocale = uiLocale();
         const dateObt = v.entry.obtainedAt
           ? `<span class="sd-variant__date">${new Date(v.entry.obtainedAt).toLocaleDateString(dateLocale)}</span>`
           : "";
@@ -289,7 +289,7 @@ function openSpriteDetail(spriteId) {
     <div class="sd-dates">
       <h3 class="sd-section-title">${escapeHtml(t("dialog.datesSection"))}</h3>
       ${variants.filter(v => v.entry.obtainedAt).map(v => {
-        const dateLocale = typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+        const dateLocale = uiLocale();
         return `
         <div class="sd-date-row">
           <span>${escapeHtml(v.name)}</span>

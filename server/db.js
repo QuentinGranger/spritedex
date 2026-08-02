@@ -56,8 +56,25 @@ function databasePoolConfig(url) {
     connectionString: sanitizeConnectionString(url),
     // TLS is enabled with certificate validation for every external URL. Local
     // and Render-private connections stay on their private network.
-    ssl: shouldUseSSL(url) ? { rejectUnauthorized: true } : false
+    ssl: shouldUseSSL(url) ? { rejectUnauthorized: true } : false,
+    // Remote Postgres (Render) drops idle TLS sockets; recycle before that.
+    connectionTimeoutMillis: 15_000,
+    idleTimeoutMillis: 20_000,
+    max: 10,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000
   };
+}
+
+function attachClientErrorGuard(client) {
+  if (!client || client.__spriteIndexErrorGuarded) return client;
+  client.__spriteIndexErrorGuarded = true;
+  // Checked-out clients emit on the Client, not the Pool. Swallow so a stale
+  // Render socket cannot take down the whole Node process.
+  client.on("error", (error) => {
+    console.error("[DB] client error:", error.code || error.message);
+  });
+  return client;
 }
 
 const pool = process.env.DATABASE_URL
@@ -66,6 +83,20 @@ const pool = process.env.DATABASE_URL
       database: "sprite-index",
       host: "localhost",
       port: 5432,
+      connectionTimeoutMillis: 5_000,
+      idleTimeoutMillis: 20_000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000
     });
+
+// Idle clients can emit asynchronously when the remote closes the socket.
+pool.on("error", (error) => {
+  console.error("[DB] idle client error:", error.code || error.message);
+});
+
+// New clients (used by pool.query and pool.connect) need their own listener.
+pool.on("connect", (client) => {
+  attachClientErrorGuard(client);
+});
 
 module.exports = { databasePoolConfig, getDatabaseHost, isLocalDatabaseUrl, isRenderInternalDatabaseUrl, pool, sanitizeConnectionString, shouldUseSSL };

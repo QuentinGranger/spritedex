@@ -60,7 +60,7 @@ function truncateUi(value, max = 48) {
 function formatLocaleNumber(value, digits = 1) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return n.toLocaleString(typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR", {
+  return n.toLocaleString(uiLocale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: digits
   });
@@ -73,6 +73,9 @@ function formatCollectionProgressText(owned, released, rateDisplay) {
   const rateStr = formatLocaleNumber(rateDisplay, 1);
   if (typeof appLocale === "function" && appLocale() === "en") {
     return `Collection progress: ${o} variant${o === 1 ? "" : "s"} out of ${r}, that is ${rateStr}%.`;
+  }
+  if (typeof appLocale === "function" && appLocale() === "nl") {
+    return `Collectievoortgang: ${o} variant${o === 1 ? "" : "en"} van de ${r}, dat is ${rateStr}%.`;
   }
   return `Progression de la collection : ${o} variante${o === 1 ? "" : "s"} sur ${r}, soit ${rateStr} %.`;
 }

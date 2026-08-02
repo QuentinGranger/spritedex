@@ -278,13 +278,147 @@ const TRANSLATIONS = Object.freeze({
     "notifications.action.obtained": "obtained",
     "notifications.action.spotted": "spotted",
     "notifications.hidden.title": "Hidden notification",
+  }),
+  nl: Object.freeze({
+    "notifications.friend_request_accepted.title":
+      "{friendName} heeft je uitnodiging geaccepteerd",
+    "notifications.friend_request_accepted.body":
+      "Je kunt nu jullie collecties vergelijken.",
+    "notifications.friend_acquired_missing_variant.title":
+      "Een nieuwe match met {friendName}",
+    "notifications.friend_acquired_missing_variant.body":
+      "{friendName} is nu eigenaar van {variantName}, die ontbreekt in je verzameling.",
+    "notifications.friend_acquired_missing_variant.priority.title":
+      "{friendName} is eigenaar van een prioriteitsvariant",
+    "notifications.friend_acquired_missing_variant.priority.body":
+      "{friendName} heeft zojuist {variantName} toegevoegd, die je als prioriteit hebt gemarkeerd.",
+    "notifications.friend_acquired_missing_variant.batch.title":
+      "{friendName} heeft verschillende varianten die je mist",
+    "notifications.friend_acquired_missing_variant.batch.body":
+      "{friendName} bezit nu {count} varianten die ontbreken in je verzameling, inclusief {variantName}.",
+    "notifications.squad_completion_increased.title":
+      "{squadName} vordert",
+    "notifications.squad_completion_increased.body":
+      "{friendName} heeft {variantName} toegevoegd. De ploeg beslaat nu {completionRate}% van de catalogus.",
+    "notifications.squad_completion_increased.batch.title":
+      "{squadName} vordert",
+    "notifications.squad_completion_increased.batch.body":
+      "{squadName} heeft {count} nieuwe varianten toegevoegd en een voltooiing van {completionRate}% bereikt.",
+    "notifications.squad_completion_increased.milestone.title":
+      "{squadName} heeft {milestone}% bereikt",
+    "notifications.squad_completion_increased.milestone.body":
+      "Je team beslaat nu {coveredCount} varianten van {totalVariants}.",
+    "notifications.squad_completion_increased.milestone_rate.body":
+      "Je team beslaat nu {completionRate}% van de catalogus.",
+    "notifications.priority_variant_available.title":
+      "{variantName} is beschikbaar",
+    "notifications.priority_variant_available.body":
+      "Een variant die u als prioriteit heeft gemarkeerd, is nu beschikbaar.",
+    "notifications.priority_variant_available.with_end.title":
+      "{variantName} is beschikbaar",
+    "notifications.priority_variant_available.with_end.body":
+      "{variantName} is beschikbaar tot {availableUntil}.",
+    "notifications.wanted_event_ending_soon.title":
+      "{eventName} eindigt {when}",
+    "notifications.wanted_event_ending_soon.body":
+      "Je hebt nog steeds {remainingCount} {remainingLabel} nodig.",
+    "notifications.wanted_event_ending_soon.empty.body":
+      "Je hebt nog steeds prioriteitsvarianten van dit evenement nodig.",
+    "notifications.friend_request_received.title":
+      "Nieuwe vriendschapsverzoek",
+    "notifications.friend_request_received.body":
+      "{friendName} heeft je een vriendschapsverzoek gestuurd.",
+    "notifications.friend_removed.title":
+      "Vriendschap eindigde",
+    "notifications.friend_removed.body":
+      "{friendName} heeft je vriendschap verwijderd.",
+    "notifications.friend_collection_updated.title":
+      "Collectie bijgewerkt",
+    "notifications.friend_collection_updated.body":
+      "{friendName} heeft de collectie bijgewerkt.",
+    "notifications.squad_member_joined.title":
+      "Nieuw lid",
+    "notifications.squad_member_joined.body":
+      "{friendName} sloot zich aan bij de ploeg {squadName}.",
+    "notifications.goal_completed.title":
+      "Doel voltooid",
+    "notifications.goal_completed.body":
+      "Doel{goalTitleSuffix} voltooid door {friendName}.",
+    "notifications.goal_completed.titled.body":
+      "Doel: {goalTitle} voltooid door {friendName}.",
+    "notifications.badge_unlocked.title":
+      "Nieuwe badge ontgrendeld",
+    "notifications.badge_unlocked.body":
+      "{badgeLabel}",
+    "notifications.badge_unlocked.batch.title":
+      "Nieuwe badges ontgrendeld",
+    "notifications.badge_unlocked.batch.body":
+      "Je hebt {count} badges ontgrendeld: {badgeList}.",
+    "notifications.passport_catalogue_updated.title":
+      "De catalogus is bijgewerkt",
+    "notifications.passport_catalogue_updated.body":
+      "Je voltooiing ging van {fromRate}% naar {toRate}%. Vul de nieuwe varianten in.",
+    "notifications.passport_catalogue_updated.single.title":
+      "Er is een nieuwe variant toegevoegd",
+    "notifications.passport_catalogue_updated.single.body":
+      "Je voltooiing ging van {fromRate}% naar {toRate}%. Vul de nieuwe varianten in.",
+    "notifications.news_article.title":
+      "Nieuw SPRITE-INDEX-nieuws",
+    "notifications.news_article.body":
+      "{articleTitle}",
+    "notifications.news_article.batch.title":
+      "{count} nieuwe artikelen",
+    "notifications.news_article.batch.body":
+      "{articleTitle}",
+    "notifications.squad_activity.title":
+      "SPRITE-INDEX — Selectie",
+    "notifications.squad_activity.member_joined.body":
+      "{friendName} sloot zich aan bij het team.",
+    "notifications.squad_activity.friendship.body":
+      "{usernameA} en {usernameB} zijn vrienden geworden.",
+    "notifications.squad_activity.milestone.body":
+      "De ploeg heeft een voltooiing van {threshold}% bereikt.",
+    "notifications.squad_activity.goal_created.body":
+      "{friendName} heeft een collectief doel {goalTitleSuffix} gemaakt.",
+    "notifications.squad_activity.goal_completed.body":
+      "Gezamenlijk doel{goalTitleSuffix} voltooid door {friendName}.",
+    "notifications.squad_activity.collection.body":
+      "{friendName} {actionLabel} {spriteName}.",
+    "notifications.actions.compare":
+      "Vergelijken",
+    "notifications.actions.open":
+      "Openen",
+    "notifications.actions.view":
+      "Bekijken",
+    "notifications.actions.viewPassport":
+      "Mijn paspoort bekijken",
+    "notifications.actions.updateCollection":
+      "Mijn collectie bijwerken",
+    "notifications.actions.viewFriends":
+      "Vrienden bekijken",
+    "notifications.fallback.someone":
+      "Iemand",
+    "notifications.fallback.member":
+      "Een lid",
+    "notifications.fallback.player":
+      "Een speler",
+    "notifications.fallback.article":
+      "Er is een nieuw artikel toegevoegd",
+    "notifications.fallback.articles":
+      "{count} sprite-artikelen",
+    "notifications.action.obtained":
+      "verkregen",
+    "notifications.action.spotted":
+      "gespot",
+    "notifications.hidden.title":
+      "Verborgen melding"
   })
 });
 
-const FALLBACK_NAME = Object.freeze({ fr: "Un joueur", en: "A player" });
-const FALLBACK_SPRITE = Object.freeze({ fr: "une variante", en: "a variant" });
-const FALLBACK_SQUAD = Object.freeze({ fr: "Votre squad", en: "Your squad" });
-const FALLBACK_EVENT = Object.freeze({ fr: "L'événement", en: "The event" });
+const FALLBACK_NAME = Object.freeze({ fr: "Un joueur", en: "A player", nl: "Een speler" });
+const FALLBACK_SPRITE = Object.freeze({ fr: "une variante", en: "a variant", nl: "een variant" });
+const FALLBACK_SQUAD = Object.freeze({ fr: "Votre squad", en: "Your squad", nl: "Jouw squad" });
+const FALLBACK_EVENT = Object.freeze({ fr: "L'événement", en: "The event", nl: "Het evenement" });
 
 function getTranslations(lang) {
   const locale = String(lang || "fr").toLowerCase().slice(0, 2);
@@ -321,7 +455,7 @@ function lookupMessage(lang, type, part, template = "default") {
  */
 function pickLocalizedName(lang, { name = null, officialName = null } = {}) {
   const locale = String(lang || "fr").toLowerCase().slice(0, 2);
-  if (locale === "en") {
+  if (locale === "en" || locale === "nl") {
     return officialName || name || null;
   }
   return name || officialName || null;
@@ -421,7 +555,7 @@ function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
     availableUntil: p.availableUntilFormatted || p.availableUntil || undefined,
     when: p.when || undefined,
     goalTitle: p.goalTitle || undefined,
-    goalTitleSuffix: p.goalTitle ? (locale === "en" ? `: ${p.goalTitle}` : ` : ${p.goalTitle}`) : "",
+    goalTitleSuffix: p.goalTitle ? (locale === "fr" ? ` : ${p.goalTitle}` : `: ${p.goalTitle}`) : "",
     badgeLabel: p.badgeLabel || (Array.isArray(p.badgeLabels) ? p.badgeLabels[0] : null) || undefined,
     badgeList: p.badgeList || (Array.isArray(p.badgeLabels) ? p.badgeLabels.join(", ") : undefined),
     fromRate: p.fromRate != null ? String(p.fromRate).replace(".", ",") : undefined,
@@ -440,6 +574,8 @@ function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
     const count = Number(out.remainingCount) || 0;
     if (locale === "en") {
       out.remainingLabel = count === 1 ? "priority variant" : "priority variants";
+    } else if (locale === "nl") {
+      out.remainingLabel = count === 1 ? "prioriteitsvariant" : "prioriteitsvarianten";
     } else {
       out.remainingLabel = count <= 1 ? "variante prioritaire" : "variantes prioritaires";
     }

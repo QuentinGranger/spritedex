@@ -85,7 +85,7 @@ function historyDate(dateStr) {
 }
 
 function historyDateLocale() {
-  return typeof appLocale === "function" && appLocale() === "en" ? "en-US" : "fr-FR";
+  return uiLocale();
 }
 
 function formatHistoryDate(dateStr) {

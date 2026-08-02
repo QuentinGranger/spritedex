@@ -95,31 +95,38 @@ const NOTIFICATION_STATUS_LIST = Object.freeze([
 const STATUS_DEFINITIONS = {
   [NOTIFICATION_STATUSES.CREATED]: {
     fr: { label: "Créée", description: "La notification existe dans la base." },
-    en: { label: "Created", description: "The notification exists in the database." }
+    en: { label: "Created", description: "The notification exists in the database." },
+    nl: { label: "Aangemaakt", description: "De melding bestaat in de database." }
   },
   [NOTIFICATION_STATUSES.QUEUED]: {
     fr: { label: "En file", description: "En attente d'envoi par push ou e-mail." },
-    en: { label: "Queued", description: "Waiting to be sent over push or email." }
+    en: { label: "Queued", description: "Waiting to be sent over push or email." },
+    nl: { label: "In wachtrij", description: "Wacht op verzending via push of e-mail." }
   },
   [NOTIFICATION_STATUSES.DELIVERED]: {
     fr: { label: "Livrée", description: "Le canal externe a accepté ou livré l'envoi." },
-    en: { label: "Delivered", description: "The external channel accepted or delivered it." }
+    en: { label: "Delivered", description: "The external channel accepted or delivered it." },
+    nl: { label: "Bezorgd", description: "Het externe kanaal heeft de verzending geaccepteerd of bezorgd." }
   },
   [NOTIFICATION_STATUSES.FAILED]: {
     fr: { label: "Échouée", description: "L'envoi externe a échoué." },
-    en: { label: "Failed", description: "The external send failed." }
+    en: { label: "Failed", description: "The external send failed." },
+    nl: { label: "Mislukt", description: "De externe verzending is mislukt." }
   },
   [NOTIFICATION_STATUSES.READ]: {
     fr: { label: "Lue", description: "L'utilisateur l'a consultée dans sprite-index." },
-    en: { label: "Read", description: "The user opened it inside sprite-index." }
+    en: { label: "Read", description: "The user opened it inside sprite-index." },
+    nl: { label: "Gelezen", description: "De gebruiker heeft de melding in sprite-index geopend." }
   },
   [NOTIFICATION_STATUSES.ARCHIVED]: {
     fr: { label: "Archivée", description: "Retirée de la boîte principale." },
-    en: { label: "Archived", description: "Removed from the main inbox." }
+    en: { label: "Archived", description: "Removed from the main inbox." },
+    nl: { label: "Gearchiveerd", description: "Verwijderd uit de hoofd-inbox." }
   },
   [NOTIFICATION_STATUSES.CANCELLED]: {
     fr: { label: "Annulée", description: "N'est plus pertinente avant son envoi." },
-    en: { label: "Cancelled", description: "No longer relevant before it was sent." }
+    en: { label: "Cancelled", description: "No longer relevant before it was sent." },
+    nl: { label: "Geannuleerd", description: "Niet langer relevant vóór verzending." }
   }
 };
 
@@ -140,19 +147,22 @@ const STATUS_TRANSITIONS = Object.freeze({
 const CATEGORY_DEFINITIONS = {
   [NOTIFICATION_CATEGORIES.SOCIAL]: {
     fr: { label: "Social", description: "Activité de vos amis et invitations." },
-    en: { label: "Social", description: "Friend activity and invitations." }
+    en: { label: "Social", description: "Friend activity and invitations." },
+    nl: { label: "Sociaal", description: "Activiteit van vrienden en uitnodigingen." }
   },
   [NOTIFICATION_CATEGORIES.COLLECTION]: {
     fr: { label: "Collections et escouades", description: "Progression des collections et des escouades." },
-    en: { label: "Collections & squads", description: "Collection and squad progress." }
+    en: { label: "Collections & squads", description: "Collection and squad progress." },
+    nl: { label: "Collecties en squads", description: "Voortgang van collecties en squads." }
   },
   [NOTIFICATION_CATEGORIES.ALERTS]: {
     fr: { label: "Priorités et événements", description: "Variantes prioritaires et événements limités." },
-    en: { label: "Priorities & events", description: "Priority variants and limited-time events." }
+    en: { label: "Priorities & events", description: "Priority variants and limited-time events." },
+    nl: { label: "Prioriteiten en evenementen", description: "Prioriteitsvarianten en tijdelijke evenementen." }
   }
 };
 
-const SUPPORTED_LANGUAGES = Object.freeze(["fr", "en"]);
+const SUPPORTED_LANGUAGES = Object.freeze(["fr", "en", "nl"]);
 const DEFAULT_LANGUAGE = "fr";
 
 // ── Channels (Étape 7) ──
@@ -276,28 +286,32 @@ function getSendPriorityLabel(scoreOrLevel, lang = DEFAULT_LANGUAGE) {
   const level = typeof scoreOrLevel === "string"
     ? scoreOrLevel
     : classifySendPriority(scoreOrLevel);
-  const locale = SUPPORTED_LANGUAGES.includes(lang) ? lang : DEFAULT_LANGUAGE;
+  const locale = normalizeLang(lang);
   const labels = {
-    critical: { fr: "Critique", en: "Critical" },
-    high: { fr: "Élevée", en: "High" },
-    normal: { fr: "Normale", en: "Normal" },
-    low: { fr: "Faible", en: "Low" }
+    critical: { fr: "Critique", en: "Critical", nl: "Kritiek" },
+    high: { fr: "Élevée", en: "High", nl: "Hoog" },
+    normal: { fr: "Normale", en: "Normal", nl: "Normaal" },
+    low: { fr: "Faible", en: "Low", nl: "Laag" }
   };
-  return (labels[level] && labels[level][locale]) || level;
+  const row = labels[level];
+  return (row && (row[locale] || row.en || row.fr)) || level;
 }
 
 const CHANNEL_DEFINITIONS = {
   [NOTIFICATION_CHANNELS.IN_APP]: {
     fr: { label: "Dans l'application", description: "Apparaît dans le centre de notifications de sprite-index." },
-    en: { label: "In app", description: "Appears in the sprite-index notification center." }
+    en: { label: "In app", description: "Appears in the sprite-index notification center." },
+    nl: { label: "In de app", description: "Verschijnt in het meldingencentrum van sprite-index." }
   },
   [NOTIFICATION_CHANNELS.PUSH]: {
     fr: { label: "Notifications push", description: "Notification sur téléphone ou navigateur, après autorisation." },
-    en: { label: "Push notifications", description: "Phone or browser push, after explicit consent." }
+    en: { label: "Push notifications", description: "Phone or browser push, after explicit consent." },
+    nl: { label: "Pushmeldingen", description: "Melding op telefoon of browser, na uitdrukkelijke toestemming." }
   },
   [NOTIFICATION_CHANNELS.EMAIL]: {
     fr: { label: "E-mails", description: "Réservé aux alertes importantes ou aux résumés." },
-    en: { label: "Emails", description: "Reserved for important alerts or summaries." }
+    en: { label: "Emails", description: "Reserved for important alerts or summaries." },
+    nl: { label: "E-mails", description: "Voorbehouden aan belangrijke waarschuwingen of samenvattingen." }
   }
 };
 
@@ -305,40 +319,45 @@ const CHANNEL_DEFINITIONS = {
 const SETTINGS_TYPE_LABELS = {
   [NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED]: {
     fr: "Invitations d'amis acceptées",
-    en: "Accepted friend invitations"
+    en: "Accepted friend invitations",
+    nl: "Geaccepteerde vriendschapsverzoeken"
   },
   [NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT]: {
     fr: "Un ami possède une variante qui me manque",
-    en: "A friend owns a variant I'm missing"
+    en: "A friend owns a variant I'm missing",
+    nl: "Een vriend bezit een variant die ik mis"
   },
   [NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED]: {
     fr: "Progression de mes squads",
-    en: "My squad progress"
+    en: "My squad progress",
+    nl: "Voortgang van mijn squads"
   },
   [NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE]: {
     fr: "Une variante prioritaire devient disponible",
-    en: "A priority variant becomes available"
+    en: "A priority variant becomes available",
+    nl: "Een prioriteitsvariant wordt beschikbaar"
   },
   [NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON]: {
     fr: "Un événement recherché se termine bientôt",
-    en: "A wanted event is ending soon"
+    en: "A wanted event is ending soon",
+    nl: "Een gevolgd evenement eindigt binnenkort"
   }
 };
 
 const NOTIFICATION_SETTINGS_SCREEN = Object.freeze({
-  title: { fr: "Notifications", en: "Notifications" },
+  title: { fr: "Notifications", en: "Notifications", nl: "Meldingen" },
   channels: Object.freeze([...NOTIFICATION_CHANNEL_LIST]),
   groups: Object.freeze([
     Object.freeze({
       id: "social",
       category: NOTIFICATION_CATEGORIES.SOCIAL,
-      label: { fr: "Social", en: "Social" },
+      label: { fr: "Social", en: "Social", nl: "Sociaal" },
       types: Object.freeze([NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED])
     }),
     Object.freeze({
       id: "collection",
       category: NOTIFICATION_CATEGORIES.COLLECTION,
-      label: { fr: "Collections et squads", en: "Collections & squads" },
+      label: { fr: "Collections et squads", en: "Collections & squads", nl: "Collecties en squads" },
       types: Object.freeze([
         NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT,
         NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED
@@ -347,7 +366,7 @@ const NOTIFICATION_SETTINGS_SCREEN = Object.freeze({
     Object.freeze({
       id: "alerts",
       category: NOTIFICATION_CATEGORIES.ALERTS,
-      label: { fr: "Priorités et événements", en: "Priorities & events" },
+      label: { fr: "Priorités et événements", en: "Priorities & events", nl: "Prioriteiten en evenementen" },
       types: Object.freeze([
         NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE,
         NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON
@@ -357,11 +376,11 @@ const NOTIFICATION_SETTINGS_SCREEN = Object.freeze({
   comfort: Object.freeze([
     Object.freeze({
       id: "quiet_hours",
-      label: { fr: "Heures silencieuses", en: "Quiet hours" }
+      label: { fr: "Heures silencieuses", en: "Quiet hours", nl: "Stille uren" }
     }),
     Object.freeze({
       id: "timezone",
-      label: { fr: "Fuseau horaire", en: "Time zone" }
+      label: { fr: "Fuseau horaire", en: "Time zone", nl: "Tijdzone" }
     })
   ])
 });
@@ -382,15 +401,18 @@ const NOTIFICATION_FREQUENCY_LIST = Object.freeze([
 const FREQUENCY_LABELS = {
   [NOTIFICATION_FREQUENCIES.IMMEDIATE]: {
     fr: "Immédiatement",
-    en: "Immediately"
+    en: "Immediately",
+    nl: "Onmiddellijk"
   },
   [NOTIFICATION_FREQUENCIES.DAILY_DIGEST]: {
     fr: "Résumé quotidien",
-    en: "Daily digest"
+    en: "Daily digest",
+    nl: "Dagelijks overzicht"
   },
   [NOTIFICATION_FREQUENCIES.DISABLED]: {
     fr: "Désactivé",
-    en: "Disabled"
+    en: "Disabled",
+    nl: "Uitgeschakeld"
   }
 };
 
@@ -429,7 +451,7 @@ function normalizeFrequency(frequency, type = null) {
 
 function getFrequencyLabel(frequency, lang = DEFAULT_LANGUAGE) {
   const id = normalizeFrequency(frequency);
-  const locale = SUPPORTED_LANGUAGES.includes(lang) ? lang : DEFAULT_LANGUAGE;
+  const locale = normalizeLang(lang);
   const def = FREQUENCY_LABELS[id];
   return def ? def[locale] : id;
 }
@@ -450,15 +472,17 @@ const PUSH_MODE_LIST = Object.freeze([
 ]);
 
 const PUSH_MODE_LABELS = {
-  [PUSH_MODES.ENABLED]: { fr: "Activé", en: "Enabled" },
-  [PUSH_MODES.DISABLED]: { fr: "Désactivé", en: "Disabled" },
+  [PUSH_MODES.ENABLED]: { fr: "Activé", en: "Enabled", nl: "Ingeschakeld" },
+  [PUSH_MODES.DISABLED]: { fr: "Désactivé", en: "Disabled", nl: "Uitgeschakeld" },
   [PUSH_MODES.PRIORITIES_ONLY]: {
     fr: "Activé seulement pour les priorités",
-    en: "Enabled for priorities only"
+    en: "Enabled for priorities only",
+    nl: "Alleen ingeschakeld voor prioriteiten"
   },
   [PUSH_MODES.MILESTONES_ONLY]: {
     fr: "Paliers importants uniquement",
-    en: "Important milestones only"
+    en: "Important milestones only",
+    nl: "Alleen belangrijke mijlpalen"
   }
 };
 
@@ -533,7 +557,7 @@ function normalizePushMode(mode, type = null) {
 
 function getPushModeLabel(mode, lang = DEFAULT_LANGUAGE) {
   const id = isKnownPushMode(mode) ? mode : PUSH_MODES.ENABLED;
-  const locale = SUPPORTED_LANGUAGES.includes(lang) ? lang : DEFAULT_LANGUAGE;
+  const locale = normalizeLang(lang);
   return (PUSH_MODE_LABELS[id] && PUSH_MODE_LABELS[id][locale]) || id;
 }
 
@@ -557,7 +581,7 @@ function shouldAllowPushForDelivery(pushMode, context = {}) {
 }
 
 function getNotificationSettingsScreen(lang = DEFAULT_LANGUAGE) {
-  const locale = SUPPORTED_LANGUAGES.includes(lang) ? lang : DEFAULT_LANGUAGE;
+  const locale = normalizeLang(lang);
   return {
     title: NOTIFICATION_SETTINGS_SCREEN.title[locale],
     channels: NOTIFICATION_SETTINGS_SCREEN.channels.map((id) => ({
@@ -596,10 +620,10 @@ function getNotificationSettingsScreen(lang = DEFAULT_LANGUAGE) {
 }
 
 // ── Small locale helpers (kept per-language on purpose) ──
-const FALLBACK_NAME = { fr: "Quelqu'un", en: "Someone" };
-const FALLBACK_SPRITE = { fr: "une variante", en: "a variant" };
-const FALLBACK_SQUAD = { fr: "Une escouade", en: "A squad" };
-const FALLBACK_EVENT = { fr: "un événement", en: "an event" };
+const FALLBACK_NAME = { fr: "Quelqu'un", en: "Someone", nl: "Iemand" };
+const FALLBACK_SPRITE = { fr: "une variante", en: "a variant", nl: "een variant" };
+const FALLBACK_SQUAD = { fr: "Une escouade", en: "A squad", nl: "Een squad" };
+const FALLBACK_EVENT = { fr: "un événement", en: "an event", nl: "een evenement" };
 
 function str(value, fallback = "") {
   const s = value === undefined || value === null ? "" : String(value).trim();
@@ -689,6 +713,11 @@ function formatThresholdRemaining(thresholdId, lang = DEFAULT_LANGUAGE) {
     if (id === "7d") return "in 7 days";
     return "in 3 days";
   }
+  if (lang === "nl") {
+    if (id === "24h") return "over 24 uur";
+    if (id === "7d") return "over 7 dagen";
+    return "over 3 dagen";
+  }
   if (id === "24h") return "dans 24 heures";
   if (id === "7d") return "dans 7 jours";
   return "dans 3 jours";
@@ -705,10 +734,19 @@ function formatEventEndingWhen(ctx = {}, lang = DEFAULT_LANGUAGE) {
   const now = ctx.now ? new Date(ctx.now) : new Date();
   if (endingAt) {
     const days = calendarDaysUntil(endingAt, now, timeZone);
-    if (days === 0) return lang === "en" ? "today" : "aujourd'hui";
-    if (days === 1) return lang === "en" ? "tomorrow" : "demain";
+    if (days === 0) {
+      if (lang === "en") return "today";
+      if (lang === "nl") return "vandaag";
+      return "aujourd'hui";
+    }
+    if (days === 1) {
+      if (lang === "en") return "tomorrow";
+      if (lang === "nl") return "morgen";
+      return "demain";
+    }
     if (Number.isInteger(days) && days > 1 && days <= 7) {
       if (lang === "en") return `in ${days} days`;
+      if (lang === "nl") return `over ${days} dagen`;
       return `dans ${days} jours`;
     }
   }
@@ -761,6 +799,12 @@ const DEFINITIONS = {
         return {
           primary: { id: "compare", label: "Compare our collections", url: compareUrl },
           secondary: { id: "profile", label: "View profile", url: profileUrl }
+        };
+      }
+      if (lang === "nl") {
+        return {
+          primary: { id: "compare", label: "Onze collecties vergelijken", url: compareUrl },
+          secondary: { id: "profile", label: "Profiel bekijken", url: profileUrl }
         };
       }
       return {
@@ -848,6 +892,14 @@ const DEFINITIONS = {
           primary: { id: "compare", label: "Compare collections", url: compareUrl },
           secondary: friendId
             ? { id: "profile", label: "View profile", url: `/profile/${encodeURIComponent(friendId)}` }
+            : null
+        };
+      }
+      if (lang === "nl") {
+        return {
+          primary: { id: "compare", label: "Collecties vergelijken", url: compareUrl },
+          secondary: friendId
+            ? { id: "profile", label: "Profiel bekijken", url: `/profile/${encodeURIComponent(friendId)}` }
             : null
         };
       }
@@ -945,6 +997,9 @@ const DEFINITIONS = {
       if (lang === "en") {
         return { primary: { id: "open_squad_engine", label: "Open Squad Completion Engine", url } };
       }
+      if (lang === "nl") {
+        return { primary: { id: "open_squad_engine", label: "Squad Completion Engine openen", url } };
+      }
       return { primary: { id: "open_squad_engine", label: "Ouvrir le Squad Completion Engine", url } };
     }
   },
@@ -998,6 +1053,9 @@ const DEFINITIONS = {
       const url = buildPriorityVariantActionUrl(ctx);
       if (lang === "en") {
         return { primary: { id: "open_variant", label: "View variant", url } };
+      }
+      if (lang === "nl") {
+        return { primary: { id: "open_variant", label: "Variant bekijken", url } };
       }
       return { primary: { id: "open_variant", label: "Voir la variante", url } };
     }
@@ -1058,6 +1116,9 @@ const DEFINITIONS = {
       if (lang === "en") {
         return { primary: { id: "open_event", label: "View event", url } };
       }
+      if (lang === "nl") {
+        return { primary: { id: "open_event", label: "Evenement bekijken", url } };
+      }
       return { primary: { id: "open_event", label: "Voir l'événement", url } };
     }
   },
@@ -1080,7 +1141,7 @@ const DEFINITIONS = {
       return friendId ? { friendId, actionUrl: "/friends" } : { actionUrl: "/friends" };
     },
     actions(_ctx, lang) {
-      const label = lang === "en" ? "View friends" : "Voir les amis";
+      const label = lang === "en" ? "View friends" : lang === "nl" ? "Vrienden bekijken" : "Voir les amis";
       return { primary: { id: "friends", label, url: "/friends" } };
     }
   },
@@ -1128,7 +1189,7 @@ const DEFINITIONS = {
     actions(ctx, lang) {
       const ownerId = ctx.ownerId || ctx.actorId;
       const url = ownerId ? `/collection/${encodeURIComponent(ownerId)}` : "/friends";
-      return { primary: { id: "open", label: lang === "en" ? "Open" : "Ouvrir", url } };
+      return { primary: { id: "open", label: lang === "en" ? "Open" : lang === "nl" ? "Openen" : "Ouvrir", url } };
     }
   },
 
@@ -1213,7 +1274,7 @@ const DEFINITIONS = {
       return {
         primary: {
           id: "passport",
-          label: lang === "en" ? "View my passport" : "Voir mon passeport",
+          label: lang === "en" ? "View my passport" : lang === "nl" ? "Mijn paspoort bekijken" : "Voir mon passeport",
           url: "/?view=account"
         }
       };
@@ -1255,7 +1316,7 @@ const DEFINITIONS = {
       return {
         primary: {
           id: "checklist",
-          label: lang === "en" ? "Update my collection" : "Mettre à jour ma collection",
+          label: lang === "en" ? "Update my collection" : lang === "nl" ? "Mijn collectie bijwerken" : "Mettre à jour ma collection",
           url: "/?view=checklist"
         }
       };
@@ -1310,6 +1371,13 @@ function isKnownType(type) {
 function normalizeLang(lang) {
   const l = str(lang).toLowerCase().slice(0, 2);
   return SUPPORTED_LANGUAGES.includes(l) ? l : DEFAULT_LANGUAGE;
+}
+
+/** Prefer requested locale, then English, then French. */
+function pickLocaleCopy(def, lang) {
+  if (!def || typeof def !== "object") return null;
+  const locale = normalizeLang(lang);
+  return def[locale] || def.en || def.fr || null;
 }
 
 // ── Étape 61 — structured translation payload (not final copy alone) ──
@@ -1581,7 +1649,10 @@ function renderNotification(type, context = {}, lang = DEFAULT_LANGUAGE) {
   const i18n = require("./notification-i18n");
   const translationParams = buildRenderTranslationParams(type, ctx, locale);
   const translated = i18n.renderTranslatedMessage(type, translationParams, locale);
-  const built = translated || def[locale](ctx);
+  const builder = typeof def[locale] === "function"
+    ? def[locale]
+    : (typeof def.en === "function" ? def.en : def.fr);
+  const built = translated || builder(ctx);
 
   const data = withGroupData(
     typeof def.data === "function" ? def.data(ctx) : {},
@@ -1666,7 +1737,7 @@ function getTypesByCategory(category) {
 function getCategoryLabel(category, lang = DEFAULT_LANGUAGE) {
   const def = CATEGORY_DEFINITIONS[category];
   if (!def) return null;
-  return def[normalizeLang(lang)];
+  return pickLocaleCopy(def, lang);
 }
 
 // ── Channel accessors ──
@@ -1686,7 +1757,7 @@ function getTypeChannels(type) {
 function getChannelLabel(channel, lang = DEFAULT_LANGUAGE) {
   const def = CHANNEL_DEFINITIONS[channel];
   if (!def) return null;
-  return def[normalizeLang(lang)];
+  return pickLocaleCopy(def, lang);
 }
 
 // ── Status accessors ──
@@ -1698,7 +1769,7 @@ function isKnownStatus(status) {
 function getStatusLabel(status, lang = DEFAULT_LANGUAGE) {
   const def = STATUS_DEFINITIONS[status];
   if (!def) return null;
-  return def[normalizeLang(lang)];
+  return pickLocaleCopy(def, lang);
 }
 
 // Whether `to` is a legal next status from `from`.

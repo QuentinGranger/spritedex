@@ -90,7 +90,10 @@ base ou les clés de push.
 | `RESEND_API_KEY`, `FROM_EMAIL` | Vérification et réinitialisation par e-mail. |
 | `VAPID_*`, `FCM_*`, `APNS_*` | Notifications web, Android et iOS. Les clés VAPID peuvent être générées au premier démarrage. |
 | `CHROME_PATH` | Facultatif ; active le scraper d’actualités lorsque Chrome/Chromium est disponible. |
-| `ADMIN_ACCESS_PASSWORD_HASH` | Hash scrypt du mot de passe du backoffice terminal. Obligatoire pour ouvrir le backoffice. |
+| `ADMIN_ACCESS_PASSWORD_HASH` | Secret global de transition uniquement ; à retirer après création d’un compte nominatif. |
+| `ADMIN_OPERATOR_USERNAME` | Identifiant nominatif utilisé par `npm run admin` (le compte est stocké en base). |
+| `ADMIN_OPERATOR_LABEL` | Facultatif ; libellé d’opérateur écrit dans le journal d’audit (`label:sessionId`). |
+| `ADMIN_MAX_CONCURRENT_SESSIONS` | Facultatif ; plafond de sessions admin simultanées (défaut `3`). |
 | `ADMIN_CONSOLE_URL` | Facultatif ; URL publique ciblée par la commande terminal, sinon `APP_URL`. |
 
 En production, utilisez une URL publique HTTPS, une base PostgreSQL accessible
@@ -100,8 +103,10 @@ au développement local : le serveur le refuse en production.
 ## Backoffice administrateur
 
 Le backoffice est isolé de l’interface de jeu et ne dépend pas d’un compte
-joueur. Configurez-le une seule fois, sans jamais enregistrer le mot de passe
-en clair :
+joueur. Le secret global permet seulement d’amorcer la migration : utilisez-le
+une première fois pour créer un compte administrateur nominatif dans
+**Confidentialité & audit**, puis utilisez ce compte et faites tourner son
+secret. Le secret global peut alors être retiré.
 
 ```bash
 npm run admin:password
@@ -118,8 +123,13 @@ npm run admin
 La commande demande le mot de passe sans l’afficher, crée un lien unique valable
 5 minutes puis ouvre `/admin`. Le lien ne contient pas le mot de passe, son
 jeton est consommé une seule fois et la session obtenue est un cookie `HttpOnly`
-valable 4 heures. Ajoutez `-- --no-open` à la commande pour afficher le lien
-sans ouvrir de navigateur.
+valable 4 heures d’inactivité (plafond absolu 12 heures). Les tickets et sessions
+sont stockés dans PostgreSQL : elles restent valides entre instances et pendant
+un rolling deploy. Chaque action administrative est attribuée à un acteur
+`ADMIN_OPERATOR_LABEL:<sessionId>` (par défaut `terminal:<id>`) en mode de transition. Avec un compte nominatif, l’action est attribuée à ce compte et à sa session. Les sessions
+concurrentes sont plafonnées (`ADMIN_MAX_CONCURRENT_SESSIONS`, défaut 3) et
+peuvent être révoquées depuis Confidentialité & audit. Ajoutez `-- --no-open`
+à la commande pour afficher le lien sans ouvrir de navigateur.
 
 Depuis la console développeur d’un navigateur déjà ouvert sur SPRITE-INDEX,
 vous pouvez aussi lancer :
@@ -128,7 +138,7 @@ vous pouvez aussi lancer :
 openSpriteIndexBackoffice()
 ```
 
-Le mot de passe est alors demandé dans une fenêtre native ; ne le mettez pas
+L’identifiant puis le mot de passe sont alors demandés dans des fenêtres natives ; ne mettez pas le mot de passe
 dans la commande, afin qu’il ne soit pas conservé dans l’historique de la
 console.
 

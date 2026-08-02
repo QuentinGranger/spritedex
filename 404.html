@@ -12,6 +12,39 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <script defer>
+      (() => {
+        const messages = {
+          fr: { title: "404 · Sprite introuvable — SPRITE-INDEX", eyebrow: "Signal perdu · Scanner Dex", species: "Espèce inconnue", heading: "Ce sprite reste introuvable", lead: "Le Dex a scanné le secteur… mais cette entrée n'existe pas (ou plus) dans le SPRITE-INDEX. Aucune donnée à capturer ici.", home: "Retour au SPRITE-INDEX", collection: "Ma collection", ticker: "— erreur 404 — données corrompues — réessayez —" },
+          en: { title: "404 · Sprite not found — SPRITE-INDEX", eyebrow: "Signal lost · Dex scanner", species: "Unknown species", heading: "This sprite is still missing", lead: "The Dex scanned the area… but this entry does not exist (or no longer exists) in SPRITE-INDEX. There is no data to capture here.", home: "Back to SPRITE-INDEX", collection: "My collection", ticker: "— error 404 — corrupted data — try again —" },
+          nl: { title: "404 · Sprite niet gevonden — SPRITE-INDEX", eyebrow: "Signaal verloren · Dex-scanner", species: "Onbekende soort", heading: "Deze sprite is nog steeds niet gevonden", lead: "De Dex heeft het gebied gescand… maar deze vermelding bestaat niet (meer) in SPRITE-INDEX. Hier zijn geen gegevens te verzamelen.", home: "Terug naar SPRITE-INDEX", collection: "Mijn collectie", ticker: "— fout 404 — beschadigde gegevens — probeer opnieuw —" }
+        };
+        const applyTranslations = () => {
+          const forced = new URLSearchParams(window.location.search).get("lang");
+          const deviceLanguages = Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
+          const locale = ["fr", "en", "nl"].includes(forced)
+            ? forced
+            : deviceLanguages.some((value) => String(value).toLowerCase().startsWith("nl")) ? "nl"
+              : deviceLanguages.some((value) => String(value).toLowerCase().startsWith("fr")) ? "fr" : "en";
+          const copy = messages[locale];
+          document.documentElement.lang = locale;
+          document.title = copy.title;
+          document.querySelectorAll("[data-404-i18n]").forEach((element) => {
+            element.textContent = copy[element.dataset["404I18n"]];
+          });
+          document.querySelectorAll("[data-404-link]").forEach((link) => {
+            const url = new URL(link.getAttribute("href"), window.location.origin);
+            url.searchParams.set("lang", locale);
+            link.setAttribute("href", `${url.pathname}${url.search}${url.hash}`);
+          });
+        };
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", applyTranslations, { once: true });
+        } else {
+          applyTranslations();
+        }
+      })();
+    </script>
     <style>
       :root {
         --bg: #060a18;
@@ -327,7 +360,7 @@
   </head>
   <body>
     <main class="card">
-      <span class="eyebrow"><span class="dot"></span> Signal perdu · Scanner Dex</span>
+      <span class="eyebrow"><span class="dot"></span> <span data-404-i18n="eyebrow">Signal perdu · Scanner Dex</span></span>
 
       <div class="scanner" aria-hidden="true">
         <span class="beam"></span>
@@ -336,26 +369,23 @@
 
       <div class="code" data-text="404">404</div>
 
-      <span class="plate">N° <strong>404</strong> · Espèce inconnue</span>
+      <span class="plate">N° <strong>404</strong> · <span data-404-i18n="species">Espèce inconnue</span></span>
 
-      <h1>Ce sprite reste introuvable</h1>
-      <p class="lead">
-        Le Dex a scanné le secteur… mais cette entrée n'existe pas (ou plus) dans
-        le SPRITE-INDEX. Aucune donnée à capturer ici.
-      </p>
+      <h1 data-404-i18n="heading">Ce sprite reste introuvable</h1>
+      <p class="lead" data-404-i18n="lead">Le Dex a scanné le secteur… mais cette entrée n'existe pas (ou plus) dans le SPRITE-INDEX. Aucune donnée à capturer ici.</p>
 
       <div class="actions">
-        <a class="btn btn--primary" href="/">
+        <a class="btn btn--primary" href="/" data-404-link>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M9 21V12h6v9"/></svg>
-          Retour au SPRITE-INDEX
+          <span data-404-i18n="home">Retour au SPRITE-INDEX</span>
         </a>
-        <a class="btn btn--ghost" href="/?view=checklist">
+        <a class="btn btn--ghost" href="/?view=checklist" data-404-link>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-          Ma collection
+          <span data-404-i18n="collection">Ma collection</span>
         </a>
       </div>
 
-      <p class="ticker">— erreur 404 — donnees corrompues — reessayez —</p>
+      <p class="ticker" data-404-i18n="ticker">— erreur 404 — données corrompues — réessayez —</p>
     </main>
   </body>
 </html>

@@ -42,7 +42,7 @@ function farmContext(item) {
 function farmDateLabel(date) {
   const parsed = new Date(date || "");
   if (Number.isNaN(parsed.getTime())) return t("farm.noDeadline");
-  return parsed.toLocaleDateString(appLocale() === "en" ? "en-US" : "fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  return parsed.toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 function farmDeadline(event) {

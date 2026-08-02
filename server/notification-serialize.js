@@ -43,8 +43,28 @@ const DEFAULT_ACTION_LABELS = Object.freeze({
     badge_unlocked: "View my passport",
     passport_catalogue_updated: "Update my collection",
     news_article: "View"
+  }),
+  nl: Object.freeze({
+    friend_request_accepted: "Vergelijken",
+    friend_request_received: "Bekijken",
+    friend_acquired_missing_variant: "Vergelijken",
+    friend_collection_updated: "Openen",
+    friend_removed: "Bekijken",
+    squad_completion_increased: "Openen",
+    squad_member_joined: "Openen",
+    priority_variant_available: "Bekijken",
+    wanted_event_ending_soon: "Bekijken",
+    goal_completed: "Openen",
+    badge_unlocked: "Mijn paspoort bekijken",
+    passport_catalogue_updated: "Mijn collectie bijwerken",
+    news_article: "Bekijken"
   })
 });
+
+function normalizeNotificationLocale(lang) {
+  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  return locale === "en" || locale === "nl" ? locale : "fr";
+}
 
 const ENTITY_TYPE_ALIASES = Object.freeze({
   variant: "sprite_variant",
@@ -112,7 +132,7 @@ function normalizeAction(row = {}, lang = "fr") {
   if (data.accessRevoked || data.hiddenDueToBlock) return null;
   const primary = data.actions && data.actions.primary ? data.actions.primary : null;
   const url = (primary && primary.url) || data.actionUrl || null;
-  const locale = String(lang || data.lang || "fr").toLowerCase().slice(0, 2) === "en" ? "en" : "fr";
+  const locale = normalizeNotificationLocale(lang || data.lang || "fr");
   const defaults = DEFAULT_ACTION_LABELS[locale] || DEFAULT_ACTION_LABELS.fr;
   // Never reuse a stored FR/EN actionLabel when it doesn't match the inbox locale.
   const storedLabelMatchesLocale = primary && primary.label && data.lang === locale;
@@ -121,7 +141,7 @@ function normalizeAction(row = {}, lang = "fr") {
     || null;
   if (!url && !label) return null;
   return {
-    label: label || (locale === "en" ? "Open" : "Ouvrir"),
+    label: label || (locale === "en" ? "Open" : locale === "nl" ? "Openen" : "Ouvrir"),
     url: url || null
   };
 }
@@ -195,7 +215,7 @@ function normalizeNotification(row, actorUser = null, lang = null) {
     : null;
   const imageUrl = resolveImageUrl(row, actorUser);
 
-  const locale = String(lang || data.lang || "fr").toLowerCase().slice(0, 2) === "en" ? "en" : "fr";
+  const locale = normalizeNotificationLocale(lang || data.lang || "fr");
   let title = row.title || "";
   let body = row.body || row.message || "";
 
@@ -205,9 +225,9 @@ function normalizeNotification(row, actorUser = null, lang = null) {
     try {
       const notifI18n = require("./notification-i18n");
       title = notifI18n.tNotif("notifications.hidden.title", {}, locale)
-        || (locale === "en" ? "Hidden notification" : "Notification masquée");
+        || (locale === "en" ? "Hidden notification" : locale === "nl" ? "Verborgen melding" : "Notification masquée");
     } catch (_err) {
-      title = locale === "en" ? "Hidden notification" : "Notification masquée";
+      title = locale === "en" ? "Hidden notification" : locale === "nl" ? "Verborgen melding" : "Notification masquée";
     }
     body = "";
   } else if (translationKey && translationParams && row.type) {
@@ -329,6 +349,7 @@ async function normalizeNotificationList(pool, rows, lang = null) {
 module.exports = {
   PUBLIC_ID_PREFIX,
   DEFAULT_ACTION_LABELS,
+  normalizeNotificationLocale,
   toPublicNotificationId,
   fromPublicNotificationId,
   normalizeEntityType,

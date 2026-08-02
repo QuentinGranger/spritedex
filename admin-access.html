@@ -6,6 +6,9 @@
     <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#070b1d" />
     <title>SPRITE-INDEX — Backoffice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/admin.css" />
   </head>
   <body class="admin-access-page">
@@ -16,7 +19,15 @@
       <p class="admin-eyebrow" data-copy="eyebrow">ACCÈS ADMINISTRATEUR</p>
       <h1 id="accessTitle" data-copy="title">Vérification sécurisée</h1>
       <p class="admin-access-card__lead" id="accessMessage" data-copy="loading">Préparation de votre session sécurisée…</p>
-      <div class="admin-access-card__loader" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="admin-access-card__loader" id="accessLoader" aria-hidden="true"><i></i><i></i><i></i></div>
+      <form class="admin-access-mfa" id="accessMfaForm" hidden>
+        <label class="admin-field admin-field--wide">
+          <span data-copy="mfaLabel">Code d’authentification</span>
+          <input id="accessMfaCode" name="totp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9 ]{6,8}" required />
+        </label>
+        <p class="admin-dialog__error" id="accessMfaError" hidden role="alert"></p>
+        <button class="admin-button" type="submit" data-copy="mfaSubmit">Ouvrir la session</button>
+      </form>
       <p class="admin-access-card__note" data-copy="note">Ce lien est à usage unique et n’est jamais enregistré dans votre historique.</p>
     </main>
     <script src="/js/admin-access.js"></script>

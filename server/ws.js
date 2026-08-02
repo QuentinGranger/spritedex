@@ -9,6 +9,14 @@ const security = require("../security");
 // ── WebSocket : client registry ──
 // Maps userId (string) -> Set of ws clients
 const wsClients = new Map();
+const wsHealth = {
+  startedAt: new Date().toISOString(),
+  connections: 0,
+  errors: 0,
+  authFailures: 0,
+  policyCloses: 0,
+  lastErrorAt: null
+};
 // Maps a hashed session token to every socket authenticated with it. Raw
 // bearer tokens are deliberately never retained in a long-lived WS object.
 const sessionSockets = new Map();
@@ -67,6 +75,7 @@ function removeSocketFromRegistry(ws) {
 }
 
 function closeWebSocket(ws, reason = "Authorization required") {
+  wsHealth.policyCloses += 1;
   removeSocketFromRegistry(ws);
   if (ws.readyState !== 0 && ws.readyState !== 1) return;
   try {
@@ -202,6 +211,7 @@ function revokeUserSockets(userId, reason = "Account access revoked") {
 }
 
 wss.on("connection", (ws) => {
+  wsHealth.connections += 1;
   ws._userId = null;
   ws._sessionTokenHash = null;
   ws._sessionLastCheckedAt = 0;
@@ -215,6 +225,10 @@ wss.on("connection", (ws) => {
   // handled before the preceding `auth` finished awaiting validateSession(),
   // leaving ws._userId still null and defeating the authorization check below.
   ws._msgQueue = Promise.resolve();
+  ws.on("error", () => {
+    wsHealth.errors += 1;
+    wsHealth.lastErrorAt = new Date().toISOString();
+  });
 
   const authTimeout = setTimeout(() => {
     if (!ws._userId) closeWebSocket(ws, "Authentication timed out");
@@ -245,6 +259,7 @@ wss.on("connection", (ws) => {
         : false;
       if (!sessionUsable) {
         try { ws.send(JSON.stringify({ type: "auth_error" })); } catch {}
+        wsHealth.authFailures += 1;
         closeWebSocket(ws, "Invalid or suspended session");
         return;
       }
@@ -663,6 +678,10 @@ function broadcastNewsUpdate(payload) {
   }
 }
 
+function getWebSocketHealth() {
+  return { ...wsHealth, connectedClients: [...wsClients.values()].reduce((total, clients) => total + clients.size, 0) };
+}
+
 module.exports = {
   WS_AUTH_TIMEOUT_MS,
   WS_MAX_MESSAGES_PER_WINDOW,
@@ -676,6 +695,7 @@ module.exports = {
   broadcastNewsUpdate,
   broadcastSquadCompletionUpdate,
   broadcastSquadUpdate,
+  getWebSocketHealth,
   isAllowedWebSocketOrigin,
   pool,
   revalidateSocketAuthorization,

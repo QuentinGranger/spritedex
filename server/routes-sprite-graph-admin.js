@@ -6,7 +6,10 @@
 const { app } = require("./core");
 const { pool } = require("./db");
 const { getRequestingUser } = require("./auth");
-const { isAdminSession } = require("./admin-access");
+const { attachAdminSession } = require("./admin-access");
+const { hasCapability } = require("./admin-authz");
+const { withAdminAudit, AdminHttpError } = require("./admin-audit");
+const { rateLimit } = require("../security");
 const {
   getSpriteGraphTechnicalMetrics,
   getSpriteGraphControlBoard,
@@ -20,9 +23,31 @@ const { getGraphFormulaRegistry } = require("./sprite-graph-formula");
 const { getGraphMetricCatalog, getGraphMetricDoc } = require("./sprite-graph-metric-catalog");
 const { evaluateGraphV1Readiness } = require("./sprite-graph-v1-validation");
 
-async function requireGraphAdmin(req, res) {
-  if (isAdminSession(req)) {
-    return { source: "terminal", userId: null };
+const graphFlagMutationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  keyPrefix: "admin-graph-flags",
+  message: "Trop d’actions sur les métriques. Réessaie dans quelques minutes."
+});
+
+function cleanReason(value) {
+  if (value == null) return null;
+  const text = String(value).trim().slice(0, 500);
+  return text || null;
+}
+
+async function requireGraphAdmin(req, res, { write = false } = {}) {
+  const adminSession = await attachAdminSession(req, {
+    ip: req.ip,
+    userAgent: req.get("user-agent")
+  });
+  if (adminSession) {
+    const needed = write ? "intelligence.write" : "intelligence.read";
+    if (!hasCapability(adminSession, needed)) {
+      res.status(403).json({ error: "Privilège insuffisant", required: [needed], role: adminSession.role || null });
+      return null;
+    }
+    return { source: "terminal", userId: null, actor: adminSession.actor, role: adminSession.role };
   }
   const reqUser = await getRequestingUser(req);
   if (!reqUser) {
@@ -33,7 +58,7 @@ async function requireGraphAdmin(req, res) {
     res.status(403).json({ error: "Accès réservé" });
     return null;
   }
-  return { source: "account", userId: reqUser };
+  return { source: "account", userId: reqUser, actor: `account:${reqUser}` };
 }
 
 /**
@@ -70,20 +95,38 @@ app.get("/api/admin/sprite-graph/technical-metrics", async (req, res) => {
 /**
  * Étape 98 — temporarily disable an incorrect public metric.
  * PATCH /api/admin/sprite-graph/flags
- * body: { metricKey, disabled, reason? }
+ * body: { metricKey, disabled, reason }
  */
-app.patch("/api/admin/sprite-graph/flags", async (req, res) => {
+app.patch("/api/admin/sprite-graph/flags", graphFlagMutationLimiter, async (req, res) => {
   try {
-    const admin = await requireGraphAdmin(req, res);
+    const admin = await requireGraphAdmin(req, res, { write: true });
     if (!admin) return;
     const body = req.body && typeof req.body === "object" ? req.body : {};
     const metricKey = body.metricKey || body.key;
+    const disabled = body.disabled !== false;
+    const reason = cleanReason(body.reason);
     if (!metricKey) return res.status(400).json({ error: "metricKey requis" });
-    const row = await setPublicMetricDisabled(pool, metricKey, {
-      disabled: body.disabled !== false,
-      reason: body.reason || null,
-      updatedBy: admin.userId
+    if (!reason) return res.status(400).json({ error: "Une justification est requise" });
+
+    const row = await withAdminAudit(async (client) => (
+      setPublicMetricDisabled(client, metricKey, {
+        disabled,
+        reason,
+        updatedBy: admin.userId
+      })
+    ), {
+      actor: admin.actor,
+      action: disabled ? "graph.metric_suspended" : "graph.metric_restored",
+      targetType: "graph_metric",
+      targetId: String(metricKey).slice(0, 160),
+      justification: reason,
+      details: {
+        disabled,
+        source: admin.source,
+        accountUserId: admin.userId
+      }
     });
+
     res.json({
       ok: true,
       flag: {
@@ -96,6 +139,9 @@ app.patch("/api/admin/sprite-graph/flags", async (req, res) => {
     });
   } catch (err) {
     console.error("[sprite-graph-admin] flags:", err.message);
+    if (err instanceof AdminHttpError || (Number.isInteger(err.status) && err.status >= 400 && err.status < 600)) {
+      return res.status(err.status).json({ error: err.message || "Requête invalide" });
+    }
     res.status(500).json({ error: "Erreur serveur" });
   }
 });

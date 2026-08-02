@@ -3,6 +3,8 @@
 // argument, so it does not end up in the DevTools command history.
 (() => {
   async function openSpriteIndexBackoffice() {
+    const username = window.prompt(typeof t === "function" ? t("admin.consoleUsernamePrompt") : "Admin username (leave empty for legacy access)");
+    if (username == null) return false;
     const password = window.prompt(typeof t === "function" ? t("admin.consolePrompt") : "Admin password");
     if (password == null) return false;
     if (!password) {
@@ -14,7 +16,7 @@
       const response = await fetch(`${API_BASE}/admin/terminal/ticket`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ username: username.trim() || undefined, password })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.accessUrl) throw new Error("admin_access_denied");

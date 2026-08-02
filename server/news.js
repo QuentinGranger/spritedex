@@ -933,7 +933,7 @@ async function notifyNewsSubscribers(items) {
         }, locale);
         return {
           title: (rendered && rendered.title)
-            || (locale === "en" ? "New SPRITE-INDEX news" : "Nouvelle actu SPRITE-INDEX"),
+            || (locale === "en" ? "New SPRITE-INDEX news" : locale === "nl" ? "Nieuw SPRITE-INDEX-nieuws" : "Nouvelle actu SPRITE-INDEX"),
           body: (rendered && rendered.body) || articleTitle || fallbackArticle || "",
           icon,
           url
@@ -977,4 +977,37 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
-module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, detectEventInfo, extractAvailabilityFromNews, extractEventsFromNews, extractRecurrenceFromNews, fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews, matchesSpriteKeywords, newsHash, newsInterval, notifyNewsSubscribers, parseFortniteGGNewsHtml, persistNewsInInbox, backfillRecentNewsInbox, refreshNews, startNewsCron };
+async function fanoutPublishedNews(row, { notifyPush = true } = {}) {
+  if (!row || row.status !== "published") return { inboxNotifications: 0 };
+  const item = {
+    newsId: row.id,
+    source: row.source || "backoffice",
+    title: row.title,
+    description: row.description,
+    image: row.image,
+    link: row.link,
+    date: row.news_date || row.published_at || new Date().toISOString()
+  };
+  const inboxNotifications = await persistNewsInInbox([item], { markRead: false });
+  if (notifyPush) {
+    notifyNewsSubscribers([item]).catch((error) => {
+      console.error("[NEWS] admin publish push failed:", error.message);
+    });
+  }
+  broadcastNewsUpdate({
+    newItems: [{
+      source: item.source,
+      title: item.title,
+      link: item.link,
+      image: item.image,
+      date: item.date
+    }],
+    newCount: 1,
+    extractedEvents: [],
+    extractedEventCount: 0,
+    timestamp: new Date().toISOString()
+  });
+  return { inboxNotifications };
+}
+
+module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, detectEventInfo, extractAvailabilityFromNews, extractEventsFromNews, extractRecurrenceFromNews, fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews, matchesSpriteKeywords, newsHash, newsInterval, notifyNewsSubscribers, parseFortniteGGNewsHtml, persistNewsInInbox, fanoutPublishedNews, backfillRecentNewsInbox, refreshNews, startNewsCron };
