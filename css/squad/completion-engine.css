@@ -1,0 +1,89 @@
+/* ── Squad Completion Engine ── */
+.squad-active--engine .squad-member-filter,
+.squad-active--engine .squad-member-summary,
+.squad-active--engine .squad-members,
+.squad-active--engine .squad-recommended-friends,
+.squad-active--engine .squad-complementary-pairs,
+.squad-active--engine .squad-controls,
+.squad-active--engine .squad-duel-bar,
+.squad-active--engine .squad-counter,
+.squad-active--engine .squad-table-wrap {
+  display: none;
+}
+
+.squad-active--engine .squad-engine {
+  display: block;
+}
+
+.squad-engine {
+  display: none;
+  margin-top: 12px;
+}
+
+.squad-engine__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.squad-engine__title {
+  flex: 1;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.squad-engine__version {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: var(--font-mono, monospace);
+}
+
+.squad-engine__tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.squad-engine__tab {
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.squad-engine__tab.active {
+  color: var(--accent-2);
+  border-bottom-color: var(--accent-2);
+}
+
+.squad-engine__panel {
+  display: none;
+}
+
+.squad-engine__panel.active {
+  display: block;
+}
+
+.engine-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.engine-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.engine-grid--4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+

@@ -1,0 +1,100 @@
+        <section class="view" id="view-swipe">
+          <div class="deck-toolbar">
+            <select id="deckFilter" data-i18n-aria-label="swipe.filterAria" aria-label="Filtre du deck swipe">
+              <option value="all" data-i18n="filter.all">Tous</option>
+              <option value="new" data-i18n="filter.unclassified">Non classés</option>
+              <option value="missing" data-i18n="filter.missing">Manquants</option>
+              <option value="priority" data-i18n="filter.priority">Prioritaires</option>
+              <option value="unsure" data-i18n="filter.unsure">À vérifier</option>
+              <option value="spotted" data-i18n="filter.spotted">Rares vus</option>
+              <option value="owned" data-i18n="filter.owned">Possédés</option>
+            </select>
+            <button class="ghost-button" id="shuffleDeck" data-i18n="common.shuffle">Mélanger</button>
+          </div>
+
+          <section class="swipe-session" id="swipeSession" aria-live="polite" aria-label="Session de tri" data-i18n-aria-label="swipe.sessionAria">
+            <div class="swipe-session__main">
+              <span class="swipe-session__eyebrow" data-i18n="swipe.sessionLabel">Session de tri</span>
+              <strong id="swipeSessionProgress" data-i18n="swipe.sessionProgressInitial">0 traité · 0 restant</strong>
+              <div class="swipe-session__track" aria-hidden="true"><span id="swipeSessionFill"></span></div>
+            </div>
+            <div class="swipe-session__actions">
+              <button class="swipe-session__button" id="swipeSessionPause" type="button" aria-keyshortcuts="Space P" data-i18n="swipe.pause">Pause</button>
+              <button class="swipe-session__button" id="swipeSessionUndo" type="button" disabled aria-keyshortcuts="Control+Z Meta+Z Z" data-i18n="swipe.undo">Annuler</button>
+              <button class="swipe-session__button swipe-session__help" id="swipeShortcutsToggle" type="button" aria-expanded="false" aria-controls="swipeShortcutGuide" aria-keyshortcuts="?" data-i18n-aria-label="swipe.shortcutsOpen" aria-label="Afficher les raccourcis">?</button>
+            </div>
+          </section>
+          <aside class="swipe-shortcut-guide" id="swipeShortcutGuide" hidden aria-label="Raccourcis du swipe" data-i18n-aria-label="swipe.shortcutsTitle">
+            <div class="swipe-shortcut-guide__heading"><strong data-i18n="swipe.shortcutsTitle">Raccourcis clavier</strong><button type="button" id="swipeShortcutsClose" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button></div>
+            <div class="swipe-shortcut-guide__grid">
+              <span><kbd>←</kbd><kbd>1</kbd><small data-i18n="swipe.shortcutMissing">Manquant</small></span>
+              <span><kbd>↓</kbd><kbd>2</kbd><small data-i18n="swipe.shortcutUnsure">À vérifier</small></span>
+              <span><kbd>↑</kbd><kbd>3</kbd><small data-i18n="swipe.shortcutPriority">Priorité</small></span>
+              <span><kbd>→</kbd><kbd>4</kbd><small data-i18n="swipe.shortcutOwned">Possédé</small></span>
+              <span><kbd>Espace</kbd><small data-i18n="swipe.shortcutPause">Pause / reprendre</small></span>
+              <span><kbd>⌘ Z</kbd><small data-i18n="swipe.shortcutUndo">Annuler</small></span>
+            </div>
+          </aside>
+          <section class="swipe-session-summary" id="swipeSessionSummary" hidden aria-live="polite">
+            <div><span data-i18n="swipe.sessionComplete">Session terminée</span><strong id="swipeSessionSummaryTitle" data-i18n="swipe.sessionSummaryInitial">0 variantes traitées</strong><small id="swipeSessionSummaryDetail"></small></div>
+            <button class="ghost-button" id="swipeSessionRestart" type="button" data-i18n="swipe.restart">Nouvelle session</button>
+          </section>
+
+          <div class="deck-zone">
+            <article class="sprite-card" id="spriteCard">
+              <div class="swipe-badge" id="swipeBadge">OK</div>
+              <div class="card-glow"></div>
+              <div class="pokedex-scan" aria-hidden="true"></div>
+              <div class="sprite-avatar" id="spriteAvatar">💧</div>
+              <p class="rarity-pill" id="cardRarity">Rare</p>
+              <h2 id="cardName">Water Sprite</h2>
+              <p class="variant-name" id="cardVariant">Base</p>
+              <p class="effect" id="cardEffect">Effet du sprite</p>
+              <div class="card-progress" id="cardProgress">
+                <div class="card-progress__label"><span data-i18n="swipe.progress">Progression :</span> <strong id="cardProgressText">0 / 6</strong></div>
+                <div class="card-progress__track"><div class="card-progress__fill" id="cardProgressFill"></div></div>
+              </div>
+              <div class="card-mastery" id="cardMastery" hidden data-i18n-aria-label="mastery.variantLevel" aria-label="Niveau de maîtrise de la variante">
+                <div class="card-mastery__top">
+                  <span class="card-mastery__title" data-i18n="mastery.title">Maîtrise</span>
+                  <span class="card-mastery__label" id="cardMasteryLabel">Niveau 1</span>
+                </div>
+                <div class="card-mastery__levels" id="cardMasteryLevels" role="group" data-i18n-aria-label="mastery.chooseLevel" aria-label="Choisir un niveau de maîtrise"></div>
+              </div>
+              <div class="status-row">
+                <span id="cardStatus"></span>
+                <span id="cardIndex">1/1</span>
+              </div>
+            </article>
+          </div>
+
+          <div class="swipe-actions" data-i18n-aria-label="swipe.actionsAria" aria-label="Actions de swipe">
+            <button class="action danger" id="markMissing" aria-keyshortcuts="ArrowLeft 1">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <span data-i18n="swipe.notYet">Pas encore</span>
+              <small class="action__hint" data-i18n="swipe.notYetHint">Je ne l’ai pas</small>
+              <kbd class="action__key" aria-hidden="true">← / 1</kbd>
+            </button>
+            <button class="action neutral" id="markUnsure" aria-keyshortcuts="ArrowDown 2">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+              <span data-i18n="swipe.unsure">À vérifier</span>
+              <small class="action__hint" data-i18n="swipe.unsureHint">Je dois vérifier</small>
+              <kbd class="action__key" aria-hidden="true">↓ / 2</kbd>
+            </button>
+            <button class="action star" id="markPriority" aria-keyshortcuts="ArrowUp 3">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span data-i18n="swipe.priority">Priorité</span>
+              <small class="action__hint" data-i18n="swipe.priorityHint">À obtenir en priorité</small>
+              <kbd class="action__key" aria-hidden="true">↑ / 3</kbd>
+            </button>
+            <button class="action success" id="markOwned" aria-keyshortcuts="ArrowRight 4">
+              <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span data-i18n="swipe.owned">Je l’ai</span>
+              <small class="action__hint" data-i18n="swipe.ownedHint">Déjà en ma possession</small>
+              <kbd class="action__key" aria-hidden="true">→ / 4</kbd>
+            </button>
+          </div>
+
+          <p class="hint"><span data-i18n="swipe.hint">Carte : → possédé · ← manquant · ↑ priorité · ↓ à vérifier · Tap = détails · Long press = note</span><br><span data-i18n="swipe.hintScreen">Écran : glisse depuis le bord pour changer d’onglet</span></p>
+        </section>
+

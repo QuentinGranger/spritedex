@@ -1,0 +1,227 @@
+        <section class="view" id="view-social">
+          <nav class="social-tabs" role="tablist" aria-label="Espace social" data-i18n-aria-label="social.tabsAria">
+            <button class="social-tab active" id="social-tab-friends" data-social-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="social-panel-friends" data-i18n="social.friends">Amis</button>
+            <button class="social-tab" id="social-tab-compare" data-social-tab="compare" type="button" role="tab" aria-selected="false" aria-controls="social-panel-compare" data-i18n="social.compare">Comparer</button>
+            <button class="social-tab" id="social-tab-squad" data-social-tab="squad" type="button" role="tab" aria-selected="false" aria-controls="social-panel-squad" data-i18n="social.squad">Escouade</button>
+          </nav>
+
+          <div class="social-panel" id="social-panel-friends" role="tabpanel" aria-labelledby="social-tab-friends">
+          <nav class="friends-tabs" role="tablist" data-i18n-aria-label="social.friends" aria-label="Amis">
+            <button class="friends-tab active" id="friends-tab-friends" data-friends-tab="friends" type="button" role="tab" aria-selected="true" aria-controls="friends-panel-friends" data-i18n="friends.tabFriends">Mes amis</button>
+            <button class="friends-tab" id="friends-tab-received" data-friends-tab="received" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-received" data-i18n="friends.tabReceived">Demandes reçues</button>
+            <button class="friends-tab" id="friends-tab-sent" data-friends-tab="sent" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-sent" data-i18n="friends.tabSent">Demandes envoyées</button>
+            <button class="friends-tab" id="friends-tab-add" data-friends-tab="add" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-add" data-i18n="friends.tabAdd">Ajouter</button>
+            <button class="friends-tab" id="friends-tab-qr" data-friends-tab="qr" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-qr" data-i18n="friends.tabQr">Mon QR code</button>
+            <button class="friends-tab" id="friends-tab-blocked" data-friends-tab="blocked" type="button" role="tab" aria-selected="false" aria-controls="friends-panel-blocked" data-i18n="friends.tabBlocked">Bloqués</button>
+          </nav>
+
+          <div class="friends-panels">
+            <div class="friends-panel active" id="friends-panel-friends" role="tabpanel" aria-labelledby="friends-tab-friends">
+              <div class="friends-toolbar">
+                <div class="search-box friends-search-box">
+                  <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input id="friendSearch" type="search" placeholder="Rechercher un ami…" data-i18n-placeholder="friends.searchPlaceholder" />
+                </div>
+                <select id="friendFilter" class="sort-bar__select" aria-label="Filtrer les amis" data-i18n-aria-label="friends.filterAria">
+                  <option value="all" data-i18n="friends.filterAll">Tous</option>
+                  <option value="online" data-i18n="friends.filterOnline">En ligne</option>
+                  <option value="squad" data-i18n="friends.filterSquad">Même squad</option>
+                  <option value="recent" data-i18n="friends.filterRecent">Collection mise à jour récemment</option>
+                  <option value="complementary" data-i18n="friends.filterComplementary">Variantes complémentaires</option>
+                  <option value="pending" data-i18n="friends.filterPending">Demandes en attente</option>
+                </select>
+                <select id="friendSort" class="sort-bar__select" aria-label="Trier les amis" data-i18n-aria-label="friends.sortAria">
+                  <option value="name" data-i18n="friends.sortName">Nom</option>
+                  <option value="lastActive" data-i18n="friends.sortLastActive">Dernière activité</option>
+                  <option value="complementarity" data-i18n="friends.sortComplementarity">Complémentarité</option>
+                  <option value="progression" data-i18n="friends.sortProgression">Progression</option>
+                  <option value="added" data-i18n="friends.sortAdded">Date d'ajout</option>
+                </select>
+              </div>
+              <div class="friends-list" id="friendsList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-received" role="tabpanel" aria-labelledby="friends-tab-received">
+              <div class="friends-list" id="receivedList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-sent" role="tabpanel" aria-labelledby="friends-tab-sent">
+              <div class="friends-list" id="sentList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-add" role="tabpanel" aria-labelledby="friends-tab-add">
+              <div class="friends-toolbar">
+                <div class="search-box friends-search-box">
+                  <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input id="addFriendSearch" type="search" placeholder="Pseudo (min. 3 caractères)" data-i18n-placeholder="friends.addSearchPlaceholder" />
+                </div>
+                <button class="ghost-button" id="addFriendSearchBtn" type="button" data-i18n="friends.searchBtn">Rechercher</button>
+              </div>
+              <div class="friends-actions">
+                <button class="ghost-button" id="friendShareLinkBtn" type="button" data-i18n="friends.copyLinkBtn">Copier mon lien d'ami</button>
+                <button class="ghost-button" id="friendShowQrBtn" type="button" data-i18n="friends.showQrBtn">Afficher mon QR code</button>
+              </div>
+              <h3 class="friends-subtitle" data-i18n="friends.resultsTitle">Résultats</h3>
+              <div class="friends-list" id="addFriendResults"></div>
+              <h3 class="friends-subtitle" data-i18n="friends.squadSuggestions">Suggestions d'escouade</h3>
+              <div class="friends-list" id="friendSuggestions"><p class="squad-empty" data-i18n="friends.noSuggestions">Aucune suggestion</p></div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-qr" role="tabpanel" aria-labelledby="friends-tab-qr">
+              <div class="friends-qr-wrap">
+                <p id="friendQrHint" class="squad-empty" data-i18n="friends.qrHint">Génère un lien permanent pour afficher ton QR code.</p>
+                <img id="friendQrImg" alt="QR code d'ami" data-i18n-alt="friends.qrAlt" style="display:none" />
+                <button class="ghost-button" id="friendGenerateQrBtn" type="button" data-i18n="friends.generateQrBtn">Générer mon QR code</button>
+              </div>
+            </div>
+
+            <div class="friends-panel" id="friends-panel-blocked" role="tabpanel" aria-labelledby="friends-tab-blocked">
+              <div class="friends-list" id="blockedList"><p class="squad-empty" data-i18n="squad.loading">Chargement…</p></div>
+            </div>
+          </div>
+          </div><!-- /social-panel-friends -->
+
+          <div class="social-panel" id="social-panel-compare" role="tabpanel" aria-labelledby="social-tab-compare" style="display:none">
+          <!-- Friend (1v1) comparison mode -->
+          <div class="compare-mode-panel" id="compareModeFriend">
+            <div class="compare-hero">
+              <h2 data-i18n="compare.title">Comparaison avec un ami</h2>
+              <p data-i18n="compare.subtitle">Compare ta collection avec un ami pour voir ce que vous pouvez vous échanger.</p>
+            </div>
+            <form class="compare-form" id="compareForm">
+              <label for="compareTokenInput" data-i18n="compare.tokenLabel">Lien ou token de partage de ton ami</label>
+              <input type="text" id="compareTokenInput" placeholder="https://...?share=... ou token" data-i18n-placeholder="compare.tokenPlaceholder" autocomplete="off" />
+              <button type="submit" class="login-btn" id="compareLoadBtn" data-i18n="compare.compareBtn">Comparer</button>
+              <button type="button" class="ghost-button" id="compareShareBtn" data-i18n="compare.shareBtn">Partager ma collection</button>
+            </form>
+            <div class="compare-status" id="compareStatus"></div>
+            <div class="compare-results" id="compareResults" style="display:none">
+              <div class="compare-summary" id="compareSummary"></div>
+              <div class="compare-squads" id="compareSquads"></div>
+              <div class="compare-table" id="compareTable"></div>
+              <div class="compare-recommendations" id="compareRecommendations"></div>
+              <div class="compare-actions" id="compareActions"></div>
+            </div>
+          </div>
+
+          </div><!-- /social-panel-compare -->
+
+          <div class="social-panel" id="social-panel-squad" role="tabpanel" aria-labelledby="social-tab-squad" style="display:none">
+          <!-- Squad (group) comparison mode -->
+          <div class="compare-mode-panel" id="compareModeSquad">
+          <!-- Squad lobby: create or join -->
+          <div class="squad-lobby" id="squadLobby">
+            <div class="squad-lobby__card">
+              <h3 class="squad-lobby__title" data-i18n="squad.createTitle">Créer une escouade</h3>
+              <div class="squad-lobby__row">
+                <input type="text" id="squadNameInput" class="squad-input" placeholder="Nom de l'escouade (optionnel)" data-i18n-placeholder="squad.namePlaceholder" maxlength="50" />
+                <button class="ghost-button" id="squadCreateBtn" data-i18n="squad.createBtn">Créer</button>
+              </div>
+            </div>
+            <div class="squad-lobby__divider"><span data-i18n="squad.or">ou</span></div>
+            <div class="squad-lobby__card">
+              <h3 class="squad-lobby__title" data-i18n="squad.joinTitle">Rejoindre avec un code</h3>
+              <div class="squad-lobby__row">
+                <input type="text" id="squadCodeInput" class="squad-input squad-input--code" placeholder="SPRITE-XXXX" maxlength="20" />
+                <button class="ghost-button" id="squadJoinBtn" data-i18n="squad.joinBtn">Rejoindre</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active squad view (hidden until squad is active) -->
+          <div class="squad-active" id="squadActive" style="display:none">
+            <div class="squad-active__header">
+              <div class="squad-active__info">
+                <h3 class="squad-active__name" id="squadActiveName" data-i18n="squad.defaultName">Mon escouade</h3>
+                <span class="squad-active__code" id="squadActiveCode">SPRITE-0000</span>
+                <button class="squad-copy-code" id="squadCopyCode" title="Copier le code" data-i18n-title="squad.copyCodeTitle"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+              </div>
+              <button class="ghost-button" id="squadEngineBtn" data-i18n="squad.engineBtn">Moteur</button>
+              <button class="ghost-button" id="squadShareBtn" data-i18n="squad.shareBtn">Partager</button>
+              <button class="ghost-button danger-text" id="squadLeaveBtn" data-i18n="squad.leaveBtn">Quitter</button>
+            </div>
+            <div id="squadAdminWrap"></div>
+            <div class="squad-member-filter" id="squadMemberFilter" style="display:none">
+              <button type="button" class="squad-member-filter__btn active" data-member-filter="all" data-i18n="squad.filterAll">Tous</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="friends" data-i18n="squad.filterFriends">Mes amis</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="nonfriends" data-i18n="squad.filterNonFriends">Non-amis</button>
+              <button type="button" class="squad-member-filter__btn" data-member-filter="admins" data-i18n="squad.filterAdmins">Administrateurs</button>
+            </div>
+            <div class="squad-member-summary" id="squadMemberSummary"></div>
+            <div class="squad-members" id="squadMembers"></div>
+            <div class="squad-recommended-friends" id="squadRecommendedFriends"></div>
+            <div class="squad-complementary-pairs" id="squadComplementaryPairs"></div>
+            <div class="squad-controls">
+              <div class="squad-search">
+                <input type="text" id="squadSearchInput" class="squad-input" placeholder="Rechercher un sprite…" data-i18n-placeholder="squad.searchPlaceholder" />
+              </div>
+              <div class="squad-filters">
+                <select id="squadFilter" class="sort-bar__select">
+                  <optgroup label="Essentiels" data-i18n-label="squad.groupEssential">
+                    <option value="all" data-i18n="squad.filterShowAll">Tout afficher</option>
+                    <option value="diff" data-i18n="squad.filterDiff">Manque à quelqu'un</option>
+                    <option value="missing-all" data-i18n="squad.filterMissingAll">Personne ne l'a</option>
+                    <option value="team-prio" data-i18n="squad.filterTeamPrio">Priorités de l'équipe</option>
+                    <option value="duo" data-i18n="squad.filterDuo">Duo — échange possible</option>
+                  </optgroup>
+                  <optgroup label="Perso" data-i18n-label="squad.groupPerso">
+                    <option value="missing-me" data-i18n="squad.filterMissingMe">Ce qu'il me manque</option>
+                    <option value="exclusive" data-i18n="squad.filterExclusive">Mes exclusivités</option>
+                    <option value="everyone" data-i18n="squad.filterEveryone">Tout le monde l'a</option>
+                  </optgroup>
+                  <optgroup label="Rareté" data-i18n-label="squad.groupRarity">
+                    <option value="rarity:Mythique" data-i18n="rarity.mythic">Mythique</option>
+                    <option value="rarity:Légendaire" data-i18n="rarity.legendary">Légendaire</option>
+                    <option value="rarity:Épique" data-i18n="rarity.epic">Épique</option>
+                    <option value="rarity:Rare" data-i18n="rarity.rare">Rare</option>
+                  </optgroup>
+                  <optgroup label="Variante" id="squadVariantGroup">
+                  </optgroup>
+                </select>
+                <button class="ghost-button squad-refresh-btn" id="squadRefreshBtn">↻</button>
+              </div>
+              <div class="squad-view-toggle">
+                <button class="squad-view-btn active" data-squad-view="table" data-i18n-title="squad.viewTable" title="Tableau">▦</button>
+                <button class="squad-view-btn" data-squad-view="cards" data-i18n-title="squad.viewCards" title="Manque à qui ?">▤</button>
+                <button class="squad-view-btn" data-squad-view="hunt" data-i18n-title="squad.viewHunt" title="À farmer">⊘</button>
+                <button class="squad-view-btn" data-squad-view="duel" data-i18n-title="squad.viewDuel" title="Duel 1v1">⇄</button>
+                <button class="squad-view-btn" data-squad-view="session" title="Session rapide" data-i18n-title="squad.viewSession"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="recommendations" title="Recommandations" data-i18n-title="squad.recommendations"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
+                <button class="squad-view-btn" data-squad-view="history" title="Historique" data-i18n-title="nav.history"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+              </div>
+            </div>
+            <div class="squad-duel-bar" id="squadDuelBar" style="display:none">
+              <select id="duelPlayerA" class="sort-bar__select duel-select"></select>
+              <span class="duel-vs">↔</span>
+              <select id="duelPlayerB" class="sort-bar__select duel-select"></select>
+            </div>
+            <div class="squad-counter" id="squadCounter"></div>
+            <section class="squad-wishlist" id="squadWishlist" aria-live="polite"></section>
+            <div class="squad-table-wrap" id="squadTableWrap">
+              <p class="squad-empty" data-i18n="squad.loading">Chargement...</p>
+            </div>
+
+            <!-- Squad completion engine -->
+            <div class="squad-engine" id="squadEngine" style="display:none">
+              <div class="squad-engine__header">
+                <h3 class="squad-engine__title" data-i18n="squad.engineTitle">Moteur de complétion</h3>
+                <span class="squad-engine__version" id="squadEngineVersion"></span>
+                <button class="ghost-button" id="squadEngineCloseBtn" data-i18n="squad.engineClose">Retour</button>
+              </div>
+              <nav class="squad-engine__tabs" role="tablist" data-i18n-aria-label="squad.engineTitle" aria-label="Moteur de complétion">
+                <button class="squad-engine__tab active" data-engine-tab="overview" type="button" data-i18n="squad.engineTabOverview">Vue d'ensemble</button>
+                <button class="squad-engine__tab" data-engine-tab="missing" type="button" data-i18n="squad.engineTabMissing">Manquants</button>
+                <button class="squad-engine__tab" data-engine-tab="recommendations" type="button" data-i18n="squad.engineTabRecommendations">Recommandations</button>
+                <button class="squad-engine__tab" data-engine-tab="optimization" type="button" data-i18n="squad.engineTabOptimization">Optimisation</button>
+              </nav>
+              <div class="squad-engine__panels">
+                <div class="squad-engine__panel active" id="squadEnginePanel-overview"></div>
+                <div class="squad-engine__panel" id="squadEnginePanel-missing"></div>
+                <div class="squad-engine__panel" id="squadEnginePanel-recommendations"></div>
+                <div class="squad-engine__panel" id="squadEnginePanel-optimization"></div>
+              </div>
+            </div>
+          </div>
+          </div><!-- /social-panel-squad -->
+        </section>
+

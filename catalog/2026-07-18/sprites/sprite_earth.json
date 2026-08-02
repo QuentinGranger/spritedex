@@ -1,0 +1,191 @@
+{
+  "id": "sprite_earth",
+  "slug": "earth",
+  "name": "Earth Sprite",
+  "officialName": "Earth Sprite",
+  "rarity": "rare",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "bonus_rare_loot_from_chests",
+    "descriptionEn": "Provides a chance to find additional rare items when opening chests.",
+    "descriptionFr": "Donne une chance d’obtenir un objet rare supplémentaire à l’ouverture d’un coffre.",
+    "levelValues": [
+      10,
+      12.5,
+      15,
+      17.5,
+      20
+    ],
+    "unit": "percent_chance"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found wandering around forests and wooded regions",
+    "descriptionFr": "Dans les forêts et les régions boisées",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 100,
+  "variantIds": [
+    "sprite_earth",
+    "sprite_earth_gold",
+    "sprite_earth_gummy",
+    "sprite_earth_galaxy",
+    "sprite_earth_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_earth",
+      "spriteId": "sprite_earth",
+      "variantType": "base",
+      "name": "Earth Sprite",
+      "slug": "earth",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 100,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/earth/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_earth_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_earth_gold",
+      "spriteId": "sprite_earth",
+      "variantType": "gold",
+      "name": "Gold Earth Sprite",
+      "slug": "earth-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.75,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/earth/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_earth_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_earth_gummy",
+      "spriteId": "sprite_earth",
+      "variantType": "gummy",
+      "name": "Gummy Earth Sprite",
+      "slug": "earth-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.62,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/earth/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_earth_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_earth_galaxy",
+      "spriteId": "sprite_earth",
+      "variantType": "galaxy",
+      "name": "Galaxy Earth Sprite",
+      "slug": "earth-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.5,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/earth/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_earth_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_earth_cube",
+      "spriteId": "sprite_earth",
+      "variantType": "cube",
+      "name": "Cube Earth Sprite",
+      "slug": "earth-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 2700,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/earth/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_earth_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

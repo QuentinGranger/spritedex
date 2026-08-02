@@ -1,0 +1,68 @@
+      <section class="hero-card">
+        <div class="hero-card__overview">
+          <span class="hero-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
+          </span>
+          <div>
+          <p class="muted" data-i18n="shell.collectionProgress">Progression collection</p>
+          <div class="progress-line">
+            <strong id="ownedCount">0</strong>
+            <span>/</span>
+            <span id="totalCount">0</span>
+            <span data-i18n="shell.variants">variantes</span>
+          </div>
+          <p class="hero-card__caption" data-i18n="shell.alreadyOwned">Déjà en votre possession</p>
+          </div>
+        </div>
+        <div class="ring" data-i18n-aria-label="shell.progressPercent" aria-label="Pourcentage de progression">
+          <span id="percentCount">0%</span>
+        </div>
+        <p class="hero-card__remaining"><strong id="desktopRemainingCount">0</strong> <span data-i18n="shell.variants">variantes</span><br /><span data-i18n="shell.toDiscover">à découvrir !</span></p>
+      </section>
+
+      <nav class="tabs" data-i18n-aria-label="nav.main" aria-label="Navigation principale" id="mainTabs">
+        <button class="tab active" data-view="home" type="button" aria-current="page">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+          <span class="tab__label" data-i18n="nav.home">Accueil</span>
+        </button>
+        <button class="tab" data-view="swipe" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
+          <span class="tab__label" data-i18n="nav.swipe">Swipe</span>
+        </button>
+        <button class="tab" data-view="checklist" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span class="tab__label" data-i18n="nav.checklist">Checklist</span>
+        </button>
+        <button class="tab" data-view="missing" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6"/></svg>
+          <span class="tab__label" data-i18n="nav.missing">Manquants</span>
+        </button>
+        <button class="tab" data-view="stats" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-3"/></svg>
+          <span class="tab__label" data-i18n="nav.stats">Stats</span>
+        </button>
+        <button class="tab" data-view="history" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span class="tab__label" data-i18n="nav.history">Historique</span>
+        </button>
+        <button class="tab" data-view="social" type="button">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 0v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="tab__label" data-i18n="nav.social">Social</span>
+        </button>
+        <button class="tab tab--more" id="mobileMoreButton" type="button" aria-expanded="false" aria-haspopup="dialog" aria-controls="mobileMoreMenu">
+          <svg class="tab__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></svg>
+          <span class="tab__label" data-i18n="nav.more">Plus</span>
+        </button>
+      </nav>
+
+      <div class="mobile-more" id="mobileMoreMenu" hidden>
+        <button class="mobile-more__backdrop" type="button" data-mobile-more-close aria-label="Fermer" data-i18n-aria-label="dialog.close"></button>
+        <section class="mobile-more__sheet" role="dialog" aria-modal="true" aria-labelledby="mobileMoreTitle">
+          <header><span class="mobile-more__handle" aria-hidden="true"></span><div><h2 id="mobileMoreTitle" data-i18n="nav.more">Plus</h2><p data-i18n="nav.moreSubtitle">Suivre et partager votre progression</p></div><button class="mobile-more__close" type="button" data-mobile-more-close aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button></header>
+          <button type="button" class="mobile-more__item" data-mobile-view="stats"><span aria-hidden="true">▥</span><span><strong data-i18n="nav.stats">Stats</strong><small data-i18n="nav.moreStats">Progression et tendances</small></span><i aria-hidden="true">→</i></button>
+          <button type="button" class="mobile-more__item" data-mobile-view="history"><span aria-hidden="true">◷</span><span><strong data-i18n="nav.history">Historique</strong><small data-i18n="nav.moreHistory">Vos dernières actions</small></span><i aria-hidden="true">→</i></button>
+          <button type="button" class="mobile-more__item" data-mobile-view="social"><span aria-hidden="true">◎</span><span><strong data-i18n="nav.social">Social</strong><small data-i18n="nav.moreSocial">Amis, comparaisons et squads</small></span><i aria-hidden="true">→</i></button>
+        </section>
+      </div>
+
+      <main id="mainViews" class="main-views">

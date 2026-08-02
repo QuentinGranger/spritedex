@@ -1,0 +1,136 @@
+.collector-passport__footnote {
+  margin: 0 0 8px;
+  color: rgba(255,255,255,.48);
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+.collector-passport__disclaimer {
+  margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  font-style: italic;
+}
+
+.collector-passport__badge-declared {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.68rem;
+  font-style: italic;
+}
+
+.collector-passport__progress {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  background: rgba(8, 14, 32, .38);
+}
+
+.collector-passport__progress-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.collector-passport__progress-top strong {
+  color: #eef0ff;
+  font: 800 .92rem 'Rajdhani', sans-serif;
+}
+
+.collector-passport__progress-top span {
+  color: #00e1ff;
+  font: 700 .78rem 'Rajdhani', sans-serif;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.collector-passport__progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  overflow: hidden;
+}
+
+.collector-passport__progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #00e1ff, #00ff87);
+  transition: width 320ms ease;
+}
+
+.collector-passport__progress-text {
+  margin: 8px 0 0;
+  color: #e8f0ff;
+  font-size: .78rem;
+  line-height: 1.4;
+}
+
+.collector-passport__progress-next {
+  margin: 8px 0 0;
+  color: rgba(255,255,255,.78);
+  font-size: .74rem;
+  line-height: 1.35;
+}
+
+.collector-passport__progress-peak {
+  margin: 6px 0 0;
+  color: #ffd58a;
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.collector-passport__events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.collector-passport__events li {
+  padding: 8px 0;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.collector-passport__events strong {
+  display: block;
+  color: rgba(255,255,255,.9);
+  font-size: .8rem;
+}
+
+.collector-passport__events span,
+.collector-passport__events small {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255,255,255,.5);
+  font-size: .72rem;
+}
+
+.collector-passport__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.passport-share-dialog__card {
+  width: min(440px, calc(100vw - 24px));
+  max-height: min(86vh, 760px);
+  overflow: auto;
+}
+

@@ -1,0 +1,64 @@
+    <dialog class="admin-dialog" id="availabilityEditorDialog" aria-labelledby="availabilityEditorTitle">
+      <form class="admin-dialog__surface" id="availabilityEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">DISPONIBILITÉ</p>
+            <h2 id="availabilityEditorTitle">Ajouter une disponibilité</h2>
+            <p id="availabilityEditorSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="availabilityEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field">
+            <span>Statut</span>
+            <select id="availabilityEditorStatus" name="status">
+              <option value="available">available</option>
+              <option value="upcoming">upcoming</option>
+              <option value="ended">ended</option>
+              <option value="not_observed">not_observed</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>Confiance</span>
+            <select id="availabilityEditorConfidence" name="confidence">
+              <option value="confirmed">confirmed</option>
+              <option value="high">high</option>
+              <option value="medium" selected>medium</option>
+              <option value="low">low</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>Début</span>
+            <input id="availabilityEditorStartDate" name="startDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>Fin</span>
+            <input id="availabilityEditorEndDate" name="endDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>Événement lié</span>
+            <input id="availabilityEditorEventId" name="eventId" maxlength="100" />
+          </label>
+          <label class="admin-field">
+            <span>État des données</span>
+            <select id="availabilityEditorDataStatus" name="dataStatus">
+              <option value="incomplete">incomplete</option>
+              <option value="complete">complete</option>
+              <option value="verified">verified</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="availabilityEditorReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="availabilityEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="availabilityEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="availabilityEditorSubmit" type="submit">Ajouter</button>
+        </footer>
+      </form>
+    </dialog>

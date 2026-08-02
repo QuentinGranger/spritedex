@@ -1,0 +1,188 @@
+{
+  "id": "sprite_air",
+  "slug": "air",
+  "name": "Air Sprite",
+  "officialName": "Air Sprite",
+  "rarity": "rare",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.20",
+  "firstObservedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "sprint_jump_and_fall_damage",
+    "descriptionEn": "Increases sprinting speed and jump height and nullifies fall damage.",
+    "descriptionFr": "Augmente la vitesse de sprint et la hauteur de saut, et annule les dégâts de chute.",
+    "levelValues": null,
+    "unit": null,
+    "notes": "La hauteur de saut augmente à chaque niveau, mais les valeurs exactes ne sont pas publiées."
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Spotted near high and mountainous areas",
+    "descriptionFr": "Près des zones élevées et montagneuses",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-07-16",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 2000,
+  "variantIds": [
+    "sprite_air",
+    "sprite_air_gold",
+    "sprite_air_gummy",
+    "sprite_air_galaxy",
+    "sprite_air_holofoil"
+  ],
+  "variants": [
+    {
+      "id": "sprite_air",
+      "spriteId": "sprite_air",
+      "variantType": "base",
+      "name": "Air Sprite",
+      "slug": "air",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 2000,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/air/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_air_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_air_gold",
+      "spriteId": "sprite_air",
+      "variantType": "gold",
+      "name": "Gold Air Sprite",
+      "slug": "air-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.75,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/air/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_air_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_air_gummy",
+      "spriteId": "sprite_air",
+      "variantType": "gummy",
+      "name": "Gummy Air Sprite",
+      "slug": "air-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.62,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/air/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_air_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_air_galaxy",
+      "spriteId": "sprite_air",
+      "variantType": "galaxy",
+      "name": "Galaxy Air Sprite",
+      "slug": "air-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.5,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/air/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_air_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_air_holofoil",
+      "spriteId": "sprite_air",
+      "variantType": "holofoil",
+      "name": "Holofoil Air Sprite",
+      "slug": "air-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.25,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/air/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_air_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_air_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

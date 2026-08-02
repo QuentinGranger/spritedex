@@ -1,0 +1,15 @@
+        <section class="admin-tab" data-admin-panel="events" hidden>
+          <div class="admin-section-toolbar">
+            <select class="admin-select" id="newsStatusFilter">
+              <option value="all">Toutes les actualités</option>
+              <option value="draft">Brouillons</option>
+              <option value="published">Publiées</option>
+              <option value="archived">Archivées</option>
+            </select>
+            <span id="eventsNewsMeta" class="admin-panel__meta"></span>
+          </div>
+          <div class="admin-bulk-bar" id="eventsBulkBar" hidden aria-live="polite"><div class="admin-bulk-bar__selection"><strong id="eventsBulkCount">0 sélection</strong><small id="eventsBulkHint">La sélection est conservée entre les pages.</small></div><label class="admin-bulk-bar__field"><span>État des données</span><select id="eventsBulkStatus"><option value="incomplete">Incomplet</option><option value="complete">Complet</option><option value="verified">Vérifié</option><option value="unknown">Inconnu</option></select></label><button class="admin-button" id="eventsBulkApply" type="button">Vérifier l’impact</button><button class="admin-button admin-button--quiet" id="eventsBulkClear" type="button">Tout désélectionner</button></div><div class="admin-split">
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">CALENDRIER</p><h2 data-admin-copy="eventsTitle">Événements</h2></div><button class="admin-button admin-button--quiet" id="createEvent" type="button" data-admin-copy="create" data-requires-cap="events.write">Créer</button></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th aria-label="Sélectionner les événements affichés"><input id="eventsBulkSelectPage" type="checkbox" aria-label="Sélectionner les événements affichés" /></th><th>Événement</th><th>Début</th><th>Fin</th><th>État</th><th></th></tr></thead><tbody id="eventsList"></tbody></table></div></section>
+            <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">ÉDITORIAL</p><h2 data-admin-copy="newsTitle">Actualités</h2></div><button class="admin-button admin-button--quiet" id="createNews" type="button" data-admin-copy="create" data-requires-cap="events.write">Créer</button></header><div class="admin-news-list" id="newsList"></div></section>
+          </div>
+        </section>

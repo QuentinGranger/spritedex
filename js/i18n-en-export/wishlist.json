@@ -1,0 +1,16 @@
+{
+  "wishlist.eyebrow": "Squad wishlist",
+  "wishlist.title": "Who is targeting what?",
+  "wishlist.summary": "{active} active wish(es) · {uncovered} uncovered · {duplicates} duplicate(s)",
+  "wishlist.addAria": "Add a variant to the squad wishlist",
+  "wishlist.choose": "Choose a variant to target…",
+  "wishlist.add": "Add",
+  "wishlist.empty": "Add a first variant to split the search.",
+  "wishlist.uncovered": "No one covers it",
+  "wishlist.covered": "Covered by 1 member",
+  "wishlist.duplicate": "Duplicate: {count} members own it",
+  "wishlist.assigned": "Assigned to",
+  "wishlist.unassigned": "Unassigned",
+  "wishlist.markFound": "Found",
+  "wishlist.foundBy": "Found · {name}"
+}

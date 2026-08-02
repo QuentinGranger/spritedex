@@ -1,0 +1,193 @@
+{
+  "id": "sprite_water",
+  "slug": "water",
+  "name": "Water Sprite",
+  "officialName": "Water Sprite",
+  "rarity": "rare",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "shield_regeneration_in_water",
+    "descriptionEn": "Replenishes shields while standing in water.",
+    "descriptionFr": "Régénère le bouclier lorsque le joueur se tient dans l’eau.",
+    "levelValues": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "unit": "shield_per_tick"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Spotted near rivers and beaches",
+    "descriptionFr": "Près des rivières et des plages",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 100,
+  "variantIds": [
+    "sprite_water",
+    "sprite_water_gold",
+    "sprite_water_gummy",
+    "sprite_water_galaxy",
+    "sprite_water_holofoil"
+  ],
+  "variants": [
+    {
+      "id": "sprite_water",
+      "spriteId": "sprite_water",
+      "variantType": "base",
+      "name": "Water Sprite",
+      "slug": "water",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 100,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/water/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_water_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_water_gold",
+      "spriteId": "sprite_water",
+      "variantType": "gold",
+      "name": "Gold Water Sprite",
+      "slug": "water-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.75,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/water/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_water_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_water_gummy",
+      "spriteId": "sprite_water",
+      "variantType": "gummy",
+      "name": "Gummy Water Sprite",
+      "slug": "water-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.62,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/water/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_water_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_water_galaxy",
+      "spriteId": "sprite_water",
+      "variantType": "galaxy",
+      "name": "Galaxy Water Sprite",
+      "slug": "water-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.5,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/water/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_water_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_water_holofoil",
+      "spriteId": "sprite_water",
+      "variantType": "holofoil",
+      "name": "Holofoil Water Sprite",
+      "slug": "water-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.25,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/water/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_water_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_water_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

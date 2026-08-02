@@ -1,0 +1,220 @@
+{
+  "id": "sprite_batman",
+  "slug": "batman",
+  "name": "Batman Sprite",
+  "officialName": "Batman Sprite",
+  "rarity": "mythic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.20",
+  "firstObservedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "bat_cape_and_rare_sprite_find",
+    "descriptionEn": "Allows launching into the air and deploying the Bat Cape; also helps find rare Sprites in chests more often.",
+    "descriptionFr": "Permet de se propulser dans les airs et de déployer la batcape ; augmente aussi la fréquence de découverte des esprits rares dans les coffres.",
+    "levelValues": null,
+    "unit": null,
+    "notes": "Les valeurs numériques exactes ne sont pas publiées."
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Unlocked through Hot Bat Summer quests and also found rarely in Sprite Chests during the event",
+    "descriptionFr": "Débloqué via les quêtes Hot Bat Summer et également rarement présent dans les coffres d’esprits pendant l’événement",
+    "confidence": "official"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-07-16",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "official"
+  },
+  "baseSummonCostSpriteDust": 0,
+  "variantIds": [
+    "sprite_batman",
+    "sprite_batman_gold",
+    "sprite_batman_gummy",
+    "sprite_batman_galaxy",
+    "sprite_batman_holofoil",
+    "sprite_batman_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_batman",
+      "spriteId": "sprite_batman",
+      "variantType": "base",
+      "name": "Batman Sprite",
+      "slug": "batman",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 0,
+      "spriteChestDropChancePct": 2.23,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/batman/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "confirmed",
+      "sourceIds": [
+        "official_batman_2026",
+        "fortnitegg_batman_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_batman_gold",
+      "spriteId": "sprite_batman",
+      "variantType": "gold",
+      "name": "Gold Batman Sprite",
+      "slug": "batman-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 0,
+      "spriteChestDropChancePct": 0.1,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/batman/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "confirmed",
+      "sourceIds": [
+        "official_batman_2026",
+        "fortnitegg_batman_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_batman_gummy",
+      "spriteId": "sprite_batman",
+      "variantType": "gummy",
+      "name": "Gummy Batman Sprite",
+      "slug": "batman-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 0,
+      "spriteChestDropChancePct": 0.07,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/batman/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "confirmed",
+      "sourceIds": [
+        "official_batman_2026",
+        "fortnitegg_batman_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_batman_galaxy",
+      "spriteId": "sprite_batman",
+      "variantType": "galaxy",
+      "name": "Galaxy Batman Sprite",
+      "slug": "batman-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 0,
+      "spriteChestDropChancePct": 0.04,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/batman/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "confirmed",
+      "sourceIds": [
+        "official_batman_2026",
+        "fortnitegg_batman_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_batman_holofoil",
+      "spriteId": "sprite_batman",
+      "variantType": "holofoil",
+      "name": "Holofoil Batman Sprite",
+      "slug": "batman-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 0,
+      "spriteChestDropChancePct": 0.01,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/batman/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "confirmed",
+      "sourceIds": [
+        "official_batman_2026",
+        "fortnitegg_batman_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_batman_cube",
+      "spriteId": "sprite_batman",
+      "variantType": "cube",
+      "name": "Cube Batman Sprite",
+      "slug": "batman-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/batman/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "official_batman_2026",
+    "fortnitegg_batman_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "confirmed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

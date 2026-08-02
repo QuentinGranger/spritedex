@@ -1,0 +1,102 @@
+/* ── History view ── */
+.history-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.history-day {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.history-day__title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin: 0 0 12px;
+  color: var(--accent);
+}
+
+.history-user {
+  margin-bottom: 12px;
+}
+
+.history-user:last-of-type {
+  margin-bottom: 10px;
+}
+
+.history-user__name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.82rem;
+  margin: 0 0 6px;
+}
+
+.history-user__count {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #00ff87;
+  background: rgba(0, 255, 135, 0.1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 135, 0.2);
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-list__item {
+  font-size: 0.78rem;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid rgba(0, 225, 255, 0.2);
+  margin-bottom: 2px;
+}
+
+.history-list__variant {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+.history-list__time {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.history-list__more {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 4px 0 0 12px;
+}
+
+.history-day__total {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.history-day__total strong {
+  color: #00ff87;
+}
+
+.squad-summary {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.02);
+}
+

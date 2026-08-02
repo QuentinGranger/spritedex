@@ -1,0 +1,49 @@
+    <dialog id="passportShareDialog" class="passport-share-dialog" aria-labelledby="passportShareDialogTitle">
+      <form method="dialog" class="dialog-card passport-share-dialog__card">
+        <button class="close-button" value="cancel" aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
+        <header class="passport-share-dialog__header">
+          <p class="passport-share-dialog__eyebrow" data-i18n="passport.shareEyebrow">Partage personnalisé</p>
+          <h3 id="passportShareDialogTitle" data-i18n="passport.shareTitle">Partager mon passeport</h3>
+        </header>
+        <p class="passport-share-preview__intro" id="passportSharePreviewIntro" data-i18n="passport.sharePreviewIntro">Aperçu exact des informations visibles sur la carte :</p>
+        <div id="passportSharePreview" class="passport-share-preview" aria-live="polite" aria-describedby="passportSharePreviewIntro"></div>
+        <fieldset class="passport-share-options">
+          <legend data-i18n="passport.shareOptions">Options</legend>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptSquad" checked /> <span data-i18n="passport.shareOptSquad">Afficher la squad</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptBadges" checked /> <span data-i18n="passport.shareOptBadges">Afficher les badges</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptJoined" /> <span data-i18n="passport.shareOptJoined">Afficher la date d’inscription</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptCompletion" checked /> <span data-i18n="passport.shareOptCompletion">Afficher le taux de complétion</span></label>
+          <label class="passport-share-option"><input type="checkbox" id="passportShareOptEvents" checked /> <span data-i18n="passport.shareOptEvents">Afficher les événements complétés</span></label>
+        </fieldset>
+        <fieldset class="passport-share-invite">
+          <legend data-i18n="passport.shareInviteTitle">Inviter avec ce partage</legend>
+          <label class="passport-share-option passport-share-option--invite"><input type="checkbox" id="passportShareOptInvite" /> <span data-i18n="passport.shareOptInvite">Ajouter une invitation d'ami au lien</span></label>
+          <p data-i18n="passport.shareInviteHint">Le destinataire verra ton passeport puis pourra créer un compte ou se connecter pour t'ajouter.</p>
+        </fieldset>
+        <div class="passport-share-format">
+          <label for="passportShareFormat" data-i18n="passport.shareFormat">Format</label>
+          <select id="passportShareFormat">
+            <option value="1080x1080">1080 × 1080</option>
+            <option value="1080x1920">1080 × 1920</option>
+            <option value="1200x630">1200 × 630</option>
+          </select>
+        </div>
+        <section class="passport-share-result" id="passportShareResult" hidden aria-live="polite">
+          <div class="passport-share-result__preview"><img id="passportShareResultImage" alt="" /></div>
+          <div class="passport-share-result__copy">
+            <strong data-i18n="passport.shareReadyTitle">Carte prête à partager</strong>
+            <p data-i18n="passport.shareReadyHint">Envoie l'image et le lien, ou utilise le partage de ton appareil.</p>
+          </div>
+          <div class="passport-share-result__actions">
+            <button class="ghost-button" id="passportShareDownload" type="button" data-i18n="passport.shareDownload">Télécharger PNG</button>
+            <button class="ghost-button" id="passportShareCopyLink" type="button" data-i18n="passport.shareCopyLink">Copier le lien</button>
+            <button class="login-btn" id="passportShareNative" type="button" data-i18n="passport.shareNow" hidden>Partager</button>
+          </div>
+        </section>
+        <div class="passport-share-actions">
+          <button type="submit" class="ghost-button" value="cancel" data-i18n="passport.shareCancel">Annuler</button>
+          <button type="button" class="login-btn" id="passportShareGenerate" data-i18n="passport.shareGenerate">Générer la carte</button>
+        </div>
+      </form>
+    </dialog>
+

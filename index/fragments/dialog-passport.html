@@ -1,0 +1,18 @@
+    <dialog id="passportDialog" class="passport-dialog" aria-labelledby="passportDialogTitle">
+      <form method="dialog" class="dialog-card passport-dialog__card">
+        <button class="close-button" value="cancel" aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
+        <div class="collector-passport collector-passport--dialog">
+          <div class="collector-passport__header">
+            <div>
+              <p class="collector-passport__eyebrow">sprite-index</p>
+              <h3 class="collector-passport__title" id="passportDialogTitle" data-i18n="passport.dialogTitle">Passeport</h3>
+            </div>
+            <span class="collector-passport__status" id="passportDialogReliability" role="status">—</span>
+          </div>
+          <div id="passportDialogContent" class="collector-passport__content" tabindex="-1"></div>
+          <div class="collector-passport__actions" id="passportDialogActions"></div>
+          <div class="sr-only" aria-live="polite" id="passportDialogA11yStatus"></div>
+        </div>
+      </form>
+    </dialog>
+

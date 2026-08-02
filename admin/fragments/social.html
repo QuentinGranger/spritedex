@@ -1,0 +1,45 @@
+        <section class="admin-tab" data-admin-panel="social" hidden>
+          <div class="admin-kpis admin-kpis--social" id="socialKpis"></div>
+          <div class="admin-section-toolbar">
+            <div class="admin-search"><span aria-hidden="true">⌕</span><input id="squadSearch" type="search" placeholder="Nom ou code de squad" data-admin-placeholder="squadSearch" /></div>
+            <select class="admin-select" id="squadJoinFilter">
+              <option value="all">Tous les accès</option>
+              <option value="open">Accès ouverts</option>
+              <option value="closed">Accès fermés</option>
+            </select>
+            <button class="admin-button" id="squadSearchButton" type="button" data-admin-copy="search">Rechercher</button>
+          </div>
+          <div class="admin-catalog-layout">
+            <section class="admin-panel admin-panel--flush">
+              <header class="admin-panel__header admin-panel__header--padded">
+                <div><p class="admin-eyebrow">ESCOUADES</p><h2 data-admin-copy="squadsTitle">Santé des squads</h2></div>
+                <span id="squadsCount" class="admin-panel__meta"></span>
+              </header>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Squad</th><th>Membres</th><th>Souhaits</th><th>Invites</th><th>Activité</th><th></th></tr></thead>
+                  <tbody id="squadsList"></tbody>
+                </table>
+              </div>
+              <div class="admin-pagination" id="squadsPagination"></div>
+              <div class="admin-activity-chips" id="socialActivity"></div>
+            </section>
+            <aside class="admin-panel admin-editor" id="squadDossier">
+              <p class="admin-empty" data-admin-copy="squadPick">Sélectionnez une squad pour voir membres, invitations, souhaits et activité.</p>
+            </aside>
+          </div>
+          <div class="admin-grid admin-grid--social">
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">INVITATIONS</p><h2 data-admin-copy="pendingInvitesTitle">Invitations en attente</h2></div></header>
+              <div class="admin-status-list" id="socialPendingInvites"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">AMITIÉS</p><h2 data-admin-copy="pendingFriendsTitle">Demandes d’amis</h2></div></header>
+              <div class="admin-status-list" id="socialPendingFriends"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">SÛRETÉ</p><h2 data-admin-copy="recentBlocksTitle">Blocages récents</h2></div></header>
+              <div class="admin-status-list" id="socialRecentBlocks"></div>
+            </section>
+          </div>
+        </section>

@@ -1,0 +1,46 @@
+    <header class="admin-topbar">
+      <a class="admin-brand" href="/" aria-label="SPRITE-INDEX">
+        <img class="admin-brand__logo" src="/LogoBackoffice.png" alt="Sprite-Index Backoffice" />
+      </a>
+      <div class="admin-topbar__actions">
+        <span class="admin-session" id="adminSessionBadge" title=""><i></i><span data-admin-copy="session" id="adminSessionLabel">Session terminal sécurisée</span></span>
+        <button class="admin-button admin-button--quiet" id="adminLogout" type="button" data-admin-copy="logout">Fermer la session</button>
+      </div>
+    </header>
+
+    <div class="admin-app-shell">
+      <aside class="admin-sidebar" aria-label="Navigation du backoffice">
+        <p class="admin-sidebar__label" data-admin-copy="navigation">NAVIGATION</p>
+        <nav class="admin-nav" id="adminNav">
+          <button class="admin-nav__item is-active" type="button" data-admin-tab="overview"><span>◈</span><b data-admin-copy="navOverview">Vue d’ensemble</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="players"><span>♙</span><b data-admin-copy="navPlayers">Joueurs & modération</b><em id="adminReportsBadge" hidden></em></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="catalog"><span>✦</span><b data-admin-copy="navCatalog">Catalogue</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="events"><span>◷</span><b data-admin-copy="navEvents">Événements & actualités</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="collections"><span>▦</span><b data-admin-copy="navCollections">Collections & cohérence</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="social"><span>⌘</span><b data-admin-copy="navSocial">Social & squads</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="notifications"><span>◉</span><b data-admin-copy="navNotifications">Notifications</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="intelligence"><span>⌁</span><b data-admin-copy="navIntelligence">Intelligence & Graph</b></button>
+        </nav>
+        <p class="admin-sidebar__label admin-sidebar__label--advanced" data-admin-copy="advanced">AVANCÉ</p>
+        <nav class="admin-nav">
+          <button class="admin-nav__item" type="button" data-admin-tab="passports"><span>▣</span><b data-admin-copy="navPassports">Passeports & badges</b></button>
+          <button class="admin-nav__item" type="button" data-admin-tab="privacy"><span>◌</span><b data-admin-copy="navPrivacy">Confidentialité & audit</b></button>
+        </nav>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-page-header">
+          <div>
+            <p class="admin-eyebrow" id="adminEyebrow">CONTRÔLE OPÉRATIONNEL</p>
+            <h1 id="adminTitle">Vue d’ensemble</h1>
+            <p id="adminLead">La santé de Sprite-Index, les alertes et les prochaines actions utiles.</p>
+          </div>
+          <div class="admin-page-header__actions">
+            <button class="admin-button admin-button--quiet admin-global-search-trigger" id="adminUniversalSearch" type="button" aria-haspopup="dialog"><span aria-hidden="true">⌕</span><span>Rechercher</span><kbd>⌘ K</kbd></button>
+            <span id="adminUpdated" class="admin-updated" aria-live="polite"></span>
+            <button class="admin-button" id="adminRefresh" type="button" data-admin-copy="refresh">Actualiser</button>
+          </div>
+        </header>
+        <p class="admin-alert" id="adminAlert" hidden role="alert"></p>
+        <p class="admin-notice" id="adminNotice" hidden role="status" aria-live="polite"></p>
+

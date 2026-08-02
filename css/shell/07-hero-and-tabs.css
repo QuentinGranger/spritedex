@@ -1,0 +1,121 @@
+
+.notif-item--unread {
+  background: linear-gradient(105deg, rgba(0, 225, 255, 0.09), rgba(141, 124, 255, 0.055));
+  border-color: rgba(0, 225, 255, 0.18);
+}
+
+.notif-item--unread::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.notif-item--unread .notif-item__title {
+  color: var(--text);
+}
+
+body.light .notif-item--unread {
+  background: rgba(0, 180, 220, 0.06);
+  border-color: rgba(0, 180, 220, 0.12);
+}
+
+@media (max-width: 480px) {
+  /* Let the panel position against the topbar (scrolls with the page)
+     instead of the viewport (which left it floating while the background moved). */
+  .notif-wrap {
+    position: static;
+  }
+
+  .notif-dropdown,
+  .notif-center {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    right: auto;
+    width: min(400px, calc(100vw - 24px));
+    max-height: min(70vh, calc(100vh - 110px - env(safe-area-inset-top)));
+    border-radius: 16px;
+    transform-origin: top center;
+    translate: -50% 0;
+  }
+}
+
+/* ── Hero Card ── */
+.hero-card {
+  position: relative;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border: 1px solid var(--line-glow);
+  background:
+    linear-gradient(135deg, var(--surface-strong), var(--surface));
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-2), var(--accent-3), transparent);
+  animation: shimmer 4s linear infinite;
+}
+
+.progress-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.progress-line strong {
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: clamp(2.4rem, 10vw, 4.2rem);
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ring {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, var(--bg) 52%, transparent 54%),
+    conic-gradient(var(--success) var(--progress, 0deg), rgba(255, 255, 255, 0.08) 0deg);
+  border: 2px solid var(--line);
+  flex: 0 0 auto;
+  box-shadow: 0 0 20px rgba(0, 255, 135, 0.15);
+}
+
+.ring span {
+  font-weight: 900;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+}
+
+/* ── Tabs ── */
+.tabs {
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  -webkit-mask-image: none;
+  mask-image: none;
+}

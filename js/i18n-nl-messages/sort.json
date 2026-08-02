@@ -1,0 +1,13 @@
+{
+  "sort.label": "Sorteren:",
+  "sort.labelAlt": "Sorteren:",
+  "sort.alpha": "Alfabetisch",
+  "sort.progressAsc": "Minst compleet",
+  "sort.progressDesc": "meest compleet.",
+  "sort.rarityDesc": "Zeldzaamste eerst",
+  "sort.rarityAsc": "Meest voorkomende eerst",
+  "sort.priority": "O Prioriteit",
+  "sort.recent": "Op nieuwste",
+  "sort.rarity": "Door zeldzaamheid",
+  "sort.variant": "Per variant"
+}

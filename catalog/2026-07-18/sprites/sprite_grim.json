@@ -1,0 +1,196 @@
+{
+  "id": "sprite_grim",
+  "slug": "grim",
+  "name": "Grim Sprite",
+  "officialName": "Grim Sprite",
+  "rarity": "mythic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.10",
+  "firstObservedAt": "2026-06-25",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "mark_attackers",
+    "descriptionEn": "Marks players who attack you for a duration.",
+    "descriptionFr": "Marque temporairement les joueurs qui vous attaquent.",
+    "levelValues": [
+      3,
+      3.5,
+      4,
+      4.5,
+      5
+    ],
+    "unit": "seconds"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found rarely in Sprite Chests",
+    "descriptionFr": "Rarement dans les coffres d’esprits",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-25",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 7500,
+  "variantIds": [
+    "sprite_grim",
+    "sprite_grim_gold",
+    "sprite_grim_gummy",
+    "sprite_grim_galaxy",
+    "sprite_grim_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_grim",
+      "spriteId": "sprite_grim",
+      "variantType": "base",
+      "name": "Grim Sprite",
+      "slug": "grim",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 7500,
+      "spriteChestDropChancePct": 0.09,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/grim/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_grim_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_grim_gold",
+      "spriteId": "sprite_grim",
+      "variantType": "gold",
+      "name": "Gold Grim Sprite",
+      "slug": "grim-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 15000,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/grim/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_grim_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_grim_gummy",
+      "spriteId": "sprite_grim",
+      "variantType": "gummy",
+      "name": "Gummy Grim Sprite",
+      "slug": "grim-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 15000,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/grim/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_grim_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_grim_galaxy",
+      "spriteId": "sprite_grim",
+      "variantType": "galaxy",
+      "name": "Galaxy Grim Sprite",
+      "slug": "grim-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 15000,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/grim/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_grim_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_grim_cube",
+      "spriteId": "sprite_grim",
+      "variantType": "cube",
+      "name": "Cube Grim Sprite",
+      "slug": "grim-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/grim/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_grim_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "fortnite_wiki_v4110"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

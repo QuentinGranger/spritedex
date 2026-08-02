@@ -1,0 +1,61 @@
+/* ── Squad invite friend dialog ── */
+.squad-invite-dialog .dialog-card {
+  max-width: 360px;
+  width: calc(100% - 32px);
+}
+
+.squad-invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.squad-invite-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.squad-invite-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.squad-invite-option:hover,
+.squad-invite-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(0, 225, 255, 0.06);
+}
+
+.squad-invite-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.squad-invite-option__name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.squad-invite-option__meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.squad-invite-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+

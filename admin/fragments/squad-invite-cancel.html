@@ -1,0 +1,23 @@
+    <dialog class="admin-dialog" id="squadInviteCancelDialog" aria-labelledby="squadInviteCancelTitle">
+      <form class="admin-dialog__surface" id="squadInviteCancelForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">INVITATION</p>
+            <h2 id="squadInviteCancelTitle">Annuler l’invitation</h2>
+            <p id="squadInviteCancelSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="squadInviteCancelClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="squadInviteCancelReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="squadInviteCancelError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="squadInviteCancelCancel" type="button">Annuler</button>
+          <button class="admin-button" id="squadInviteCancelSubmit" type="submit">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>

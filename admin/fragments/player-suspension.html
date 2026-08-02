@@ -1,0 +1,48 @@
+    <dialog class="admin-dialog" id="playerSuspensionDialog" aria-labelledby="playerSuspensionTitle">
+      <form class="admin-dialog__surface" id="playerSuspensionForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="playerSuspensionEyebrow">SÛRETÉ JOUEUR</p>
+            <h2 id="playerSuspensionTitle">Suspendre un compte</h2>
+            <p id="playerSuspensionSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="playerSuspensionClose" type="button" aria-label="Fermer">×</button>
+        </header>
+
+        <div class="admin-dialog__warning" id="playerSuspensionImpact">
+          La session du joueur sera immédiatement révoquée et toute nouvelle connexion sera bloquée jusqu’à la fin de la suspension.
+        </div>
+
+        <div class="admin-dialog__fields">
+          <label class="admin-field" id="playerSuspensionDurationField">
+            <span>Durée</span>
+            <select id="playerSuspensionDuration">
+              <option value="1">1 heure</option>
+              <option value="24" selected>24 heures</option>
+              <option value="168">7 jours</option>
+              <option value="720">30 jours</option>
+              <option value="custom">Date personnalisée</option>
+            </select>
+          </label>
+          <label class="admin-field" id="playerSuspensionCustomField" hidden>
+            <span>Fin de la suspension</span>
+            <input id="playerSuspensionUntil" type="datetime-local" />
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span id="playerSuspensionReasonLabel">Justification obligatoire</span>
+            <textarea id="playerSuspensionReason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+
+        <section class="admin-dialog__history" aria-labelledby="playerSuspensionHistoryTitle">
+          <h3 id="playerSuspensionHistoryTitle">Historique des décisions</h3>
+          <div id="playerSuspensionHistory" aria-live="polite"></div>
+        </section>
+
+        <p class="admin-dialog__error" id="playerSuspensionError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="playerSuspensionCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--danger" id="playerSuspensionSubmit" type="submit">Confirmer la suspension</button>
+        </footer>
+      </form>
+    </dialog>

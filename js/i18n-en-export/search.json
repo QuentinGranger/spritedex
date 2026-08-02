@@ -1,0 +1,8 @@
+{
+  "search.sprite": "Search for a sprite…",
+  "search.global": "Global search",
+  "search.globalPlaceholder": "Sprite, variant, friend, event, badge…",
+  "search.globalHint": "Search a collection, person or action.",
+  "search.navigate": "navigate",
+  "search.open": "open"
+}

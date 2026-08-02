@@ -1,0 +1,66 @@
+        <section class="view" id="view-history" aria-labelledby="historyPageTitle">
+          <div class="history-dashboard">
+            <header class="history-dashboard__heading">
+              <div>
+                <p class="history-dashboard__eyebrow" data-i18n="history.pageEyebrow">Journal de collection</p>
+                <h2 class="section-title" id="historyPageTitle" data-i18n="nav.history">Historique</h2>
+                <p class="history-dashboard__intro" data-i18n="history.pageIntro">Retrouvez les évolutions de votre collection.</p>
+              </div>
+            </header>
+
+            <section class="history-kpis" id="historyStats" data-i18n-aria-label="history.kpisAria" aria-label="Résumé de l'activité de collection"></section>
+
+            <section class="history-panel history-panel--trend" id="historyWeekly" aria-labelledby="historyTrendTitle" aria-busy="true"></section>
+            <section class="history-panel history-panel--monthly" id="historyMonthly" aria-labelledby="historyMonthlyTitle" aria-busy="true"></section>
+
+            <section class="history-panel history-activity" aria-labelledby="historyActivityTitle">
+              <header class="history-panel__header history-activity__header">
+                <div>
+                  <p class="history-panel__eyebrow" data-i18n="history.logEyebrow">Journal personnel</p>
+                  <h3 id="historyActivityTitle" data-i18n="history.recentActivityTitle">Activité récente</h3>
+                </div>
+                <div class="history-filter" role="group" data-i18n-aria-label="history.filterAria" aria-label="Filtrer l'activité récente">
+                  <button class="history-filter__button active" type="button" data-history-filter="all" aria-pressed="true" data-i18n="history.filterAll">Tout</button>
+                  <button class="history-filter__button" type="button" data-history-filter="acquisition" aria-pressed="false" data-i18n="history.filterAcquisitions">Acquisitions</button>
+                  <button class="history-filter__button" type="button" data-history-filter="change" aria-pressed="false" data-i18n="history.filterChanges">Changements</button>
+                </div>
+              </header>
+              <div class="history-filter-bar" data-i18n-aria-label="history.advancedFiltersAria" aria-label="Filtres avancés de l'historique">
+                <label class="history-filter-field"><span data-i18n="history.filterEventLabel">Événement</span><select id="historyEventFilter" aria-label="Filtrer par événement" data-i18n-aria-label="history.filterEventAria"><option value="all" data-i18n="history.filterEventAll">Tous les événements</option></select></label>
+                <label class="history-filter-field"><span data-i18n="history.filterDateLabel">Période</span><select id="historyDateFilter" aria-label="Filtrer par date" data-i18n-aria-label="history.filterDateAria">
+                    <option value="all" data-i18n="history.filterDateAll">Toutes les dates</option>
+                    <option value="7" data-i18n="history.filterDate7">7 derniers jours</option>
+                    <option value="30" data-i18n="history.filterDate30">30 derniers jours</option>
+                    <option value="90" data-i18n="history.filterDate90">3 derniers mois</option>
+                    <option value="year" data-i18n="history.filterDateYear">Cette année</option>
+                  </select></label>
+                <label class="history-filter-field"><span data-i18n="history.filterRarityLabel">Rareté</span><select id="historyRarityFilter" aria-label="Filtrer par rareté" data-i18n-aria-label="history.filterRarityAria"><option value="all" data-i18n="history.filterRarityAll">Toutes les raretés</option></select></label>
+                <button class="history-filter-reset" id="historyFilterReset" type="button" hidden data-i18n="history.filterReset">Réinitialiser</button>
+              </div>
+              <div class="history-bulk-actions" id="historyBulkActions" hidden aria-live="polite" role="toolbar" data-i18n-aria-label="history.bulkAria" aria-label="Actions groupées de l'historique">
+                <strong id="historyBulkCount" data-i18n="history.bulkSelectedZero">0 sélection</strong>
+                <div>
+                  <button type="button" class="history-bulk-actions__quiet" id="historyBulkSelectAll" data-i18n="history.bulkSelectVisible">Tout sélectionner</button>
+                  <button type="button" class="history-bulk-actions__quiet" id="historyBulkClear" data-i18n="history.bulkClear">Effacer</button>
+                  <button type="button" class="history-bulk-actions__quiet" id="historyBulkCopy" data-i18n="history.bulkCopy">Copier</button>
+                  <button type="button" class="history-bulk-actions__primary" id="historyBulkPriority" data-i18n="history.bulkPriority">Ajouter aux priorités</button>
+                </div>
+              </div>
+              <p class="history-activity__count" id="historyActivityCount" aria-live="polite"></p>
+              <div class="history-list" id="historyList" role="feed" aria-busy="true" data-i18n-aria-label="history.feedAria" aria-label="Événements récents de votre collection">
+                <p class="squad-empty" data-i18n="history.loading">Chargement…</p>
+              </div>
+            </section>
+
+            <aside class="history-sidebar" data-i18n-aria-label="history.sidebarAria" aria-label="Résumé de l'historique">
+              <section class="history-panel history-panel--recent" id="historyRecent" aria-labelledby="historyRecentTitle" aria-busy="true"></section>
+              <section class="history-panel history-panel--summary" id="historyActionSummary" aria-labelledby="historyActionSummaryTitle" aria-busy="true"></section>
+              <section class="history-panel history-panel--active" id="historyActiveSprites" aria-labelledby="historyActiveSpritesTitle" aria-busy="true"></section>
+            </aside>
+          </div>
+        </section>
+
+
+      </main>
+    </div>
+

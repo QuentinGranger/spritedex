@@ -1,0 +1,53 @@
+    <dialog class="admin-dialog" id="reportDecisionDialog" aria-labelledby="reportDecisionTitle">
+      <form class="admin-dialog__surface" id="reportDecisionForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="reportDecisionEyebrow">SIGNALEMENT</p>
+            <h2 id="reportDecisionTitle">Traiter le signalement</h2>
+            <p id="reportDecisionSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="reportDecisionClose" type="button" aria-label="Fermer">×</button>
+        </header>
+
+        <div class="admin-dialog__warning" id="reportDecisionImpact" hidden></div>
+
+        <div class="admin-decision-guide" aria-label="Étapes de traitement">
+          <span><b>1</b> Examiner le contexte</span><span><b>2</b> Choisir une action</span><span><b>3</b> Laisser une trace</span>
+        </div>
+
+        <div class="admin-dialog__fields">
+          <label class="admin-field"><span>Priorité de tri</span><select id="reportDecisionPriority"><option value="low">Basse — à surveiller</option><option value="normal" selected>Normale</option><option value="high">Haute — à traiter rapidement</option><option value="urgent">Urgente — à traiter maintenant</option></select><small class="admin-field__hint">Visible uniquement dans le backoffice.</small></label>
+          <label class="admin-field" id="reportDecisionDurationField" hidden>
+            <span>Durée de suspension</span>
+            <select id="reportDecisionDuration">
+              <option value="1">1 heure</option>
+              <option value="24" selected>24 heures</option>
+              <option value="168">7 jours</option>
+              <option value="720">30 jours</option>
+              <option value="custom">Date personnalisée</option>
+            </select>
+          </label>
+          <label class="admin-field" id="reportDecisionCustomField" hidden>
+            <span>Fin de la suspension</span>
+            <input id="reportDecisionUntil" type="datetime-local" />
+          </label>
+          <label class="admin-field admin-field--wide" id="reportDecisionRelatedField" hidden>
+            <span class="admin-check">
+              <input id="reportDecisionCloseRelated" type="checkbox" checked />
+              <span id="reportDecisionCloseRelatedLabel">Classer aussi les autres signalements ouverts sur ce compte</span>
+            </span>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span id="reportDecisionReasonLabel">Note de décision obligatoire</span>
+            <textarea id="reportDecisionReason" maxlength="1500" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide"><span>Note interne (jamais visible par les joueurs)</span><textarea id="reportDecisionInternalNote" maxlength="4000"></textarea></label>
+        </div>
+
+        <p class="admin-dialog__error" id="reportDecisionError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="reportDecisionCancel" type="button">Annuler</button>
+          <button class="admin-button" id="reportDecisionSubmit" type="submit">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>

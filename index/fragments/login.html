@@ -1,0 +1,210 @@
+    <div class="login-screen" id="loginScreen">
+      <div class="login-card">
+        <img src="js/MainLogo.png" alt="Sprite-Index" class="login-logo" />
+
+        <section class="login-invite-notice" id="loginInviteNotice" hidden aria-live="polite">
+          <span class="login-invite-notice__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+          </span>
+          <div>
+            <span class="login-invite-notice__eyebrow" data-i18n="login.inviteEyebrow">Invitation en attente</span>
+            <strong id="loginInviteTitle" data-i18n="login.friendInviteTitleFallback">Friend invitation received</strong>
+            <p id="loginInviteDetail" data-i18n="login.inviteReadyDetail">Create an account or sign in to continue automatically.</p>
+          </div>
+          <div class="login-invite-notice__actions">
+            <button class="login-btn login-invite-notice__primary" id="loginInviteCreate" type="button" data-i18n="login.inviteCreateAction">Créer mon compte et continuer</button>
+            <button class="login-invite-notice__secondary" id="loginInviteSignIn" type="button" data-i18n="login.inviteSignInAction">J'ai déjà un compte</button>
+          </div>
+          <p class="login-invite-notice__trust" data-i18n="login.inviteTrust">L'invitation sera envoyée automatiquement après connexion.</p>
+        </section>
+
+        <!-- Step 1: Inscription -->
+        <div class="onboarding-step active" id="onboardingStep1">
+          <h2 class="onboarding-heading" data-i18n="login.createAccount">Créer un compte</h2>
+          <p class="login-sub" data-i18n="login.subtitleSave">Sauvegarde ta collection et rejoins une escouade</p>
+
+          <div class="onboarding-choices">
+            <button class="onboarding-choice" data-method="google" id="authGoogle">
+              <div class="onboarding-choice__icon onboarding-choice__icon--google">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              </div>
+              <span class="onboarding-choice__label" data-i18n="login.continueGoogle">Continuer avec Google</span>
+            </button>
+
+            <button class="onboarding-choice" data-method="email" id="authEmailChoice">
+              <div class="onboarding-choice__icon onboarding-choice__icon--email">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+              </div>
+              <span class="onboarding-choice__label" data-i18n="login.continueEmail">Continuer avec Email</span>
+            </button>
+
+            <button class="onboarding-choice" data-method="discord" id="authDiscord">
+              <div class="onboarding-choice__icon onboarding-choice__icon--discord">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+              </div>
+              <span class="onboarding-choice__label" data-i18n="login.continueDiscord">Continuer avec Discord</span>
+            </button>
+          </div>
+
+          <p class="onboarding-switch"><span data-i18n="login.alreadyHaveAccount">Déjà un compte ?</span> <button class="onboarding-link" id="goToLogin" data-i18n="login.signIn">Se connecter</button></p>
+
+          <div class="onboarding-divider"><span data-i18n="login.or">ou</span></div>
+
+          <button class="login-skip" id="loginSkip" data-i18n="login.continueGuest">Continuer sans compte</button>
+        </div>
+
+        <!-- Step 2: Connexion (existing user) -->
+        <div class="onboarding-step" id="onboardingStepLogin">
+          <button class="onboarding-back" id="backFromLogin" data-i18n-title="login.back" title="Retour">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span data-i18n="login.back">Retour</span>
+          </button>
+          <h2 class="onboarding-heading" data-i18n="login.signInTitle">Connexion</h2>
+          <p class="login-sub" data-i18n="login.signInSubtitle">Connecte-toi pour sauvegarder ta collection et rejoindre une squad.</p>
+
+          <div class="onboarding-providers-row">
+            <button class="onboarding-provider-btn" data-method="google" id="authGoogleLogin" data-i18n="login.continueGoogle">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continuer avec Google
+            </button>
+            <div class="onboarding-providers-split">
+              <button class="onboarding-provider-btn onboarding-provider-btn--half" data-method="discord" id="authDiscordLogin">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                Discord
+              </button>
+            </div>
+          </div>
+
+          <div class="onboarding-divider"><span data-i18n="login.or">ou</span></div>
+
+          <div class="login-form active" id="loginFormExisting">
+            <input type="email" id="loginEmail" class="login-input" data-i18n-placeholder="login.email" placeholder="Email" autocomplete="email" />
+            <input type="password" id="loginPassword" class="login-input" data-i18n-placeholder="login.password" placeholder="Mot de passe" autocomplete="current-password" />
+            <button class="login-btn" id="loginEmailBtn" data-i18n="login.signIn">Se connecter</button>
+          </div>
+
+          <p class="onboarding-switch"><button class="onboarding-link" id="forgotPassword" data-i18n="login.forgotPassword">Mot de passe oublié ?</button></p>
+          <p class="onboarding-switch"><span data-i18n="login.noAccountYet">Pas encore de compte ?</span> <button class="onboarding-link" id="goToRegister" data-i18n="login.createAccount">Créer un compte</button></p>
+        </div>
+
+        <!-- Step 3: Email registration form -->
+        <div class="onboarding-step" id="onboardingStepRegister">
+          <button class="onboarding-back" id="backFromRegister" data-i18n-title="login.back" title="Retour">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span data-i18n="login.back">Retour</span>
+          </button>
+          <h2 class="onboarding-heading" data-i18n="login.createAccount">Créer un compte</h2>
+          <p class="login-sub" data-i18n="login.registerSubtitle">Quelques infos et c'est parti</p>
+
+          <div class="login-form active" id="loginFormRegister">
+            <input type="text" id="registerUsername" class="login-input" data-i18n-placeholder="login.username" placeholder="Pseudo" maxlength="50" autocomplete="username" />
+            <input type="email" id="registerEmail" class="login-input" data-i18n-placeholder="login.email" placeholder="Email" autocomplete="email" />
+            <input type="password" id="registerPassword" class="login-input" data-i18n-placeholder="login.passwordMin" placeholder="Mot de passe (min 8 car.)" autocomplete="new-password" />
+            <label class="cgu-check" id="registerCguLabel">
+              <input type="checkbox" id="registerCgu" />
+              <span class="cgu-check__box"></span>
+              <span class="cgu-check__text"><span data-i18n="login.acceptPrefix">J'accepte les</span> <button class="onboarding-link" type="button" data-legal-doc="cgu" data-i18n="login.tos">Conditions générales d'utilisation</button> <span data-i18n="login.acceptAnd">et la</span> <button class="onboarding-link" type="button" data-legal-doc="politique-confidentialite" data-i18n="login.privacyPolicy">Politique de confidentialité</button>.</span>
+            </label>
+            <label class="cgu-check" id="registerAgeLabel">
+              <input type="checkbox" id="registerAge" />
+              <span class="cgu-check__box"></span>
+              <span class="cgu-check__text" data-i18n="login.ageConfirm">J'ai au moins 15 ans.</span>
+            </label>
+            <button class="login-btn" id="registerEmailBtn" data-i18n="login.createMyAccount" disabled>Créer mon compte</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Profile setup (after registration) -->
+        <div class="onboarding-step" id="onboardingStepProfile">
+          <h2 class="onboarding-heading" data-i18n="login.welcome">Bienvenue dans SPRITE-INDEX</h2>
+          <p class="login-sub" data-i18n="login.personalize">Personnalise ton profil</p>
+
+          <label class="onboarding-label" data-i18n="login.chooseUsername">Choisis ton pseudo :</label>
+          <input type="text" id="profileUsername" class="login-input" data-i18n-placeholder="login.usernameHint" placeholder="Ton pseudo..." maxlength="50" />
+
+          <label class="onboarding-label" data-i18n="login.avatar">Avatar :</label>
+          <div class="avatar-picker" id="avatarPicker">
+            <div class="avatar-picker__item selected" data-avatar="">
+              <span class="avatar-picker__placeholder">?</span>
+            </div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jones.png"><img src="Personna/Jones.png" alt="Jones" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Peely.png"><img src="Personna/Peely.png" alt="Peely" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Fishstick.png"><img src="Personna/Fishstick.png" alt="Fishstick" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Drift.png"><img src="Personna/Drift.png" alt="Drift" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Midas.png"><img src="Personna/Midas.png" alt="Midas" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Meowscles.png"><img src="Personna/Meowscles.png" alt="Meowscles" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Skye.png"><img src="Personna/Skye.png" alt="Skye" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Crystal.png"><img src="Personna/Crystal.png" alt="Crystal" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Aura.png"><img src="Personna/Aura.png" alt="Aura" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raven.png"><img src="Personna/Raven.png" alt="Raven" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Omega.png"><img src="Personna/Omega.png" alt="Omega" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/SkullTrooper.png"><img src="Personna/SkullTrooper.png" alt="SkullTrooper" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/RenegadeRaider.png"><img src="Personna/RenegadeRaider.png" alt="RenegadeRaider" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BlackKnight.png"><img src="Personna/BlackKnight.png" alt="BlackKnight" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/CuddleTeamLeader.png"><img src="Personna/CuddleTeamLeader.png" alt="CuddleTeamLeader" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raptor.png"><img src="Personna/Raptor.png" alt="Raptor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jules.png"><img src="Personna/Jules.png" alt="Jules" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TNTina.png"><img src="Personna/TNTina.png" alt="TNTina" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Brutus.png"><img src="Personna/Brutus.png" alt="Brutus" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Hope.png"><img src="Personna/Hope.png" alt="Hope" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BriteBomber.png"><img src="Personna/BriteBomber.png" alt="BriteBomber" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/DrSlone.png"><img src="Personna/DrSlone.png" alt="DrSlone" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheFoundation.png"><img src="Personna/TheFoundation.png" alt="TheFoundation" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheVisitor.png"><img src="Personna/TheVisitor.png" alt="TheVisitor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheScientist.png"><img src="Personna/TheScientist.png" alt="TheScientist" /></div>
+          </div>
+
+          <label class="onboarding-label" data-i18n="login.privacy">Confidentialité :</label>
+          <div class="privacy-options" id="privacyOptions">
+            <label class="privacy-option">
+              <input type="radio" name="privacy" value="private" />
+              <span class="privacy-option__radio"></span>
+              <span class="privacy-option__text" data-i18n="login.privacyPrivate">Profil privé</span>
+            </label>
+            <label class="privacy-option selected">
+              <input type="radio" name="privacy" value="squad_only" checked />
+              <span class="privacy-option__radio"></span>
+              <span class="privacy-option__text" data-i18n="login.privacySquads">Visible par mes squads</span>
+            </label>
+            <label class="privacy-option">
+              <input type="radio" name="privacy" value="public" />
+              <span class="privacy-option__radio"></span>
+              <span class="privacy-option__text" data-i18n="login.privacyPublic">Profil public via lien</span>
+            </label>
+          </div>
+
+          <button class="login-btn" id="profileSubmitBtn" data-i18n="login.getStarted">Commencer</button>
+        </div>
+
+        <!-- Step 5: Transfer local collection -->
+        <div class="onboarding-step" id="onboardingStepTransfer">
+          <h2 class="onboarding-heading" data-i18n="login.collectionDetected">Collection détectée</h2>
+          <p class="login-sub" data-i18n="login.localCollection">Tu as déjà une collection locale.</p>
+
+          <div class="transfer-box">
+            <div class="transfer-box__preview">
+              <span class="transfer-box__count" id="transferCount">0</span>
+              <span class="transfer-box__label" data-i18n="login.spritesRecorded">sprites enregistrés</span>
+            </div>
+            <p class="transfer-box__text" data-i18n="login.savePrompt">Veux-tu la sauvegarder sur ton compte ?</p>
+          </div>
+
+          <div class="transfer-actions">
+            <button class="login-btn" id="transferYes" data-i18n="login.saveCollection">Sauvegarder ma collection</button>
+            <button class="transfer-actions__btn transfer-actions__btn--reset" id="transferNo" data-i18n="login.startOver">Repartir de zéro</button>
+            <button class="transfer-actions__btn transfer-actions__btn--later" id="transferLater" data-i18n="login.later">Plus tard</button>
+          </div>
+        </div>
+
+        <p class="login-hint" id="loginHint"></p>
+
+        <div class="login-legal-links">
+          <button class="onboarding-link" type="button" data-legal-doc="privacyPolicy" data-i18n="login.privacyPolicy">Politique de confidentialité</button>
+          <span>•</span>
+          <button class="onboarding-link" type="button" data-legal-doc="mentionsLegales" data-i18n="login.legalNotice">Mentions légales</button>
+        </div>
+
+        <p class="legal-disclaimer" data-i18n="login.disclaimer">SPRITE-INDEX est une application non officielle de suivi de collection. Cette application n'est pas affiliée, sponsorisée ou approuvée par Epic Games. Fortnite est une marque appartenant à Epic Games.</p>
+      </div>
+    </div>
+

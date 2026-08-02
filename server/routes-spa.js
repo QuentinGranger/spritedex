@@ -4,10 +4,12 @@ const { compareCollectionsServer, getServerCompareCatalogItemsCached, loadCollec
 const { getVisibility, hashCapabilityToken } = require("./auth");
 const { APP_URL, app, escapeHtml } = require("./core");
 const { pool } = require("./db");
-const fs = require("fs");
-const path = require("path");
+const { renderIndexPage } = require("../scripts/index-page");
 
-const ROOT_DIR = require("path").join(__dirname, "..");
+function sendIndexPage(res, status) {
+  if (status) res.status(status);
+  return res.type("html").send(renderIndexPage());
+}
 
 // ── Friend invite link redirect (legacy /invite/:token → /?invite=:token) ──
 app.get("/invite/:token", (req, res) => {
@@ -24,17 +26,16 @@ app.get("/u/:username", async (req, res) => {
       return res.redirect(302, `/u/${encodeURIComponent(resolved.to)}`);
     }
     if (resolved.status === "not_found") {
-      return res.status(404).sendFile(path.join(ROOT_DIR, "index.html"));
+      return sendIndexPage(res, 404);
     }
 
-    const file = path.join(ROOT_DIR, "index.html");
     const username = resolved.user.username;
     const display = resolved.user.display_name || username;
     const title = `${escapeHtml(display)} — Passeport sprite-index`;
     const description = `Voir le passeport collectionneur de ${escapeHtml(display)} sur sprite-index.`;
     const image = `${APP_URL}/icon-512.png`;
     const url = `${APP_URL}/u/${encodeURIComponent(username)}`;
-    const html = fs.readFileSync(file, "utf8");
+    const html = renderIndexPage();
     const meta = `<meta property="og:title" content="${title.replace(/"/g, "&quot;")}">
 <meta property="og:description" content="${description.replace(/"/g, "&quot;")}">
 <meta property="og:image" content="${image}">
@@ -49,25 +50,24 @@ app.get("/u/:username", async (req, res) => {
   username: resolved.user.username,
   displayName: resolved.user.display_name || resolved.user.username
 })};</script>`;
-    res.send(html.replace("</head>", `${meta}\n</head>`));
+    res.type("html").send(html.replace("</head>", `${meta}\n</head>`));
   } catch (err) {
     console.error("[/u/:username]", err);
-    res.sendFile(path.join(ROOT_DIR, "index.html"));
+    sendIndexPage(res);
   }
 });
 
 // ── SPA routes for shareable compare links ──
 app.get("/compare/:userA/:userB", async (req, res) => {
-  res.sendFile(path.join(ROOT_DIR, "index.html"));
+  sendIndexPage(res);
 });
 
 app.get("/compare/share/:token", async (req, res) => {
   try {
     const token = req.params.token;
-    const file = path.join(ROOT_DIR, "index.html");
-    if (!/^[a-f0-9]{64}$/i.test(token)) return res.sendFile(file);
+    if (!/^[a-f0-9]{64}$/i.test(token)) return sendIndexPage(res);
     const tokenHash = hashCapabilityToken(token);
-    if (!tokenHash) return res.sendFile(file);
+    if (!tokenHash) return sendIndexPage(res);
 
     const shareRes = await pool.query(
       `SELECT t.*, u.username as owner_username, u.collection_visibility, u.visibility
@@ -79,12 +79,12 @@ app.get("/compare/share/:token", async (req, res) => {
          AND (u.suspended_until IS NULL OR u.suspended_until <= NOW())`,
       [tokenHash]
     );
-    if (!shareRes.rows.length) return res.sendFile(file);
+    if (!shareRes.rows.length) return sendIndexPage(res);
 
     const share = shareRes.rows[0];
     // The social card is a public representation of the bearer link. It
     // must honor a privacy change made after that link was issued.
-    if (getVisibility(share).collection === "private") return res.sendFile(file);
+    if (getVisibility(share).collection === "private") return sendIndexPage(res);
     const ownerCollection = share.collection_visible ? await loadCollectionForShare(share.owner_user_id, share) : {};
     const catalogue = await getServerCompareCatalogItemsCached();
     const result = compareCollectionsServer(
@@ -98,7 +98,7 @@ app.get("/compare/share/:token", async (req, res) => {
     const image = `${APP_URL}/icon-512.png`;
     const url = `${APP_URL}/compare/share/${token}`;
 
-    const html = fs.readFileSync(file, "utf8");
+    const html = renderIndexPage();
     const meta = `<meta property="og:title" content="${title.replace(/"/g, "&quot;")}">
 <meta property="og:description" content="${description.replace(/"/g, "&quot;")}">
 <meta property="og:image" content="${image}">
@@ -108,9 +108,9 @@ app.get("/compare/share/:token", async (req, res) => {
 <meta name="twitter:title" content="${title.replace(/"/g, "&quot;")}">
 <meta name="twitter:description" content="${description.replace(/"/g, "&quot;")}">
 <meta name="twitter:image" content="${image}">`;
-    res.send(html.replace("</head>", `${meta}\n</head>`));
+    res.type("html").send(html.replace("</head>", `${meta}\n</head>`));
   } catch (err) {
     console.error("[/compare/share/:token] social card error:", err);
-    res.sendFile(path.join(ROOT_DIR, "index.html"));
+    sendIndexPage(res);
   }
 });

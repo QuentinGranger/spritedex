@@ -1,0 +1,199 @@
+{
+  "id": "sprite_striker",
+  "slug": "striker",
+  "name": "Striker Sprite",
+  "officialName": "Striker Sprite",
+  "rarity": "epic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.10",
+  "firstObservedAt": "2026-06-25",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "overdrive_after_traversal",
+    "descriptionEn": "Grants Overdrive when Mantling, Hurdling, or Wall Scrambling.",
+    "descriptionFr": "Accorde l’effet Surmultiplication après une escalade, un franchissement ou une course murale.",
+    "levelValues": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "unit": "seconds"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Spotted near high and mountainous areas",
+    "descriptionFr": "Près des zones élevées et montagneuses",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-25",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 3000,
+  "variantIds": [
+    "sprite_striker",
+    "sprite_striker_gold",
+    "sprite_striker_gummy",
+    "sprite_striker_galaxy",
+    "sprite_striker_holofoil"
+  ],
+  "variants": [
+    {
+      "id": "sprite_striker",
+      "spriteId": "sprite_striker",
+      "variantType": "base",
+      "name": "Striker Sprite",
+      "slug": "striker",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 3000,
+      "spriteChestDropChancePct": 6.98,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/striker/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_striker_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_striker_gold",
+      "spriteId": "sprite_striker",
+      "variantType": "gold",
+      "name": "Gold Striker Sprite",
+      "slug": "striker-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.31,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/striker/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_striker_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_striker_gummy",
+      "spriteId": "sprite_striker",
+      "variantType": "gummy",
+      "name": "Gummy Striker Sprite",
+      "slug": "striker-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.23,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/striker/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_striker_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_striker_galaxy",
+      "spriteId": "sprite_striker",
+      "variantType": "galaxy",
+      "name": "Galaxy Striker Sprite",
+      "slug": "striker-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.12,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/striker/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_striker_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_striker_holofoil",
+      "spriteId": "sprite_striker",
+      "variantType": "holofoil",
+      "name": "Holofoil Striker Sprite",
+      "slug": "striker-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.05,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/striker/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_striker_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_striker_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "fortnite_wiki_v4110"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

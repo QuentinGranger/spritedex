@@ -1,0 +1,9 @@
+{
+  "init.inviteLoginRequired": "Sign in to accept the invitation.",
+  "init.friendRequestSent": "Friend request sent!",
+  "init.inviteLinkInvalid": "Invalid invitation link.",
+  "init.inviteNetworkError": "Network error during invitation.",
+  "init.alreadyInSquad": "You are already in a squad. Leave it first.",
+  "init.passportNotAccessible": "Passport not accessible",
+  "init.passportLoadFailed": "Unable to load passport"
+}

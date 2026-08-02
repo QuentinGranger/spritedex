@@ -1,0 +1,19 @@
+{
+  "id": "sprite_john_wick",
+  "slug": "john-wick",
+  "name": "John Wick Sprite",
+  "rarity": "mythic",
+  "releaseStatus": "unreleased",
+  "ability": null,
+  "availability": {
+    "status": "unreleased",
+    "startDate": null,
+    "endDate": null,
+    "confidence": "community_database"
+  },
+  "sourceIds": [
+    "fortnitegg_catalogue_2026_07_18"
+  ],
+  "dataStatus": "unverified",
+  "visibleInMainCatalogue": false
+}

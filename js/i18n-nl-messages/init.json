@@ -1,0 +1,9 @@
+{
+  "init.inviteLoginRequired": "Log in om de uitnodiging te accepteren.",
+  "init.friendRequestSent": "Vriendschapsverzoek verzonden!",
+  "init.inviteLinkInvalid": "Ongeldige uitnodigingslink.",
+  "init.inviteNetworkError": "Netwerkfout tijdens uitnodiging.",
+  "init.alreadyInSquad": "Je zit al in een team. Laat het eerst liggen.",
+  "init.passportNotAccessible": "Paspoort niet toegankelijk",
+  "init.passportLoadFailed": "Kan paspoort niet laden"
+}

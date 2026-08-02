@@ -417,12 +417,11 @@ function formatFinalizationReport({ ready, checks, manual, errors, warnings }) {
 
 // Exécution en ligne de commande.
 if (require.main === module) {
-  const fs = require("fs");
-  const path = require("path");
-  const catalogPath = process.argv[2] || path.join(__dirname, "..", "SPRITE-INDEX Catalogue Juil 18 2026.json");
+  const { DEFAULT_CATALOG_PATH, loadCatalog } = require("./catalog-loader");
+  const catalogPath = process.argv[2] || DEFAULT_CATALOG_PATH;
   let catalog;
   try {
-    catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+    catalog = loadCatalog(catalogPath);
   } catch (e) {
     console.error(`Impossible de lire le catalogue "${catalogPath}" : ${e.message}`);
     process.exit(1);

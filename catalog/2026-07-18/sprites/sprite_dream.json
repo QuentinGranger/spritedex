@@ -1,0 +1,186 @@
+{
+  "id": "sprite_dream",
+  "slug": "dream",
+  "name": "Dream Sprite",
+  "officialName": "Dream Sprite",
+  "rarity": "legendary",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "random_item_each_level",
+    "descriptionEn": "Grants a random item at each level and explodes with legendary loot at Max Level.",
+    "descriptionFr": "Accorde un objet aléatoire à chaque niveau et libère du butin légendaire au niveau maximal.",
+    "levelValues": null,
+    "unit": null,
+    "notes": "La valeur du butin augmente à chaque niveau, sans valeurs numériques publiques."
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Sometimes found sleeping in storage crates",
+    "descriptionFr": "Parfois endormi dans des caisses de stockage",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 5000,
+  "variantIds": [
+    "sprite_dream",
+    "sprite_dream_gold",
+    "sprite_dream_gummy",
+    "sprite_dream_galaxy",
+    "sprite_dream_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_dream",
+      "spriteId": "sprite_dream",
+      "variantType": "base",
+      "name": "Dream Sprite",
+      "slug": "dream",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 5000,
+      "spriteChestDropChancePct": 6.98,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/dream/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_dream_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_dream_gold",
+      "spriteId": "sprite_dream",
+      "variantType": "gold",
+      "name": "Gold Dream Sprite",
+      "slug": "dream-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.31,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/dream/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_dream_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_dream_gummy",
+      "spriteId": "sprite_dream",
+      "variantType": "gummy",
+      "name": "Gummy Dream Sprite",
+      "slug": "dream-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.23,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/dream/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_dream_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_dream_galaxy",
+      "spriteId": "sprite_dream",
+      "variantType": "galaxy",
+      "name": "Galaxy Dream Sprite",
+      "slug": "dream-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.12,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/dream/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_dream_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_dream_cube",
+      "spriteId": "sprite_dream",
+      "variantType": "cube",
+      "name": "Cube Dream Sprite",
+      "slug": "dream-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 6750,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/dream/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_dream_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

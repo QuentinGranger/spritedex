@@ -1,0 +1,45 @@
+        <section class="view" id="view-stats">
+          <div class="stats-page" data-i18n-aria-label="stats.pageAria" aria-label="Statistiques de collection">
+
+            <section class="stats-kpis" data-i18n-aria-label="stats.kpisAria" aria-label="Indicateurs clés de collection">
+              <article class="stats-kpi stats-kpi--sprites">
+                <span class="stats-kpi__icon" aria-hidden="true">◈</span>
+                <span class="stats-kpi__value" id="kpiSprites">0 / 0</span>
+                <span class="stats-kpi__label" data-i18n="stats.kpiSpritesLabel">Sprites possédés</span>
+                <span class="stats-kpi__hint" id="kpiSpritesHint" data-i18n="stats.kpiSpritesHint">Familles découvertes</span>
+              </article>
+              <article class="stats-kpi stats-kpi--variants">
+                <span class="stats-kpi__icon" aria-hidden="true">▣</span>
+                <span class="stats-kpi__value" id="kpiVariants">0 / 0</span>
+                <span class="stats-kpi__label" data-i18n="stats.kpiVariantsLabel">Variantes possédées</span>
+                <span class="stats-kpi__hint" id="kpiVariantsHint">Progression du catalogue</span>
+              </article>
+              <article class="stats-kpi stats-kpi--priorities">
+                <span class="stats-kpi__icon" aria-hidden="true">◎</span>
+                <span class="stats-kpi__value" id="kpiPriorities">0</span>
+                <span class="stats-kpi__label" data-i18n="stats.kpiPrioritiesLabel">Priorités restantes</span>
+                <span class="stats-kpi__hint" id="kpiPrioritiesHint" data-i18n="stats.kpiPrioritiesNone">Aucune recherche prioritaire</span>
+              </article>
+            </section>
+
+            <section class="stats-module stats-module--rarity" aria-labelledby="statsRarityTitle">
+              <h3 class="stats-module__title" id="statsRarityTitle"><span aria-hidden="true">◇</span> <span data-i18n="stats.rarityTitle">Par rareté</span></h3>
+              <p class="stats-module__description" data-i18n="stats.rarityDesc">Votre progression dans chaque niveau de rareté.</p>
+              <div id="rarityBars"></div>
+            </section>
+
+            <section class="stats-module stats-module--variant" aria-labelledby="statsVariantTitle">
+              <h3 class="stats-module__title" id="statsVariantTitle"><span aria-hidden="true">▱</span> <span data-i18n="stats.variantTitle">Par variante</span></h3>
+              <p class="stats-module__description" data-i18n="stats.variantDesc">Les styles de Sprite les plus proches de votre objectif.</p>
+              <div id="variantBars"></div>
+            </section>
+
+            <section class="stats-insights" id="statsInsights" data-i18n-aria-label="stats.insightsAria" aria-label="Points clés de votre collection"></section>
+
+            <section id="sprite-indexTrends" data-i18n-aria-label="stats.trendsAria" aria-label="Tendances sprite-index"></section>
+
+            <section id="communityStats" data-i18n-aria-label="stats.communityAria" aria-label="Statistiques communautaires"></section>
+
+          </div>
+        </section>
+

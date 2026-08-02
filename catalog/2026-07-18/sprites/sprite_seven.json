@@ -1,0 +1,199 @@
+{
+  "id": "sprite_seven",
+  "slug": "seven",
+  "name": "Seven Sprite",
+  "officialName": "Seven Sprite",
+  "rarity": "legendary",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.20",
+  "firstObservedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "enemy_foot_trails_for_squad",
+    "descriptionEn": "Makes enemy player foot trails visible in the world for the Squad.",
+    "descriptionFr": "Rend visibles pour l’escouade les traces de pas laissées par les joueurs ennemis.",
+    "levelValues": [
+      10,
+      15,
+      20,
+      25,
+      30
+    ],
+    "unit": "seconds"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Spotted near high and mountainous areas",
+    "descriptionFr": "Près des zones élevées et montagneuses",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-07-16",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 5000,
+  "variantIds": [
+    "sprite_seven",
+    "sprite_seven_gold",
+    "sprite_seven_gummy",
+    "sprite_seven_galaxy",
+    "sprite_seven_holofoil"
+  ],
+  "variants": [
+    {
+      "id": "sprite_seven",
+      "spriteId": "sprite_seven",
+      "variantType": "base",
+      "name": "Seven Sprite",
+      "slug": "seven",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 5000,
+      "spriteChestDropChancePct": 6.98,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/seven/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_seven_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_seven_2026"
+      ]
+    },
+    {
+      "id": "sprite_seven_gold",
+      "spriteId": "sprite_seven",
+      "variantType": "gold",
+      "name": "Gold Seven Sprite",
+      "slug": "seven-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.31,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/seven/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_seven_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_seven_2026"
+      ]
+    },
+    {
+      "id": "sprite_seven_gummy",
+      "spriteId": "sprite_seven",
+      "variantType": "gummy",
+      "name": "Gummy Seven Sprite",
+      "slug": "seven-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.23,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/seven/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_seven_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_seven_2026"
+      ]
+    },
+    {
+      "id": "sprite_seven_galaxy",
+      "spriteId": "sprite_seven",
+      "variantType": "galaxy",
+      "name": "Galaxy Seven Sprite",
+      "slug": "seven-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.12,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/seven/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_seven_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_seven_2026"
+      ]
+    },
+    {
+      "id": "sprite_seven_holofoil",
+      "spriteId": "sprite_seven",
+      "variantType": "holofoil",
+      "name": "Holofoil Seven Sprite",
+      "slug": "seven-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.05,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/seven/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_seven_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_seven_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_seven_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "gamesgg_seven_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "sort.label": "Sort:",
+  "sort.labelAlt": "Sort:",
+  "sort.alpha": "Alphabetical",
+  "sort.progressAsc": "Least complete",
+  "sort.progressDesc": "Most complete",
+  "sort.rarityDesc": "Rarest first",
+  "sort.rarityAsc": "Most common first",
+  "sort.priority": "By priority",
+  "sort.recent": "By newest",
+  "sort.rarity": "By rarity",
+  "sort.variant": "By variant"
+}

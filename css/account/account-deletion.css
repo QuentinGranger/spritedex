@@ -1,0 +1,184 @@
+/* ── Toggle switch ── */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle__slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: background 250ms ease, border-color 250ms ease;
+}
+
+.toggle__slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: transform 250ms ease, background 250ms ease;
+}
+
+.toggle input:checked + .toggle__slider {
+  background: rgba(0, 225, 255, 0.2);
+  border-color: rgba(0, 225, 255, 0.4);
+}
+
+.toggle input:checked + .toggle__slider::after {
+  transform: translateX(18px);
+  background: #00e1ff;
+}
+
+/* ── Delete account modal ── */
+.delete-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(20px + env(safe-area-inset-top))
+    calc(20px + env(safe-area-inset-right))
+    calc(20px + env(safe-area-inset-bottom))
+    calc(20px + env(safe-area-inset-left));
+}
+
+.delete-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.delete-modal__card {
+  position: relative;
+  width: min(380px, 100%);
+  padding: 28px 24px;
+  border-radius: 18px;
+  background: var(--bg, #0d0f1a);
+  border: 1px solid rgba(255, 58, 110, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: deleteModalIn 200ms ease both;
+}
+
+@keyframes deleteModalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.delete-modal__title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #ff3a6e;
+  margin: 0;
+}
+
+.delete-modal__desc {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.delete-modal__desc strong {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.delete-modal__export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 225, 255, 0.2);
+  background: rgba(0, 225, 255, 0.04);
+  color: #00e1ff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+
+.delete-modal__export:hover {
+  background: rgba(0, 225, 255, 0.1);
+}
+
+.delete-modal__label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.delete-modal__label strong {
+  color: #ff3a6e;
+}
+
+.delete-modal__input {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 58, 110, 0.2);
+  background: rgba(255, 58, 110, 0.04);
+  color: var(--text, #eef0ff);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  outline: none;
+  transition: border-color 200ms ease;
+}
+
+.delete-modal__input:focus {
+  border-color: rgba(255, 58, 110, 0.5);
+}
+
+.delete-modal__btn {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 58, 110, 0.15);
+  color: rgba(255, 58, 110, 0.4);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: not-allowed;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.delete-modal__btn:not(:disabled) {
+  background: #ff3a6e;
+  color: #fff;
+  cursor: pointer;
+}
+
+.delete-modal__btn:not(:disabled):hover {
+  background: #e0325f;
+}
+
+/* Étape 85 — passport responsive breakpoints (phone / tablet / desktop) */

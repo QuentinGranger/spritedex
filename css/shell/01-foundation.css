@@ -1,0 +1,123 @@
+/* ── Shell ── */
+.app-shell {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  padding:
+    calc(24px + env(safe-area-inset-top))
+    calc(18px + env(safe-area-inset-right))
+    calc(48px + env(safe-area-inset-bottom))
+    calc(18px + env(safe-area-inset-left));
+}
+
+/* ── Shared flex layouts ── */
+.topbar, .hero-card, .tabs, .deck-toolbar,
+.filters, .bulk-actions, .section-heading,
+.status-row, .dialog-actions {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Topbar ── */
+.topbar {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 100;
+}
+
+.topbar-logo {
+  height: 44px;
+  width: auto;
+  max-width: min(220px, 42vw);
+  display: block;
+  object-fit: contain;
+}
+
+/* ── Sync status bar ── */
+.sync-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .025);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.76rem;
+  margin-bottom: 12px;
+  transition: background 220ms ease, border-color 220ms ease, color 220ms ease;
+}
+
+.sync-bar--local {
+  color: rgba(190, 203, 255, .9);
+  border-color: rgba(141, 124, 255, .22);
+  background: rgba(141, 124, 255, .07);
+}
+
+.sync-bar--synced {
+  background: rgba(0, 255, 135, 0.06);
+  border: 1px solid rgba(0, 255, 135, 0.15);
+  color: rgba(0, 255, 135, 0.7);
+}
+
+.sync-bar--pending {
+  background: rgba(255, 190, 50, 0.06);
+  border: 1px solid rgba(255, 190, 50, 0.2);
+  color: rgba(255, 190, 50, 0.8);
+}
+
+.sync-bar--error {
+  background: rgba(255, 58, 110, 0.06);
+  border: 1px solid rgba(255, 58, 110, 0.2);
+  color: rgba(255, 58, 110, 0.8);
+}
+
+.sync-bar--offline {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.sync-bar__icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  line-height: 1;
+  opacity: .9;
+}
+
+.sync-bar__copy { display: grid; min-width: 0; gap: 1px; }
+.sync-bar__text { font-size: .78rem; letter-spacing: .035em; }
+.sync-bar__detail { overflow: hidden; color: var(--muted); font-family: var(--font-body); font-size: .67rem; font-weight: 600; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.sync-bar__retry {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 5px 8px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
+  font: 800 .66rem var(--font-body);
+  cursor: pointer;
+}
+.sync-bar__retry:hover, .sync-bar__retry:focus-visible { background: rgba(255,255,255,.08); outline: none; }
+
+/* ── Shared Buttons ── */
+.icon-button, .ghost-button, .tab, .action {
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 14px;
+  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}

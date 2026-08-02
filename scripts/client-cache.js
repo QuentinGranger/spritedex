@@ -4,6 +4,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { renderIndexPage } = require("./index-page");
 
 const CACHE_TOKEN = "__SPRITE_INDEX_CACHE_VERSION__";
 const ASSETS_TOKEN = "__SPRITE_INDEX_STATIC_ASSETS__";
@@ -16,7 +17,7 @@ function localAssetPath(value) {
 }
 
 function clientAssetPaths(rootDir) {
-  const index = fs.readFileSync(path.join(rootDir, "index.html"), "utf8");
+  const index = renderIndexPage(rootDir);
   const assets = new Set(["/", "/index.html", "/404.html", "/manifest.json", "/sw.js"]);
   for (const match of index.matchAll(/\b(?:src|href)=["']([^"']+)["']/gi)) {
     const asset = localAssetPath(match[1]);
@@ -43,7 +44,9 @@ function cacheVersion(rootDir, assets = clientAssetPaths(rootDir)) {
   for (const asset of assets) {
     digest.update(`\0${asset}\0`);
     if (asset === "/") continue;
-    digest.update(fs.readFileSync(path.join(rootDir, asset)));
+    digest.update(asset === "/index.html"
+      ? renderIndexPage(rootDir)
+      : fs.readFileSync(path.join(rootDir, asset)));
   }
   return `sprite-index-${digest.digest("hex").slice(0, 16)}`;
 }

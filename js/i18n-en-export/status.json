@@ -1,0 +1,11 @@
+{
+  "status.owned": "Owned",
+  "status.missing": "Missing",
+  "status.priority": "Priority",
+  "status.unsure": "To check",
+  "status.unknown": "Unknown",
+  "status.unavailable": "Unavailable",
+  "status.spotted": "Spotted",
+  "status.new": "Unclassified",
+  "status.row": "Status: {status}"
+}

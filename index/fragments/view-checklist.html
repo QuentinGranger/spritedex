@@ -1,0 +1,52 @@
+        <section class="view" id="view-checklist" data-i18n-aria-label="checklist.aria" aria-label="Checklist de collection">
+          <div class="checklist-controls">
+            <div class="checklist-toolbar">
+            <div class="search-box">
+              <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="searchInput" type="search" data-i18n-placeholder="checklist.search" placeholder="Rechercher sprite, variante, rareté..." data-i18n-aria-label="checklist.searchAria" aria-label="Rechercher dans la checklist" aria-controls="checklistList" aria-describedby="checklistSearchHint" autocomplete="off" />
+              <span class="sr-only" id="checklistSearchHint" data-i18n="checklist.searchHint">Appuyez sur Échap pour effacer la recherche.</span>
+            </div>
+            <div class="filter-chips-bar" id="filterChipsBar" role="group" data-i18n-aria-label="checklist.filtersAria" aria-label="Filtrer la checklist">
+              <button type="button" class="filter-chip active" data-filter="all" data-i18n="filter.all" aria-pressed="true">Tous</button>
+              <button type="button" class="filter-chip" data-filter="owned" data-i18n="filter.owned" aria-pressed="false">Possédés</button>
+              <button type="button" class="filter-chip" data-filter="missing" data-i18n="filter.missing" aria-pressed="false">Manquants</button>
+              <button type="button" class="filter-chip" data-filter="priority" data-i18n="filter.priority" aria-pressed="false">Prioritaires</button>
+              <button type="button" class="filter-chip" data-filter="unsure" data-i18n="filter.unsure" aria-pressed="false">À vérifier</button>
+              <button type="button" class="filter-chip" data-filter="spotted" data-i18n="filter.spotted" aria-pressed="false">Rares vus</button>
+              <button type="button" class="filter-chip" data-filter="unavailable" data-i18n="filter.unavailable" aria-pressed="false">Indispos</button>
+              <button type="button" class="filter-chip" data-filter="complete" data-i18n="filter.complete" aria-pressed="false">100%</button>
+              <button type="button" class="filter-chip" data-filter="incomplete" data-i18n="filter.incomplete" aria-pressed="false">Incomplets</button>
+            </div>
+            <div class="sort-bar">
+              <label class="sort-bar__label" for="checklistSort" data-i18n="sort.label">Tri :</label>
+              <select id="checklistSort" class="sort-bar__select" aria-controls="checklistList">
+                <option value="alpha" data-i18n="sort.alpha">Alphabétique</option>
+                <option value="progress-asc" data-i18n="sort.progressAsc">Moins complété</option>
+                <option value="progress-desc" data-i18n="sort.progressDesc">Plus complété</option>
+                <option value="rarity-desc" data-i18n="sort.rarityDesc">Plus rare d'abord</option>
+                <option value="rarity-asc" data-i18n="sort.rarityAsc">Plus commun d'abord</option>
+                <option value="priority" data-i18n="sort.priority">Par priorité</option>
+                <option value="recent" data-i18n="sort.recent">Par nouveauté</option>
+              </select>
+            </div>
+            </div>
+            <div class="bulk-actions">
+            <button type="button" class="ghost-button" id="exportData" data-i18n-aria-label="checklist.exportAria" aria-label="Exporter la checklist">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span data-i18n="common.export">Exporter</span>
+            </button>
+            <label class="ghost-button file-label">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span data-i18n="common.import">Importer</span>
+              <input id="importData" type="file" accept="application/json" hidden />
+            </label>
+            <button type="button" class="ghost-button danger-text" id="resetData" data-i18n-aria-label="checklist.resetAria" aria-label="Réinitialiser toutes les données de la checklist">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span data-i18n="common.reset">Reset</span>
+            </button>
+            </div>
+          </div>
+          <p class="sr-only" id="checklistResultsStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div class="checklist-list" id="checklistList" aria-describedby="checklistResultsStatus"></div>
+        </section>
+

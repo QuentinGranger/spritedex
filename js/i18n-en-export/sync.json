@@ -1,0 +1,17 @@
+{
+  "sync.offline": "Offline — your changes are saved locally",
+  "sync.error": "Sync error",
+  "sync.pendingOne": "1 change pending",
+  "sync.pendingMany": "{count} changes pending",
+  "sync.synced": "Synced",
+  "sync.local": "Saved locally",
+  "sync.localDetail": "On this device · sign in to sync it",
+  "sync.pending": "Sync pending",
+  "sync.offlineDetail": "Your next changes will remain saved here",
+  "sync.offlineQueued": "{count} change(s) saved · sent when back online",
+  "sync.errorDetail": "Retry or check your connection",
+  "sync.errorQueued": "{count} change(s) safely pending",
+  "sync.lastSync": "Last synced at {time}",
+  "sync.syncedDetail": "Your collection is up to date",
+  "sync.retry": "Retry"
+}

@@ -1,0 +1,186 @@
+{
+  "id": "sprite_punk",
+  "slug": "punk",
+  "name": "Punk Sprite",
+  "officialName": "Punk Sprite",
+  "rarity": "legendary",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "random_nothing_or_infinite_reward",
+    "descriptionEn": "Possibly nothing... or infinitely something.",
+    "descriptionFr": "Peut ne rien accorder… ou accorder quelque chose d’infini.",
+    "levelValues": null,
+    "unit": null,
+    "notes": "La formulation publique reste volontairement ambiguë; ne pas afficher une probabilité inventée."
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found rarely in Sprite Chests",
+    "descriptionFr": "Rarement dans les coffres d’esprits",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 5000,
+  "variantIds": [
+    "sprite_punk",
+    "sprite_punk_gold",
+    "sprite_punk_gummy",
+    "sprite_punk_galaxy",
+    "sprite_punk_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_punk",
+      "spriteId": "sprite_punk",
+      "variantType": "base",
+      "name": "Punk Sprite",
+      "slug": "punk",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 5000,
+      "spriteChestDropChancePct": 6.98,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/punk/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_punk_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_punk_gold",
+      "spriteId": "sprite_punk",
+      "variantType": "gold",
+      "name": "Gold Punk Sprite",
+      "slug": "punk-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.31,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/punk/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_punk_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_punk_gummy",
+      "spriteId": "sprite_punk",
+      "variantType": "gummy",
+      "name": "Gummy Punk Sprite",
+      "slug": "punk-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.23,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/punk/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_punk_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_punk_galaxy",
+      "spriteId": "sprite_punk",
+      "variantType": "galaxy",
+      "name": "Galaxy Punk Sprite",
+      "slug": "punk-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.12,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/punk/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_punk_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_punk_cube",
+      "spriteId": "sprite_punk",
+      "variantType": "cube",
+      "name": "Cube Punk Sprite",
+      "slug": "punk-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 6750,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/punk/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_punk_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

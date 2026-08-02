@@ -5,7 +5,10 @@ const { cacheVersion, clientAssetPaths, renderServiceWorker } = require("../scri
 const root = path.join(__dirname, "..");
 const assets = clientAssetPaths(root);
 const worker = renderServiceWorker(root);
-const eventSource = require("node:fs").readFileSync(path.join(root, "js", "events.js"), "utf8");
+const eventSource = require("node:fs").readdirSync(path.join(root, "js", "events"))
+  .filter((file) => file.endsWith(".js"))
+  .map((file) => require("node:fs").readFileSync(path.join(root, "js", "events", file), "utf8"))
+  .join("\n");
 
 assert.ok(assets.includes("/css/home.css"), "le shell CSS doit participer à l'empreinte");
 assert.ok(assets.includes("/js/farm-plan.js"), "le shell JS doit participer à l'empreinte");

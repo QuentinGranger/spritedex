@@ -1,0 +1,17 @@
+{
+  "sync.offline": "Offline: uw wijzigingen worden lokaal opgeslagen",
+  "sync.error": "Synchronisatiefout",
+  "sync.pendingOne": "1 wijziging in behandeling",
+  "sync.pendingMany": "{count} wijzigingen in behandeling",
+  "sync.synced": "Gesynchroniseerd",
+  "sync.local": "Lokaal opgeslagen",
+  "sync.localDetail": "Meld u op dit apparaat aan om het te synchroniseren",
+  "sync.pending": "Synchronisatie in behandeling",
+  "sync.offlineDetail": "Uw volgende wijzigingen blijven hier opgeslagen",
+  "sync.offlineQueued": "{count} wijziging(en) opgeslagen · verzonden wanneer je weer online bent",
+  "sync.errorDetail": "Probeer het opnieuw of controleer uw verbinding",
+  "sync.errorQueued": "{count} wijziging(en) veilig in behandeling",
+  "sync.lastSync": "Laatst gesynchroniseerd op {time}",
+  "sync.syncedDetail": "Uw collectie is up-to-date",
+  "sync.retry": "Opnieuw proberen"
+}

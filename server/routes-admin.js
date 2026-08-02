@@ -31,6 +31,7 @@ const {
   setAdminOperatorActive
 } = require("./admin-access");
 const { writeAdminAudit } = require("./admin-audit");
+const { renderAdminPage } = require("./admin-page");
 
 const ROOT_DIR = path.join(__dirname, "..");
 if (process.env.NODE_ENV === "production" && !isAdminMfaConfigured()) {
@@ -362,7 +363,7 @@ app.get("/admin/access", (req, res) => {
 
 app.get("/admin", requireAdminPage, (req, res) => {
   noStore(res);
-  res.sendFile(path.join(ROOT_DIR, "admin.html"));
+  res.type("html").send(renderAdminPage());
 });
 
 module.exports = { requireAdminApi, requireAdminPage, requireAdminCapability, requireAdminStepUp };

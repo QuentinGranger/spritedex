@@ -1,0 +1,41 @@
+    <dialog id="detailDialog">
+      <form method="dialog" class="dialog-card">
+        <button class="close-button" value="cancel" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button>
+        <div class="sprite-avatar dialog-avatar" id="dialogAvatar">💧</div>
+        <p class="rarity-pill" id="dialogRarity">Rare</p>
+        <h2 id="dialogTitle">Sprite</h2>
+        <p class="variant-name" id="dialogVariant" data-i18n="dialog.variantPlaceholder">Variante</p>
+        <p class="effect" id="dialogEffect">Effet</p>
+        <div id="dialogCommunityStats" class="sg-community-mount"></div>
+        <div class="dialog-priority" id="dialogPriorityBar">
+          <span class="dialog-priority__label" data-i18n="dialog.farmPriority">Priorité de farm :</span>
+          <div class="dialog-priority__chips">
+            <button type="button" class="prio-chip" data-prio="urgent" data-i18n="prio.urgent">Urgent</button>
+            <button type="button" class="prio-chip" data-prio="important" data-i18n="prio.important">Important</button>
+            <button type="button" class="prio-chip" data-prio="medium" data-i18n="prio.medium">Moyen</button>
+            <button type="button" class="prio-chip" data-prio="low" data-i18n="prio.low">Faible</button>
+            <button type="button" class="prio-chip" data-prio="ignored" data-i18n="prio.ignored">Ignoré</button>
+          </div>
+        </div>
+        <label class="note-label">
+          <span data-i18n="dialog.note">Note perso</span>
+          <textarea id="dialogNote" rows="4" data-i18n-placeholder="dialog.notePlaceholder" placeholder="Ex : à farmer samedi, trade avec un pote…"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="ghost-button" id="dialogOwned" data-i18n="status.owned">Possédé</button>
+          <button type="button" class="ghost-button" id="dialogMissing" data-i18n="status.missing">Manquant</button>
+          <button type="button" class="ghost-button" id="dialogPriority" data-i18n="swipe.priority">Priorité</button>
+          <button type="button" class="ghost-button" id="dialogUnsure" data-i18n="status.unsure">À vérifier</button>
+          <button type="button" class="ghost-button" id="dialogUnavailable" data-i18n="filter.unavailable">Indispo</button>
+          <button type="button" class="ghost-button" id="dialogSpotted" data-i18n="dialog.spotted">Rare vu</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="spriteDetailDialog" class="sprite-detail-dialog">
+      <form method="dialog" class="sprite-detail">
+        <button class="close-button" value="cancel" data-i18n-aria-label="dialog.close" aria-label="Fermer">×</button>
+        <div class="sprite-detail__content" id="spriteDetailContent"></div>
+      </form>
+    </dialog>
+

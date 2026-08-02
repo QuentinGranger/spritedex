@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Thin orchestrator. All application logic lives in ./server/*.
 require("dotenv").config();
+require("./src/shared/config/register-path-alias").installSourceAlias();
 
 const processRole = (process.env.PROCESS_ROLE || "all").trim().toLowerCase();
 if (!["all", "web", "worker"].includes(processRole)) {

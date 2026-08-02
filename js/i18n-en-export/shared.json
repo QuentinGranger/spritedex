@@ -1,0 +1,11 @@
+{
+  "shared.defaultPlayer": "Player",
+  "shared.subtitle": "Shared collection · read only",
+  "shared.byRarity": "By rarity",
+  "shared.ownedSprites": "Sprites owned ({count})",
+  "shared.empty": "No sprites owned yet.",
+  "shared.openApp": "Open SPRITE-INDEX",
+  "shared.errorTitle": "Link unavailable",
+  "shared.errorBody": "This sharing link is invalid or has been revoked by its owner.",
+  "shared.disclaimerShort": "SPRITE-INDEX is an unofficial app. Not affiliated with Epic Games. Fortnite is a trademark of Epic Games."
+}

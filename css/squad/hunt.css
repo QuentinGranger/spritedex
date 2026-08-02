@@ -1,0 +1,151 @@
+/* ── Hunt / "À farmer" view ── */
+.hunt-section {
+  margin-bottom: 16px;
+}
+
+.hunt-section__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+
+.hunt-section__header--nobody {
+  background: rgba(255, 58, 110, 0.06);
+  border: 1px solid rgba(255, 58, 110, 0.15);
+}
+
+.hunt-section__header--partial {
+  background: rgba(255, 204, 0, 0.06);
+  border: 1px solid rgba(255, 204, 0, 0.15);
+}
+
+.hunt-section__header--done {
+  background: rgba(0, 255, 135, 0.06);
+  border: 1px solid rgba(0, 255, 135, 0.15);
+}
+
+.hunt-section__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.hunt-section__header--nobody .hunt-section__icon { color: #ff3a6e; }
+.hunt-section__header--partial .hunt-section__icon { color: #ffcc00; }
+.hunt-section__header--done .hunt-section__icon { color: #00ff87; }
+
+.hunt-section__title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.95rem;
+  margin: 0 0 2px;
+}
+
+.hunt-section__sub {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.hunt-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.hunt-list__sprite {
+  padding: 8px 12px 4px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: var(--text);
+  border-top: 1px solid var(--line);
+}
+
+.hunt-list__sprite:first-child {
+  border-top: none;
+}
+
+.hunt-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px 6px 24px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.hunt-list__item:last-child {
+  border-bottom: none;
+}
+
+.hunt-list__variant {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hunt-prio {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffcc00;
+  background: rgba(255, 204, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 204, 0, 0.2);
+  white-space: nowrap;
+}
+
+.hunt-owners {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #00ff87;
+  background: rgba(0, 255, 135, 0.08);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 135, 0.18);
+  white-space: nowrap;
+}
+
+.hunt-list__item--done {
+  opacity: 0.45;
+}
+
+.hunt-list--collapsed {
+  display: none;
+}
+
+.hunt-section__toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.hunt-section__toggle:hover {
+  filter: brightness(1.15);
+}
+
+.hunt-section__chevron {
+  margin-left: auto;
+  font-size: 1.2rem;
+  font-weight: 700;
+  transition: transform 200ms ease;
+  color: var(--muted);
+}
+
+.hunt-section--collapsed .hunt-section__chevron {
+  transform: rotate(0deg);
+}
+
+.hunt-section:not(.hunt-section--collapsed) .hunt-section__chevron {
+  transform: rotate(90deg);
+}
+
+.hunt-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 20px 0;
+}
+

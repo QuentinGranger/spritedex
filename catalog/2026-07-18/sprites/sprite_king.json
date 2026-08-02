@@ -1,0 +1,193 @@
+{
+  "id": "sprite_king",
+  "slug": "king",
+  "name": "King Sprite",
+  "officialName": "King Sprite",
+  "rarity": "epic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "pickaxe_bonus_damage",
+    "descriptionEn": "Makes the Pickaxe deal more damage.",
+    "descriptionFr": "Augmente les dégâts infligés avec la pioche.",
+    "levelValues": [
+      30,
+      40,
+      60,
+      80,
+      120
+    ],
+    "unit": "bonus_damage"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found rarely in Sprite Chests",
+    "descriptionFr": "Rarement dans les coffres d’esprits",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 3000,
+  "variantIds": [
+    "sprite_king",
+    "sprite_king_gold",
+    "sprite_king_gummy",
+    "sprite_king_galaxy",
+    "sprite_king_holofoil"
+  ],
+  "variants": [
+    {
+      "id": "sprite_king",
+      "spriteId": "sprite_king",
+      "variantType": "base",
+      "name": "King Sprite",
+      "slug": "king",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 3000,
+      "spriteChestDropChancePct": 9,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/king/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_king_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_king_gold",
+      "spriteId": "sprite_king",
+      "variantType": "gold",
+      "name": "Gold King Sprite",
+      "slug": "king-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.4,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/king/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_king_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_king_gummy",
+      "spriteId": "sprite_king",
+      "variantType": "gummy",
+      "name": "Gummy King Sprite",
+      "slug": "king-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.3,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/king/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_king_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_king_galaxy",
+      "spriteId": "sprite_king",
+      "variantType": "galaxy",
+      "name": "Galaxy King Sprite",
+      "slug": "king-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.16,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/king/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_king_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_king_holofoil",
+      "spriteId": "sprite_king",
+      "variantType": "holofoil",
+      "name": "Holofoil King Sprite",
+      "slug": "king-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.06,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/king/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_king_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_king_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

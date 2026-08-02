@@ -1,0 +1,15 @@
+{
+  "common.account": "Mijn account",
+  "common.theme": "Thema wisselen",
+  "common.export": "Export",
+  "common.import": "Importeren",
+  "common.reset": "Resetten",
+  "common.details": "Details",
+  "common.shuffle": "Shuffle",
+  "common.expand": "Uitklappen",
+  "common.collapse": "Inklappen",
+  "common.actions": "Acties",
+  "common.cancel": "Annuleren",
+  "common.networkError": "Netwerkfout.",
+  "common.error": "Fout"
+}

@@ -3,19 +3,53 @@
 const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
+const { renderAdminPage } = require("../server/admin-page");
 
 const root = path.join(__dirname, "..");
-const html = fs.readFileSync(path.join(root, "admin.html"), "utf8");
-const client = fs.readFileSync(path.join(root, "js", "admin.js"), "utf8");
-const css = fs.readFileSync(path.join(root, "css", "admin.css"), "utf8");
-const routes = fs.readFileSync(path.join(root, "server", "routes-admin-operations.js"), "utf8");
+const html = renderAdminPage();
+const adminClientScripts = [...html.matchAll(/<script src="\/js\/(admin(?:\/[^\"]+)?)\.js"><\/script>/g)]
+  .map((match) => path.join(root, "js", `${match[1]}.js`));
+assert.ok(adminClientScripts.length > 1, "the backoffice client must be split into focused scripts");
+const client = adminClientScripts.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+const adminCssDirectory = path.join(root, "css", "admin");
+const adminCssFragments = fs.readdirSync(adminCssDirectory)
+  .filter((file) => file.endsWith(".css"))
+  .sort();
+assert.ok(adminCssFragments.length > 1, "the backoffice styles must be split into focused stylesheets");
+const css = [
+  fs.readFileSync(path.join(root, "css", "admin.css"), "utf8"),
+  ...adminCssFragments.map((file) => fs.readFileSync(path.join(adminCssDirectory, file), "utf8"))
+].join("\n");
+const adminOperationsDir = path.join(root, "server", "admin-operations");
+const routes = [
+  fs.readFileSync(path.join(root, "server", "routes-admin-operations.js"), "utf8"),
+  ...fs.readdirSync(adminOperationsDir)
+    .filter((file) => file.endsWith(".js"))
+    .sort()
+    .map((file) => fs.readFileSync(path.join(adminOperationsDir, file), "utf8"))
+].join("\n");
 const profileRoutes = fs.readFileSync(path.join(root, "server", "routes-profile.js"), "utf8");
 const authRoutes = fs.readFileSync(path.join(root, "server", "routes-auth.js"), "utf8");
 const adminAccess = fs.readFileSync(path.join(root, "server", "admin-access.js"), "utf8");
 const adminAudit = fs.readFileSync(path.join(root, "server", "admin-audit.js"), "utf8");
 const graphAdmin = fs.readFileSync(path.join(root, "server", "routes-sprite-graph-admin.js"), "utf8");
-const schema = fs.readFileSync(path.join(root, "server", "schema.js"), "utf8");
-const publicNews = fs.readFileSync(path.join(root, "server", "news.js"), "utf8");
+const schemaDirectory = path.join(root, "server", "schema");
+const schema = [
+  fs.readFileSync(path.join(root, "server", "schema.js"), "utf8"),
+  ...fs.readdirSync(schemaDirectory)
+    .filter((file) => file.endsWith(".js"))
+    .sort()
+    .map((file) => fs.readFileSync(path.join(schemaDirectory, file), "utf8"))
+].join("\n");
+const newsDirectory = path.join(root, "server", "news");
+const newsModules = fs.readdirSync(newsDirectory)
+  .filter((file) => file.endsWith(".js"))
+  .sort();
+assert.ok(newsModules.length > 1, "the news subsystem must be split into focused modules");
+const publicNews = [
+  fs.readFileSync(path.join(root, "server", "news.js"), "utf8"),
+  ...newsModules.map((file) => fs.readFileSync(path.join(newsDirectory, file), "utf8"))
+].join("\n");
 
 for (const tab of ["overview", "players", "catalog", "events", "collections", "social", "notifications", "intelligence", "passports", "privacy"]) {
   assert.match(html, new RegExp(`data-admin-tab="${tab}"`), `missing ${tab} navigation item`);

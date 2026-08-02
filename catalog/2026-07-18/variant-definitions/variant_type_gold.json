@@ -1,0 +1,13 @@
+{
+  "id": "variant_type_gold",
+  "nameEn": "Gold",
+  "nameFr": "Dorée",
+  "extraEffect": {
+    "type": "elimination_xp_multiplier",
+    "value": 3,
+    "unit": "multiplier",
+    "descriptionEn": "Gain 3x bonus XP from eliminations.",
+    "descriptionFr": "Accorde 3 fois plus d’EXP bonus grâce aux éliminations."
+  },
+  "globalStatus": "released"
+}

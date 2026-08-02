@@ -1,0 +1,14 @@
+{
+  "id": "variant_type_cube",
+  "nameEn": "Cube",
+  "nameFr": "Cube",
+  "extraEffect": {
+    "type": "overdrive_in_storm",
+    "descriptionEn": "Gain the Overdrive effect while in the Storm.",
+    "descriptionFr": "Accorde l'effet Overdrive tant que le porteur se trouve dans la tempête.",
+    "condition": "inside_storm",
+    "endsWhen": "leave_storm",
+    "valuesByLevel": null
+  },
+  "globalStatus": "partially_released"
+}

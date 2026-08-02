@@ -1,0 +1,219 @@
+{
+  "id": "sprite_fire",
+  "slug": "fire",
+  "name": "Fire Sprite",
+  "officialName": "Fire Sprite",
+  "rarity": "rare",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "fiery_burst_after_damage",
+    "descriptionEn": "Creates a fiery burst after dealing enough damage to an enemy.",
+    "descriptionFr": "Déclenche une explosion de feu après avoir infligé suffisamment de dégâts.",
+    "levelValues": [
+      150,
+      125,
+      100,
+      75,
+      50
+    ],
+    "unit": "damage_required_to_trigger"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Located near urban areas",
+    "descriptionFr": "Près des zones urbaines",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 100,
+  "variantIds": [
+    "sprite_fire",
+    "sprite_fire_gold",
+    "sprite_fire_gummy",
+    "sprite_fire_galaxy",
+    "sprite_fire_holofoil",
+    "sprite_fire_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_fire",
+      "spriteId": "sprite_fire",
+      "variantType": "base",
+      "name": "Fire Sprite",
+      "slug": "fire",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 100,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fire/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fire_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_fire_gold",
+      "spriteId": "sprite_fire",
+      "variantType": "gold",
+      "name": "Gold Fire Sprite",
+      "slug": "fire-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.75,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fire/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fire_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_fire_gummy",
+      "spriteId": "sprite_fire",
+      "variantType": "gummy",
+      "name": "Gummy Fire Sprite",
+      "slug": "fire-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.62,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fire/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fire_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_fire_galaxy",
+      "spriteId": "sprite_fire",
+      "variantType": "galaxy",
+      "name": "Galaxy Fire Sprite",
+      "slug": "fire-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.5,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fire/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fire_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_fire_holofoil",
+      "spriteId": "sprite_fire",
+      "variantType": "holofoil",
+      "name": "Holofoil Fire Sprite",
+      "slug": "fire-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.25,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fire/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fire_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_fire_cube",
+      "spriteId": "sprite_fire",
+      "variantType": "cube",
+      "name": "Cube Fire Sprite",
+      "slug": "fire-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 2700,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fire/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_fire_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

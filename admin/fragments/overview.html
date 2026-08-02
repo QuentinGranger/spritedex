@@ -1,0 +1,22 @@
+        <section class="admin-tab is-active" data-admin-panel="overview">
+          <div class="admin-kpis admin-kpis--overview" id="overviewKpis"></div>
+          <div class="admin-grid admin-grid--dashboard">
+            <section class="admin-panel admin-panel--wide">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">À TRAITER</p><h2 data-admin-copy="overviewActionTitle">Priorités opérationnelles</h2></div></header>
+              <div class="admin-action-list" id="overviewActions"></div>
+            </section>
+            <section class="admin-panel admin-panel--wide admin-health-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">SANTÉ RÉELLE</p><h2>Fraîcheur & services</h2><p>Mesures relevées à chaque actualisation, pas des valeurs de démonstration.</p></div><span class="admin-health-panel__stamp" id="overviewHealthStamp"></span></header>
+              <div class="admin-health-summary" id="overviewHealthSummary" aria-live="polite"></div>
+              <div class="admin-health-cards" id="overviewHealthCards" aria-live="polite"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">TEMPS RÉEL</p><h2 data-admin-copy="overviewRealtime">Connexions en direct</h2></div></header>
+              <div class="admin-health" id="overviewRealtime"></div>
+            </section>
+            <section class="admin-panel">
+              <header class="admin-panel__header"><div><p class="admin-eyebrow">INFRASTRUCTURE</p><h2 data-admin-copy="overviewInfrastructure">API & base de données</h2></div></header>
+              <div class="admin-health" id="overviewInfrastructure"></div>
+            </section>
+          </div>
+        </section>

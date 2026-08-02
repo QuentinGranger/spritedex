@@ -1,0 +1,13 @@
+{
+  "id": "variant_type_holofoil",
+  "nameEn": "Holofoil",
+  "nameFr": "Iridescente",
+  "extraEffect": {
+    "type": "rare_sprite_variant_find_chance",
+    "value": 5,
+    "unit": "percent",
+    "descriptionEn": "Gives the squad a 5% chance to find rare Sprite variants while looting chests.",
+    "descriptionFr": "Donne à l’escouade 5 % de chance de trouver des variantes rares d’esprits en fouillant des coffres."
+  },
+  "globalStatus": "partially_released"
+}

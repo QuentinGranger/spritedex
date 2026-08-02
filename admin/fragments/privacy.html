@@ -1,0 +1,83 @@
+        <section class="admin-tab" data-admin-panel="privacy" hidden>
+          <div class="admin-kpis" id="privacyKpis"></div>
+          <div class="admin-section-toolbar">
+            <div class="admin-search"><span aria-hidden="true">⌕</span><input id="privacyExportSearch" type="search" placeholder="Export : username ou #id" data-admin-placeholder="privacyExportSearch" /></div>
+            <select class="admin-select" id="privacyDeletionFilter">
+              <option value="all">Toute la file</option>
+              <option value="ready">Prêts à purger</option>
+              <option value="pending">En rétention</option>
+            </select>
+            <button class="admin-button" id="privacyExportButton" type="button" data-admin-copy="exportData" data-requires-cap="privacy.export">Exporter les données</button>
+            <button class="admin-button admin-button--quiet" id="privacyPurgeReadyButton" type="button" data-admin-copy="purgeReady" data-requires-cap="privacy.purge">Purger les comptes prêts</button>
+            <button class="admin-button admin-button--quiet" id="privacyRevokeLinksButton" type="button" data-admin-copy="revokeShareLinks" data-requires-cap="privacy.revoke_links">Révoquer les liens actifs</button>
+          </div>
+          <section class="admin-panel admin-panel--flush admin-audit-panel" style="margin-bottom:14px">
+            <header class="admin-panel__header admin-panel__header--padded admin-audit-panel__header">
+              <div><p class="admin-eyebrow">JOURNAL</p><h2 data-admin-copy="auditTitle">Actions administratives</h2><p>Chaque intervention est datée, attribuée et conserve sa justification. Les détails avant/après sont disponibles sans exposer de secrets.</p></div>
+              <button class="admin-button admin-button--quiet" id="auditExportButton" type="button">Exporter le journal</button>
+            </header>
+            <div class="admin-audit-ranges" role="group" aria-label="Période rapide">
+              <span>Lecture rapide</span>
+              <button class="is-active" type="button" data-audit-range="all">Tout</button>
+              <button type="button" data-audit-range="today">Aujourd’hui</button>
+              <button type="button" data-audit-range="7d">7 jours</button>
+              <button type="button" data-audit-range="30d">30 jours</button>
+            </div>
+            <div class="admin-audit-toolbar">
+              <div class="admin-search"><span aria-hidden="true">⌕</span><input id="auditSearch" type="search" placeholder="Rechercher une action, cible ou justification" /></div>
+              <select class="admin-select" id="auditActionFilter"><option value="">Toutes les actions</option></select>
+              <select class="admin-select" id="auditTargetFilter"><option value="">Toutes les cibles</option></select>
+              <input class="admin-date-input" id="auditFrom" type="date" aria-label="À partir du" />
+              <input class="admin-date-input" id="auditTo" type="date" aria-label="Jusqu’au" />
+              <button class="admin-button admin-button--quiet" id="auditResetButton" type="button">Réinitialiser</button>
+            </div>
+            <div class="admin-audit-meta"><span id="auditMeta">—</span><span id="auditPulse">—</span><span>Les exports sont limités à 5 000 lignes et protégés contre les formules de tableur.</span></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-audit-table"><thead><tr><th>Acteur</th><th>Action</th><th>Cible</th><th>Justification</th><th>Modification</th><th>Date</th><th></th></tr></thead><tbody id="auditList"></tbody></table></div>
+            <footer class="admin-audit-pagination" id="auditPagination"></footer>
+          </section>
+          <div class="admin-catalog-layout">
+            <section class="admin-panel admin-panel--flush">
+              <header class="admin-panel__header admin-panel__header--padded">
+                <div>
+                  <p class="admin-eyebrow">SUPPRESSION</p>
+                  <h2 data-admin-copy="deletionQueueTitle">File de purge</h2>
+                  <p data-admin-copy="deletionQueueLead">Soft-delete réversible pendant la rétention, puis purge définitive. Exportez avant toute purge forcée.</p>
+                </div>
+                <span id="privacyDeletionMeta" class="admin-panel__meta"></span>
+              </header>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>Compte</th><th>Demandé</th><th>Volume</th><th>Éligible</th><th></th></tr></thead>
+                  <tbody id="privacyDeletionQueue"></tbody>
+                </table>
+              </div>
+            </section>
+            <div class="admin-privacy-side">
+              <section class="admin-panel">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">CONSENTEMENT</p><h2 data-admin-copy="consentTitle">Versions acceptées</h2></div></header>
+                <div class="admin-status-list" id="privacyConsent"></div>
+                <p class="admin-note" id="adminRolesNote" data-admin-copy="rolesNote">Accès actuel : rôle terminal avec capacités least-privilege et MFA optionnel.</p>
+                <div class="admin-cap-list" id="adminCapabilityList" aria-label="Capacités"></div>
+              </section>
+              <section class="admin-panel">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">SESSIONS</p><h2 data-admin-copy="sessionsTitle">Sessions actives</h2><p data-admin-copy="sessionsLead">Révoquez une session concurrente ou toutes les autres si un lien a fuité.</p></div><button class="admin-button admin-button--quiet" id="revokeOtherSessions" type="button" data-admin-copy="revokeOthers" data-requires-cap="sessions.manage">Révoquer les autres</button></header>
+                <div class="admin-status-list" id="privacySessions"></div>
+              </section>
+              <section class="admin-panel" data-requires-cap="admins.manage">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">ACCÈS NOMINATIFS</p><h2>Comptes administrateur</h2><p>Le secret global est temporaire : créez un compte par personne et faites tourner son secret.</p></div><button class="admin-button admin-button--quiet" id="createAdminOperator" type="button">Ajouter</button></header>
+                <div class="admin-access-posture" id="adminAccessPosture" aria-live="polite"></div>
+                <div class="admin-status-list" id="adminOperators"></div>
+              </section>
+              <section class="admin-panel" data-requires-cap="admins.manage">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">VIGILANCE</p><h2>Alertes de connexion</h2><p>Les changements d’IP ou d’appareil sur un compte nominatif restent visibles ici.</p></div></header>
+                <div class="admin-status-list" id="adminSecurityAlerts"></div>
+              </section>
+              <section class="admin-panel">
+                <header class="admin-panel__header"><div><p class="admin-eyebrow">LIENS</p><h2 data-admin-copy="sharingTitle">Capacités actives</h2></div></header>
+                <div class="admin-status-list" id="privacySharing"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>

@@ -1,0 +1,30 @@
+    <dialog class="admin-dialog" id="privacyRevokeLinksDialog" aria-labelledby="privacyRevokeLinksTitle">
+      <form class="admin-dialog__surface" id="privacyRevokeLinksForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">LIENS</p>
+            <h2 id="privacyRevokeLinksTitle">Révoquer les liens actifs</h2>
+            <p id="privacyRevokeLinksSummary">Passeports partagés, comparaisons et invitations d’amis encore valides.</p>
+          </div>
+          <button class="admin-dialog__close" id="privacyRevokeLinksClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning">
+          Tous les liens de partage encore actifs seront immédiatement invalidés.
+        </div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyRevokeLinksReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyRevokeLinksMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyRevokeLinksError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyRevokeLinksCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--danger" id="privacyRevokeLinksSubmit" type="submit">Révoquer</button>
+        </footer>
+      </form>
+    </dialog>

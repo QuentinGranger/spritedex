@@ -1,0 +1,91 @@
+/* ── Notification settings (Étape 49) ── */
+.notif-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.notif-settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.notif-settings__group:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.notif-settings__group-title {
+  margin: 0 0 8px;
+  font-family: var(--font-heading, "Rajdhani", sans-serif);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent, #00e1ff);
+}
+
+.notif-delivery {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.notif-delivery:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.notif-delivery__title {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text, #eef0ff);
+}
+
+.account-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.notif-settings__quiet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.notif-settings__quiet-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted, #9aa0b5);
+}
+
+.notif-settings__quiet-field .account-row__select {
+  min-width: 96px;
+}
+
+.notif-settings__hint {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--muted, #9aa0b5);
+  line-height: 1.35;
+}
+
+.notif-settings__status {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--muted, #9aa0b5);
+}
+
+.notif-settings__status--ok { color: #86efac; }
+.notif-settings__status--err { color: #fca5a5; }
+

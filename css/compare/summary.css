@@ -1,0 +1,87 @@
+.compare-community {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+.compare-community__title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.compare-community__item {
+  margin: 0 0 10px;
+}
+
+.compare-community__item:last-child {
+  margin-bottom: 0;
+}
+
+.compare-community__personal {
+  margin: 0 0 2px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.compare-community__stat {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.compare-community__note {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.compare-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.compare-kpi {
+  padding: 12px 8px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.compare-kpi--large .compare-kpi__value {
+  font-size: 1.7rem;
+}
+
+.compare-kpi--large .compare-kpi__label {
+  font-size: 0.7rem;
+}
+
+.compare-kpi__value {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.compare-kpi__label {
+  font-size: 0.66rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+

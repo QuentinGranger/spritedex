@@ -1,0 +1,13 @@
+{
+  "filter.all": "All",
+  "filter.owned": "Owned",
+  "filter.missing": "Missing",
+  "filter.priority": "Priority",
+  "filter.unsure": "To check",
+  "filter.spotted": "Spotted",
+  "filter.unavailable": "Unavailable",
+  "filter.complete": "100%",
+  "filter.incomplete": "Incomplete",
+  "filter.unclassified": "Unclassified",
+  "filter.toPlan": "To plan"
+}

@@ -1,0 +1,69 @@
+    <dialog class="admin-dialog admin-dialog--wide" id="newsEditorDialog" aria-labelledby="newsEditorTitle">
+      <form class="admin-dialog__surface" id="newsEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="newsEditorEyebrow">ACTUALITÉ</p>
+            <h2 id="newsEditorTitle">Créer une actualité</h2>
+            <p id="newsEditorSummary">Publier déclenche le fan-out inbox, push et WebSocket.</p>
+          </div>
+          <button class="admin-dialog__close" id="newsEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="newsEditorFanoutWarning" hidden>
+          La publication enverra cette actualité à tous les joueurs (inbox, push et live).
+        </div>
+        <div class="admin-news-editor">
+          <div class="admin-dialog__fields admin-dialog__fields--flush">
+            <label class="admin-field admin-field--wide">
+              <span>Titre</span>
+              <input id="newsEditorTitleInput" name="title" maxlength="300" required />
+            </label>
+            <label class="admin-field admin-field--wide">
+              <span>Description</span>
+              <textarea id="newsEditorDescription" name="description" maxlength="4000" rows="4"></textarea>
+            </label>
+            <label class="admin-field">
+              <span>Image (URL)</span>
+              <input id="newsEditorImage" name="image" maxlength="2000" />
+            </label>
+            <label class="admin-field">
+              <span>Lien</span>
+              <input id="newsEditorLink" name="link" maxlength="2000" />
+            </label>
+            <label class="admin-field">
+              <span>Date</span>
+              <input id="newsEditorNewsDate" name="newsDate" type="datetime-local" />
+            </label>
+            <label class="admin-field">
+              <span>Statut</span>
+              <select id="newsEditorStatus" name="status">
+                <option value="draft">Brouillon</option>
+                <option value="published">Publiée</option>
+                <option value="archived">Archivée</option>
+              </select>
+            </label>
+            <label class="admin-field admin-field--wide">
+              <span>Note éditeur</span>
+              <textarea id="newsEditorNote" name="editorNote" maxlength="1000" rows="2"></textarea>
+            </label>
+            <label class="admin-field admin-field--wide">
+              <span>Justification</span>
+              <textarea id="newsEditorReason" name="reason" maxlength="1000" required></textarea>
+            </label>
+          </div>
+          <aside class="admin-news-preview" aria-live="polite">
+            <p class="admin-eyebrow">APERÇU JOUEUR</p>
+            <div class="admin-news-preview__card">
+              <div class="admin-news-preview__media" id="newsEditorPreviewMedia" hidden></div>
+              <strong id="newsEditorPreviewTitle">Sans titre</strong>
+              <p id="newsEditorPreviewBody">La description apparaîtra ici.</p>
+              <small id="newsEditorPreviewMeta">backoffice</small>
+            </div>
+          </aside>
+        </div>
+        <p class="admin-dialog__error" id="newsEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="newsEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="newsEditorSubmit" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>

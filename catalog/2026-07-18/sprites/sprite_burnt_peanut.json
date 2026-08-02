@@ -1,0 +1,84 @@
+{
+  "id": "sprite_burnt_peanut",
+  "slug": "burnt-peanut",
+  "name": "Burnt Peanut",
+  "officialName": "Burnt Peanut",
+  "rarity": "mythic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "bonus_loot_on_elimination",
+    "descriptionEn": "Eliminated players may drop more loot, sometimes Mythic.",
+    "descriptionFr": "Les joueurs éliminés peuvent laisser davantage de butin, parfois mythique.",
+    "levelValues": [
+      20,
+      30,
+      40,
+      50,
+      60
+    ],
+    "unit": "percent_bonus_loot_chance",
+    "maxLevelExtra": {
+      "mythicLootChancePct": 10
+    }
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found in Relic Chests",
+    "descriptionFr": "Dans les coffres de relique",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 7500,
+  "variantIds": [
+    "sprite_burnt_peanut"
+  ],
+  "variants": [
+    {
+      "id": "sprite_burnt_peanut",
+      "spriteId": "sprite_burnt_peanut",
+      "variantType": "base",
+      "name": "Burnt Peanut",
+      "slug": "burnt-peanut",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 7500,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/burnt_peanut/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_burnt_peanut_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_burnt_peanut_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

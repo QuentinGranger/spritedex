@@ -1,0 +1,25 @@
+{
+  "masteryMonday": {
+    "day": "monday",
+    "effects": [
+      "Legendary and Mythic Sprites appear more often",
+      "Sprites level twice as fast",
+      "2x Sprite Dust from extractions"
+    ]
+  },
+  "thursdayDrop": {
+    "day": "thursday",
+    "effect": "A new Sprite or special variant is added."
+  },
+  "powerHours": {
+    "day": "saturday",
+    "timesEt": [
+      "15:30",
+      "21:30"
+    ],
+    "effect": "Weekly modifiers and increased opportunities to obtain missing variants."
+  },
+  "sourceIds": [
+    "official_weekly_events_2026"
+  ]
+}

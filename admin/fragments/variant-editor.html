@@ -1,0 +1,67 @@
+    <dialog class="admin-dialog" id="variantEditorDialog" aria-labelledby="variantEditorTitle">
+      <form class="admin-dialog__surface" id="variantEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">VARIANTE</p>
+            <h2 id="variantEditorTitle">Modifier la variante</h2>
+            <p id="variantEditorSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="variantEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field">
+            <span>Nom</span>
+            <input id="variantEditorName" name="name" maxlength="100" required />
+          </label>
+          <label class="admin-field">
+            <span>Rareté</span>
+            <input id="variantEditorRarity" name="rarity" maxlength="30" />
+          </label>
+          <label class="admin-field">
+            <span>Statut de sortie</span>
+            <input id="variantEditorReleaseStatus" name="releaseStatus" maxlength="20" />
+          </label>
+          <label class="admin-field">
+            <span>État des données</span>
+            <select id="variantEditorDataStatus" name="dataStatus">
+              <option value="incomplete">incomplete</option>
+              <option value="complete">complete</option>
+              <option value="verified">verified</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Image (chemin / URL)</span>
+            <input id="variantEditorImagePath" name="imagePath" maxlength="2000" />
+          </label>
+          <details class="admin-editor__advanced admin-field--wide">
+            <summary>Champs avancés de la variante</summary>
+            <div class="admin-dialog__fields">
+              <label class="admin-field"><span>Nom officiel</span><input id="variantEditorOfficialName" name="officialName" maxlength="100" /></label>
+              <label class="admin-field"><span>Slug</span><input id="variantEditorSlug" name="slug" maxlength="100" /></label>
+              <label class="admin-field"><span>Image suggérée</span><input id="variantEditorSuggestedImagePath" name="suggestedImagePath" maxlength="2000" /></label>
+              <label class="admin-field"><span>Première observation</span><input id="variantEditorFirstObservedAt" name="firstObservedAt" type="datetime-local" /></label>
+              <label class="admin-field"><span>Coût d’invocation</span><input id="variantEditorSummonCost" name="summonCost" type="number" min="0" /></label>
+              <label class="admin-field"><span>Taux coffre Sprite (%)</span><input id="variantEditorDropChance" name="spriteChestDropChancePct" type="number" min="0" max="100" step="0.01" /></label>
+              <label class="admin-field"><span>Référence effet</span><input id="variantEditorExtraEffectRef" name="extraEffectRef" maxlength="50" /></label>
+              <label class="admin-field admin-field--wide"><span>Effect (JSON)</span><textarea id="variantEditorEffect" name="effect" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Acquisition (JSON)</span><textarea id="variantEditorAcquisition" name="acquisition" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Availability (JSON)</span><textarea id="variantEditorAvailability" name="availability" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Recurrence (JSON)</span><textarea id="variantEditorRecurrence" name="recurrence" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Dates (JSON)</span><textarea id="variantEditorDates" name="dates" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Champs manquants (JSON)</span><textarea id="variantEditorMissingFields" name="missingFields" rows="3"></textarea></label>
+              <label class="admin-field admin-field--wide"><span>Sources (JSON)</span><textarea id="variantEditorSources" name="sources" rows="3"></textarea></label>
+            </div>
+          </details>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="variantEditorReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="variantEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="variantEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="variantEditorSubmit" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>

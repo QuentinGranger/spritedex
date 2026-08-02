@@ -1,0 +1,15 @@
+{
+  "common.account": "My account",
+  "common.theme": "Toggle theme",
+  "common.export": "Export",
+  "common.import": "Import",
+  "common.reset": "Reset",
+  "common.details": "Details",
+  "common.shuffle": "Shuffle",
+  "common.expand": "Expand",
+  "common.collapse": "Collapse",
+  "common.actions": "Actions",
+  "common.cancel": "Cancel",
+  "common.networkError": "Network error.",
+  "common.error": "Error"
+}

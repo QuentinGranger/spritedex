@@ -1,0 +1,11 @@
+{
+  "shared.defaultPlayer": "Speler",
+  "shared.subtitle": "Gedeelde collectie · alleen-lezen",
+  "shared.byRarity": "Door zeldzaamheid",
+  "shared.ownedSprites": "Eigendom van Sprites ({count})",
+  "shared.empty": "Nog geen sprites in bezit.",
+  "shared.openApp": "Open SPRITE-INDEX",
+  "shared.errorTitle": "Link niet beschikbaar",
+  "shared.errorBody": "Deze deellink is ongeldig of is ingetrokken door de eigenaar.",
+  "shared.disclaimerShort": "SPRITE-INDEX is een onofficiële app. Niet gelieerd aan Epic Games. Fortnite is een handelsmerk van Epic Games."
+}

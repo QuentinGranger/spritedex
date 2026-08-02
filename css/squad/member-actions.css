@@ -1,0 +1,76 @@
+/* ── Member chip actions menu ── */
+.squad-chip__menu {
+  margin-left: 2px;
+  padding: 4px 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.squad-chip__menu:hover {
+  color: var(--accent);
+  background: rgba(255,255,255,0.06);
+}
+
+/* ── Member actions dialog ── */
+.member-actions-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.member-actions-dialog .dialog-card {
+  max-width: 340px;
+  width: calc(100% - 32px);
+  margin: auto;
+}
+
+.member-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.member-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.member-action:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.member-action--danger {
+  color: #ff3a6e;
+  border-color: rgba(255, 58, 110, 0.25);
+}
+
+.member-action--danger:hover {
+  background: rgba(255, 58, 110, 0.08);
+}
+
+.member-action__icon {
+  flex: 0 0 22px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.member-action__label {
+  flex: 1;
+  text-align: left;
+}
+

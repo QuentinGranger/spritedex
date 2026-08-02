@@ -1,0 +1,112 @@
+/* ── Recommendations view ── */
+.recommendations-view {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.recommendations-header {
+  margin-bottom: 16px;
+}
+
+.recommendations-title {
+  margin: 0 0 4px;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.recommendations-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.recommendations-section-title {
+  margin: 20px 0 10px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-2);
+}
+
+.recommendation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recommendation-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  transition: border-color 0.15s ease;
+}
+
+.recommendation-card:hover {
+  border-color: var(--accent);
+}
+
+.recommendation-card--highlight {
+  border-color: var(--accent);
+  background: rgba(0, 225, 255, 0.06);
+}
+
+.recommendation-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.recommendation-card__name {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.recommendation-card__badge,
+.recommendation-card__score,
+.recommendation-card__gain {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--line);
+}
+
+.recommendation-card__gain {
+  color: #3ee868;
+  border-color: rgba(62, 232, 104, 0.3);
+}
+
+.recommendation-card__body {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.recommendation-card__body strong {
+  color: var(--text);
+}
+
+.recommendation-rarities {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.8rem;
+}
+
+.recommendation-rarity strong {
+  color: var(--accent-2);
+}
+

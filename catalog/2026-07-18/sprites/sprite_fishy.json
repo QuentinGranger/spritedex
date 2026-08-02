@@ -1,0 +1,211 @@
+{
+  "id": "sprite_fishy",
+  "slug": "fishy",
+  "name": "Fishy Sprite",
+  "officialName": "Fishy Sprite",
+  "rarity": "rare",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.10",
+  "firstObservedAt": "2026-06-25",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "swim_and_damage_movement_speed",
+    "descriptionEn": "Greatly increases swim speed; taking damage briefly increases movement speed.",
+    "descriptionFr": "Augmente fortement la vitesse de nage et accorde brièvement un bonus de déplacement après avoir subi des dégâts.",
+    "levelValues": [
+      {
+        "swimSpeedPct": 25,
+        "movementSpeedPct": 10
+      },
+      {
+        "swimSpeedPct": 50,
+        "movementSpeedPct": 20
+      },
+      {
+        "swimSpeedPct": 100,
+        "movementSpeedPct": 30
+      },
+      {
+        "swimSpeedPct": 150,
+        "movementSpeedPct": 40
+      },
+      {
+        "swimSpeedPct": 200,
+        "movementSpeedPct": 50
+      }
+    ],
+    "unit": "percent"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Spotted near high and mountainous areas",
+    "descriptionFr": "Près des zones élevées et montagneuses",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-25",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 2000,
+  "variantIds": [
+    "sprite_fishy",
+    "sprite_fishy_gold",
+    "sprite_fishy_gummy",
+    "sprite_fishy_galaxy",
+    "sprite_fishy_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_fishy",
+      "spriteId": "sprite_fishy",
+      "variantType": "base",
+      "name": "Fishy Sprite",
+      "slug": "fishy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 2000,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fishy/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fishy_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_fishy_gold",
+      "spriteId": "sprite_fishy",
+      "variantType": "gold",
+      "name": "Gold Fishy Sprite",
+      "slug": "fishy-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.75,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fishy/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fishy_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_fishy_gummy",
+      "spriteId": "sprite_fishy",
+      "variantType": "gummy",
+      "name": "Gummy Fishy Sprite",
+      "slug": "fishy-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.62,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fishy/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fishy_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_fishy_galaxy",
+      "spriteId": "sprite_fishy",
+      "variantType": "galaxy",
+      "name": "Galaxy Fishy Sprite",
+      "slug": "fishy-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 4000,
+      "spriteChestDropChancePct": 0.5,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fishy/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_fishy_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_fishy_cube",
+      "spriteId": "sprite_fishy",
+      "variantType": "cube",
+      "name": "Cube Fishy Sprite",
+      "slug": "fishy-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 2700,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/fishy/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_fishy_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "fortnite_wiki_v4110"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

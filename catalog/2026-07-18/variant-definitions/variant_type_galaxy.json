@@ -1,0 +1,13 @@
+{
+  "id": "variant_type_galaxy",
+  "nameEn": "Galaxy",
+  "nameFr": "Galactique",
+  "extraEffect": {
+    "type": "ammo_pickup_bonus",
+    "value": 30,
+    "unit": "percent",
+    "descriptionEn": "Gain 30% more ammunition when picking it up in the world.",
+    "descriptionFr": "Accorde 30 % de munitions supplémentaires lors du ramassage."
+  },
+  "globalStatus": "released"
+}

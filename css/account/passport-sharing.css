@@ -1,0 +1,320 @@
+/* This dialog must define its own colours: native <dialog> styles otherwise
+   leak a dark foreground onto the dark card in some desktop browsers. */
+.passport-share-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: min(88vh, 780px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: #edf5ff;
+  overflow: visible;
+  max-width: calc(100vw - 16px);
+}
+
+.passport-share-dialog::backdrop {
+  background: rgba(2, 6, 19, 0.74);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.passport-share-dialog__card {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: min(88vh, 780px);
+  padding: 25px 22px 20px;
+  border-color: rgba(0, 225, 255, 0.28);
+  background:
+    radial-gradient(circle at 85% 4%, rgba(141, 124, 255, 0.16), transparent 30%),
+    linear-gradient(165deg, #111a36 0%, #080e23 62%, #060b1b 100%);
+  color: #edf5ff;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-color: rgba(113, 218, 255, 0.45) transparent;
+}
+
+.passport-share-dialog__card > * { min-width: 0; max-width: 100%; }
+
+/* Override the generic dialog shimmer (200% wide): it was counted as overflow
+   by browsers and created a horizontal scrollbar inside this scrollable modal. */
+.passport-share-dialog__card::before {
+  left: 0;
+  width: 100%;
+}
+
+.passport-share-dialog__card h3 {
+  margin: 0;
+  padding-right: 46px;
+  color: #f8fbff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.36rem;
+  font-weight: 800;
+  letter-spacing: 0.025em;
+}
+
+.passport-share-dialog__card .close-button {
+  z-index: 2;
+  color: #eaf7ff;
+  border-color: rgba(182, 226, 255, 0.18);
+  background: rgba(10, 22, 53, 0.88);
+}
+
+.passport-share-dialog__header { margin-bottom: 9px; }
+
+.passport-share-dialog__eyebrow {
+  margin: 0 0 3px;
+  color: #82f3de;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.passport-share-preview {
+  margin: 12px 0 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(180, 220, 255, 0.14);
+  color: #edf5ff;
+  overflow-wrap: anywhere;
+}
+
+.passport-share-preview__intro {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.passport-share-preview__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.passport-share-preview__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.passport-share-preview__sub {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.passport-share-preview__stat {
+  font-weight: 600;
+  color: rgba(242, 249, 255, 0.92);
+}
+
+.passport-share-preview__meta {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.92rem;
+}
+
+.passport-share-preview__url {
+  margin: 12px 0 0;
+  font-size: 0.8rem;
+  color: rgba(158, 197, 255, 0.9);
+  word-break: break-all;
+}
+
+.passport-share-preview__note {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.passport-share-options {
+  border: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+  color: #edf5ff;
+  min-inline-size: 0;
+}
+
+.passport-share-options legend {
+  margin-bottom: 7px;
+  padding: 0;
+  color: rgba(235, 247, 255, 0.9);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+}
+
+.passport-share-option {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  display: grid !important;
+  grid-template-columns: 19px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid rgba(202, 227, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(242, 249, 255, 0.9) !important;
+  font-size: 0.84rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.passport-share-option:hover { border-color: rgba(0, 225, 255, 0.34); background: rgba(0, 225, 255, 0.06); }
+.passport-share-option:has(input:checked) { border-color: rgba(0, 225, 255, 0.32); background: rgba(0, 225, 255, 0.085); }
+.passport-share-option input { width: 18px; height: 18px; margin: 0; accent-color: #16b6ff; cursor: pointer; }
+.passport-share-option input:disabled { opacity: 0.38; cursor: not-allowed; }
+.passport-share-option:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+
+.passport-share-invite {
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid rgba(0, 225, 255, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(110deg, rgba(0, 225, 255, 0.075), rgba(141, 124, 255, 0.06));
+  min-inline-size: 0;
+  box-sizing: border-box;
+}
+
+.passport-share-invite legend {
+  padding: 0 5px;
+  color: #aef6ff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+}
+
+.passport-share-invite label {
+  margin: 0;
+}
+
+.passport-share-invite p {
+  margin: 7px 3px 1px 28px;
+  color: rgba(220, 244, 255, 0.6);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.passport-share-format {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 11px;
+  border: 1px solid rgba(202, 227, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(242, 249, 255, 0.9);
+}
+
+.passport-share-format select {
+  flex: 1;
+  max-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid rgba(190, 224, 255, 0.18);
+  border-radius: 8px;
+  background: #101b3a;
+  color: #f4f9ff;
+  font: inherit;
+}
+
+.passport-share-format select:focus-visible {
+  border-color: rgba(0, 225, 255, 0.7);
+  outline: 2px solid rgba(0, 225, 255, 0.22);
+  outline-offset: 2px;
+}
+
+.passport-share-format select option { color: #f4f9ff; background: #101b3a; }
+
+.passport-share-result {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 10px 12px;
+  margin: 0 0 14px;
+  padding: 10px;
+  border: 1px solid rgba(99, 239, 190, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgba(61, 233, 180, 0.11), rgba(0, 225, 255, 0.07));
+}
+
+.passport-share-result[hidden] { display: none; }
+
+.passport-share-result__preview {
+  width: 74px;
+  height: 74px;
+  overflow: hidden;
+  border: 1px solid rgba(207, 255, 241, 0.24);
+  border-radius: 9px;
+  background: #0b1430;
+}
+
+.passport-share-result__preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.passport-share-result__copy { min-width: 0; align-self: center; }
+.passport-share-result__copy strong { display: block; color: #d9fff1; font-family: 'Rajdhani', sans-serif; font-size: .92rem; letter-spacing: .035em; }
+.passport-share-result__copy p { margin: 3px 0 0; color: rgba(223, 255, 246, .7); font-size: .74rem; line-height: 1.3; }
+
+.passport-share-result__actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.passport-share-result__actions .login-btn { width: 100%; grid-column: 1 / -1; min-height: 38px; padding: 8px; font-size: .76rem; }
+.passport-share-result__actions .ghost-button { min-width: 0; padding: 8px 6px; font-size: .76rem; }
+
+.passport-share-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.passport-share-actions .login-btn { width: auto; min-width: 166px; }
+
+@media (max-width: 480px) {
+  .passport-share-dialog { width: min(100vw - 16px, 440px); }
+  .passport-share-dialog__card { padding: 23px 16px 16px; }
+  .passport-share-actions { display: grid; grid-template-columns: 1fr 1.25fr; }
+  .passport-share-actions .login-btn { min-width: 0; }
+}
+
+.public-passport-view__actions {
+  margin: 12px 0 16px;
+}
+
+.public-passport-view__invite {
+  margin: 2px 0 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(0, 225, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(0, 225, 255, 0.07);
+  color: rgba(220, 251, 255, 0.86);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.passport-dialog__card {
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(86vh, 820px);
+  overflow: auto;
+}
+
+.collector-passport--dialog {
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+

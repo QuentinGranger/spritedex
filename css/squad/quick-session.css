@@ -1,0 +1,121 @@
+/* ── Session rapide view ── */
+.session-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.session-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 204, 0, 0.06);
+  border: 1px solid rgba(255, 204, 0, 0.15);
+}
+
+.session-header__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.session-header__title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 1rem;
+  margin: 0 0 2px;
+}
+
+.session-header__sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.session-block {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.session-block__title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.82rem;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.session-block__title--prio { color: #ffcc00; }
+.session-block__title--nobody { color: #ff3a6e; }
+.session-block__title--check { color: #8d7cff; }
+
+.session-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.session-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 0.82rem;
+}
+
+.session-list__item:last-child {
+  border-bottom: none;
+}
+
+.session-list__name {
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-list__variant {
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+.session-list__meta {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.session-list__meta--missing {
+  color: #ff3a6e;
+  background: rgba(255, 58, 110, 0.1);
+  border: 1px solid rgba(255, 58, 110, 0.2);
+}
+
+.session-list__meta--check {
+  color: #8d7cff;
+  background: rgba(141, 124, 255, 0.1);
+  border: 1px solid rgba(141, 124, 255, 0.2);
+}
+
+.session-list__more {
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--muted);
+  padding: 8px 0 2px;
+  font-style: italic;
+}
+

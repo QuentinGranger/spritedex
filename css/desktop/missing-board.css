@@ -1,0 +1,295 @@
+/* ── Missing: desktop farm board ──────────────────────────────────────────
+   The mobile list intentionally remains a simple vertical feed.  Desktop has
+   enough room to make priorities and variant families scannable as a work
+   board, while retaining the existing server/client filtering and quick-own
+   button markup. */
+@media (min-width: 1024px) {
+  #view-missing {
+    width: min(100%, 1400px);
+    margin-inline: auto;
+  }
+
+  #view-missing > .section-heading {
+    min-height: 74px;
+    margin-bottom: 18px;
+    padding: 4px 0 17px;
+    border-bottom: 1px solid rgba(109, 137, 228, 0.17);
+  }
+
+  #view-missing > .section-heading h2 {
+    font-size: clamp(1.85rem, 2.3vw, 2.55rem);
+    letter-spacing: 0.035em;
+  }
+
+  #view-missing > .section-heading .ghost-button {
+    min-height: 42px;
+    padding-inline: 17px;
+    border-color: rgba(76, 190, 255, 0.38);
+    color: #c9eaff;
+    background: linear-gradient(135deg, rgba(24, 75, 152, 0.36), rgba(23, 29, 86, 0.34));
+  }
+
+  #view-missing > .section-heading .ghost-button:hover {
+    border-color: rgba(90, 224, 255, 0.78);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.16);
+  }
+
+  #view-missing .missing-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
+    padding-bottom: 28px;
+  }
+
+  /* The filter notice and collection readout are navigation landmarks, not
+     cards competing with an individual priority group. */
+  #view-missing .farm-event-filter,
+  #view-missing .farm-summary,
+  #view-missing .empty-state {
+    grid-column: 1 / -1;
+  }
+
+  #view-missing .farm-event-filter {
+    min-height: 56px;
+    margin: 0;
+    padding: 10px 12px 10px 18px;
+    border-color: rgba(83, 213, 255, 0.3);
+    background:
+      linear-gradient(90deg, rgba(0, 201, 255, 0.13), rgba(87, 82, 230, 0.06) 54%, transparent),
+      rgba(8, 19, 53, 0.72);
+    box-shadow: inset 3px 0 0 var(--accent-2);
+  }
+
+  #view-missing .farm-event-filter__text {
+    font-size: 0.86rem;
+    letter-spacing: 0.055em;
+  }
+
+  #view-missing .farm-summary {
+    display: grid;
+    grid-template-columns: minmax(210px, 0.9fr) minmax(260px, 1.45fr) minmax(130px, 0.45fr);
+    align-items: center;
+    gap: 22px;
+    min-height: 116px;
+    margin: 0;
+    padding: 20px 26px;
+    overflow: hidden;
+    text-align: left;
+    border-color: rgba(65, 155, 255, 0.32);
+    background:
+      radial-gradient(circle at 83% 50%, rgba(111, 81, 255, 0.19), transparent 26%),
+      linear-gradient(110deg, rgba(7, 41, 95, 0.92), rgba(14, 20, 64, 0.86) 62%, rgba(27, 17, 76, 0.82));
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px rgba(186, 223, 255, 0.08);
+  }
+
+  #view-missing .farm-summary::before {
+    content: "Objectif collection";
+    position: absolute;
+    top: 15px;
+    left: 26px;
+    color: rgba(108, 215, 255, 0.84);
+    font-family: var(--font-heading);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  #view-missing .farm-summary__count {
+    padding-top: 13px;
+    color: #b9c6ec;
+    font-size: 0.86rem;
+  }
+
+  #view-missing .farm-summary__count strong {
+    display: inline;
+    margin-right: 7px;
+    color: #f3f7ff;
+    font-size: clamp(2.15rem, 3vw, 3rem);
+    line-height: 0.8;
+  }
+
+  #view-missing .farm-summary__bar {
+    width: 100%;
+    max-width: none;
+    height: 12px;
+    margin: 0;
+    border-color: rgba(114, 157, 236, 0.24);
+    background: rgba(0, 6, 27, 0.58);
+    box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.28);
+  }
+
+  #view-missing .farm-summary__fill {
+    background: linear-gradient(90deg, #28b8ff, #27dffc 54%, #34f1a8);
+    box-shadow: 0 0 14px rgba(31, 220, 255, 0.48);
+  }
+
+  #view-missing .farm-summary__pct {
+    margin: 0;
+    color: #d6e0fd;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    text-align: right;
+  }
+
+  #view-missing .farm-section {
+    --farm-accent: #52cfff;
+    position: relative;
+    margin: 0;
+    padding: 15px;
+    overflow: hidden;
+    border: 1px solid rgba(88, 119, 207, 0.24);
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(19, 38, 91, 0.68), rgba(9, 17, 47, 0.72));
+    box-shadow: inset 0 1px rgba(182, 207, 255, 0.045);
+    transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  #view-missing .farm-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 18px;
+    left: 18px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--farm-accent), transparent);
+    opacity: 0.78;
+  }
+
+  #view-missing .farm-section:hover {
+    border-color: color-mix(in srgb, var(--farm-accent) 44%, rgba(103, 128, 215, 0.34));
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14), 0 0 20px color-mix(in srgb, var(--farm-accent) 9%, transparent);
+    transform: translateY(-2px);
+  }
+
+  #view-missing .farm-section--urgent { --farm-accent: #ff627c; }
+  #view-missing .farm-section--important { --farm-accent: #ffd15c; }
+  #view-missing .farm-section--medium { --farm-accent: #f6a44a; }
+  #view-missing .farm-section--low { --farm-accent: #8797c8; }
+  #view-missing .farm-section--spotted { --farm-accent: #eb82ff; }
+  #view-missing .farm-section--gold { --farm-accent: #ffd85a; }
+  #view-missing .farm-section--galaxy { --farm-accent: #86eaff; }
+  #view-missing .farm-section--gem { --farm-accent: #e37aff; }
+  #view-missing .farm-section--holofoil { --farm-accent: #b1baff; }
+  #view-missing .farm-section--rift { --farm-accent: #ff81b2; }
+
+  #view-missing .farm-section__title {
+    min-height: 34px;
+    margin: 0 0 10px;
+    padding: 0 0 9px;
+    border-bottom: 1px solid color-mix(in srgb, var(--farm-accent) 18%, transparent);
+    color: var(--farm-accent);
+    font-size: 0.82rem;
+    letter-spacing: 0.085em;
+  }
+
+  #view-missing .farm-section__count {
+    min-width: 26px;
+    margin-left: auto;
+    padding: 3px 8px;
+    border-color: color-mix(in srgb, var(--farm-accent) 30%, transparent);
+    color: var(--farm-accent);
+    background: color-mix(in srgb, var(--farm-accent) 9%, transparent);
+    text-align: center;
+  }
+
+  #view-missing .farm-section__list { gap: 7px; }
+
+  #view-missing .farm-item {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto 20px 36px;
+    gap: 11px;
+    min-height: 62px;
+    padding: 9px 10px;
+    border-color: rgba(104, 132, 218, 0.13);
+    border-radius: 13px;
+    background: rgba(6, 14, 43, 0.36);
+  }
+
+  #view-missing .farm-item:hover,
+  #view-missing .farm-item:focus-within {
+    border-color: color-mix(in srgb, var(--farm-accent) 34%, rgba(108, 139, 228, 0.26));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--farm-accent) 8%, rgba(16, 30, 78, 0.72)), rgba(9, 18, 50, 0.62));
+  }
+
+  #view-missing .farm-item__avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border-color: color-mix(in srgb, var(--farm-accent) 24%, rgba(255, 255, 255, 0.08));
+    background: radial-gradient(circle at 42% 30%, color-mix(in srgb, var(--farm-accent) 15%, transparent), rgba(5, 11, 38, 0.52));
+  }
+
+  #view-missing .farm-item__info { gap: 3px; }
+  #view-missing .farm-item__name { color: #e7edff; font-size: 0.82rem; }
+  #view-missing .farm-item__variant { color: #9fcfff; font-size: 0.66rem; }
+
+  #view-missing .farm-item__rarity {
+    align-self: center;
+    padding: 4px 7px;
+    border: 1px solid rgba(128, 150, 225, 0.18);
+    border-radius: 999px;
+    color: #aebbe5;
+    background: rgba(24, 36, 84, 0.38);
+    font-size: 0.6rem;
+    text-align: center;
+  }
+
+  #view-missing .farm-item__status {
+    display: grid;
+    align-self: center;
+    place-items: center;
+  }
+
+  #view-missing .farm-item__mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    border-color: rgba(25, 231, 169, 0.3);
+    background: rgba(5, 72, 63, 0.24);
+  }
+
+  #view-missing .farm-item__mark:hover {
+    transform: translateY(-1px);
+    border-color: rgba(29, 245, 177, 0.86);
+    background: rgba(0, 255, 161, 0.16);
+    box-shadow: 0 0 16px rgba(0, 255, 161, 0.18);
+  }
+
+  #view-missing .farm-item__mark:focus-visible,
+  #view-missing > .section-heading .ghost-button:focus-visible,
+  #view-missing .farm-event-filter .ghost-button:focus-visible {
+    outline: 2px solid #60e4ff;
+    outline-offset: 3px;
+  }
+
+  #view-missing .empty-state {
+    margin: 0;
+    padding: 56px 30px;
+    border-color: rgba(86, 144, 232, 0.24);
+    background: radial-gradient(circle at 50% 0, rgba(42, 127, 237, 0.15), transparent 42%), var(--surface);
+  }
+}
+
+/* Compact desktop remains a deliberate single-column task list.  This avoids
+   turning names, rarity pills and the quick-own control into a cramped row. */
+@media (min-width: 1024px) and (max-width: 1239px) {
+  #view-missing .missing-list { grid-template-columns: minmax(0, 1fr); }
+
+  #view-missing .farm-summary {
+    grid-template-columns: minmax(190px, 0.7fr) minmax(200px, 1.3fr) auto;
+    gap: 16px;
+    padding-inline: 21px;
+  }
+
+  #view-missing .farm-summary::before { left: 21px; }
+  #view-missing .farm-item { grid-template-columns: 42px minmax(0, 1fr) auto 20px 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-missing .farm-section,
+  #view-missing .farm-item,
+  #view-missing .farm-item__mark { transition: none; }
+}
+

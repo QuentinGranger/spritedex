@@ -1,0 +1,196 @@
+{
+  "id": "sprite_boss",
+  "slug": "boss",
+  "name": "Boss Sprite",
+  "officialName": "Boss Sprite",
+  "rarity": "legendary",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.10",
+  "firstObservedAt": "2026-06-25",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "maximum_health_and_shield",
+    "descriptionEn": "Increases maximum HP and Shield.",
+    "descriptionFr": "Augmente la vie maximale et le bouclier maximal.",
+    "levelValues": [
+      5,
+      10,
+      15,
+      20,
+      25
+    ],
+    "unit": "bonus_hp_and_shield"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Claimed from defeating a powerful adversary",
+    "descriptionFr": "Obtenu après avoir vaincu un adversaire puissant",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-25",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 5000,
+  "variantIds": [
+    "sprite_boss",
+    "sprite_boss_gold",
+    "sprite_boss_gummy",
+    "sprite_boss_galaxy",
+    "sprite_boss_cube"
+  ],
+  "variants": [
+    {
+      "id": "sprite_boss",
+      "spriteId": "sprite_boss",
+      "variantType": "base",
+      "name": "Boss Sprite",
+      "slug": "boss",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 5000,
+      "spriteChestDropChancePct": 6.98,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/boss/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_boss_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_boss_gold",
+      "spriteId": "sprite_boss",
+      "variantType": "gold",
+      "name": "Gold Boss Sprite",
+      "slug": "boss-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.31,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/boss/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_boss_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_boss_gummy",
+      "spriteId": "sprite_boss",
+      "variantType": "gummy",
+      "name": "Gummy Boss Sprite",
+      "slug": "boss-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.23,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/boss/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_boss_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_boss_galaxy",
+      "spriteId": "sprite_boss",
+      "variantType": "galaxy",
+      "name": "Galaxy Boss Sprite",
+      "slug": "boss-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 10000,
+      "spriteChestDropChancePct": 0.12,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/boss/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_boss_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_boss_cube",
+      "spriteId": "sprite_boss",
+      "variantType": "cube",
+      "name": "Cube Boss Sprite",
+      "slug": "boss-cube",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-23",
+      "summonCostSpriteDust": 6750,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": "variant_type_cube",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/boss/cube.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "not_publicly_disclosed",
+      "introducedInUpdate": "v41.20"
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_boss_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "fortnite_wiki_v4110"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

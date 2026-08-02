@@ -1,0 +1,37 @@
+        <section class="view" id="view-missing" aria-labelledby="missingTitle">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow" data-i18n="missing.eyebrow">Farm list</p>
+              <h2 id="missingTitle" data-i18n="missing.title">Ce qu’il te manque</h2>
+              <p class="section-heading__description" data-i18n="missing.description">Prépare ta prochaine session : priorise, retrouve une variante et marque-la dès qu’elle est obtenue.</p>
+            </div>
+            <button class="ghost-button" id="copyMissing" type="button" data-i18n="missing.copyVisible">Copier la liste visible</button>
+          </div>
+          <section class="farm-planner" id="farmPlanner" aria-live="polite"></section>
+          <div class="missing-controls" data-i18n-aria-label="missing.toolsAria" aria-label="Outils de la liste des manquants">
+            <div class="search-box missing-controls__search">
+              <svg class="search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="missingSearch" type="search" data-i18n-placeholder="missing.search" placeholder="Rechercher un sprite ou une variante…" data-i18n-aria-label="missing.searchAria" aria-label="Rechercher dans les manquants" aria-controls="missingList" aria-describedby="missingSearchHint" autocomplete="off" />
+              <span class="sr-only" id="missingSearchHint" data-i18n="missing.searchHint">Appuyez sur Échap pour effacer la recherche.</span>
+            </div>
+            <div class="missing-filter-chips" id="missingFilterChips" role="group" data-i18n-aria-label="missing.filtersAria" aria-label="Filtrer les manquants">
+              <button class="filter-chip active" type="button" data-missing-filter="all" data-i18n="filter.all" aria-pressed="true">Tous</button>
+              <button class="filter-chip" type="button" data-missing-filter="priority" data-i18n="filter.priority" aria-pressed="false">Prioritaires</button>
+              <button class="filter-chip" type="button" data-missing-filter="spotted" data-i18n="filter.spotted" aria-pressed="false">Rares vus</button>
+              <button class="filter-chip" type="button" data-missing-filter="missing" data-i18n="filter.toPlan" aria-pressed="false">À planifier</button>
+            </div>
+            <label class="sort-bar missing-controls__sort" for="missingSort">
+              <span class="sort-bar__label" data-i18n="sort.labelAlt">Trier :</span>
+              <select id="missingSort" class="sort-bar__select" aria-controls="missingList">
+                <option value="priority" data-i18n="sort.priority">Par priorité</option>
+                <option value="alpha" data-i18n="sort.alpha">Alphabétique</option>
+                <option value="rarity" data-i18n="sort.rarity">Par rareté</option>
+                <option value="variant" data-i18n="sort.variant">Par variante</option>
+              </select>
+            </label>
+            <button class="ghost-button missing-controls__reset" id="clearMissingFilters" type="button" hidden data-i18n="missing.reset">Réinitialiser</button>
+          </div>
+          <p class="sr-only" id="missingResultsStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div class="missing-list" id="missingList" aria-describedby="missingResultsStatus"></div>
+        </section>
+

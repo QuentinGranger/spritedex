@@ -1,0 +1,41 @@
+/* ── Topbar avatar button ── */
+.topbar-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+  padding: 0;
+}
+
+.topbar-avatar:hover {
+  border-color: #00e1ff;
+  box-shadow: 0 0 10px rgba(0, 225, 255, 0.25);
+}
+
+.topbar-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.topbar-avatar__fallback {
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.topbar-avatar:has(.topbar-avatar__img[style*="display:none"]) .topbar-avatar__fallback {
+  display: block;
+}
+
+.topbar-avatar:has(.topbar-avatar__img:not([style*="display:none"])) .topbar-avatar__fallback {
+  display: none;
+}
+

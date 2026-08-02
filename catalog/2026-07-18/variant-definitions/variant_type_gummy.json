@@ -1,0 +1,13 @@
+{
+  "id": "variant_type_gummy",
+  "nameEn": "Gummy",
+  "nameFr": "Gélifiée",
+  "extraEffect": {
+    "type": "sprite_dust_extraction_bonus",
+    "value": 20,
+    "unit": "percent",
+    "descriptionEn": "Gain 20% more Sprite Dust upon extraction.",
+    "descriptionFr": "Accorde 20 % de poussière d’esprit supplémentaire lors de l’extraction."
+  },
+  "globalStatus": "released"
+}

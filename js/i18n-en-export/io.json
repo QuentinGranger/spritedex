@@ -1,0 +1,10 @@
+{
+  "io.exportOk": "JSON export downloaded",
+  "io.importOk": "Import successful",
+  "io.importInvalid": "Import failed: invalid JSON file",
+  "io.copyOk": "List copied",
+  "io.copyUnsupported": "Copy not supported in this browser",
+  "io.missingHeader": "I'm missing {count} variants.\n",
+  "io.highPriorityHeader": "HIGH PRIORITY:",
+  "io.missingVariantHeader": "{variant} MISSING:"
+}

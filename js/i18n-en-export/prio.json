@@ -1,0 +1,7 @@
+{
+  "prio.urgent": "Urgent",
+  "prio.important": "Important",
+  "prio.medium": "Medium",
+  "prio.low": "Low",
+  "prio.ignored": "Ignored"
+}

@@ -11,6 +11,7 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const { renderIndexPage } = require("../scripts/index-page");
 const { pool } = require("../server/db");
 const analytics = require("../analytics");
 const PassportRender = require("../js/passport-render");
@@ -103,12 +104,17 @@ async function main() {
     assert.ok(html.includes('aria-live="polite"'));
     assert.ok(html.includes('role="list"'));
 
-    const css = fs.readFileSync(path.join(__dirname, "../css/account.css"), "utf8");
+    const accountCss = fs.readFileSync(path.join(__dirname, "../css/account.css"), "utf8");
+    const css = [accountCss, ...[...accountCss.matchAll(/@import url\("\.\/account\/([^\"]+)"\);/g)]
+      .map((match) => fs.readFileSync(path.join(__dirname, "../css/account", match[1]), "utf8"))].join("\n");
     assert.ok(/\.sr-only\s*\{/.test(css));
     assert.ok(css.includes(":focus-visible"));
     assert.ok(css.includes(".collector-passport__progress-text"));
 
-    const accountJs = fs.readFileSync(path.join(__dirname, "../js/account.js"), "utf8");
+    const index = renderIndexPage(path.join(__dirname, ".."));
+    const accountJs = [...index.matchAll(/<script src="(js\/account(?:\/[^\"]+)?)\.js"><\/script>/g)]
+      .map((match) => fs.readFileSync(path.join(__dirname, "..", `${match[1]}.js`), "utf8"))
+      .join("\n");
     assert.ok(accountJs.includes("formatCollectionProgressText"));
     assert.ok(accountJs.includes("aria-valuetext"));
     assert.ok(accountJs.includes("announcePassportStatus"));

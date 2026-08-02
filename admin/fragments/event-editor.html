@@ -1,0 +1,56 @@
+    <dialog class="admin-dialog" id="eventEditorDialog" aria-labelledby="eventEditorTitle">
+      <form class="admin-dialog__surface" id="eventEditorForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" id="eventEditorEyebrow">ÉVÉNEMENT</p>
+            <h2 id="eventEditorTitle">Créer un événement</h2>
+            <p id="eventEditorSummary">Renseignez le calendrier catalogue et une justification.</p>
+          </div>
+          <button class="admin-dialog__close" id="eventEditorClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field" id="eventEditorIdField">
+            <span>Identifiant</span>
+            <input id="eventEditorId" name="id" maxlength="100" pattern="[A-Za-z0-9_-]+" autocomplete="off" />
+          </label>
+          <label class="admin-field">
+            <span>Nom</span>
+            <input id="eventEditorName" name="name" maxlength="100" required />
+          </label>
+          <label class="admin-field">
+            <span>Type</span>
+            <input id="eventEditorType" name="type" maxlength="50" />
+          </label>
+          <label class="admin-field">
+            <span>Saison</span>
+            <input id="eventEditorSeasonId" name="seasonId" maxlength="50" />
+          </label>
+          <label class="admin-field">
+            <span>Début</span>
+            <input id="eventEditorStartDate" name="startDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>Fin</span>
+            <input id="eventEditorEndDate" name="endDate" type="datetime-local" />
+          </label>
+          <label class="admin-field">
+            <span>État des données</span>
+            <select id="eventEditorDataStatus" name="dataStatus">
+              <option value="incomplete">incomplete</option>
+              <option value="complete">complete</option>
+              <option value="verified">verified</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="eventEditorReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="eventEditorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="eventEditorCancel" type="button">Annuler</button>
+          <button class="admin-button" id="eventEditorSubmit" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>

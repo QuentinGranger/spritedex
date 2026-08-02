@@ -1,0 +1,10 @@
+{
+  "io.exportOk": "JSON-export gedownload",
+  "io.importOk": "Importeren succesvol",
+  "io.importInvalid": "Import mislukt: ongeldig JSON-bestand",
+  "io.copyOk": "Lijst gekopieerd",
+  "io.copyUnsupported": "Kopiëren wordt niet ondersteund in deze browser",
+  "io.missingHeader": "Ik mis {count} varianten.",
+  "io.highPriorityHeader": "HOGE PRIORITEIT:",
+  "io.missingVariantHeader": "{variant} ONTBREEKT:"
+}

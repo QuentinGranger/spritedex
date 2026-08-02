@@ -1,0 +1,24 @@
+    <dialog class="admin-dialog" id="squadAccessDialog" aria-labelledby="squadAccessTitle">
+      <form class="admin-dialog__surface" id="squadAccessForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">ACCÈS SQUAD</p>
+            <h2 id="squadAccessTitle">Modifier l’accès public</h2>
+            <p id="squadAccessSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="squadAccessClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="squadAccessImpact"></div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="squadAccessReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="squadAccessError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="squadAccessCancel" type="button">Annuler</button>
+          <button class="admin-button" id="squadAccessSubmit" type="submit">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>

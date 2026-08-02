@@ -1,0 +1,170 @@
+{
+  "id": "sprite_aura",
+  "slug": "aura",
+  "name": "Aura Sprite",
+  "officialName": "Aura Sprite",
+  "rarity": "epic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.10",
+  "firstObservedAt": "2026-06-25",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "shock_rock_charge_after_damage",
+    "descriptionEn": "Grants a Shock Rock charge after dealing enough damage.",
+    "descriptionFr": "Accorde une charge de roche de choc après avoir infligé suffisamment de dégâts.",
+    "levelValues": [
+      175,
+      150,
+      125,
+      100,
+      75
+    ],
+    "unit": "damage_required_to_trigger"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Spotted near high and mountainous areas",
+    "descriptionFr": "Près des zones élevées et montagneuses",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-25",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 3000,
+  "variantIds": [
+    "sprite_aura",
+    "sprite_aura_gold",
+    "sprite_aura_gummy",
+    "sprite_aura_galaxy"
+  ],
+  "variants": [
+    {
+      "id": "sprite_aura",
+      "spriteId": "sprite_aura",
+      "variantType": "base",
+      "name": "Aura Sprite",
+      "slug": "aura",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 3000,
+      "spriteChestDropChancePct": 6.98,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/aura/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_aura_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_aura_gold",
+      "spriteId": "sprite_aura",
+      "variantType": "gold",
+      "name": "Gold Aura Sprite",
+      "slug": "aura-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.31,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/aura/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_aura_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_aura_gummy",
+      "spriteId": "sprite_aura",
+      "variantType": "gummy",
+      "name": "Gummy Aura Sprite",
+      "slug": "aura-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.23,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/aura/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_aura_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    },
+    {
+      "id": "sprite_aura_galaxy",
+      "spriteId": "sprite_aura",
+      "variantType": "galaxy",
+      "name": "Galaxy Aura Sprite",
+      "slug": "aura-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-25",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.12,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/aura/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-25",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_aura_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "fortnite_wiki_v4110"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_aura_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "fortnite_wiki_v4110"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

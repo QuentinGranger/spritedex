@@ -1,0 +1,6 @@
+{
+  "admin.consolePrompt": "Admin password",
+  "admin.consoleUsernamePrompt": "Admin username (leave empty for transition access)",
+  "admin.consoleUnavailable": "Password required.",
+  "admin.consoleError": "Admin access denied."
+}

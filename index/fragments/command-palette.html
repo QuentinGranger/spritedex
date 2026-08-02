@@ -1,0 +1,22 @@
+    <dialog id="commandPalette" class="command-palette" aria-labelledby="commandPaletteTitle">
+      <div class="command-palette__card">
+        <header class="command-palette__header">
+          <div>
+            <p class="command-palette__eyebrow">SPRITE-INDEX</p>
+            <h2 id="commandPaletteTitle" data-i18n="search.global">Recherche globale</h2>
+          </div>
+          <button class="command-palette__close" type="button" data-command-palette-close aria-label="Fermer" data-i18n-aria-label="dialog.close">×</button>
+        </header>
+        <label class="command-palette__search" for="commandPaletteInput">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
+          <input id="commandPaletteInput" type="search" placeholder="Sprite, variante, ami, événement, badge…" data-i18n-placeholder="search.globalPlaceholder" autocomplete="off" spellcheck="false" />
+          <kbd>Esc</kbd>
+        </label>
+        <p class="command-palette__hint" id="commandPaletteHint" data-i18n="search.globalHint">Recherche une collection, une personne ou une action.</p>
+        <div class="command-palette__results" id="commandPaletteResults" role="listbox" aria-live="polite"></div>
+        <footer class="command-palette__footer"><span><kbd>↑</kbd><kbd>↓</kbd> <span data-i18n="search.navigate">naviguer</span></span><span><kbd>↵</kbd> <span data-i18n="search.open">ouvrir</span></footer>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+

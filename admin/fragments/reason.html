@@ -1,0 +1,23 @@
+    <dialog class="admin-dialog admin-dialog--reason" id="adminReasonDialog" aria-labelledby="adminReasonTitle">
+      <form class="admin-dialog__surface" id="adminReasonForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow" data-admin-copy="reasonDialogEyebrow">ACTION JOURNALISÉE</p>
+            <h2 id="adminReasonTitle" data-admin-copy="reasonDialogTitle">Confirmer l’action</h2>
+            <p id="adminReasonMessage">Une justification est nécessaire pour poursuivre.</p>
+          </div>
+          <button class="admin-dialog__close" id="adminReasonClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span data-admin-copy="reasonDialogLabel">Justification</span>
+            <textarea id="adminReasonInput" maxlength="1000" required autofocus></textarea>
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="adminReasonError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="adminReasonCancel" type="button" data-admin-copy="cancel">Annuler</button>
+          <button class="admin-button" type="submit" data-admin-copy="confirm">Confirmer</button>
+        </footer>
+      </form>
+    </dialog>

@@ -1,0 +1,165 @@
+{
+  "id": "sprite_zero_point",
+  "slug": "zero-point",
+  "name": "Zero Point Sprite",
+  "officialName": "Zero Point Sprite",
+  "rarity": "mythic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "shield_bubble_on_self_heal",
+    "descriptionEn": "Spawns a Shield Bubble Jr. when using a healing item on yourself, excluding splashes and grenades.",
+    "descriptionFr": "Crée une mini-bulle de bouclier lors de l’utilisation d’un soin sur soi, hors splashes et grenades.",
+    "levelValues": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "unit": "seconds"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found rarely in Sprite Chests",
+    "descriptionFr": "Rarement dans les coffres d’esprits",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 7500,
+  "variantIds": [
+    "sprite_zero_point",
+    "sprite_zero_point_gold",
+    "sprite_zero_point_gummy",
+    "sprite_zero_point_galaxy"
+  ],
+  "variants": [
+    {
+      "id": "sprite_zero_point",
+      "spriteId": "sprite_zero_point",
+      "variantType": "base",
+      "name": "Zero Point Sprite",
+      "slug": "zero-point",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 7500,
+      "spriteChestDropChancePct": 0.00093,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/zero_point/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_zero_point_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_zero_point_gold",
+      "spriteId": "sprite_zero_point",
+      "variantType": "gold",
+      "name": "Gold Zero Point Sprite",
+      "slug": "zero-point-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 15000,
+      "spriteChestDropChancePct": 0.000041,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/zero_point/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_zero_point_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_zero_point_gummy",
+      "spriteId": "sprite_zero_point",
+      "variantType": "gummy",
+      "name": "Gummy Zero Point Sprite",
+      "slug": "zero-point-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 15000,
+      "spriteChestDropChancePct": 0.000031,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/zero_point/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_zero_point_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_zero_point_galaxy",
+      "spriteId": "sprite_zero_point",
+      "variantType": "galaxy",
+      "name": "Galaxy Zero Point Sprite",
+      "slug": "zero-point-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 15000,
+      "spriteChestDropChancePct": 0.000016,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/zero_point/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_zero_point_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_zero_point_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

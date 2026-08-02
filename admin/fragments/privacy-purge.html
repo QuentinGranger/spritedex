@@ -1,0 +1,40 @@
+    <dialog class="admin-dialog" id="privacyPurgeDialog" aria-labelledby="privacyPurgeTitle">
+      <form class="admin-dialog__surface" id="privacyPurgeForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">PURGE</p>
+            <h2 id="privacyPurgeTitle">Purger définitivement</h2>
+            <p id="privacyPurgeSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="privacyPurgeClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="privacyPurgeImpact">
+          Cette action est irréversible. Les données personnelles du compte seront définitivement supprimées.
+        </div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide" id="privacyPurgeForceField" hidden>
+            <span class="admin-check">
+              <input id="privacyPurgeForce" type="checkbox" />
+              <span id="privacyPurgeForceLabel">Forcer la purge avant la fin du délai de rétention</span>
+            </span>
+          </label>
+          <label class="admin-field admin-field--wide" id="privacyPurgeConfirmField" hidden>
+            <span id="privacyPurgeConfirmLabel">Tapez le username pour confirmer</span>
+            <input id="privacyPurgeConfirm" maxlength="100" autocomplete="off" />
+          </label>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyPurgeReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyPurgeMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyPurgeError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyPurgeCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--danger" id="privacyPurgeSubmit" type="submit">Purger</button>
+        </footer>
+      </form>
+    </dialog>

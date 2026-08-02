@@ -1,0 +1,165 @@
+{
+  "id": "sprite_duck",
+  "slug": "duck",
+  "name": "Duck Sprite",
+  "officialName": "Duck Sprite",
+  "rarity": "epic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "shield_regeneration_while_emoting",
+    "descriptionEn": "Emoting or Jamming replenishes shields.",
+    "descriptionFr": "Les emotes et les jams régénèrent le bouclier.",
+    "levelValues": [
+      2,
+      3,
+      4,
+      6,
+      8
+    ],
+    "unit": "shield_per_tick"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found in the vault of a certain business mogul",
+    "descriptionFr": "Dans le coffre-fort d’un certain magnat des affaires",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 3000,
+  "variantIds": [
+    "sprite_duck",
+    "sprite_duck_gold",
+    "sprite_duck_gummy",
+    "sprite_duck_galaxy"
+  ],
+  "variants": [
+    {
+      "id": "sprite_duck",
+      "spriteId": "sprite_duck",
+      "variantType": "base",
+      "name": "Duck Sprite",
+      "slug": "duck",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 3000,
+      "spriteChestDropChancePct": 9,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/duck/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_duck_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_duck_gold",
+      "spriteId": "sprite_duck",
+      "variantType": "gold",
+      "name": "Gold Duck Sprite",
+      "slug": "duck-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.4,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/duck/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_duck_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_duck_gummy",
+      "spriteId": "sprite_duck",
+      "variantType": "gummy",
+      "name": "Gummy Duck Sprite",
+      "slug": "duck-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.3,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/duck/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_duck_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_duck_galaxy",
+      "spriteId": "sprite_duck",
+      "variantType": "galaxy",
+      "name": "Galaxy Duck Sprite",
+      "slug": "duck-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.16,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/duck/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_duck_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_duck_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

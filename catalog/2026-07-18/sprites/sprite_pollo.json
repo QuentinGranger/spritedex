@@ -1,0 +1,92 @@
+{
+  "id": "sprite_pollo",
+  "slug": "pollo",
+  "name": "Pollo Sprite",
+  "officialName": "Pollo Sprite",
+  "rarity": "mythic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.20",
+  "firstObservedAt": "2026-07-18",
+  "lastVerifiedAt": "2026-07-27",
+  "ability": {
+    "type": "shield_regeneration_on_elimination",
+    "descriptionEn": "Upon earning an elimination, slowly replenish shield for you and nearby squad members for a duration.",
+    "descriptionFr": "Après avoir obtenu une élimination, régénère progressivement le bouclier du porteur et des membres de l'escouade à proximité pendant une durée déterminée.",
+    "trigger": "holder_elimination",
+    "targets": [
+      "self",
+      "nearby_squad_members"
+    ],
+    "levelValues": [
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "unit": "seconds",
+    "notes": "Vitesse de régénération, rayon et délai interne non publiés."
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Available from Sprite Chests and certain standard or Rare Chests. Can also be obtained from an eliminated carrier or through trading. Must be extracted at an Extraction Site or with a Portable Extractor.",
+    "descriptionFr": "Disponible dans les coffres à Sprites et certains coffres standards ou rares. Peut aussi être récupéré sur un joueur éliminé ou obtenu par échange. Doit être extrait à un site d'extraction ou avec un extracteur portable.",
+    "sources": [
+      "sprite_chest",
+      "rare_chest",
+      "player_drop",
+      "trade"
+    ],
+    "unlockCondition": "extract",
+    "extractionMethods": [
+      "extraction_site",
+      "portable_extractor"
+    ],
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-07-23",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 6750,
+  "variantIds": [
+    "sprite_pollo"
+  ],
+  "variants": [
+    {
+      "id": "sprite_pollo",
+      "spriteId": "sprite_pollo",
+      "variantType": "base",
+      "name": "Pollo Sprite",
+      "slug": "pollo",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-18",
+      "summonCostSpriteDust": 6750,
+      "spriteChestDropChancePct": null,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/pollo/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-23",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [],
+      "dropChanceStatus": "standard_chest_rate_not_publicly_disclosed",
+      "spriteLocatorDropChancePct": 1.01
+    }
+  ],
+  "sourceIds": [],
+  "dataStatus": "observed",
+  "notes": [],
+  "color": "rgba(229, 208, 67, 0.46)",
+  "spriteLocatorDropChancePct": 1.01,
+  "dropChanceStatus": "standard_chest_rate_not_publicly_disclosed"
+}

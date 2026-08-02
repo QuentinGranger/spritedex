@@ -1,0 +1,81 @@
+{
+  "format": "sprite-index-catalog-manifest/v1",
+  "catalogueVersion": "2026.07.18-1",
+  "generatedAt": "2026-07-18T01:07:47.245100+00:00",
+  "metadata": "metadata.json",
+  "sections": {
+    "disclaimer": "sections/disclaimer.json",
+    "summary": "sections/summary.json",
+    "season": "sections/season.json",
+    "weeklyEvents": "sections/weekly-events.json",
+    "variantDefinitions": [
+      "variant-definitions/variant_type_base.json",
+      "variant-definitions/variant_type_gold.json",
+      "variant-definitions/variant_type_gummy.json",
+      "variant-definitions/variant_type_galaxy.json",
+      "variant-definitions/variant_type_holofoil.json",
+      "variant-definitions/variant_type_gem.json",
+      "variant-definitions/variant_type_cube.json",
+      "variant-definitions/variant_type_quack.json"
+    ],
+    "sprites": [
+      "sprites/sprite_water.json",
+      "sprites/sprite_earth.json",
+      "sprites/sprite_fire.json",
+      "sprites/sprite_duck.json",
+      "sprites/sprite_ghost.json",
+      "sprites/sprite_dream.json",
+      "sprites/sprite_demon.json",
+      "sprites/sprite_punk.json",
+      "sprites/sprite_king.json",
+      "sprites/sprite_burnt_peanut.json",
+      "sprites/sprite_zero_point.json",
+      "sprites/sprite_fishy.json",
+      "sprites/sprite_striker.json",
+      "sprites/sprite_aura.json",
+      "sprites/sprite_boss.json",
+      "sprites/sprite_grim.json",
+      "sprites/sprite_air.json",
+      "sprites/sprite_seven.json",
+      "sprites/sprite_vini_jr.json",
+      "sprites/sprite_batman.json",
+      "sprites/sprite_pollo.json"
+    ],
+    "unreleasedContent": {
+      "metadata": "unreleased-content/metadata.json",
+      "variantTypes": "unreleased-content/variant-types.json",
+      "baseSprites": [
+        "unreleased-content/base-sprites/sprite_john_wick.json"
+      ]
+    },
+    "sources": [
+      "sources/official_runners_2026.json",
+      "sources/official_weekly_events_2026.json",
+      "sources/official_batman_2026.json",
+      "sources/fortnitegg_catalogue_2026_07_18.json",
+      "sources/fortnite_wiki_v4110.json",
+      "sources/gamesgg_vini_2026.json",
+      "sources/gamesgg_seven_2026.json",
+      "sources/fortnitegg_water_2026_07_18.json",
+      "sources/fortnitegg_earth_2026_07_18.json",
+      "sources/fortnitegg_fire_2026_07_18.json",
+      "sources/fortnitegg_duck_2026_07_18.json",
+      "sources/fortnitegg_ghost_2026_07_18.json",
+      "sources/fortnitegg_dream_2026_07_18.json",
+      "sources/fortnitegg_demon_2026_07_18.json",
+      "sources/fortnitegg_punk_2026_07_18.json",
+      "sources/fortnitegg_king_2026_07_18.json",
+      "sources/fortnitegg_burnt_peanut_2026_07_18.json",
+      "sources/fortnitegg_zero_point_2026_07_18.json",
+      "sources/fortnitegg_fishy_2026_07_18.json",
+      "sources/fortnitegg_striker_2026_07_18.json",
+      "sources/fortnitegg_aura_2026_07_18.json",
+      "sources/fortnitegg_boss_2026_07_18.json",
+      "sources/fortnitegg_grim_2026_07_18.json",
+      "sources/fortnitegg_air_2026_07_18.json",
+      "sources/fortnitegg_seven_2026_07_18.json",
+      "sources/fortnitegg_vini_jr_2026_07_18.json",
+      "sources/fortnitegg_batman_2026_07_18.json"
+    ]
+  }
+}

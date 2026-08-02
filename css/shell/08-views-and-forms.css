@@ -1,0 +1,115 @@
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  white-space: nowrap;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  position: relative;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tab__icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.tab__label {
+  line-height: 1;
+}
+
+.tab:hover {
+  color: var(--text);
+  border-color: var(--line-glow);
+  box-shadow: 0 0 14px rgba(0, 225, 255, 0.12);
+  transform: translateY(-2px);
+  background: var(--surface-strong);
+}
+
+.tab.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white;
+  border-color: transparent;
+  box-shadow:
+    0 0 22px rgba(0, 225, 255, 0.35),
+    0 4px 16px rgba(0, 225, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.tab.active .tab__icon {
+  opacity: 1;
+}
+
+.tab.active:hover {
+  box-shadow:
+    0 0 30px rgba(0, 225, 255, 0.45),
+    0 6px 20px rgba(0, 225, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transform: translateY(-3px);
+}
+
+.tab.tab--more { display: none; }
+
+/* ── Views ── */
+.main-views {
+  position: relative;
+  touch-action: pan-y;
+  --view-swipe-x: 0px;
+}
+
+.main-views--swiping {
+  transition: none;
+}
+
+.main-views--swiping > .view.active {
+  transform: translate3d(var(--view-swipe-x), 0, 0);
+  will-change: transform;
+}
+
+.view { display: none; }
+.view.active {
+  display: block;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+}
+
+/* ── Forms ── */
+select, input, textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 12px 14px;
+  outline: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+select:focus, input:focus, textarea:focus {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 12px rgba(0, 225, 255, 0.15);
+}
+
+select { max-width: 260px; }
+

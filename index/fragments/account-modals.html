@@ -1,0 +1,55 @@
+      <!-- Avatar change modal -->
+      <div class="delete-modal" id="avatarModal" style="display:none">
+        <div class="delete-modal__backdrop" id="avatarModalClose"></div>
+        <div class="delete-modal__card">
+          <h3 class="delete-modal__title" data-i18n="account.modal.changeAvatar">Changer d'avatar</h3>
+          <div class="avatar-picker" id="avatarModalPicker">
+            <div class="avatar-picker__item" data-avatar=""><span class="avatar-picker__placeholder">?</span></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jones.png"><img src="Personna/Jones.png" alt="Jones" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Peely.png"><img src="Personna/Peely.png" alt="Peely" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Fishstick.png"><img src="Personna/Fishstick.png" alt="Fishstick" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Drift.png"><img src="Personna/Drift.png" alt="Drift" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Midas.png"><img src="Personna/Midas.png" alt="Midas" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Meowscles.png"><img src="Personna/Meowscles.png" alt="Meowscles" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Skye.png"><img src="Personna/Skye.png" alt="Skye" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Crystal.png"><img src="Personna/Crystal.png" alt="Crystal" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Aura.png"><img src="Personna/Aura.png" alt="Aura" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raven.png"><img src="Personna/Raven.png" alt="Raven" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Omega.png"><img src="Personna/Omega.png" alt="Omega" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/SkullTrooper.png"><img src="Personna/SkullTrooper.png" alt="SkullTrooper" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/RenegadeRaider.png"><img src="Personna/RenegadeRaider.png" alt="RenegadeRaider" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BlackKnight.png"><img src="Personna/BlackKnight.png" alt="BlackKnight" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/CuddleTeamLeader.png"><img src="Personna/CuddleTeamLeader.png" alt="CuddleTeamLeader" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Raptor.png"><img src="Personna/Raptor.png" alt="Raptor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Jules.png"><img src="Personna/Jules.png" alt="Jules" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TNTina.png"><img src="Personna/TNTina.png" alt="TNTina" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Brutus.png"><img src="Personna/Brutus.png" alt="Brutus" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/Hope.png"><img src="Personna/Hope.png" alt="Hope" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/BriteBomber.png"><img src="Personna/BriteBomber.png" alt="BriteBomber" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/DrSlone.png"><img src="Personna/DrSlone.png" alt="DrSlone" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheFoundation.png"><img src="Personna/TheFoundation.png" alt="TheFoundation" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheVisitor.png"><img src="Personna/TheVisitor.png" alt="TheVisitor" /></div>
+            <div class="avatar-picker__item" data-avatar="Personna/TheScientist.png"><img src="Personna/TheScientist.png" alt="TheScientist" /></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete account modal -->
+      <div class="delete-modal" id="deleteModal" style="display:none">
+        <div class="delete-modal__backdrop" id="deleteModalClose"></div>
+        <div class="delete-modal__card">
+          <h3 class="delete-modal__title" data-i18n="account.modal.deleteTitle">Supprimer mon compte</h3>
+          <p class="delete-modal__desc" data-i18n="account.modal.deleteDesc">
+            Cette action désactive immédiatement ton compte : profil, collection cloud, escouades et préférences ne seront plus accessibles.<br>
+            Les données sont ensuite effacées définitivement dans un délai de <strong>30 jours</strong>.
+          </p>
+          <button class="delete-modal__export" id="deleteExportBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="account.modal.exportBefore">Exporter mes données avant suppression</span>
+          </button>
+          <label class="delete-modal__label" data-i18n="account.modal.deleteConfirmLabel">Écris <strong>SUPPRIMER</strong> pour confirmer :</label>
+          <input type="text" class="delete-modal__input" id="deleteConfirmInput" placeholder="SUPPRIMER" autocomplete="off" />
+          <button class="delete-modal__btn" id="deleteConfirmBtn" disabled data-i18n="account.modal.deleteConfirmBtn">Supprimer définitivement</button>
+        </div>
+      </div>
+

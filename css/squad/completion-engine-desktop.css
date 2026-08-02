@@ -1,0 +1,350 @@
+@media (min-width: 640px) {
+  .engine-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.engine-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.engine-card__value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  line-height: 1.1;
+}
+
+.engine-card__label {
+  margin-top: 6px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.engine-card__sub {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.engine-section {
+  margin-bottom: 20px;
+}
+
+.engine-section__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+
+.engine-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.engine-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.engine-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.82rem;
+}
+
+.engine-list li:last-child {
+  border-bottom: none;
+}
+
+.engine-list__count {
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.engine-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.engine-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.engine-chip--action,
+.engine-goal-card--action {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.engine-chip--action:hover,
+.engine-chip--action:focus-visible,
+.engine-goal-card--action:hover,
+.engine-goal-card--action:focus-visible {
+  border-color: var(--accent-2);
+  outline: none;
+}
+
+.engine-empty {
+  color: var(--muted);
+  font-size: 0.84rem;
+  padding: 12px 0;
+}
+
+.engine-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.engine-warnings {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 190, 0, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 190, 0, 0.06);
+}
+
+.engine-warning {
+  font-size: 0.8rem;
+  color: #ffbe00;
+  margin: 0;
+}
+
+.engine-assignment {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.engine-assignment:last-child {
+  border-bottom: none;
+}
+
+.engine-assignment__member {
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.engine-goal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.engine-goal-card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.engine-goal-card--action {
+  width: 100%;
+  color: inherit;
+}
+
+.engine-goal-card__title {
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.engine-goal-card__meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.engine-goal-card__gain {
+  font-size: 0.78rem;
+  color: var(--accent-2);
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.engine-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  margin-bottom: 16px;
+}
+
+.engine-filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+}
+
+.engine-filter-group--selects {
+  flex: 1 1 280px;
+  justify-content: flex-start;
+}
+
+.engine-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.engine-filter-toggle input {
+  accent-color: var(--accent-2);
+  width: 16px;
+  height: 16px;
+}
+
+.engine-select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--background);
+  color: var(--text);
+  font-size: 0.8rem;
+  min-width: 120px;
+}
+
+.engine-select option {
+  color: var(--text);
+  background: var(--background);
+}
+
+.engine-stat {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
+}
+
+.engine-stat__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  color: var(--background);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  flex: 0 0 14px;
+}
+
+.engine-stat__tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  background: var(--background);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.74rem;
+  font-weight: 400;
+  line-height: 1.3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 10;
+}
+
+.engine-stat:hover .engine-stat__tip,
+.engine-stat.active .engine-stat__tip {
+  display: block;
+}
+
+.engine-card--warning {
+  border-color: rgba(255, 190, 0, 0.4);
+  background: rgba(255, 190, 0, 0.08);
+}
+
+.engine-card--warning .engine-card__value {
+  color: #ffbe00;
+}
+
+.engine-section__hint {
+  margin: -4px 0 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.engine-community {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+}
+
+.engine-community__line {
+  margin: 0 0 6px;
+  font-size: 0.92rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.engine-community__line:last-of-type {
+  margin-bottom: 0;
+}
+
+.engine-community__disclaimer {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.engine-list--ranked .engine-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  margin-right: 8px;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.engine-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+

@@ -1,0 +1,12 @@
+{
+  "mastery.title": "Mastery",
+  "mastery.level": "Level {level}",
+  "mastery.levelOf": "Level {level} / 5",
+  "mastery.master": "Master",
+  "mastery.masterTitle": "Master level",
+  "mastery.masterReached": "♛ Master level reached",
+  "mastery.saved": "Mastery level {level} saved",
+  "mastery.cardMaster": "♛ Master · lv. 5",
+  "mastery.chooseLevel": "Choose a mastery level",
+  "mastery.variantLevel": "Variant mastery level"
+}

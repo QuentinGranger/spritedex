@@ -578,7 +578,9 @@ async function run() {
 
   // ── Étape 85 — UI contracts ────────────────────────────────────
   await test("interface : viewports, vides, noms longs, badges, squads (Étape 85)", () => {
-    const css = fs.readFileSync(path.join(__dirname, "../css/account.css"), "utf8");
+    const accountCss = fs.readFileSync(path.join(__dirname, "../css/account.css"), "utf8");
+    const css = [accountCss, ...[...accountCss.matchAll(/@import url\("\.\/account\/([^\"]+)"\);/g)]
+      .map((match) => fs.readFileSync(path.join(__dirname, "../css/account", match[1]), "utf8"))].join("\n");
     assert.ok(css.includes("@media (max-width: 480px)"), "phone breakpoint");
     assert.ok(css.includes("@media (min-width: 481px) and (max-width: 1023px)"), "tablet breakpoint");
     assert.ok(css.includes("@media (min-width: 1024px)"), "desktop breakpoint");

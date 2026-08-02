@@ -1,0 +1,83 @@
+/* ── Compact squad icons ── */
+.sq-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.sq-icon--owned {
+  color: #00ff87;
+  background: rgba(0, 255, 135, 0.12);
+}
+
+.sq-icon--missing {
+  color: #ff3a6e;
+  background: rgba(255, 58, 110, 0.12);
+}
+
+.sq-icon--priority {
+  color: #ffcc00;
+  background: rgba(255, 204, 0, 0.12);
+}
+
+.sq-icon--unsure {
+  color: #8d7cff;
+  background: rgba(141, 124, 255, 0.12);
+}
+
+.sq-icon--unavail {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sq-icon--spotted {
+  color: #00e1ff;
+  background: rgba(0, 225, 255, 0.12);
+}
+
+.sq-icon--new {
+  color: var(--muted);
+  opacity: 0.3;
+}
+
+.squad-table__row:hover td { background: rgba(0, 225, 255, 0.04); }
+
+/* ── View toggle ── */
+.squad-view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.squad-view-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+}
+
+.squad-view-btn.active {
+  background: rgba(0, 225, 255, 0.1);
+  border-color: rgba(0, 225, 255, 0.3);
+  color: var(--accent);
+}
+
+.squad-view-btn:hover:not(.active) {
+  border-color: var(--muted);
+  color: var(--text);
+}
+

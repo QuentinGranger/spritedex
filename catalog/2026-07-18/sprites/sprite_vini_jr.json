@@ -1,0 +1,99 @@
+{
+  "id": "sprite_vini_jr",
+  "slug": "vini-jr",
+  "name": "Vini Jr. Sprite",
+  "officialName": "Vini Jr. Sprite",
+  "rarity": "mythic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.20",
+  "firstObservedAt": "2026-07-16",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "destructive_slide_and_weapon_speed",
+    "descriptionEn": "Sprinting charges a destructive slide; slidekicking enemies increases fire rate and reload speed.",
+    "descriptionFr": "Le sprint charge une glissade destructrice ; toucher un ennemi avec une glissade augmente la cadence de tir et la vitesse de rechargement.",
+    "levelValues": [
+      {
+        "slideDamage": 40,
+        "fireRatePct": 10
+      },
+      {
+        "slideDamage": 45,
+        "fireRatePct": 20
+      },
+      {
+        "slideDamage": 50,
+        "fireRatePct": 30
+      },
+      {
+        "slideDamage": 55,
+        "fireRatePct": 40
+      },
+      {
+        "slideDamage": 60,
+        "fireRatePct": 50
+      }
+    ],
+    "unit": "mixed",
+    "notes": "La page indique également un bonus de vitesse de rechargement, sans valeurs séparées."
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found in Relic Chests",
+    "descriptionFr": "Dans les coffres de relique",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-07-16",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 0,
+  "variantIds": [
+    "sprite_vini_jr"
+  ],
+  "variants": [
+    {
+      "id": "sprite_vini_jr",
+      "spriteId": "sprite_vini_jr",
+      "variantType": "base",
+      "name": "Vini Jr. Sprite",
+      "slug": "vini-jr",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-07-16",
+      "summonCostSpriteDust": 0,
+      "spriteChestDropChancePct": 0,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/vini_jr/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-07-16",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_vini_jr_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026",
+        "gamesgg_vini_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_vini_jr_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026",
+    "gamesgg_vini_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

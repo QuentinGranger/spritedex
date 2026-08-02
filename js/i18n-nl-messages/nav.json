@@ -1,0 +1,20 @@
+{
+  "nav.main": "Hoofdnavigatie",
+  "nav.home": "Home",
+  "nav.swipe": "Swipe",
+  "nav.checklist": "Checklist",
+  "nav.missing": "Ontbrekend",
+  "nav.stats": "Stats",
+  "nav.history": "Geschiedenis",
+  "nav.social": "Sociaal",
+  "nav.more": "Meer",
+  "nav.moreSubtitle": "Volg en deel je voortgang",
+  "nav.moreStats": "Voortgang en trends",
+  "nav.moreHistory": "Je laatste acties",
+  "nav.moreSocial": "Vrienden, vergelijkingen en squads",
+  "nav.section": "Navigatie",
+  "nav.collectorSpace": "Collectorruimte",
+  "nav.yourCollection": "Zoek in uw verzameling",
+  "nav.variantsOwned": "varianten verzameld",
+  "nav.collectionProgress": "Voortgang van je verzameling"
+}

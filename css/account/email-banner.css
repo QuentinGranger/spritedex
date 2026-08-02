@@ -1,0 +1,44 @@
+/* ── Email verification banner ── */
+.email-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 190, 50, 0.05);
+  border: 1px solid rgba(255, 190, 50, 0.18);
+  margin-bottom: 12px;
+}
+
+.email-banner__icon {
+  flex-shrink: 0;
+  stroke: rgba(255, 190, 50, 0.8);
+}
+
+.email-banner__text {
+  flex: 1;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(255, 190, 50, 0.8);
+}
+
+.email-banner__btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 190, 50, 0.25);
+  background: rgba(255, 190, 50, 0.08);
+  color: rgba(255, 190, 50, 0.9);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+
+.email-banner__btn:hover {
+  background: rgba(255, 190, 50, 0.14);
+  border-color: rgba(255, 190, 50, 0.4);
+}
+

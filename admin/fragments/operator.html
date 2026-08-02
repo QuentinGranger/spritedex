@@ -1,0 +1,17 @@
+    <dialog class="admin-dialog" id="adminOperatorDialog" aria-labelledby="adminOperatorTitle">
+      <form class="admin-dialog__surface" id="adminOperatorForm">
+        <header class="admin-dialog__header"><div><p class="admin-eyebrow">SÉCURITÉ DES ACCÈS</p><h2 id="adminOperatorTitle">Créer un compte administrateur</h2><p id="adminOperatorSummary">Un secret unique sera associé à cet accès.</p></div><button class="admin-dialog__close" id="adminOperatorClose" type="button" aria-label="Fermer">×</button></header>
+        <div class="admin-dialog__warning">La rotation d’un secret révoque immédiatement les sessions de ce compte.</div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field" id="adminOperatorUsernameField"><span>Identifiant</span><input id="adminOperatorUsername" maxlength="40" pattern="[a-z0-9._-]{3,40}" autocomplete="username" /></label>
+          <label class="admin-field" id="adminOperatorDisplayNameField"><span>Nom affiché</span><input id="adminOperatorDisplayName" maxlength="80" autocomplete="name" /></label>
+          <label class="admin-field" id="adminOperatorRoleField"><span>Rôle</span><select id="adminOperatorRole"><option value="owner">Owner</option><option value="ops">Ops</option><option value="moderator">Modérateur</option><option value="editor">Éditeur</option><option value="privacy">Confidentialité</option><option value="readonly">Lecture seule</option></select></label>
+          <label class="admin-field"><span id="adminOperatorPasswordLabel">Nouveau secret</span><input id="adminOperatorPassword" type="password" minlength="12" maxlength="1024" autocomplete="new-password" required /><small class="admin-field__hint">12 caractères minimum, unique et non réutilisé.</small></label>
+          <label class="admin-field"><span>Confirmer le secret</span><input id="adminOperatorPasswordConfirm" type="password" minlength="12" maxlength="1024" autocomplete="new-password" required /></label>
+          <label class="admin-field" data-stepup-field><span>Code MFA</span><input id="adminOperatorMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="6" /></label>
+          <label class="admin-field admin-field--wide"><span>Justification</span><textarea id="adminOperatorReason" maxlength="1000" required></textarea></label>
+        </div>
+        <p class="admin-dialog__error" id="adminOperatorError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer"><button class="admin-button admin-button--quiet" id="adminOperatorCancel" type="button">Annuler</button><button class="admin-button" id="adminOperatorSubmit" type="submit">Enregistrer</button></footer>
+      </form>
+    </dialog>

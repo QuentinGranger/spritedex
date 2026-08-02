@@ -6,14 +6,16 @@
 const fs = require("fs");
 const path = require("path");
 const { renderServiceWorker } = require("./client-cache");
+const { renderIndexPage } = require("./index-page");
 
 const ROOT = path.join(__dirname, "..");
 const OUT = path.join(ROOT, "www");
 
-const FILES = ["index.html", "404.html", "manifest.json", "LogoApp.png", "icon-192.png", "icon-512.png"];
+const FILES = ["404.html", "manifest.json", "LogoApp.png", "icon-192.png", "icon-512.png"];
 const DIRS = ["css", "js", "Favicon", "icons", "Sprite", "trophet"];
 const REQUIRED_LOCALIZED_ASSETS = Object.freeze([
   "js/i18n.js",
+  "js/i18n-en-export.json",
   "js/i18n-nl-data.js",
   "js/i18n-nl-legacy-data.js",
   "js/i18n-nl-messages.json",
@@ -36,10 +38,35 @@ function verifyLocalizedBundle() {
       throw new Error(`[build-www] index.html does not load required localized asset: ${script}`);
     }
   }
+
+  verifyMessageManifest("i18n-en-export.json", "en");
+  verifyMessageManifest("i18n-nl-messages.json", "nl");
+}
+
+function verifyMessageManifest(file, locale) {
+  const messagesManifest = JSON.parse(fs.readFileSync(path.join(ROOT, "js", file), "utf8"));
+  if (messagesManifest.format !== "sprite-index-i18n-message-manifest/v1" || messagesManifest.locale !== locale) {
+    throw new Error(`[build-www] invalid ${locale} message manifest`);
+  }
+  for (const fragment of messagesManifest.fragments || []) {
+    const fragmentPattern = locale === "en" ? /^i18n-en-export\/[a-z]+\.json$/ : /^i18n-nl-messages\/[a-z]+\.json$/;
+    if (!fragmentPattern.test(fragment)) {
+      throw new Error(`[build-www] invalid ${locale} message fragment: ${fragment}`);
+    }
+    const source = path.join(ROOT, "js", fragment);
+    const bundled = path.join(OUT, "js", fragment);
+    if (!fs.existsSync(source) || !fs.existsSync(bundled)) {
+      throw new Error(`[build-www] ${locale} message fragment missing: ${fragment}`);
+    }
+    if (!fs.readFileSync(source).equals(fs.readFileSync(bundled))) {
+      throw new Error(`[build-www] bundled ${locale} message fragment differs: ${fragment}`);
+    }
+  }
 }
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
+fs.writeFileSync(path.join(OUT, "index.html"), renderIndexPage(ROOT));
 
 for (const f of FILES) {
   const src = path.join(ROOT, f);

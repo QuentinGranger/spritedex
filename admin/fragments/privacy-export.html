@@ -1,0 +1,33 @@
+    <dialog class="admin-dialog" id="privacyExportDialog" aria-labelledby="privacyExportTitle">
+      <form class="admin-dialog__surface" id="privacyExportForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">EXPORT</p>
+            <h2 id="privacyExportTitle">Exporter les données</h2>
+            <p id="privacyExportSummary">Génère un JSON administratif pour une demande RGPD ou un contrôle interne.</p>
+          </div>
+          <button class="admin-dialog__close" id="privacyExportClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Compte (username ou #id)</span>
+            <input id="privacyExportTarget" name="target" maxlength="100" required autocomplete="off" />
+          </label>
+          <div class="admin-dialog__warning" id="privacyExportPreview" hidden></div>
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyExportReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyExportMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyExportError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyExportCancel" type="button">Annuler</button>
+          <button class="admin-button admin-button--quiet" id="privacyExportLookup" type="button">Vérifier</button>
+          <button class="admin-button" id="privacyExportSubmit" type="submit">Télécharger</button>
+        </footer>
+      </form>
+    </dialog>

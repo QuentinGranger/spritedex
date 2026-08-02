@@ -1,0 +1,30 @@
+    <dialog class="admin-dialog" id="privacyRestoreDialog" aria-labelledby="privacyRestoreTitle">
+      <form class="admin-dialog__surface" id="privacyRestoreForm">
+        <header class="admin-dialog__header">
+          <div>
+            <p class="admin-eyebrow">RESTAURATION</p>
+            <h2 id="privacyRestoreTitle">Annuler la suppression</h2>
+            <p id="privacyRestoreSummary"></p>
+          </div>
+          <button class="admin-dialog__close" id="privacyRestoreClose" type="button" aria-label="Fermer">×</button>
+        </header>
+        <div class="admin-dialog__warning" id="privacyRestoreImpact">
+          Le compte redeviendra accessible. Les sessions et liens déjà révoqués lors de la suppression ne sont pas recréés automatiquement.
+        </div>
+        <div class="admin-dialog__fields">
+          <label class="admin-field admin-field--wide">
+            <span>Justification</span>
+            <textarea id="privacyRestoreReason" name="reason" maxlength="1000" required></textarea>
+          </label>
+          <label class="admin-field admin-field--wide" data-stepup-field hidden>
+            <span>Code MFA</span>
+            <input id="privacyRestoreMfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+          </label>
+        </div>
+        <p class="admin-dialog__error" id="privacyRestoreError" hidden role="alert"></p>
+        <footer class="admin-dialog__footer">
+          <button class="admin-button admin-button--quiet" id="privacyRestoreCancel" type="button">Annuler</button>
+          <button class="admin-button" id="privacyRestoreSubmit" type="submit">Restaurer</button>
+        </footer>
+      </form>
+    </dialog>

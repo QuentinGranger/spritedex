@@ -1,0 +1,12 @@
+{
+  "mastery.title": "Meesterschap",
+  "mastery.level": "Niveau {level}",
+  "mastery.levelOf": "Niveau {level} / 5",
+  "mastery.master": "Master",
+  "mastery.masterTitle": "Masterniveau",
+  "mastery.masterReached": "♛ Masterniveau bereikt",
+  "mastery.saved": "Beheersingsniveau {level} opgeslagen",
+  "mastery.cardMaster": "♛ Master · lv. 5",
+  "mastery.chooseLevel": "Kies een beheersingsniveau",
+  "mastery.variantLevel": "Variant meesterschapsniveau"
+}

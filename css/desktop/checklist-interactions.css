@@ -1,0 +1,218 @@
+/* ── Checklist: desktop interaction polish ────────────────────────────────
+   This deliberately stays presentation-only: the existing list, filters and
+   direct actions keep their current markup and behaviour. */
+@media (min-width: 1024px) {
+  #view-checklist .checklist-controls {
+    position: sticky;
+    top: 12px;
+    z-index: 8;
+    isolation: isolate;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  #view-checklist .checklist-controls::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(115deg, rgba(24, 42, 102, 0.14), transparent 42%);
+    pointer-events: none;
+  }
+
+  /* The status / rarity / priority chips can grow with catalogue data.  A
+     small label makes this large control group scannable without adding new
+     UI or changing any filter logic. */
+  #view-checklist .filter-chips-bar {
+    align-items: center;
+    padding-top: 8px;
+  }
+
+  #view-checklist .filter-chips-bar::before {
+    content: "Filtres";
+    align-self: center;
+    margin-right: 2px;
+    color: rgba(149, 165, 219, 0.72);
+    font-family: var(--font-heading);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  #view-checklist .filter-chip {
+    min-height: 36px;
+  }
+
+  #view-checklist .filter-chip:hover:not(.active) {
+    border-color: rgba(79, 201, 255, 0.54);
+    color: #e3edff;
+    background: rgba(32, 57, 122, 0.76);
+    transform: translateY(-1px);
+  }
+
+  #view-checklist .filter-chip:focus-visible,
+  #view-checklist .search-box input:focus-visible,
+  #view-checklist .sort-bar__select:focus-visible,
+  #view-checklist .ghost-button:focus-visible,
+  #view-checklist .cl-sprite__header:focus-visible,
+  #view-checklist .cl-sprite__detail:focus-visible,
+  #view-checklist .cl-sprite__quick:focus-visible,
+  #view-checklist .cl-btn:focus-visible,
+  #view-checklist .cl-mastery-btn:focus-visible {
+    outline: 2px solid #52dbff;
+    outline-offset: 3px;
+  }
+
+  #view-checklist .checklist-list {
+    gap: 12px;
+    padding-bottom: 18px;
+  }
+
+  #view-checklist .cl-sprite {
+    position: relative;
+    transform: translateZ(0);
+  }
+
+  #view-checklist .cl-sprite::before {
+    content: "";
+    position: absolute;
+    top: 18px;
+    bottom: 18px;
+    left: 0;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(180deg, transparent, var(--card-color), transparent);
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  #view-checklist .cl-sprite:hover::before,
+  #view-checklist .cl-sprite--open::before { opacity: 0.9; }
+
+  #view-checklist .cl-sprite__header {
+    position: relative;
+  }
+
+  #view-checklist .cl-sprite__header:hover {
+    background: linear-gradient(90deg, rgba(65, 126, 235, 0.07), transparent 48%);
+  }
+
+  #view-checklist .cl-sprite__progress {
+    min-height: 58px;
+    padding-left: 20px;
+    border-left: 1px solid rgba(105, 129, 204, 0.18);
+  }
+
+  #view-checklist .cl-sprite__inline-actions {
+    padding-left: 6px;
+    border-left: 1px solid rgba(105, 129, 204, 0.14);
+  }
+
+  #view-checklist .cl-sprite__detail,
+  #view-checklist .cl-sprite__quick {
+    transition: transform 170ms ease, color 170ms ease, border-color 170ms ease, background 170ms ease, box-shadow 170ms ease;
+  }
+
+  #view-checklist .cl-sprite__detail:hover,
+  #view-checklist .cl-sprite__quick:hover {
+    transform: translateY(-2px);
+  }
+
+  #view-checklist .cl-sprite__body {
+    background: linear-gradient(180deg, rgba(4, 12, 35, 0.18), rgba(4, 12, 35, 0.42));
+  }
+
+  #view-checklist .cl-variant {
+    min-height: 68px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 13px;
+  }
+
+  #view-checklist .cl-variant + .cl-variant { margin-top: 4px; }
+
+  #view-checklist .cl-variant:hover {
+    border-color: rgba(91, 126, 225, 0.2);
+    background: rgba(37, 57, 118, 0.26);
+  }
+
+  #view-checklist .cl-variant__thumb {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  #view-checklist .cl-variant__name {
+    color: #dfe7ff;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  #view-checklist .cl-variant__status {
+    justify-content: center;
+    min-width: 112px;
+    padding: 7px 10px;
+    border: 1px solid rgba(105, 129, 204, 0.16);
+    border-radius: 999px;
+    color: #aab8e0;
+    background: rgba(7, 17, 48, 0.42);
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  #view-checklist .cl-variant__actions { gap: 7px; }
+  #view-checklist .cl-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+  #view-checklist .cl-btn:hover { transform: translateY(-1px); }
+
+  #view-checklist .cl-variant__mastery--master {
+    border-color: rgba(255, 204, 82, 0.3);
+    background: linear-gradient(100deg, rgba(255, 187, 34, 0.12), rgba(116, 74, 15, 0.08));
+  }
+
+  #view-checklist .cl-sprite:has(.cl-sprite__master) {
+    border-color: rgba(220, 174, 70, 0.4);
+  }
+}
+
+/* Keep the directory usable on smaller desktop windows: cards remain dense
+   without their action group forcing horizontal overflow. */
+@media (min-width: 1024px) and (max-width: 1239px) {
+  #view-checklist .checklist-controls { padding: 18px; }
+  #view-checklist .bulk-actions .ghost-button { padding: 0 11px; }
+  #view-checklist .filter-chips-bar::before { display: none; }
+  #view-checklist .cl-sprite__header {
+    grid-template-columns: 66px minmax(120px, 1fr) minmax(95px, 124px) auto;
+    gap: 12px;
+    min-height: 96px;
+    padding: 14px 16px;
+  }
+  #view-checklist .cl-sprite__avatar { width: 64px; height: 64px; border-radius: 14px; }
+  #view-checklist .cl-sprite__name { font-size: 1.06rem; }
+  #view-checklist .cl-sprite__effect { display: none; }
+  #view-checklist .cl-sprite__progress { gap: 8px; padding-left: 12px; }
+  #view-checklist .cl-sprite__bar { width: 72px; }
+  #view-checklist .cl-sprite__inline-actions { gap: 8px; padding-left: 0; border-left: 0; }
+  #view-checklist .cl-sprite__detail,
+  #view-checklist .cl-sprite__quick { width: 44px; height: 44px; }
+  #view-checklist .cl-sprite__detail svg,
+  #view-checklist .cl-sprite__quick svg { width: 20px; height: 20px; }
+  #view-checklist .cl-sprite__body { padding-left: 94px; padding-right: 16px; }
+  #view-checklist .cl-variant__mastery { min-width: 158px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-checklist .filter-chip,
+  #view-checklist .cl-sprite::before,
+  #view-checklist .cl-sprite__detail,
+  #view-checklist .cl-sprite__quick,
+  #view-checklist .cl-btn { transition: none; }
+}
+

@@ -1,0 +1,11 @@
+{
+  "cookie.title": "Privacy en trackers",
+  "cookie.desc": "SPRITE-INDEX gebruikt alleen strikt noodzakelijke trackers (sessie, authenticatie, voorkeuren). Er zijn geen trackers voor doelgroepmeting geladen.",
+  "cookie.details": "Bekijk details",
+  "cookie.reject": "Ga door zonder te accepteren",
+  "cookie.accept": "Ik heb het",
+  "cookie.prefTitle": "Trackers in gebruik",
+  "cookie.necessary": "Strikt noodzakelijk",
+  "cookie.necessaryDesc": "Sessie, authenticatie, lokale opslag, privacykeuzes. Altijd actief.",
+  "cookie.notice": "Er zijn geen trackers voor doelgroepmeting, reclame of profilering geladen in deze versie van SPRITE-INDEX."
+}

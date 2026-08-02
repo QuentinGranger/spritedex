@@ -1,0 +1,11 @@
+{
+  "status.owned": "Eigen Media",
+  "status.missing": "Ontbrekend",
+  "status.priority": "Prioriteit",
+  "status.unsure": "Naar controleren",
+  "status.unknown": "Onbekend",
+  "status.unavailable": "Onbeschikbaar",
+  "status.spotted": "Gespot",
+  "status.new": "Unclassified",
+  "status.row": "Status: {status}"
+}

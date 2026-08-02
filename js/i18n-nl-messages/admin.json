@@ -1,0 +1,6 @@
+{
+  "admin.consolePrompt": "Admin wachtwoord",
+  "admin.consoleUsernamePrompt": "Beheerdersnaam (leeg laten voor tijdelijke toegang)",
+  "admin.consoleUnavailable": "Wachtwoord vereist.",
+  "admin.consoleError": "Beheerderstoegang geweigerd."
+}

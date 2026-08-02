@@ -1,0 +1,11 @@
+{
+  "cookie.title": "Privacy & trackers",
+  "cookie.desc": "SPRITE-INDEX only uses strictly necessary trackers (session, authentication, preferences). No audience measurement trackers are loaded.",
+  "cookie.details": "View details",
+  "cookie.reject": "Continue without accepting",
+  "cookie.accept": "Got it",
+  "cookie.prefTitle": "Trackers in use",
+  "cookie.necessary": "Strictly necessary",
+  "cookie.necessaryDesc": "Session, authentication, local storage, privacy choices. Always active.",
+  "cookie.notice": "No audience measurement, advertising, or profiling trackers are loaded in this version of SPRITE-INDEX."
+}

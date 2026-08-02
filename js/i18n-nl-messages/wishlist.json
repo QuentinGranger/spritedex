@@ -1,0 +1,16 @@
+{
+  "wishlist.eyebrow": "Team verlanglijst",
+  "wishlist.title": "Wie richt zich op wat?",
+  "wishlist.summary": "{active} actieve wens(en) · {uncovered} ongedekt · {duplicates} duplicaat(en)",
+  "wishlist.addAria": "Voeg een variant toe aan de teamverlanglijst",
+  "wishlist.choose": "Kies een variant om te targeten...",
+  "wishlist.add": "Toevoegen",
+  "wishlist.empty": "Voeg een eerste variant toe om de zoekopdracht te splitsen.",
+  "wishlist.uncovered": "Niemand bedekt het",
+  "wishlist.covered": "Gedekt door 1 lid",
+  "wishlist.duplicate": "Duplicaat: {count} leden zijn eigenaar van het account",
+  "wishlist.assigned": "Toegewezen aan",
+  "wishlist.unassigned": "Niet toegewezen",
+  "wishlist.markFound": "Gevonden",
+  "wishlist.foundBy": "Gevonden · {name}"
+}

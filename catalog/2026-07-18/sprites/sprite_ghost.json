@@ -1,0 +1,193 @@
+{
+  "id": "sprite_ghost",
+  "slug": "ghost",
+  "name": "Ghost Sprite",
+  "officialName": "Ghost Sprite",
+  "rarity": "epic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "cloak_on_reload",
+    "descriptionEn": "Grants cloak for a duration upon reloading.",
+    "descriptionFr": "Accorde un camouflage temporaire lors du rechargement.",
+    "levelValues": [
+      3,
+      3.5,
+      4,
+      4.5,
+      5
+    ],
+    "unit": "seconds"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found in the world at nighttime",
+    "descriptionFr": "Dans le monde pendant la nuit",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 3000,
+  "variantIds": [
+    "sprite_ghost",
+    "sprite_ghost_gold",
+    "sprite_ghost_gummy",
+    "sprite_ghost_galaxy",
+    "sprite_ghost_holofoil"
+  ],
+  "variants": [
+    {
+      "id": "sprite_ghost",
+      "spriteId": "sprite_ghost",
+      "variantType": "base",
+      "name": "Ghost Sprite",
+      "slug": "ghost",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 3000,
+      "spriteChestDropChancePct": 9,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/ghost/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_ghost_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_ghost_gold",
+      "spriteId": "sprite_ghost",
+      "variantType": "gold",
+      "name": "Gold Ghost Sprite",
+      "slug": "ghost-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.4,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/ghost/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_ghost_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_ghost_gummy",
+      "spriteId": "sprite_ghost",
+      "variantType": "gummy",
+      "name": "Gummy Ghost Sprite",
+      "slug": "ghost-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.3,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/ghost/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_ghost_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_ghost_galaxy",
+      "spriteId": "sprite_ghost",
+      "variantType": "galaxy",
+      "name": "Galaxy Ghost Sprite",
+      "slug": "ghost-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.16,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/ghost/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_ghost_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_ghost_holofoil",
+      "spriteId": "sprite_ghost",
+      "variantType": "holofoil",
+      "name": "Holofoil Ghost Sprite",
+      "slug": "ghost-holofoil",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.06,
+      "extraEffectRef": "variant_type_holofoil",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/ghost/holofoil.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_ghost_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_ghost_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

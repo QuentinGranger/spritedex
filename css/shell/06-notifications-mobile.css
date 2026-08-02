@@ -1,0 +1,120 @@
+
+.notif-item--news {
+  align-items: stretch;
+}
+
+.notif-item--media .notif-item__desc {
+  -webkit-line-clamp: 2;
+}
+
+.notif-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-item__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notif-item__title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.84rem;
+  margin: 0;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.notif-item__state {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0;
+  overflow: hidden;
+}
+
+.notif-item__state--unread {
+  background: var(--accent-2);
+  box-shadow: 0 0 10px rgba(0, 225, 255, 0.65);
+}
+
+.notif-item__desc {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin: 4px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.notif-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notif-item__action {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-heading);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent-2);
+  letter-spacing: 0.02em;
+}
+
+.notif-item__action::after {
+  content: "→";
+  margin-left: 5px;
+  transition: transform 140ms ease;
+}
+
+.notif-item:hover .notif-item__action::after {
+  transform: translateX(2px);
+}
+
+.notif-item__action--secondary {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.notif-item__action--secondary::after {
+  content: none;
+}
+
+.notif-item__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.notif-item__category,
+.notif-item__source {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-2);
+  background: rgba(0, 225, 255, 0.08);
+  border: 1px solid rgba(0, 225, 255, 0.14);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.notif-item__date {
+  font-size: 0.6rem;
+  color: var(--muted);
+  opacity: 0.9;
+}

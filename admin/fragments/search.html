@@ -1,0 +1,9 @@
+    <dialog class="admin-dialog admin-dialog--search" id="adminSearchDialog" aria-labelledby="adminSearchTitle">
+      <section class="admin-dialog__surface">
+        <header class="admin-search-dialog__header"><span aria-hidden="true">⌕</span><div><p class="admin-eyebrow">RECHERCHE UNIVERSELLE</p><h2 id="adminSearchTitle">Retrouver n’importe quel élément</h2></div><button class="admin-dialog__close" id="adminSearchClose" type="button" aria-label="Fermer">×</button></header>
+        <label class="admin-global-search"><span class="sr-only">Rechercher dans le backoffice</span><input id="adminSearchInput" type="search" autocomplete="off" aria-controls="adminSearchResults" aria-expanded="false" placeholder="Joueur, sprite, variante, événement, squad, invitation, notification, action…" /><span class="admin-global-search__state" id="adminSearchState" aria-hidden="true"></span><kbd>Échap pour fermer</kbd></label>
+        <div class="admin-search-meta"><p class="admin-global-search__hint" id="adminSearchHint">Saisissez au moins 2 caractères. Les résultats respectent vos droits d’accès.</p><span class="admin-search-shortcuts"><kbd>↑</kbd><kbd>↓</kbd> naviguer <kbd>↵</kbd> ouvrir</span></div>
+        <div class="admin-search-filters" id="adminSearchFilters" hidden aria-label="Filtrer les résultats"></div>
+        <div class="admin-search-results" id="adminSearchResults" role="listbox" aria-live="polite"></div>
+      </section>
+    </dialog>

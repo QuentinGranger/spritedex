@@ -1,0 +1,13 @@
+{
+  "filter.all": "All",
+  "filter.owned": "Eigen Media",
+  "filter.missing": "Ontbrekend",
+  "filter.priority": "Prioriteit",
+  "filter.unsure": "Naar controleren",
+  "filter.spotted": "Gespot",
+  "filter.unavailable": "Onbeschikbaar",
+  "filter.complete": "100%",
+  "filter.incomplete": "Onvolledig",
+  "filter.unclassified": "Unclassified",
+  "filter.toPlan": "Te plannen"
+}

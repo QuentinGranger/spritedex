@@ -1,0 +1,20 @@
+{
+  "nav.main": "Main navigation",
+  "nav.home": "Home",
+  "nav.swipe": "Swipe",
+  "nav.checklist": "Checklist",
+  "nav.missing": "Missing",
+  "nav.stats": "Stats",
+  "nav.history": "History",
+  "nav.social": "Social",
+  "nav.more": "More",
+  "nav.moreSubtitle": "Track and share your progress",
+  "nav.moreStats": "Progress and trends",
+  "nav.moreHistory": "Your latest actions",
+  "nav.moreSocial": "Friends, comparisons and squads",
+  "nav.section": "Navigation",
+  "nav.collectorSpace": "Collector space",
+  "nav.yourCollection": "Your collection",
+  "nav.variantsOwned": "variants collected",
+  "nav.collectionProgress": "Your collection progress"
+}

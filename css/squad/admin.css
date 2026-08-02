@@ -1,0 +1,444 @@
+/* ── Admin panel ── */
+.squad-admin {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 204, 0, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 204, 0, 0.04);
+}
+
+.squad-admin__title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.82rem;
+  margin: 0 0 10px;
+  color: #ffcc00;
+}
+
+.squad-admin__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.squad-admin__row:last-child {
+  margin-bottom: 0;
+}
+
+.squad-admin__label {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.squad-admin__link {
+  font-size: 0.68rem;
+  font-family: monospace;
+  color: var(--accent);
+  word-break: break-all;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+.squad-admin__btn {
+  font-size: 0.72rem !important;
+  padding: 4px 10px !important;
+}
+
+.squad-admin__btn--warn {
+  color: #ffcc00 !important;
+  border-color: rgba(255, 204, 0, 0.3) !important;
+}
+
+.squad-admin__btn--danger {
+  color: #ff3a6e !important;
+  border-color: rgba(255, 58, 110, 0.3) !important;
+}
+
+.squad-chip__kick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 58, 110, 0.15);
+  color: #ff3a6e;
+  font-size: 0.6rem;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.squad-chip__kick:hover {
+  background: rgba(255, 58, 110, 0.35);
+}
+
+.squad-chip__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 225, 255, 0.15);
+  color: var(--accent);
+  font-size: 0.7rem;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.squad-chip__add:hover {
+  background: rgba(0, 225, 255, 0.35);
+}
+
+.squad-chip__compare {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(141, 124, 255, 0.15);
+  color: var(--accent-3, #c4b8ff);
+  font-size: 0.75rem;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.squad-chip__compare:hover {
+  background: rgba(141, 124, 255, 0.35);
+}
+
+.squad-chip__add--accept {
+  width: auto;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(141, 124, 255, 0.2);
+  color: var(--accent-3, #c4b8ff);
+}
+
+.squad-chip__add--accept:hover {
+  background: rgba(141, 124, 255, 0.4);
+}
+
+.squad-chip__status {
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 6px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.squad-chip__status--friend {
+  color: #55efc4;
+  background: rgba(85, 239, 196, 0.12);
+}
+
+.squad-chip__status--blocked {
+  color: #ff3a6e;
+  background: rgba(255, 58, 110, 0.12);
+}
+
+.squad-chip__status--muted {
+  opacity: 0.6;
+}
+
+.squad-chip__warn {
+  margin-left: 3px;
+  font-size: 0.65rem;
+}
+
+.squad-chip__time {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: var(--muted);
+  opacity: 0.7;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.squad-chip__time--stale {
+  color: #ff3a6e;
+  opacity: 1;
+}
+
+.squad-member-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 6px;
+}
+
+.squad-member-filter__btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.squad-member-filter__btn.active,
+.squad-member-filter__btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #081018;
+}
+
+.squad-member-summary {
+  font-size: 0.72rem;
+  font-family: var(--font-heading);
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.squad-counter {
+  font-size: 0.74rem;
+  font-family: var(--font-heading);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.squad-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.squad-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+}
+
+.squad-chip--me {
+  background: rgba(0, 225, 255, 0.12);
+  border-color: rgba(0, 225, 255, 0.3);
+  color: var(--accent);
+}
+
+.squad-chip__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.squad-chip__name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.squad-chip__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.squad-chip__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.squad-chip__since {
+  white-space: nowrap;
+}
+
+.squad-chip__meta-row .squad-chip__time {
+  display: inline;
+  margin-top: 0;
+}
+
+.squad-chip__badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.squad-chip__badge--friend {
+  background: rgba(85, 239, 196, 0.12);
+  color: #55efc4;
+  border-color: rgba(85, 239, 196, 0.3);
+}
+
+.squad-chip__badge--pending {
+  background: rgba(255, 204, 0, 0.12);
+  color: #ffcc00;
+  border-color: rgba(255, 204, 0, 0.3);
+}
+
+.squad-chip__badge--blocked {
+  background: rgba(255, 58, 110, 0.12);
+  color: #ff3a6e;
+  border-color: rgba(255, 58, 110, 0.3);
+}
+
+.squad-chip__badge--member {
+  background: rgba(141, 124, 255, 0.12);
+  color: var(--accent-3, #c4b8ff);
+  border-color: rgba(141, 124, 255, 0.3);
+}
+
+.squad-chip__badge--me {
+  background: rgba(0, 225, 255, 0.15);
+  color: var(--accent);
+  border-color: rgba(0, 225, 255, 0.35);
+}
+
+.squad-chip__remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.squad-chip__remove:hover { color: #ff3a6e; }
+
+.squad-empty {
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  padding: 40px 20px;
+  font-size: 0.88rem;
+}
+
+.squad-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.squad-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-family: var(--font-heading);
+}
+
+.squad-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 10px 6px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.squad-table__sprite {
+  text-align: left !important;
+  min-width: 100px;
+}
+
+.squad-table__sprite-header td {
+  padding: 10px 8px 5px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--line);
+  background: rgba(0, 225, 255, 0.03);
+  position: sticky;
+  top: 33px;
+  z-index: 1;
+}
+
+.squad-table__sprite-name {
+  margin-right: 6px;
+}
+
+.squad-table__rarity {
+  font-weight: 500;
+  font-size: 0.68rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-left: 6px;
+}
+
+.squad-table__row td {
+  padding: 6px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.squad-table__variant {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.squad-table__cell {
+  text-align: center;
+  font-size: 0.82rem;
+  padding: 4px 2px;
+}
+
+.squad-cell--owned { background: rgba(0, 255, 135, 0.06); }
+.squad-cell--missing { background: rgba(255, 58, 110, 0.06); }
+.squad-cell--new { opacity: 0.25; }
+

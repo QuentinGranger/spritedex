@@ -1,0 +1,16 @@
+        <section class="admin-tab" data-admin-panel="players" hidden>
+          <div class="admin-section-toolbar">
+            <div class="admin-search"><span aria-hidden="true">⌕</span><input id="playerSearch" type="search" placeholder="Rechercher un pseudo" data-admin-placeholder="playerSearch" /></div>
+            <select class="admin-select" id="playerState"><option value="all">Tous les comptes</option><option value="reported">Signalés</option><option value="suspended">Suspendus</option><option value="new">Inscrits cette semaine</option></select>
+            <button class="admin-button" id="playerSearchButton" type="button" data-admin-copy="search">Rechercher</button>
+          </div>
+          <div class="admin-players-layout">
+            <div class="admin-players-main">
+              <section class="admin-panel admin-panel--flush"><header class="admin-panel__header admin-panel__header--padded"><div><p class="admin-eyebrow">COMPTES</p><h2 data-admin-copy="playersTitle">Joueurs</h2></div><span id="playersCount" class="admin-panel__meta"></span></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Pseudo</th><th>Collection</th><th>Activité</th><th>État</th><th></th></tr></thead><tbody id="playersList"></tbody></table></div><div class="admin-pagination" id="playersPagination"></div></section>
+              <section class="admin-panel admin-panel--flush admin-reports-panel"><header class="admin-panel__header admin-panel__header--padded admin-reports-panel__header"><div><p class="admin-eyebrow">SÛRETÉ</p><h2 data-admin-copy="reportsTitle">Signalements ouverts</h2><p class="admin-reports-panel__lead">Traitez d’abord les situations urgentes. Chaque décision est journalisée.</p></div><label class="admin-report-filter"><span>Priorité</span><select id="reportPriorityFilter"><option value="all">Toutes</option><option value="urgent">Urgentes</option><option value="high">Hautes</option><option value="normal">Normales</option><option value="low">Basses</option></select></label></header><div class="admin-report-triage" id="reportTriage" aria-live="polite"></div><div class="admin-report-list" id="reportsList"></div></section>
+            </div>
+            <aside class="admin-panel admin-editor" id="playerDossier">
+              <p class="admin-empty" data-admin-copy="playerPick">Sélectionnez un joueur ou un signalement pour ouvrir la fiche de modération.</p>
+            </aside>
+          </div>
+        </section>

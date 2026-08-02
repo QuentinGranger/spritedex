@@ -1,0 +1,165 @@
+{
+  "id": "sprite_demon",
+  "slug": "demon",
+  "name": "Demon Sprite",
+  "officialName": "Demon Sprite",
+  "rarity": "epic",
+  "seasonId": "chapter_7_season_3",
+  "introducedInUpdate": "v41.00",
+  "firstObservedAt": "2026-06-05",
+  "lastVerifiedAt": "2026-07-18",
+  "ability": {
+    "type": "siphon_on_elimination",
+    "descriptionEn": "Siphons health and shields when eliminating an opponent.",
+    "descriptionFr": "Rend de la vie et du bouclier après une élimination.",
+    "levelValues": [
+      10,
+      15,
+      20,
+      25,
+      30
+    ],
+    "unit": "healing_per_elimination"
+  },
+  "acquisition": {
+    "type": "in_game",
+    "descriptionEn": "Found rarely in Sprite Chests",
+    "descriptionFr": "Rarement dans les coffres d’esprits",
+    "confidence": "observed"
+  },
+  "availability": {
+    "status": "available",
+    "startDate": "2026-06-05",
+    "endDate": null,
+    "seasonEndDate": "2026-08-20",
+    "recurrence": "unknown",
+    "confidence": "observed"
+  },
+  "baseSummonCostSpriteDust": 3000,
+  "variantIds": [
+    "sprite_demon",
+    "sprite_demon_gold",
+    "sprite_demon_gummy",
+    "sprite_demon_galaxy"
+  ],
+  "variants": [
+    {
+      "id": "sprite_demon",
+      "spriteId": "sprite_demon",
+      "variantType": "base",
+      "name": "Demon Sprite",
+      "slug": "demon",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 3000,
+      "spriteChestDropChancePct": 9,
+      "extraEffectRef": null,
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/demon/base.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_demon_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_demon_gold",
+      "spriteId": "sprite_demon",
+      "variantType": "gold",
+      "name": "Gold Demon Sprite",
+      "slug": "demon-gold",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.4,
+      "extraEffectRef": "variant_type_gold",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/demon/gold.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_demon_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_demon_gummy",
+      "spriteId": "sprite_demon",
+      "variantType": "gummy",
+      "name": "Gummy Demon Sprite",
+      "slug": "demon-gummy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.3,
+      "extraEffectRef": "variant_type_gummy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/demon/gummy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_demon_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    },
+    {
+      "id": "sprite_demon_galaxy",
+      "spriteId": "sprite_demon",
+      "variantType": "galaxy",
+      "name": "Galaxy Demon Sprite",
+      "slug": "demon-galaxy",
+      "releaseStatus": "released",
+      "firstObservedAt": "2026-06-05",
+      "summonCostSpriteDust": 6000,
+      "spriteChestDropChancePct": 0.16,
+      "extraEffectRef": "variant_type_galaxy",
+      "imagePath": null,
+      "suggestedImagePath": "/images/sprites/demon/galaxy.webp",
+      "availability": {
+        "status": "available",
+        "startDate": "2026-06-05",
+        "endDate": null,
+        "recurrence": "unknown",
+        "confidence": "observed"
+      },
+      "dataStatus": "observed",
+      "sourceIds": [
+        "fortnitegg_demon_2026_07_18",
+        "fortnitegg_catalogue_2026_07_18",
+        "official_runners_2026"
+      ]
+    }
+  ],
+  "sourceIds": [
+    "fortnitegg_demon_2026_07_18",
+    "fortnitegg_catalogue_2026_07_18",
+    "official_runners_2026"
+  ],
+  "dataStatus": "observed",
+  "notes": [
+    "Les taux d’apparition sont des instantanés communautaires et peuvent changer sans préavis.",
+    "Une valeur nulle signifie que l’information n’est pas connue ou n’est pas suffisamment confirmée."
+  ]
+}

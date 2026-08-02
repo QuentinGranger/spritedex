@@ -1,0 +1,104 @@
+    <div class="app-shell" id="appShell" style="display:none">
+      <aside class="desktop-rail" data-i18n-aria-label="nav.collectorSpace" aria-label="Espace collectionneur">
+        <div class="desktop-rail__brand">
+          <img src="js/MainLogo.png" alt="Sprite-Index" class="desktop-rail__logo" />
+        </div>
+        <div class="desktop-rail__section-label" data-i18n="nav.section">Navigation</div>
+        <div class="desktop-rail__collection" data-i18n-aria-label="nav.collectionProgress" aria-label="Progression de votre collection">
+          <span data-i18n="nav.yourCollection">Votre collection</span>
+          <strong><b id="desktopOwnedCount">0</b> <i>/</i> <b id="desktopTotalCount">0</b></strong>
+          <small data-i18n="nav.variantsOwned">variantes obtenues</small>
+          <div><span id="desktopCollectionProgress"></span></div>
+        </div>
+      </aside>
+
+      <header class="topbar">
+        <div class="topbar-brand">
+          <img src="js/MainLogo.png" alt="Sprite-Index" class="topbar-logo" />
+        </div>
+        <div class="desktop-page-heading">
+          <span class="desktop-page-heading__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="M16 8h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10"/><path d="M8 12h4M10 10v4"/></svg>
+          </span>
+          <div><h1 id="desktopViewTitle" data-i18n="nav.home">Accueil</h1><p id="desktopViewSubtitle" data-i18n="view.homeSubtitle">Vos prochaines actions de collection, réunies au même endroit.</p></div>
+        </div>
+        <label class="desktop-command-search" for="desktopSearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
+          <input id="desktopSearch" type="search" data-i18n-placeholder="search.sprite" placeholder="Rechercher un sprite…" autocomplete="off" />
+          <kbd id="desktopSearchShortcut">⌘ K</kbd>
+        </label>
+        <div class="topbar-actions">
+          <button class="command-palette-trigger" id="commandPaletteOpen" type="button" aria-label="Recherche globale" title="Recherche globale" data-i18n-aria-label="search.global" data-i18n-title="search.global">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
+          </button>
+          <div class="notif-wrap" id="notifWrap">
+            <button class="notif-bell" id="notifBell" data-i18n-aria-label="notif.title" aria-label="Notifications" aria-expanded="false" aria-haspopup="dialog" aria-controls="notifDropdown">
+              <svg class="notif-bell__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="notif-bell__badge" id="notifBadge" style="display:none">0</span>
+            </button>
+            <div class="notif-dropdown notif-center" id="notifDropdown" style="display:none" role="dialog" data-i18n-aria-label="notif.title" aria-label="Notifications">
+              <div class="notif-dropdown__header">
+                <div class="notif-dropdown__heading">
+                  <span class="notif-dropdown__title" data-i18n="notif.title">Notifications</span>
+                  <span class="notif-dropdown__summary" id="notifUnreadSummary" hidden aria-live="polite"></span>
+                </div>
+                <div class="notif-dropdown__header-actions">
+                  <button type="button" class="notif-dropdown__mark-read" id="notifMarkAllRead" data-i18n="notif.markAllRead" data-i18n-title="notif.markAllReadTitle" title="Tout marquer comme lu">Tout lu</button>
+                  <button type="button" class="notif-dropdown__close" id="notifClose" data-i18n-aria-label="notif.close" aria-label="Fermer">✕</button>
+                </div>
+              </div>
+              <div class="notif-center__filters" id="notifFilters" role="tablist" data-i18n-aria-label="notif.filters" aria-label="Filtres">
+                <button type="button" class="notif-filter notif-filter--all active" role="tab" aria-selected="true" aria-controls="notifList" data-notif-filter="all">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterAll">Toutes</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--unread" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="unread">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="8"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterUnread">Non lues</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--news" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="news">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterNews">Actualités</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--social" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="social">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M17 11a3 3 0 0 0 0-6M21 20v-2a4 4 0 0 0-3-3.87"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterSocial">Social</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--collection" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="collection">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterCollection">Collections</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--squads" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="squads">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-3.5 7-9.5V5l-7-3-7 3v6.5C5 17.5 12 21 12 21Z"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterSquads">Squads</span>
+                </button>
+                <button type="button" class="notif-filter notif-filter--alerts" role="tab" aria-selected="false" aria-controls="notifList" data-notif-filter="alerts">
+                  <svg class="notif-filter__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+                  <span class="notif-filter__label" data-i18n="notif.filterAlerts">Alertes</span>
+                </button>
+              </div>
+              <div class="notif-dropdown__list" id="notifList">
+                <div class="notif-dropdown__empty">
+                  <div class="notif-dropdown__empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  </div>
+                  <p class="notif-dropdown__empty-title" data-i18n="notif.emptyTitle">Aucune notification</p>
+                  <p class="notif-dropdown__empty-hint" data-i18n="notif.emptyHint">Les nouveautés apparaîtront ici.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="topbar-avatar" id="accountBtn" data-i18n-aria-label="common.account" aria-label="Mon compte">
+            <img src="" alt="" id="topbarAvatarImg" class="topbar-avatar__img" style="display:none" />
+            <svg class="topbar-avatar__fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="sync-bar" id="syncBar" role="status" aria-live="polite">
+        <span class="sync-bar__icon" id="syncBarIcon"></span>
+        <span class="sync-bar__copy"><strong class="sync-bar__text" id="syncBarText"></strong><small class="sync-bar__detail" id="syncBarDetail"></small></span>
+        <button class="sync-bar__retry" id="syncBarRetry" type="button" hidden data-i18n="sync.retry">Réessayer</button>
+      </div>
+
+      <!-- Account Panel -->

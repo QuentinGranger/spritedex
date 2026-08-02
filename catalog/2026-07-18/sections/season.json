@@ -1,0 +1,13 @@
+{
+  "id": "chapter_7_season_3",
+  "chapter": 7,
+  "season": 3,
+  "nameEn": "Runners",
+  "nameFr": "Collecte effrénée",
+  "startDate": "2026-06-05",
+  "endDate": "2026-08-20",
+  "statusAsOfCatalogueDate": "active",
+  "sourceIds": [
+    "official_runners_2026"
+  ]
+}

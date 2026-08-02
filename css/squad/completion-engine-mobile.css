@@ -1,0 +1,104 @@
+@media (max-width: 639px) {
+  .engine-grid--3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.engine-sim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  margin-bottom: 16px;
+}
+
+.engine-sim__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 160px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.engine-sim__field .engine-select {
+  text-transform: none;
+  letter-spacing: normal;
+  width: 100%;
+}
+
+.engine-sim__field input.engine-select {
+  min-height: 36px;
+}
+
+.engine-sim__multi {
+  min-height: 108px;
+}
+
+.engine-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+
+.engine-result strong {
+  color: var(--accent-2);
+  font-size: 0.95rem;
+}
+
+.engine-scenario__queue {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.engine-scenario__queue li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+
+.engine-scenario__remove,
+.engine-scenario__run {
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.engine-scenario__run {
+  margin-bottom: 16px;
+}
+
+.engine-sim__submit {
+  flex: 0 0 auto;
+}
+
+.engine-sim__delta--up {
+  color: #3ecf8e;
+}
+
+.engine-sim__delta--down {
+  color: #ff6b6b;
+}
+
+.recommendations-engine-cta {
+  margin: 0 0 16px;
+}
