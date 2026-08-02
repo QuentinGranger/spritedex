@@ -26,7 +26,7 @@ const notificationChannels = require("./server/notification-channels");
 const pushSubscriptions = require("./server/push-subscriptions");
 
 const VAPID_FILE = path.join(__dirname, ".vapid-keys.json");
-const DEFAULT_VAPID_SUBJECT = "mailto:quentinsavigny@protonmail.com";
+const DEFAULT_VAPID_SUBJECT = "mailto:contact@sprite-index.com";
 
 function isValidVapidKeys(value) {
   return !!(
@@ -969,7 +969,16 @@ async function deliverExternalChannels(pool, { notificationId, recipientId, user
       await deliveries.markDeliveryAttempt(pool, notificationId, "email", { provider: "resend" }).catch(() => {});
       // Lazy require avoids a require cycle with core at load time.
       const { sendNotificationEmail } = require("./server/core");
-      const emailResult = await sendNotificationEmail(user.email, { title, body, url, lang: emailLang });
+      const emailResult = await sendNotificationEmail(user.email, {
+        title,
+        body,
+        url,
+        lang: emailLang,
+        // The delivery worker can retry the same notification. Keep Resend
+        // idempotent for that one notification, without suppressing a later
+        // notification that happens to have identical text.
+        idempotencyKey: notificationId
+      });
       if (emailResult && emailResult.ok) {
         externalAttempted = true;
         externalDelivered = true;

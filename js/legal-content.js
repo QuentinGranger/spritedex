@@ -38,10 +38,10 @@ const LEGAL_CONFIG = Object.freeze({
   APP_NAME: "SPRITE-INDEX",
   EDITOR_NAME: "Quentin SAVIGNY",
   EDITOR_STATUS: "éditeur individuel non professionnel",
-  CONTACT_EMAIL: "quentinsavigny@protonmail.com",
-  SUPPORT_EMAIL: "quentinsavigny@protonmail.com",
-  PRIVACY_EMAIL: "quentinsavigny@protonmail.com",
-  REPORT_EMAIL: "quentinsavigny@protonmail.com",
+  CONTACT_EMAIL: "contact@sprite-index.com",
+  SUPPORT_EMAIL: "contact@sprite-index.com",
+  PRIVACY_EMAIL: "contact@sprite-index.com",
+  REPORT_EMAIL: "contact@sprite-index.com",
 
   HOST_NAME: "Render Services, Inc.",
   HOST_ADDRESS:

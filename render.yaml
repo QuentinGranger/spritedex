@@ -4,6 +4,7 @@
 #
 # This provisions:
 #   - a managed PostgreSQL database (schema + reference data auto-created on boot)
+#   - a Redis-compatible Key Value store for distributed rate limits
 #   - a Node web service running the Express + WebSocket server
 #
 # Secrets marked `sync: false` are NOT stored in the repo — you set them in the
@@ -18,18 +19,32 @@ databases:
     region: frankfurt
 
 services:
+  - type: keyvalue
+    name: sprite-index-rate-limit
+    plan: free
+    region: frankfurt
+    # Rate-limit entries have a TTL. Do not evict them early: if capacity is
+    # exhausted the protected route fails closed instead of weakening a limit.
+    maxmemoryPolicy: noeviction
+    # Private service: only Render services in the same region can connect.
+    ipAllowList: []
+
   - type: web
     name: sprite-index
     runtime: node
     plan: free
     region: frankfurt
     branch: main
-    buildCommand: npm install --omit=dev
+    buildCommand: npm ci --omit=dev
     startCommand: npm start
-    healthCheckPath: /api/sprites
+    healthCheckPath: /health/ready
     envVars:
       - key: NODE_ENV
         value: production
+      # `all` maintains today's one-service setup. When adding the optional
+      # worker service from render.worker.yaml.example, change this to `web`.
+      - key: PROCESS_ROLE
+        value: all
       # Render terminates TLS and is the single trusted proxy hop. Keep this
       # explicit so a self-hosted/direct deployment does not trust spoofed
       # X-Forwarded-For headers by default.
@@ -44,6 +59,17 @@ services:
         fromDatabase:
           name: sprite-index-db
           property: connectionString
+      # A Redis-compatible internal connection used for atomic, shared rate
+      # limits. The URL never leaves Render and contains credentials.
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: sprite-index-rate-limit
+          property: connectionString
+      # With the managed store present, do not silently weaken rate limits to
+      # per-instance memory if Redis is temporarily unavailable.
+      - key: RATE_LIMIT_REDIS_REQUIRED
+        value: "true"
       # ── Secrets: set these in the Render dashboard ──
       - key: GOOGLE_CLIENT_ID
         sync: false
@@ -56,6 +82,41 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: FROM_EMAIL
+        sync: false
+      # The exact domain verified in Resend, e.g. updates.sprite-index.com.
+      # It prevents a misconfigured FROM_EMAIL from sending under another domain.
+      - key: RESEND_FROM_DOMAIN
+        sync: false
+      # Use a monitored inbox for user replies; it may differ from the
+      # verified transactional sender, but must be a real address.
+      - key: REPLY_TO_EMAIL
+        sync: false
+      # Web Push: configure a stable VAPID keypair in Render. Do not rely on
+      # generated local keys, which are not durable across deployments.
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      # Native push providers.
+      - key: FCM_SERVER_KEY
+        sync: false
+      - key: APNS_KEY_ID
+        sync: false
+      - key: APNS_TEAM_ID
+        sync: false
+      - key: APNS_KEY
+        sync: false
+      - key: APNS_TOPIC
+        sync: false
+      # Optional external error centralization (Slack/Discord-compatible or an
+      # internal JSON webhook). HTTPS is required in production.
+      - key: ERROR_WEBHOOK_URL
+        sync: false
+      - key: ERROR_WEBHOOK_BEARER_TOKEN
+        sync: false
+      - key: ERROR_ALERT_COOLDOWN_MS
         sync: false
       # Optional: comma-separated allowed origins. Defaults to the service URL.
       - key: CORS_ORIGIN

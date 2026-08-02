@@ -25,7 +25,7 @@ for (const tab of ["overview", "players", "catalog", "events", "collections", "s
 for (const endpoint of [
   "/api/admin/overview", "/api/admin/players", "/api/admin/catalog", "/api/admin/events",
   "/api/admin/collections/integrity", "/api/admin/social", "/api/admin/notifications/operations",
-  "/api/admin/passports", "/api/admin/privacy", "/suspension-history"
+  "/api/admin/passports", "/api/admin/privacy", "/api/admin/monitoring/incidents", "/suspension-history"
 ]) {
   assert.ok(routes.includes(endpoint), `missing protected operational endpoint ${endpoint}`);
 }

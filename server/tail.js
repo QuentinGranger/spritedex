@@ -1,6 +1,7 @@
 // tail.js — extracted from server.js
 
 const { app, server } = require("./core");
+const { reportError } = require("./monitoring");
 const path = require("path");
 
 const ROOT_DIR = require("path").join(__dirname, "..");
@@ -28,5 +29,10 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: "JSON invalide" });
   }
   console.error("[UNHANDLED]", err);
+  void reportError({
+    component: "http_request",
+    error: err,
+    context: { method: req.method, path: req.path, status: 500 }
+  });
   res.status(500).json({ error: "Erreur serveur" });
 });

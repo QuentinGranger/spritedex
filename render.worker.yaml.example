@@ -1,0 +1,37 @@
+# Optional background worker for a horizontally scaled SPRITE-INDEX deployment.
+#
+# 1. Copy this service into render.yaml (or create it in the Render dashboard).
+# 2. Change the web service's PROCESS_ROLE from `all` to `web`.
+# 3. Give this worker the same secrets as the web service: email, OAuth, push,
+#    CORS/public URL and monitoring variables. These are intentionally not
+#    repeated here so no secret is committed.
+#
+# Render background workers require a paid worker plan. Keep a single replica:
+# the process also holds a PostgreSQL advisory lock to prevent duplicated cron
+# jobs if a standby is ever started.
+
+services:
+  - type: worker
+    name: sprite-index-worker
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run worker
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PROCESS_ROLE
+        value: worker
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sprite-index-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: sprite-index-rate-limit
+          property: connectionString
+      - key: RATE_LIMIT_REDIS_REQUIRED
+        value: "true"

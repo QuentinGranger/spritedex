@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: sprite_index_test
+          POSTGRES_USER: sprite_index
+          POSTGRES_PASSWORD: sprite_index
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sprite_index -d sprite_index_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      APP_URL: http://127.0.0.1:3000
+      OAUTH_REDIRECT_BASE: http://127.0.0.1:3000
+      CORS_ORIGIN: http://127.0.0.1:3000
+      DATABASE_URL: postgres://sprite_index:sprite_index@127.0.0.1:5432/sprite_index_test
+      BASE_URL: http://127.0.0.1:3000
+      MOBILE_SWIPE_BASE_URL: http://127.0.0.1:3000
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Find Chrome for mobile end-to-end tests
+        shell: bash
+        run: |
+          chrome_bin="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          test -n "$chrome_bin"
+          echo "PUPPETEER_EXECUTABLE_PATH=$chrome_bin" >> "$GITHUB_ENV"
+
+      - name: Start application
+        shell: bash
+        run: |
+          npm start > "$RUNNER_TEMP/sprite-index-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/sprite-index-server.pid"
+
+      - name: Wait for application and database bootstrap
+        shell: bash
+        run: |
+          for attempt in {1..90}; do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/health/ready > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Application did not become ready."
+          cat "$RUNNER_TEMP/sprite-index-server.log"
+          exit 1
+
+      - name: Validate applied migration history
+        run: npm run migrate:status
+
+      - name: Run complete test suite
+        run: npm test
+
+      - name: Show server log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/sprite-index-server.log"

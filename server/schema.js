@@ -1121,6 +1121,7 @@ async function ensureSquadTables() {
     console.log("Squad tables ready");
   } catch (err) {
     console.error("Failed to create squad tables:", err);
+    throw err;
   }
 }
 

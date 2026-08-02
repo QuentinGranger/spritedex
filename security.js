@@ -1,6 +1,7 @@
 // ── SPRITE-INDEX : Security helpers (rate limiting, headers, validation, env checks) ──
 const { z } = require("zod");
 const path = require("path");
+const { consumeRateLimit, validRedisUrl } = require("./server/rate-limit-store");
 
 // ─────────────────────────────────────────────────────────────────
 // Environment variable validation
@@ -25,6 +26,24 @@ function validateEnv() {
   }
   if (!process.env.RESEND_API_KEY) {
     warnings.push("RESEND_API_KEY manquant : les emails de vérification/réinitialisation ne seront pas envoyés.");
+  } else if (!process.env.FROM_EMAIL) {
+    warnings.push("FROM_EMAIL manquant : Resend est configuré mais aucun e-mail transactionnel ne sera envoyé.");
+  }
+  if (process.env.REPLY_TO_EMAIL && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(process.env.REPLY_TO_EMAIL.trim())) {
+    warnings.push("REPLY_TO_EMAIL invalide : configure une boîte de réponse surveillée au format adresse@domaine.");
+  }
+  if (process.env.ERROR_WEBHOOK_URL) {
+    try {
+      const webhook = new URL(process.env.ERROR_WEBHOOK_URL);
+      if (webhook.username || webhook.password || (process.env.NODE_ENV === "production" && webhook.protocol !== "https:")) {
+        warnings.push("ERROR_WEBHOOK_URL invalide : utilise un webhook HTTPS sans identifiants dans l’URL.");
+      }
+    } catch {
+      warnings.push("ERROR_WEBHOOK_URL invalide : indique une URL HTTPS complète.");
+    }
+  }
+  if (process.env.RESEND_FROM_DOMAIN && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(process.env.RESEND_FROM_DOMAIN.trim())) {
+    warnings.push("RESEND_FROM_DOMAIN invalide : indique uniquement le domaine vérifié dans Resend, sans protocole ni adresse e-mail.");
   }
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     warnings.push("VAPID keys non définis : des clés VAPID seront générées automatiquement au premier démarrage.");
@@ -42,8 +61,16 @@ function validateEnv() {
     if (!process.env.CORS_ORIGIN && !process.env.APP_URL) {
       warnings.push("CORS_ORIGIN / APP_URL manquant en production : CORS pourrait rester trop permissif.");
     }
+    if (process.env.RESEND_API_KEY && !process.env.RESEND_FROM_DOMAIN) {
+      warnings.push("RESEND_FROM_DOMAIN manquant : configure le domaine Resend vérifié pour empêcher un expéditeur mal aligné.");
+    }
     if ((process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || "").startsWith("http://")) {
       missing.push("APP_URL / OAUTH_REDIRECT_BASE en HTTPS");
+    }
+    if (!process.env.REDIS_URL) {
+      warnings.push("REDIS_URL manquant : les rate limits restent locaux à chaque instance. Configure Redis avant de multiplier les services web.");
+    } else if (!validRedisUrl(process.env.REDIS_URL.trim())) {
+      missing.push("REDIS_URL valide (redis:// ou rediss://)");
     }
   }
 
@@ -253,11 +280,10 @@ function resolvePublicAppUrl({ fallback = "http://localhost:3000" } = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// In-memory rate limiter (per IP, no external dependency)
-// Not distributed — sufficient for a single-instance deployment.
+// Rate limiter (per IP or route-specific identity). Redis is shared between
+// instances when REDIS_URL is present; local memory remains the deliberate
+// development/single-instance fallback.
 // ─────────────────────────────────────────────────────────────────
-const buckets = new Map();
-
 function positiveEnvInteger(name, fallback, { min = 1, max = 100_000 } = {}) {
   const raw = process.env[name];
   if (raw === undefined || raw === "") return fallback;
@@ -268,37 +294,34 @@ function positiveEnvInteger(name, fallback, { min = 1, max = 100_000 } = {}) {
   return Number.isSafeInteger(value) && value >= min && value <= max ? value : fallback;
 }
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of buckets) {
-    if (entry.resetAt < now) buckets.delete(key);
-  }
-}, 5 * 60 * 1000);
-
 function rateLimit({ windowMs, max, keyPrefix = "rl", message, keyGenerator = null }) {
   if (!Number.isSafeInteger(windowMs) || windowMs <= 0 || !Number.isSafeInteger(max) || max <= 0) {
     throw new Error(`Configuration de limite invalide pour ${keyPrefix}`);
   }
-  return (req, res, next) => {
+  return async (req, res, next) => {
     // Use Express's req.ip, which honors the app's "trust proxy" setting. This
     // avoids trusting a spoofable X-Forwarded-For header unless the deployment
     // has been explicitly configured to sit behind a trusted proxy.
     const ip = req.ip || req.socket?.remoteAddress || "unknown";
     const suffix = typeof keyGenerator === "function" ? keyGenerator(req, ip) : ip;
-    const key = `${keyPrefix}:${String(suffix || ip).slice(0, 200)}`;
-    const now = Date.now();
-    let entry = buckets.get(key);
-    if (!entry || entry.resetAt < now) {
-      entry = { count: 0, resetAt: now + windowMs };
-      buckets.set(key, entry);
+    try {
+      const result = await consumeRateLimit({
+        prefix: keyPrefix,
+        identifier: String(suffix || ip).slice(0, 200),
+        windowMs
+      });
+      if (result.unavailable) {
+        return res.status(503).json({ error: "Protection temporairement indisponible. Réessaie dans un instant." });
+      }
+      if (result.count > max) {
+        res.setHeader("Retry-After", String(result.retryAfterSeconds));
+        return res.status(429).json({ error: message || "Trop de tentatives, réessaie plus tard." });
+      }
+      return next();
+    } catch (error) {
+      console.error(`[rate-limit] Échec inattendu (${keyPrefix}):`, error);
+      return res.status(503).json({ error: "Protection temporairement indisponible. Réessaie dans un instant." });
     }
-    entry.count++;
-    if (entry.count > max) {
-      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-      res.setHeader("Retry-After", String(retryAfter));
-      return res.status(429).json({ error: message || "Trop de tentatives, réessaie plus tard." });
-    }
-    next();
   };
 }
 

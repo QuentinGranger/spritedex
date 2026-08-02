@@ -260,6 +260,23 @@ app.get("/api/admin/overview", requireAdminCapability("overview.read"), route(as
   });
 }));
 
+// Persisted incidents are intentionally exposed only to technical operators.
+// Context is already redacted by the monitoring reporter and never contains a
+// request body, query parameters, credentials or bearer values.
+app.get("/api/admin/monitoring/incidents", requireAdminCapability("overview.read"), route(async (req, res) => {
+  const { page, pageSize, offset } = pagination(req);
+  const result = await pool.query(
+    `SELECT fingerprint, component, environment, message, context,
+            first_seen_at, last_seen_at, occurrences, last_alerted_at, resolved_at
+     FROM operational_incidents
+     ORDER BY resolved_at NULLS FIRST, last_seen_at DESC
+     LIMIT $1 OFFSET $2`,
+    [pageSize, offset]
+  );
+  const total = await pool.query("SELECT COUNT(*)::int AS count FROM operational_incidents");
+  res.json({ page, pageSize, total: total.rows[0].count, incidents: result.rows });
+}));
+
 // ── 2. Players & moderation ────────────────────────────────────────────────
 
 // Deliberately return operational identifiers and labels only: universal search

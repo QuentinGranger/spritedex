@@ -87,7 +87,7 @@ base ou les clés de push.
 | `CORS_ORIGIN` | Origines autorisées, séparées par des virgules si nécessaire. |
 | `TRUST_PROXY` | À définir uniquement derrière un proxy connu (déjà configuré dans le Blueprint Render). |
 | `GOOGLE_CLIENT_*`, `DISCORD_CLIENT_*` | Connexion OAuth, optionnelle si le fournisseur concerné n’est pas activé. |
-| `RESEND_API_KEY`, `FROM_EMAIL` | Vérification et réinitialisation par e-mail. |
+| `RESEND_API_KEY`, `FROM_EMAIL`, `RESEND_FROM_DOMAIN`, `REPLY_TO_EMAIL` | E-mails transactionnels : clé Resend, expéditeur/domain vérifiés et boîte de réponse surveillée. |
 | `VAPID_*`, `FCM_*`, `APNS_*` | Notifications web, Android et iOS. Les clés VAPID peuvent être générées au premier démarrage. |
 | `CHROME_PATH` | Facultatif ; active le scraper d’actualités lorsque Chrome/Chromium est disponible. |
 | `ADMIN_ACCESS_PASSWORD_HASH` | Secret global de transition uniquement ; à retirer après création d’un compte nominatif. |
@@ -99,6 +99,68 @@ base ou les clés de push.
 En production, utilisez une URL publique HTTPS, une base PostgreSQL accessible
 et des secrets distincts de ceux du développement. `PGSSL=disable` est réservé
 au développement local : le serveur le refuse en production.
+
+## Intégration continue
+
+Le workflow GitHub Actions `CI / test` démarre PostgreSQL et l'application,
+puis lance `npm test`, y compris les tests HTTP, le parcours mobile Chromium,
+le cache client et le backoffice. Pour le rendre obligatoire avant fusionner :
+dans GitHub, ouvrez **Settings → Branches → Add branch ruleset**, ciblez
+`main`, activez **Require a pull request before merging** et **Require status
+checks to pass**, puis sélectionnez `CI / test`.
+
+## Migrations PostgreSQL
+
+Les migrations versionnées vivent dans `migrations/`. Elles sont validées avant
+exécution, protégées par un verrou consultatif PostgreSQL et leur checksum est
+enregistré dans `schema_migrations` : un fichier déjà appliqué ne doit jamais
+être modifié. Le serveur exécute les migrations avant le seed au démarrage.
+
+```bash
+npm run migrate                 # applique les migrations en attente
+node scripts/migrate.js up --dry-run
+npm run migrate:status
+npm run migrate:rollback -- --steps=1
+```
+
+Chaque nouvelle migration doit exporter un `up` et un `down` transactionnels.
+Une migration qui crée ou modifie des données sans retour sûr doit déclarer
+`irreversible: true` et être restaurée depuis une sauvegarde, jamais forcée.
+
+## Supervision
+
+Les sondes publiques sont séparées des routes métier : `GET /health/live`
+indique que le processus répond, tandis que `GET /health/ready` vérifie aussi
+PostgreSQL, les migrations, le seed et le démarrage des workers. Render utilise
+la readiness comme health check. Pour centraliser les erreurs non gérées et les
+500 HTTP, renseignez `ERROR_WEBHOOK_URL` dans Render (et éventuellement
+`ERROR_WEBHOOK_BEARER_TOKEN`). Les alertes sont dédupliquées pendant 15 minutes
+par défaut et n'envoient jamais les paramètres d'URL, corps de requête ou
+secrets. Les incidents sont aussi persistés dans `operational_incidents` et
+consultables par un administrateur ayant la capacité `overview.read` via
+`GET /api/admin/monitoring/incidents`.
+
+## Montée en charge
+
+Les rate limits ne sont jamais basés sur une adresse IP en clair dans Redis :
+le compteur utilise une clé dérivée par SHA-256. Avec `REDIS_URL`, l'incrément
+et l'expiration du compteur sont atomiques et partagés par toutes les instances
+web. Sans cette variable, l'application garde un repli en mémoire adapté au
+développement ou à une seule instance ; la production affiche alors un
+avertissement explicite. `RATE_LIMIT_REDIS_REQUIRED=true` fait échouer
+temporairement la route protégée (503) plutôt que de rendre la limite locale
+pendant une panne Redis.
+
+Le rôle de processus se contrôle avec `PROCESS_ROLE` : `all` (défaut, une
+instance web + workers), `web` (HTTP/WebSocket uniquement) ou `worker`
+(queues, cron et purges uniquement). Pour séparer les tâches de fond avant de
+multiplier le web, conservez une seule instance worker et mettez le web à
+`PROCESS_ROLE=web`. Le fichier
+[`render.worker.yaml.example`](render.worker.yaml.example) est le modèle prêt
+à copier dans le Blueprint ; renseignez sur ce worker les mêmes secrets
+transactionnels et de supervision que sur le web. Un verrou consultatif
+PostgreSQL fait du deuxième worker éventuel un standby, ce qui évite le double
+déclenchement des tâches planifiées.
 
 ## Backoffice administrateur
 

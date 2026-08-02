@@ -6,6 +6,7 @@ const cors = require("cors");
 const express = require("express");
 const http = require("http");
 const path = require("path");
+const crypto = require("crypto");
 const { renderServiceWorker } = require("../scripts/client-cache");
 const { Resend } = require("resend");
 const { WebSocketServer } = require("ws");
@@ -46,7 +47,12 @@ function escapeHtml(str) {
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
-const FROM_EMAIL = process.env.FROM_EMAIL || "SPRITE-INDEX <quentinsavigny@protonmail.com>";
+// A verified sender is mandatory.  Falling back to a personal or unverified
+// address causes provider rejections and weakens domain alignment.
+const FROM_EMAIL = String(process.env.FROM_EMAIL || "").trim();
+const REPLY_TO_EMAIL = String(process.env.REPLY_TO_EMAIL || "").trim();
+const RESEND_FROM_DOMAIN = String(process.env.RESEND_FROM_DOMAIN || "").trim().toLowerCase().replace(/\.$/, "");
+const EMAIL_ADDRESS_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 
 const EMAIL_COPY = Object.freeze({
   fr: Object.freeze({
@@ -102,74 +108,150 @@ function localizedAppUrl(pathname, params, lang) {
   return url.toString();
 }
 
-function emailShell({ intro, ctaLabel, href, footer }) {
+function emailShell({ heading, intro, ctaLabel, href, footer }) {
+  const preheader = [heading, intro].filter(Boolean).join(" — ");
+  const safeHref = escapeHtml(href);
   return `
-        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0c0f20;color:#eef0ff;border-radius:16px;">
-          <h1 style="font-size:24px;margin:0 0 8px;color:#00e1ff;">SPRITE-INDEX</h1>
-          <p style="margin:0 0 24px;color:rgba(255,255,255,0.7);font-size:14px;">${escapeHtml(intro)}</p>
-          <a href="${href}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#00e1ff,#8d7cff);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">${escapeHtml(ctaLabel)}</a>
-          <p style="margin:24px 0 0;color:rgba(255,255,255,0.4);font-size:12px;">${escapeHtml(footer)}</p>
-        </div>
-      `;
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preheader)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f6fb;margin:0;padding:24px 0;font-family:Arial,sans-serif;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;">
+          <tr><td style="padding:32px 28px;color:#172033;">
+            <div style="font-size:22px;font-weight:700;letter-spacing:0.2px;color:#2454d3;margin:0 0 20px;">SPRITE-INDEX</div>
+            ${heading ? `<h1 style="font-size:20px;line-height:28px;margin:0 0 14px;color:#172033;">${escapeHtml(heading)}</h1>` : ""}
+            <p style="font-size:16px;line-height:24px;margin:0 0 24px;color:#42526e;white-space:pre-line;">${escapeHtml(intro)}</p>
+            <a href="${safeHref}" style="display:inline-block;padding:12px 20px;background:#2454d3;border-radius:7px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;">${escapeHtml(ctaLabel)}</a>
+            ${footer ? `<p style="font-size:13px;line-height:20px;margin:28px 0 0;color:#667085;">${escapeHtml(footer)}</p>` : ""}
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>`;
+}
+
+function emailText({ heading, intro, ctaLabel, href, footer }) {
+  return [
+    "SPRITE-INDEX",
+    "",
+    heading ? String(heading) : null,
+    heading ? "" : null,
+    String(intro || ""),
+    "",
+    `${String(ctaLabel || "")}: ${href}`,
+    "",
+    String(footer || "")
+  ].filter(value => value !== null).join("\n");
+}
+
+function emailIdempotencyKey(kind, value) {
+  const digest = crypto.createHash("sha256").update(String(value)).digest("hex");
+  return `sprite-index:${kind}:${digest}`;
+}
+
+function extractEmailAddress(value) {
+  const raw = String(value || "").trim();
+  const bracketed = raw.match(/<([^<>]+)>$/);
+  const address = (bracketed ? bracketed[1] : raw).trim().toLowerCase();
+  return EMAIL_ADDRESS_RE.test(address) ? address : null;
+}
+
+function emailDeliveryUnavailable(toEmail) {
+  let reason = null;
+  const fromAddress = extractEmailAddress(FROM_EMAIL);
+  if (!resend) reason = "RESEND_API_KEY not configured";
+  else if (!fromAddress) reason = "FROM_EMAIL is invalid or not configured";
+  else if (RESEND_FROM_DOMAIN && fromAddress.split("@")[1] !== RESEND_FROM_DOMAIN) reason = "FROM_EMAIL does not match RESEND_FROM_DOMAIN";
+  else if (REPLY_TO_EMAIL && !extractEmailAddress(REPLY_TO_EMAIL)) reason = "REPLY_TO_EMAIL is invalid";
+  else if (!extractEmailAddress(toEmail)) reason = "recipient address is invalid";
+  if (!reason) return null;
+  console.warn(`[RESEND] Skipping email to ${toEmail} (${reason}).`);
+  return { ok: false, skipped: true, reason };
+}
+
+function resendResponse(result) {
+  if (result?.error) {
+    return { ok: false, error: result.error.message || "Resend rejected the email" };
+  }
+  return { ok: true, id: result?.data?.id || null };
+}
+
+function transactionalEmail({ to, subject, html, text, tag }) {
+  const payload = { from: FROM_EMAIL, to, subject, html, text };
+  if (REPLY_TO_EMAIL) payload.replyTo = REPLY_TO_EMAIL;
+  if (tag) payload.tags = [{ name: "category", value: tag }];
+  return payload;
 }
 
 async function sendVerificationEmail(toEmail, token, lang = "fr") {
-  if (!resend) {
-    console.warn(`[RESEND] Skipping verification email to ${toEmail} (RESEND_API_KEY not configured).`);
-    return;
-  }
+  const unavailable = emailDeliveryUnavailable(toEmail);
+  if (unavailable) return unavailable;
   const copy = emailCopy(lang);
   const verifyUrl = localizedAppUrl("/api/auth/verify-email", { token }, lang);
+  const content = {
+    heading: "",
+    intro: copy.verifyIntro,
+    ctaLabel: copy.verifyCta,
+    href: verifyUrl,
+    footer: copy.verifyIgnore
+  };
   try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
+    const result = await resend.emails.send(transactionalEmail({
       to: toEmail,
       subject: copy.verifySubject,
-      html: emailShell({
-        intro: copy.verifyIntro,
-        ctaLabel: copy.verifyCta,
-        href: verifyUrl,
-        footer: copy.verifyIgnore
-      })
-    });
+      html: emailShell(content),
+      text: emailText(content),
+      tag: "account_verification"
+    }), { idempotencyKey: emailIdempotencyKey("verify", token) });
+    const response = resendResponse(result);
+    if (!response.ok) {
+      console.error("[RESEND] Failed to send verification email:", response.error);
+      return response;
+    }
     console.log(`[RESEND] Verification email sent to ${toEmail} (${String(lang || "fr").slice(0, 2)})`);
+    return response;
   } catch (err) {
     console.error("[RESEND] Failed to send verification email:", err);
+    return { ok: false, error: err.message };
   }
 }
 
 async function sendPasswordResetEmail(toEmail, token, lang = "fr") {
-  if (!resend) {
-    console.warn(`[RESEND] Skipping password reset email to ${toEmail} (RESEND_API_KEY not configured).`);
-    return;
-  }
+  const unavailable = emailDeliveryUnavailable(toEmail);
+  if (unavailable) return unavailable;
   const copy = emailCopy(lang);
   const resetUrl = localizedAppUrl("/", { resetToken: token }, lang);
+  const content = {
+    heading: "",
+    intro: copy.resetIntro,
+    ctaLabel: copy.resetCta,
+    href: resetUrl,
+    footer: copy.resetIgnore
+  };
   try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
+    const result = await resend.emails.send(transactionalEmail({
       to: toEmail,
       subject: copy.resetSubject,
-      html: emailShell({
-        intro: copy.resetIntro,
-        ctaLabel: copy.resetCta,
-        href: resetUrl,
-        footer: copy.resetIgnore
-      })
-    });
+      html: emailShell(content),
+      text: emailText(content),
+      tag: "password_reset"
+    }), { idempotencyKey: emailIdempotencyKey("password-reset", token) });
+    const response = resendResponse(result);
+    if (!response.ok) {
+      console.error("[RESEND] Failed to send password reset email:", response.error);
+      return response;
+    }
     console.log(`[RESEND] Password reset email sent to ${toEmail} (${String(lang || "fr").slice(0, 2)})`);
+    return response;
   } catch (err) {
     console.error("[RESEND] Failed to send password reset email:", err);
+    return { ok: false, error: err.message };
   }
 }
 
 // Generic notification email (channel = 'email'). Reserved for important alerts
 // or summaries; best-effort and a no-op when RESEND is not configured.
-async function sendNotificationEmail(toEmail, { title, body, url, lang } = {}) {
-  if (!resend) {
-    console.warn(`[RESEND] Skipping notification email to ${toEmail} (RESEND_API_KEY not configured).`);
-    return { ok: false, skipped: true };
-  }
+async function sendNotificationEmail(toEmail, { title, body, url, lang, idempotencyKey } = {}) {
+  const unavailable = emailDeliveryUnavailable(toEmail);
+  if (unavailable) return unavailable;
   if (!toEmail) return { ok: false, skipped: true };
   const copy = emailCopy(lang);
   // Notifications must not turn an attacker-supplied URL into a trusted email
@@ -181,21 +263,24 @@ async function sendNotificationEmail(toEmail, { title, body, url, lang } = {}) {
   } catch {
     // Keep the safe application homepage fallback.
   }
+  const content = {
+    heading: title || "",
+    intro: body || "",
+    ctaLabel: copy.notifOpen,
+    href: link,
+    footer: ""
+  };
   try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
+    const result = await resend.emails.send(transactionalEmail({
       to: toEmail,
       subject: `${title || "SPRITE-INDEX"} — SPRITE-INDEX`,
-      html: `
-        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0c0f20;color:#eef0ff;border-radius:16px;">
-          <h1 style="font-size:24px;margin:0 0 8px;color:#00e1ff;">SPRITE-INDEX</h1>
-          <h2 style="font-size:18px;margin:0 0 8px;color:#eef0ff;">${escapeHtml(title || "")}</h2>
-          <p style="margin:0 0 24px;color:rgba(255,255,255,0.7);font-size:14px;">${escapeHtml(body || "")}</p>
-          <a href="${link}" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#00e1ff,#8d7cff);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:14px;">${escapeHtml(copy.notifOpen)}</a>
-        </div>
-      `
-    });
-    return { ok: true };
+      html: emailShell(content),
+      text: emailText(content),
+      tag: "notification"
+    }), idempotencyKey ? { idempotencyKey: `sprite-index:notification:${idempotencyKey}` } : undefined);
+    const response = resendResponse(result);
+    if (!response.ok) console.error("[RESEND] Failed to send notification email:", response.error);
+    return response;
   } catch (err) {
     console.error("[RESEND] Failed to send notification email:", err.message);
     return { ok: false, error: err.message };
@@ -247,4 +332,4 @@ app.use((req, res, next) => {
   return staticAssets(req, res, next);
 });
 
-module.exports = { APP_URL, EMAIL_COPY, FROM_EMAIL, PORT, app, corsOrigins, emailCopy, emailLocale, escapeHtml, localizedAppUrl, resend, sendNotificationEmail, sendPasswordResetEmail, sendVerificationEmail, server, wss };
+module.exports = { APP_URL, EMAIL_COPY, FROM_EMAIL, PORT, REPLY_TO_EMAIL, app, corsOrigins, emailCopy, emailLocale, emailText, escapeHtml, localizedAppUrl, resend, sendNotificationEmail, sendPasswordResetEmail, sendVerificationEmail, server, wss };
