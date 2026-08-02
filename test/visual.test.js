@@ -9,6 +9,7 @@ const { PNG } = require("pngjs");
 const baseUrl = process.env.VISUAL_BASE_URL || process.env.BASE_URL;
 const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_BIN;
 const baselinePath = process.env.VISUAL_BASELINE_PATH || path.join(__dirname, "visual-baselines", "mobile-login.png");
+const baselineRequired = process.env.VISUAL_REQUIRE_BASELINE !== "0";
 
 async function main() {
   if (!baseUrl || !executablePath) {
@@ -19,7 +20,14 @@ async function main() {
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+    await page.evaluateOnNewDocument(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
     await page.goto(baseUrl, { waitUntil: "networkidle0" });
+    await page.waitForSelector("#loginScreen");
+    await page.evaluate(() => document.fonts?.ready);
     const screenshot = await page.screenshot({ type: "png" });
     const image = PNG.sync.read(screenshot);
     assert.strictEqual(image.width, 390);
@@ -36,7 +44,7 @@ async function main() {
       return;
     }
     if (!fs.existsSync(baselinePath)) {
-      if (process.env.VISUAL_REQUIRE_BASELINE === "1") {
+      if (baselineRequired) {
         throw new Error(`visual baseline is required but missing: ${baselinePath}`);
       }
       console.log("visual: smoke test ok (no baseline committed yet)");

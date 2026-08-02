@@ -21,6 +21,7 @@ VISUAL_UPDATE=1 VISUAL_BASE_URL=http://127.0.0.1:3000 \
 PUPPETEER_EXECUTABLE_PATH=/chemin/vers/chrome npm run test:visual
 ```
 
-Commite ensuite `test/visual-baselines/mobile-login.png`. Définis
-`VISUAL_REQUIRE_BASELINE=1` en CI lorsque la baseline est présente pour rendre
-la comparaison obligatoire.
+Commite ensuite `test/visual-baselines/mobile-login.png`. La baseline est
+obligatoire par défaut, y compris dans la CI : une absence ou une différence de
+plus de 0,5 % fait échouer le test. `VISUAL_REQUIRE_BASELINE=0` est réservé à
+un diagnostic local ponctuel ; il ne doit pas être utilisé dans la CI.

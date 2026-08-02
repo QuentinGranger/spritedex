@@ -37,6 +37,7 @@ jobs:
       DATABASE_URL: postgres://sprite_index:sprite_index@127.0.0.1:5432/sprite_index_test
       BASE_URL: http://127.0.0.1:3000
       MOBILE_SWIPE_BASE_URL: http://127.0.0.1:3000
+      VISUAL_REQUIRE_BASELINE: "1"
 
     steps:
       - name: Checkout
