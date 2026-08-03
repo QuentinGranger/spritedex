@@ -38,8 +38,10 @@
     const active = currentLocale();
     const codeEl = root.querySelector("[data-lang-code]");
     const nameEl = root.querySelector("[data-lang-name]");
+    const flagEl = root.querySelector("[data-lang-flag]");
     if (codeEl) codeEl.textContent = active.toUpperCase();
     if (nameEl) nameEl.textContent = labelFor(active);
+    if (flagEl) flagEl.src = `icons/flags/${active}.png`;
 
     const trigger = root.querySelector(".lang-menu__trigger");
     if (trigger) {
@@ -58,6 +60,27 @@
     });
   }
 
+  function clampPanel(root) {
+    const panel = root.querySelector(".lang-menu__panel");
+    if (!panel || panel.hidden) return;
+    panel.style.left = "";
+    panel.style.right = "0";
+    panel.style.transform = "";
+    const rect = panel.getBoundingClientRect();
+    const pad = 10;
+    if (rect.left < pad) {
+      panel.style.right = "auto";
+      panel.style.left = "0";
+      const next = panel.getBoundingClientRect();
+      if (next.right > window.innerWidth - pad) {
+        panel.style.left = `${Math.max(pad - root.getBoundingClientRect().left, 0)}px`;
+      }
+    } else if (rect.right > window.innerWidth - pad) {
+      const overflow = rect.right - (window.innerWidth - pad);
+      panel.style.right = `${overflow}px`;
+    }
+  }
+
   function setOpen(root, open) {
     const trigger = root.querySelector(".lang-menu__trigger");
     const panel = root.querySelector(".lang-menu__panel");
@@ -67,7 +90,14 @@
     panel.hidden = !open;
     if (backdrop) backdrop.hidden = !open;
     root.classList.toggle("is-open", open);
-    document.documentElement.classList.toggle("lang-menu-open", open && !!document.querySelector(".lang-menu.is-open"));
+    document.documentElement.classList.toggle("lang-menu-open", !!document.querySelector(".lang-menu.is-open"));
+    if (open) {
+      requestAnimationFrame(() => clampPanel(root));
+    } else {
+      panel.style.left = "";
+      panel.style.right = "";
+      panel.style.transform = "";
+    }
   }
 
   function closeAll(except) {
@@ -161,9 +191,13 @@
       setOpen(root, willOpen);
       if (willOpen) {
         closeNotifPopover();
-        const active = root.querySelector('.lang-menu__option[aria-selected="true"]')
-          || root.querySelector(".lang-menu__option");
-        active?.focus();
+        // Avoid forcing focus on touch devices (virtual keyboard / scroll jump).
+        const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+        if (!coarse) {
+          const active = root.querySelector('.lang-menu__option[aria-selected="true"]')
+            || root.querySelector(".lang-menu__option");
+          active?.focus();
+        }
       }
     });
 

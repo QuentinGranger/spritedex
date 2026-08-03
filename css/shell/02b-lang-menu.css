@@ -34,10 +34,18 @@
   place-items: center;
   width: 26px;
   height: 26px;
+  overflow: hidden;
   border-radius: 8px;
-  background: rgba(0, 225, 255, 0.1);
-  border: 1px solid rgba(0, 225, 255, 0.18);
-  color: #9af0ff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.lang-menu__icon-flag {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .lang-menu__current {
@@ -174,40 +182,26 @@
 }
 
 .lang-menu__flag {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 38px;
   height: 38px;
+  overflow: hidden;
   border-radius: 11px;
-  border: 1px solid rgba(0, 225, 255, 0.2);
-  background: rgba(0, 225, 255, 0.08);
-  color: #9af0ff;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
-.lang-menu__option[data-tone="fr"] .lang-menu__flag {
-  border-color: rgba(80, 140, 255, 0.35);
-  background: linear-gradient(145deg, rgba(55, 95, 220, 0.28), rgba(0, 225, 255, 0.08));
-}
-
-.lang-menu__option[data-tone="en"] .lang-menu__flag {
-  border-color: rgba(255, 110, 130, 0.3);
-  background: linear-gradient(145deg, rgba(210, 55, 80, 0.22), rgba(70, 110, 220, 0.16));
-}
-
-.lang-menu__option[data-tone="nl"] .lang-menu__flag {
-  border-color: rgba(255, 170, 60, 0.35);
-  background: linear-gradient(145deg, rgba(255, 150, 40, 0.22), rgba(255, 90, 60, 0.12));
+.lang-menu__flag img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .lang-menu__option[aria-selected="true"] .lang-menu__flag {
   border-color: rgba(0, 225, 255, 0.55);
-  background: #00e1ff;
-  color: #041018;
-  box-shadow: 0 0 14px rgba(0, 225, 255, 0.35);
+  box-shadow: 0 0 14px rgba(0, 225, 255, 0.28);
 }
 
 .lang-menu__copy {
@@ -313,62 +307,138 @@
   text-transform: uppercase;
 }
 
+html.lang-menu-open {
+  overflow: hidden;
+}
+
 @media (max-width: 720px) {
+  .lang-menu {
+    z-index: 130;
+  }
+
   .lang-menu__backdrop {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 119;
+    z-index: 129;
     border: 0;
     margin: 0;
     padding: 0;
-    background: rgba(3, 7, 20, 0.55);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(3, 7, 20, 0.42);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     cursor: pointer;
+    animation: lang-backdrop-in 160ms ease;
   }
 
   .lang-menu__backdrop[hidden] {
     display: none;
   }
 
-  .lang-menu__panel {
-    position: fixed;
-    top: auto;
-    right: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
-    left: 12px;
-    width: auto;
-    max-width: none;
-    padding: 16px;
-    border-radius: 22px;
-    animation: lang-sheet-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  @keyframes lang-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
-  @keyframes lang-sheet-in {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
+  /* Keep a real dropdown under the trigger (not a bottom sheet). */
+  .lang-menu__panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    bottom: auto;
+    width: min(280px, calc(100vw - 20px));
+    max-width: calc(100vw - 20px);
+    padding: 12px;
+    border-radius: 18px;
+    box-shadow:
+      0 18px 48px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(0, 225, 255, 0.08) inset;
+    animation: lang-menu-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .lang-menu__panel::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 18px;
+    width: 12px;
+    height: 12px;
+    border-left: 1px solid rgba(117, 213, 255, 0.24);
+    border-top: 1px solid rgba(117, 213, 255, 0.24);
+    background: linear-gradient(135deg, rgba(22, 34, 74, 0.98), rgba(16, 24, 52, 0.99));
+    transform: rotate(45deg);
+  }
+
+  .lang-menu__header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+
+  .lang-menu__hint {
+    font-size: 0.68rem;
   }
 
   .lang-menu__option {
-    min-height: 54px;
-    padding: 11px 10px;
+    min-height: 52px;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .lang-menu__option:active {
+    transform: scale(0.985);
+    background: linear-gradient(90deg, rgba(0, 225, 255, 0.16), rgba(117, 92, 255, 0.08));
+  }
+
+  .lang-menu__flag {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .lang-menu__name {
+    font-size: 0.92rem;
+  }
+
+  .lang-menu__meta {
+    font-size: 0.7rem;
+  }
+
+  .lang-menu--login .lang-menu__panel {
+    right: 0;
   }
 }
 
 @media (max-width: 420px) {
   .lang-menu__trigger {
-    min-height: 38px;
-    gap: 6px;
+    min-height: 40px;
+    gap: 7px;
     padding: 0 8px 0 6px;
+    border-radius: 12px;
   }
 
   .lang-menu__icon {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+
+  .lang-menu__code {
+    font-size: 0.8rem;
   }
 
   .lang-menu__label {
     display: none;
+  }
+
+  .lang-menu__panel {
+    width: min(268px, calc(100vw - 16px));
+    right: -4px;
+  }
+
+  .lang-menu__panel::before {
+    right: 16px;
   }
 }
