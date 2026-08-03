@@ -19,8 +19,11 @@
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* ── Notification bell + dropdown ── */

@@ -1,6 +1,7 @@
 /* ── Shell ── */
 .app-shell {
   width: min(1120px, 100%);
+  max-width: 100%;
   margin: 0 auto;
   padding:
     calc(24px + env(safe-area-inset-top))
@@ -20,12 +21,20 @@
 /* ── Topbar ── */
 .topbar {
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
   position: relative;
   z-index: 100;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.topbar-brand {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .topbar-logo {

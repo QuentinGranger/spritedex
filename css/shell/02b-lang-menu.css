@@ -1,6 +1,8 @@
 /* ── Language menu ── */
 .lang-menu {
   position: relative;
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 .lang-menu__trigger {
@@ -99,7 +101,9 @@
   top: calc(100% + 10px);
   right: 0;
   z-index: 120;
-  width: min(260px, calc(100vw - 24px));
+  box-sizing: border-box;
+  width: 260px;
+  max-width: 260px;
   padding: 12px;
   border: 1px solid rgba(117, 213, 255, 0.24);
   border-radius: 18px;
@@ -308,12 +312,14 @@
 }
 
 html.lang-menu-open {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 @media (max-width: 720px) {
   .lang-menu {
     z-index: 130;
+    flex: 0 0 auto;
   }
 
   .lang-menu__backdrop {
@@ -340,28 +346,56 @@ html.lang-menu-open {
     to { opacity: 1; }
   }
 
-  /* Keep a real dropdown under the trigger (not a bottom sheet). */
+  /* Fixed dropdown: JS clamps left/top/width; no 100vw (expands scroll on iOS). */
   .lang-menu__panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    left: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
     bottom: auto;
-    width: min(280px, calc(100vw - 20px));
-    max-width: calc(100vw - 20px);
+    width: 280px;
+    max-width: 280px;
     padding: 12px;
     border-radius: 18px;
+    visibility: hidden;
+    pointer-events: none;
     box-shadow:
       0 18px 48px rgba(0, 0, 0, 0.55),
       0 0 0 1px rgba(0, 225, 255, 0.08) inset;
+    animation: none;
+  }
+
+  .lang-menu.is-open .lang-menu__panel:not([hidden]) {
     animation: lang-menu-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Flag-only trigger: frees topbar space so actions don't overflow. */
+  .lang-menu__trigger {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    border-radius: 12px;
+  }
+
+  .lang-menu__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+  }
+
+  .lang-menu__current,
+  .lang-menu__chevron {
+    display: none;
   }
 
   .lang-menu__panel::before {
     content: "";
     position: absolute;
     top: -6px;
-    right: 18px;
+    left: var(--lang-caret-left, auto);
+    right: var(--lang-caret-right, 18px);
     width: 12px;
     height: 12px;
     border-left: 1px solid rgba(117, 213, 255, 0.24);
@@ -406,39 +440,18 @@ html.lang-menu-open {
     font-size: 0.7rem;
   }
 
-  .lang-menu--login .lang-menu__panel {
-    right: 0;
+  .topbar-actions {
+    gap: 6px;
   }
 }
 
 @media (max-width: 420px) {
-  .lang-menu__trigger {
-    min-height: 40px;
-    gap: 7px;
-    padding: 0 8px 0 6px;
-    border-radius: 12px;
-  }
-
-  .lang-menu__icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 9px;
-  }
-
-  .lang-menu__code {
-    font-size: 0.8rem;
-  }
-
-  .lang-menu__label {
-    display: none;
-  }
-
   .lang-menu__panel {
-    width: min(268px, calc(100vw - 16px));
-    right: -4px;
+    width: 268px;
+    max-width: 268px;
   }
 
-  .lang-menu__panel::before {
-    right: 16px;
+  .topbar-logo {
+    max-width: min(140px, 36vw);
   }
 }

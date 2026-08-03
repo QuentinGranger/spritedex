@@ -60,25 +60,54 @@
     });
   }
 
+  function isMobileLayout() {
+    return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+  }
+
   function clampPanel(root) {
     const panel = root.querySelector(".lang-menu__panel");
-    if (!panel || panel.hidden) return;
+    const trigger = root.querySelector(".lang-menu__trigger");
+    if (!panel || panel.hidden || !trigger) return;
+
     panel.style.left = "";
-    panel.style.right = "0";
+    panel.style.right = "";
+    panel.style.top = "";
+    panel.style.bottom = "";
     panel.style.transform = "";
-    const rect = panel.getBoundingClientRect();
-    const pad = 10;
-    if (rect.left < pad) {
-      panel.style.right = "auto";
-      panel.style.left = "0";
-      const next = panel.getBoundingClientRect();
-      if (next.right > window.innerWidth - pad) {
-        panel.style.left = `${Math.max(pad - root.getBoundingClientRect().left, 0)}px`;
+    panel.style.width = "";
+
+    if (!isMobileLayout()) {
+      // Desktop: absolute under trigger; nudge if it overflows the viewport.
+      panel.style.right = "0";
+      const rect = panel.getBoundingClientRect();
+      const pad = 10;
+      if (rect.left < pad) {
+        panel.style.right = "auto";
+        panel.style.left = "0";
       }
-    } else if (rect.right > window.innerWidth - pad) {
-      const overflow = rect.right - (window.innerWidth - pad);
-      panel.style.right = `${overflow}px`;
+      return;
     }
+
+    // Mobile: fixed dropdown anchored under the trigger, clamped in-viewport.
+    const triggerRect = trigger.getBoundingClientRect();
+    const pad = 10;
+    const viewportW = document.documentElement.clientWidth || window.innerWidth;
+    const width = Math.min(280, viewportW - pad * 2);
+    let left = triggerRect.right - width;
+    left = Math.max(pad, Math.min(left, viewportW - width - pad));
+    const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 12);
+    panel.style.position = "fixed";
+    panel.style.width = `${width}px`;
+    panel.style.maxWidth = `${viewportW - pad * 2}px`;
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.right = "auto";
+    panel.style.visibility = "visible";
+    panel.style.pointerEvents = "auto";
+
+    const caretOffset = Math.max(14, Math.min(triggerRect.left + triggerRect.width / 2 - left - 6, width - 26));
+    panel.style.setProperty("--lang-caret-right", "auto");
+    panel.style.setProperty("--lang-caret-left", `${caretOffset}px`);
   }
 
   function setOpen(root, open) {
@@ -96,7 +125,14 @@
     } else {
       panel.style.left = "";
       panel.style.right = "";
+      panel.style.top = "";
+      panel.style.bottom = "";
+      panel.style.width = "";
+      panel.style.maxWidth = "";
       panel.style.transform = "";
+      panel.style.position = "";
+      panel.style.visibility = "";
+      panel.style.pointerEvents = "";
     }
   }
 
