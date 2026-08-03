@@ -212,7 +212,9 @@ async function getProductAnalyticsMetrics(pool, { days = 30 } = {}) {
       days,
       friendsInvitedToSquad: invited,
       recommendedFriendsInvited: recommendedFriendsInvited.rows[0].total || 0,
-      recommendationUsageRate: recViewed ? Math.round(((recommendedFriendsInvited.rows[0].total || 0) / recViewed) * 10000) / 100 : 0,
+      recommendationUsageRate: recViewed
+        ? Math.round(((recommendedFriendsInvited.rows[0].total || 0) / recViewed) * 10000) / 100
+        : 0,
       invitationAcceptanceRate: totalInv ? Math.round((accepted / totalInv) * 10000) / 100 : 0,
       comparisonsLaunchedFromSquad: comparisonsFromSquad.rows[0].total || 0,
       sharedGoalsCreated: sharedGoalsCreated.rows[0].total || 0,
@@ -316,9 +318,7 @@ async function getPassportAnalyticsMetrics(pool, { days = 30 } = {}) {
       summarizedPassports: avgCompletion.rows[0].passports || 0,
       collectionUpdates: updateTotal,
       collectionUpdateUsers: updateUsers,
-      collectionUpdatesPerUser: updateUsers
-        ? Math.round((updateTotal / updateUsers) * 100) / 100
-        : 0
+      collectionUpdatesPerUser: updateUsers ? Math.round((updateTotal / updateUsers) * 100) / 100 : 0
     };
   } catch (err) {
     console.error("[ANALYTICS] Passport metrics query failed:", err.message);

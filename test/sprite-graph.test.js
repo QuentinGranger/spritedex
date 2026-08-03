@@ -33,7 +33,7 @@ const suites = [
   require("./sprite-graph/29.js"),
   require("./sprite-graph/30.js"),
   require("./sprite-graph/31.js"),
-  require("./sprite-graph/32.js"),
+  require("./sprite-graph/32.js")
 ];
 
 async function run(name, fn) {
@@ -55,7 +55,8 @@ async function main() {
   let passed = 0;
   let failed = 0;
   for (const suite of suites) {
-    if (await run(suite.name, suite.run)) passed++; else failed++;
+    if (await run(suite.name, suite.run)) passed++;
+    else failed++;
   }
   console.log(`\n${passed} passed, ${failed} failed\n`);
   await pool.end().catch(() => {});

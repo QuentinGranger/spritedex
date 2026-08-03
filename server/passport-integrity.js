@@ -33,10 +33,14 @@ async function ensurePassportIntegrityTables(db = pool) {
       ON collection_change_log USING GIN (flags);
   `);
   // Help flip detection queries.
-  await db.query(`
+  await db
+    .query(
+      `
     CREATE INDEX IF NOT EXISTS idx_collection_history_user_sprite_time
       ON collection_history (user_id, sprite_id, created_at DESC);
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
   tablesReady = true;
 }
 
@@ -140,13 +144,10 @@ function detectImportIncoherence({
 /**
  * Journal mass / suspicious changes without rejecting the write.
  */
-async function logCollectionIntegrityEvent(userId, {
-  source = "sync",
-  changes = [],
-  deletedCount = 0,
-  extraFlags = [],
-  details = {}
-} = {}) {
+async function logCollectionIntegrityEvent(
+  userId,
+  { source = "sync", changes = [], deletedCount = 0, extraFlags = [], details = {} } = {}
+) {
   await ensurePassportIntegrityTables();
   const summary = summarizeChanges(changes);
   const flags = new Set(extraFlags || []);
@@ -191,8 +192,8 @@ async function logCollectionIntegrityEvent(userId, {
 
   if (flagList.length) {
     console.warn(
-      `[passport-integrity] user=${userId} source=${source} flags=${flagList.join(",")}`
-        + ` changes=${summary.changeCount} flips=${summary.flipCount} deleted=${deletedCount || 0}`
+      `[passport-integrity] user=${userId} source=${source} flags=${flagList.join(",")}` +
+        ` changes=${summary.changeCount} flips=${summary.flipCount} deleted=${deletedCount || 0}`
     );
   }
 
@@ -207,17 +208,23 @@ async function verifyArchiveSafety(userId, { db = pool } = {}) {
   const [entries, history, badges, snapshots, peaks, summary] = await Promise.all([
     db.query("SELECT COUNT(*)::int AS c FROM sprite_entries WHERE user_id = $1", [userId]),
     db.query("SELECT COUNT(*)::int AS c FROM collection_history WHERE user_id = $1", [userId]),
-    db.query(
-      `SELECT COUNT(*)::int AS c FROM user_badges
+    db
+      .query(
+        `SELECT COUNT(*)::int AS c FROM user_badges
        WHERE user_id = $1 AND revoked_at IS NULL`,
-      [userId]
-    ).catch(() => ({ rows: [{ c: 0 }] })),
+        [userId]
+      )
+      .catch(() => ({ rows: [{ c: 0 }] })),
+    db
+      .query("SELECT COUNT(*)::int AS c FROM passport_stat_snapshots WHERE user_id = $1", [userId])
+      .catch(() => ({ rows: [{ c: 0 }] })),
+    db.query("SELECT peak_completion_rate, peak_catalogue_version FROM user_collection_peaks WHERE user_id = $1", [
+      userId
+    ]),
     db.query(
-      "SELECT COUNT(*)::int AS c FROM passport_stat_snapshots WHERE user_id = $1",
+      "SELECT catalogue_version, released_variant_count, completion_rate FROM user_passport_summaries WHERE user_id = $1",
       [userId]
-    ).catch(() => ({ rows: [{ c: 0 }] })),
-    db.query("SELECT peak_completion_rate, peak_catalogue_version FROM user_collection_peaks WHERE user_id = $1", [userId]),
-    db.query("SELECT catalogue_version, released_variant_count, completion_rate FROM user_passport_summaries WHERE user_id = $1", [userId])
+    )
   ]);
 
   return {
@@ -228,12 +235,8 @@ async function verifyArchiveSafety(userId, { db = pool } = {}) {
     personalBestRate: peaks.rows[0] ? Number(peaks.rows[0].peak_completion_rate) : null,
     personalBestCatalogueVersion: peaks.rows[0]?.peak_catalogue_version || null,
     summaryCatalogueVersion: summary.rows[0]?.catalogue_version || null,
-    summaryReleasedVariantCount: summary.rows[0]
-      ? Number(summary.rows[0].released_variant_count)
-      : null,
-    summaryCompletionRate: summary.rows[0]
-      ? Number(summary.rows[0].completion_rate)
-      : null
+    summaryReleasedVariantCount: summary.rows[0] ? Number(summary.rows[0].released_variant_count) : null,
+    summaryCompletionRate: summary.rows[0] ? Number(summary.rows[0].completion_rate) : null
   };
 }
 

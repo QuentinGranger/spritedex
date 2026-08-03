@@ -24,4 +24,4 @@ app.get("/api/news", async (req, res) => {
   }
 });
 
-module.exports = {  };
+module.exports = {};

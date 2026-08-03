@@ -1,6 +1,14 @@
 // routes-sprites.js — extracted from server.js
 
-const { buildAcquisitionMethod, buildAvailability, buildDates, buildRecurrence, computeMissingFields, dedupeSpritesBySlug, normalizeDataStatus } = require("./catalog");
+const {
+  buildAcquisitionMethod,
+  buildAvailability,
+  buildDates,
+  buildRecurrence,
+  computeMissingFields,
+  dedupeSpritesBySlug,
+  normalizeDataStatus
+} = require("./catalog");
 const { app } = require("./core");
 const { pool } = require("./db");
 const { classifyEventUrgency } = require("./compare");
@@ -15,12 +23,8 @@ app.get("/api/sprites", async (req, res) => {
               acquisition, availability, recurrence, dates, missing_fields, sources, data_status
        FROM sprites ORDER BY added_date, name`
     );
-    const imagesResult = await pool.query(
-      "SELECT sprite_id, variant, image_path FROM sprite_images"
-    );
-    const variantsResult = await pool.query(
-      "SELECT name, label, bonus FROM variant_meta ORDER BY name"
-    );
+    const imagesResult = await pool.query("SELECT sprite_id, variant, image_path FROM sprite_images");
+    const variantsResult = await pool.query("SELECT name, label, bonus FROM variant_meta ORDER BY name");
     const seasonsResult = await pool.query(
       "SELECT id, chapter, season, name, name_en, start_date, end_date, data_status, sources FROM seasons ORDER BY chapter, season"
     );
@@ -46,12 +50,12 @@ app.get("/api/sprites", async (req, res) => {
         observedAt: row.observed_at,
         lastVerifiedAt: row.last_verified_at,
         reliability: row.reliability,
-        catalogVersion: row.catalog_version,
+        catalogVersion: row.catalog_version
       };
     }
     function buildSources(sourceIds) {
       const ids = Array.isArray(sourceIds) ? sourceIds : [];
-      return ids.map(id => sourcesMap[id]).filter(Boolean);
+      return ids.map((id) => sourcesMap[id]).filter(Boolean);
     }
 
     const variantDetailsResult = await pool.query(
@@ -84,7 +88,7 @@ app.get("/api/sprites", async (req, res) => {
         recurrence,
         dates,
         sources: buildSources(row.sources),
-        availabilityPeriods: [],
+        availabilityPeriods: []
       });
       const dataStatus = normalizeDataStatus(row.data_status, missingFields);
       const confidence = availability.confidence || acquisition.confidence || dataStatus || "unknown";
@@ -109,13 +113,13 @@ app.get("/api/sprites", async (req, res) => {
         confidence,
         sourceIds: row.sources || [],
         sources: buildSources(row.sources),
-        image: row.image_path || row.suggested_image_path || null,
+        image: row.image_path || row.suggested_image_path || null
       };
     }
 
     const spriteVariantIds = {};
     for (const spriteId of Object.keys(variantDetails)) {
-      spriteVariantIds[spriteId] = Object.values(variantDetails[spriteId]).map(v => v.id);
+      spriteVariantIds[spriteId] = Object.values(variantDetails[spriteId]).map((v) => v.id);
     }
 
     const seasonsMap = {};
@@ -130,7 +134,7 @@ app.get("/api/sprites", async (req, res) => {
         endDate: row.end_date,
         dataStatus: row.data_status,
         sourceIds: row.sources || [],
-        sources: buildSources(row.sources),
+        sources: buildSources(row.sources)
       };
     }
 
@@ -145,7 +149,7 @@ app.get("/api/sprites", async (req, res) => {
         endDate: row.end_date,
         dataStatus: row.data_status,
         sourceIds: row.sources || [],
-        sources: buildSources(row.sources),
+        sources: buildSources(row.sources)
       };
     }
 
@@ -162,12 +166,16 @@ app.get("/api/sprites", async (req, res) => {
         confidence: row.confidence,
         dataStatus: row.data_status,
         sourceIds: row.sources || [],
-        sources: buildSources(row.sources),
+        sources: buildSources(row.sources)
       });
     }
 
-    const sprites = spritesResult.rows.map(s => {
-      const baseImage = (variantDetails[s.id] && variantDetails[s.id].Base && (variantDetails[s.id].Base.image || variantDetails[s.id].Base.suggestedImagePath)) || null;
+    const sprites = spritesResult.rows.map((s) => {
+      const baseImage =
+        (variantDetails[s.id] &&
+          variantDetails[s.id].Base &&
+          (variantDetails[s.id].Base.image || variantDetails[s.id].Base.suggestedImagePath)) ||
+        null;
       const acquisition = s.acquisition || {};
       const availability = buildAvailability(s.availability);
       const recurrence = buildRecurrence(s.recurrence);
@@ -181,7 +189,7 @@ app.get("/api/sprites", async (req, res) => {
         recurrence,
         dates,
         sources: buildSources(s.sources),
-        availabilityPeriods: availabilityPeriodsMap[s.id] || [],
+        availabilityPeriods: availabilityPeriodsMap[s.id] || []
       });
       const dataStatus = normalizeDataStatus(s.data_status, missingFields);
       const season = s.season_id ? seasonsMap[s.season_id] || null : null;
@@ -219,7 +227,7 @@ app.get("/api/sprites", async (req, res) => {
         available: s.available !== false,
         isReleased: s.is_released !== false,
         availabilityStatus: availability.status,
-        addedDate: s.added_date,
+        addedDate: s.added_date
       };
     });
 
@@ -274,7 +282,7 @@ app.get("/api/catalog-history", async (req, res) => {
       params
     );
     res.json({
-      history: result.rows.map(r => ({
+      history: result.rows.map((r) => ({
         id: r.id,
         entityType: r.entity_type,
         entityId: r.entity_id,
@@ -284,8 +292,8 @@ app.get("/api/catalog-history", async (req, res) => {
         changedBy: r.changed_by,
         changedAt: r.changed_at,
         reason: r.reason,
-        sourceId: r.source_id,
-      })),
+        sourceId: r.source_id
+      }))
     });
   } catch (err) {
     console.error(err);
@@ -296,9 +304,7 @@ app.get("/api/catalog-history", async (req, res) => {
 // ── Community ownership : taux réel de possession par les collections actives SPRITE-INDEX ──
 app.get("/api/community-ownership", async (req, res) => {
   try {
-    const totalResult = await pool.query(
-      `SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL`
-    );
+    const totalResult = await pool.query(`SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL`);
     const totalActive = totalResult.rows[0]?.total || 0;
 
     const ownershipResult = await pool.query(
@@ -310,7 +316,7 @@ app.get("/api/community-ownership", async (req, res) => {
          AND u.deleted_at IS NULL
        GROUP BY base_id`
     );
-    const ownershipMap = new Map(ownershipResult.rows.map(r => [r.base_id, r.owners]));
+    const ownershipMap = new Map(ownershipResult.rows.map((r) => [r.base_id, r.owners]));
 
     const spritesResult = await pool.query(
       `SELECT id, name, rarity FROM sprites
@@ -318,7 +324,7 @@ app.get("/api/community-ownership", async (req, res) => {
        ORDER BY name`
     );
 
-    const sprites = spritesResult.rows.map(s => {
+    const sprites = spritesResult.rows.map((s) => {
       const owners = ownershipMap.get(s.id) || 0;
       const rate = totalActive > 0 ? owners / totalActive : 0;
       return {
@@ -353,10 +359,10 @@ app.get("/api/events/urgency", async (req, res) => {
       soonDays: Math.max(1, parseInt(req.query.soonDays) || 14)
     };
 
-    const events = eventsResult.rows.map(row => {
+    const events = eventsResult.rows.map((row) => {
       const urgency = classifyEventUrgency(row.end_date, options);
       const sources = Array.isArray(row.sources) ? row.sources : [];
-      const fromNews = sources.some(s => s && (String(s).includes("fortnite") || String(s).includes("news")));
+      const fromNews = sources.some((s) => s && (String(s).includes("fortnite") || String(s).includes("news")));
       return {
         eventId: row.id,
         name: row.name,

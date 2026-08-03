@@ -9,9 +9,7 @@ async function copyFriendInviteLink() {
     });
     if (!res.ok) throw new Error("invite link failed");
     const data = await res.json();
-    const fallbackLink = data.token
-      ? `${webOrigin()}/?invite=${encodeURIComponent(String(data.token))}`
-      : "";
+    const fallbackLink = data.token ? `${webOrigin()}/?invite=${encodeURIComponent(String(data.token))}` : "";
     const link = safeAppWebUrl(data.url) || safeAppWebUrl(fallbackLink);
     if (!link) throw new Error("invalid invite link");
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -29,12 +27,15 @@ async function copyFriendInviteLink() {
 async function showMyQrCode() {
   const img = getFriendsEl("friendQrImg");
   const hint = getFriendsEl("friendQrHint");
-  if (!state.userId || !localStorage.getItem(TOKEN_KEY)) {
+  if (!state.userId || !hasAuthSession()) {
     if (hint) hint.textContent = t("friends.loginForQr");
     toast(t("friends.loginForQr"));
     return;
   }
-  if (img) { img.style.display = "none"; img.src = ""; }
+  if (img) {
+    img.style.display = "none";
+    img.src = "";
+  }
   if (hint) hint.textContent = t("friends.qrGenerating");
   try {
     const res = await fetch(`${API_BASE}/friends/invite-links`, {
@@ -69,4 +70,3 @@ async function showMyQrCode() {
     toast(t("friends.qrFailedShort"));
   }
 }
-

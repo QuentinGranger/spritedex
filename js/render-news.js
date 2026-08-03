@@ -46,7 +46,9 @@ const NOTIF_ICONS = {
 function getSeenNewsIds() {
   try {
     return JSON.parse(localStorage.getItem(NOTIF_SEEN_KEY) || "[]");
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function markNewsSeen(ids) {
@@ -72,21 +74,20 @@ function updateNotifBadge(count) {
 
   if (summary) {
     summary.hidden = unreadCount === 0;
-    summary.textContent = unreadCount > 0
-      ? t("notif.unreadCount", { count: unreadCount })
-      : "";
+    summary.textContent = unreadCount > 0 ? t("notif.unreadCount", { count: unreadCount }) : "";
   }
 }
 
 async function checkNewsNotifications() {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return;
+  if (!hasAuthSession()) return;
   try {
     const res = await fetch(`${API_BASE}/notifications?unread=true&limit=1`, { headers: authHeadersOnly() });
     if (!res.ok) return;
     const data = await res.json();
     updateNotifBadge(data.unreadCount || 0);
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 }
 
 function syncNotifBellExpanded() {
@@ -175,7 +176,11 @@ function formatNotifDate(value) {
   if (hours < 24) return t("news.hoursAgo", { hours });
   const days = Math.floor(hours / 24);
   if (days < 7) return t("news.daysAgo", { days });
-  return d.toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined });
+  return d.toLocaleDateString(uiLocale(), {
+    day: "numeric",
+    month: "short",
+    year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined
+  });
 }
 
 /** Étape 48 — stable deep-link for each contextual notification type (never "/"). */
@@ -260,8 +265,11 @@ function safeExternalNewsUrl(value) {
   try {
     const url = new URL(value);
     const host = url.hostname.toLowerCase();
-    const allowed = host === "fortnite.gg" || host.endsWith(".fortnite.gg")
-      || host === "fortnite.com" || host.endsWith(".fortnite.com");
+    const allowed =
+      host === "fortnite.gg" ||
+      host.endsWith(".fortnite.gg") ||
+      host === "fortnite.com" ||
+      host.endsWith(".fortnite.com");
     return url.protocol === "https:" && allowed ? url.href : null;
   } catch {
     return null;
@@ -352,12 +360,14 @@ function notifQueryParams() {
 }
 
 async function loadMoreNews() {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token || notifLoading || !notifHasMore) return;
+  if (!hasAuthSession() || notifLoading || !notifHasMore) return;
   notifLoading = true;
 
   const list = document.getElementById("notifList");
-  if (!list) { notifLoading = false; return; }
+  if (!list) {
+    notifLoading = false;
+    return;
+  }
 
   const loader = document.getElementById("notifLoader");
   if (!loader && notifOffset === 0) {
@@ -386,23 +396,22 @@ async function loadMoreNews() {
     notifHasMore = notifications.length === 20;
 
     if (notifications.length === 0 && notifOffset === 0) {
-      const emptyTitle = notifFilter === "unread"
-        ? t("notif.emptyUnreadTitle")
-        : t("notif.emptyTitle");
-      const emptyHint = notifFilter === "unread"
-        ? t("notif.emptyUnreadHint")
-        : notifFilter === "all"
-          ? t("notif.emptyHint")
-          : t("notif.emptyFilterHint", {
-              filter: t(NOTIF_FILTER_I18N_KEYS[notifFilter] || "notif.filterAll")
-            });
+      const emptyTitle = notifFilter === "unread" ? t("notif.emptyUnreadTitle") : t("notif.emptyTitle");
+      const emptyHint =
+        notifFilter === "unread"
+          ? t("notif.emptyUnreadHint")
+          : notifFilter === "all"
+            ? t("notif.emptyHint")
+            : t("notif.emptyFilterHint", {
+                filter: t(NOTIF_FILTER_I18N_KEYS[notifFilter] || "notif.filterAll")
+              });
       list.innerHTML = notifEmptyMarkup(emptyTitle, emptyHint);
       notifLoading = false;
       return;
     }
 
     for (const item of notifications) notifItemsById.set(String(item.id), item);
-    list.insertAdjacentHTML("beforeend", notifications.map(item => renderNotifItem(item)).join(""));
+    list.insertAdjacentHTML("beforeend", notifications.map((item) => renderNotifItem(item)).join(""));
     notifOffset += notifications.length;
 
     if (!notifHasMore && notifications.length > 0) {
@@ -464,7 +473,9 @@ async function markAllNotifsRead() {
     });
     updateNotifBadge(0);
     document.querySelectorAll(".notif-item").forEach((el) => paintNotifItemRead(el));
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 }
 
 function switchAppView(view) {
@@ -478,9 +489,7 @@ async function openCompareDestination(friendId, { variantIds = null } = {}) {
     if (typeof toast === "function") toast(t("news.friendNotFound"));
     return false;
   }
-  state.compareFocusVariantIds = Array.isArray(variantIds) && variantIds.length
-    ? variantIds.map(String)
-    : null;
+  state.compareFocusVariantIds = Array.isArray(variantIds) && variantIds.length ? variantIds.map(String) : null;
   state.compareFilter = "all";
   if (typeof compareWithUser === "function") {
     await compareWithUser(friendId);
@@ -528,7 +537,9 @@ async function openSquadEngineDestination(squadRef) {
 function openVariantDestination({ variantId: targetVariantId = null, spriteId = null, variantType = null } = {}) {
   if (targetVariantId && typeof openDetail === "function") {
     const items = typeof getAllItems === "function" ? getAllItems() : [];
-    const match = items.find((i) => String(i.id) === String(targetVariantId) || String(i.variantId) === String(targetVariantId));
+    const match = items.find(
+      (i) => String(i.id) === String(targetVariantId) || String(i.variantId) === String(targetVariantId)
+    );
     if (match) {
       openDetail(match.id);
       return true;
@@ -559,9 +570,8 @@ function openEventPrioritiesDestination(eventId, variantIds = null) {
   };
   switchAppView("missing");
   if (typeof renderMissing === "function") renderMissing();
-  const eventName = eventId && typeof EVENTS !== "undefined"
-    ? (EVENTS[eventId]?.name || eventId)
-    : t("news.eventFallback");
+  const eventName =
+    eventId && typeof EVENTS !== "undefined" ? EVENTS[eventId]?.name || eventId : t("news.eventFallback");
   if (typeof toast === "function") toast(t("news.missingPriorities", { event: eventName }));
   return true;
 }
@@ -589,9 +599,12 @@ async function openNotificationDestination(item) {
 
   if (type === "friend_acquired_missing_variant") {
     const friendId = actorId;
-    const ids = Array.isArray(data.variantIds) && data.variantIds.length
-      ? data.variantIds
-      : (data.variantId || entityId ? [data.variantId || entityId] : null);
+    const ids =
+      Array.isArray(data.variantIds) && data.variantIds.length
+        ? data.variantIds
+        : data.variantId || entityId
+          ? [data.variantId || entityId]
+          : null;
     return openCompareDestination(friendId, { variantIds: ids });
   }
 
@@ -720,15 +733,18 @@ function setupNotifBell() {
       setNotifFilter(btn.dataset.notifFilter);
     });
     filters.addEventListener("keydown", (e) => {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
       const tabs = [...filters.querySelectorAll('[role="tab"]')];
       const current = document.activeElement;
       const currentIndex = tabs.indexOf(current);
       if (currentIndex < 0) return;
       e.preventDefault();
-      const nextIndex = e.key === 'Home' ? 0
-        : e.key === 'End' ? tabs.length - 1
-          : (currentIndex + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      const nextIndex =
+        e.key === "Home"
+          ? 0
+          : e.key === "End"
+            ? tabs.length - 1
+            : (currentIndex + (e.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
       tabs[nextIndex].focus();
       setNotifFilter(tabs[nextIndex].dataset.notifFilter);
     });
@@ -765,14 +781,16 @@ function setupNotifBell() {
       // Étape 47/48 — mark read + clicked_at, then open the contextual destination.
       markNotifRead(id, { clicked: true }).then(() => checkNewsNotifications());
       const payload = notifItemsById.get(String(id)) || { id, type: item.dataset.notifType, data: {} };
-      openNotificationDestination(payload).then((opened) => {
-        if (opened && typeof trackSpriteGraphInteraction === "function") {
-          trackSpriteGraphInteraction("notification.converted", {
-            surface: "notification",
-            notificationId: Number(id)
-          });
-        }
-      }).catch(() => {});
+      openNotificationDestination(payload)
+        .then((opened) => {
+          if (opened && typeof trackSpriteGraphInteraction === "function") {
+            trackSpriteGraphInteraction("notification.converted", {
+              surface: "notification",
+              notificationId: Number(id)
+            });
+          }
+        })
+        .catch(() => {});
     });
   }
 

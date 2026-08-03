@@ -21,7 +21,9 @@ async function test(name, fn) {
   }
 }
 
-function rnd() { return Math.random().toString(36).slice(2, 10); }
+function rnd() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 function auth(token) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -193,7 +195,11 @@ async function run() {
         headers: auth(user.token),
         body: JSON.stringify({ pushEnabled: false })
       });
-      assert.strictEqual(notificationPreferences.status, 403, `notification preferences expected 403, got ${notificationPreferences.status}`);
+      assert.strictEqual(
+        notificationPreferences.status,
+        403,
+        `notification preferences expected 403, got ${notificationPreferences.status}`
+      );
     } finally {
       await cleanup(peer);
     }

@@ -9,5 +9,17 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.js"]
+  "include": [
+    "src/**/*.js",
+    "server/**/*.js",
+    "scripts/**/*.js",
+    "security.js",
+    "security-logger.js",
+    "server.js",
+    "analytics.js",
+    "push-service.js",
+    "seed.js",
+    "sprite-data.js"
+  ],
+  "exclude": ["node_modules", "www", "android", "ios", "release", "coverage"]
 }

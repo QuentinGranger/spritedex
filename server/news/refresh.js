@@ -3,7 +3,12 @@
 const { pool } = require("../db");
 const { ensureSource } = require("../catalog");
 const { broadcastNewsUpdate } = require("../ws");
-const { fetchFortniteAPINews, fetchFortniteAPINewsEN, fetchFortniteGGNews, fetchFortniteSTWNews } = require("./sources");
+const {
+  fetchFortniteAPINews,
+  fetchFortniteAPINewsEN,
+  fetchFortniteGGNews,
+  fetchFortniteSTWNews
+} = require("./sources");
 const { extractEventsFromNews } = require("./events");
 const { extractAvailabilityFromNews, extractRecurrenceFromNews } = require("./catalog");
 const { persistNewsInInbox, backfillRecentNewsInbox, notifyNewsSubscribers } = require("./delivery");
@@ -74,7 +79,7 @@ async function refreshNews() {
     await ensureSource(item.source, {
       title: item.title,
       url: item.link,
-      publishedAt: item.date,
+      publishedAt: item.date
     });
   }
   const eventExtraction = await extractEventsFromNews(existingNews.rows);
@@ -89,7 +94,9 @@ async function refreshNews() {
   }
 
   broadcastNewsUpdate({
-    newItems: insertedItems.map(i => ({ source: i.source, title: i.title, link: i.link, image: i.image, date: i.date })).slice(0, 5),
+    newItems: insertedItems
+      .map((i) => ({ source: i.source, title: i.title, link: i.link, image: i.image, date: i.date }))
+      .slice(0, 5),
     newCount: insertedItems.length,
     extractedEvents: eventExtraction.eventIds.slice(0, 5),
     extractedEventCount: eventExtraction.count,

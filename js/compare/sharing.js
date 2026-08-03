@@ -100,9 +100,7 @@ async function openShareDialog(context) {
     els.shareCompareTitle.textContent = isSquad ? t("compare.shareSquadTitle") : t("compare.shareTitle");
   }
   if (els.shareCompareIntro) {
-    els.shareCompareIntro.textContent = isSquad
-      ? t("compare.shareSquadIntro")
-      : t("compare.shareCompareIntro");
+    els.shareCompareIntro.textContent = isSquad ? t("compare.shareSquadIntro") : t("compare.shareCompareIntro");
   }
   if (els.shareCompareOptions) {
     els.shareCompareOptions.style.display = isSquad ? "none" : "";
@@ -186,7 +184,7 @@ async function loadCompareShare(token) {
 
     const owner = data.result?.users?.userA;
     const ownerCollection = createSafeRecord();
-    for (const r of (data.result?.records || [])) {
+    for (const r of data.result?.records || []) {
       setSafeRecordValue(ownerCollection, r.variantId, sanitizeCollectionEntry(r.userA));
     }
 
@@ -244,4 +242,3 @@ async function handleCompareShareParams() {
   await loadCompareShare(token);
   return true;
 }
-

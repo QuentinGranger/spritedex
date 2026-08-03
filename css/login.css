@@ -6,14 +6,11 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: radial-gradient(ellipse at 50% 20%, rgba(0, 225, 255, 0.07), transparent 55%),
-              radial-gradient(ellipse at 80% 80%, rgba(141, 124, 255, 0.04), transparent 50%),
-              var(--bg, #060a18);
-  padding:
-    calc(16px + env(safe-area-inset-top))
-    calc(16px + env(safe-area-inset-right))
-    calc(16px + env(safe-area-inset-bottom))
-    calc(16px + env(safe-area-inset-left));
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(0, 225, 255, 0.07), transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(141, 124, 255, 0.04), transparent 50%), var(--bg, #060a18);
+  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -24,8 +21,7 @@
   flex-shrink: 0;
   padding: 36px 28px 28px;
   border-radius: 24px;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
-              rgba(12, 15, 32, 0.92);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)), rgba(12, 15, 32, 0.92);
   border: 1px solid rgba(0, 225, 255, 0.12);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
@@ -33,7 +29,9 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 8px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 225, 255, 0.04);
+  box-shadow:
+    0 8px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 225, 255, 0.04);
   animation: cardEntrance 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -66,11 +64,15 @@
   border: 1px solid rgba(0, 225, 255, 0.28);
   border-radius: 14px;
   background: linear-gradient(120deg, rgba(0, 225, 255, 0.11), rgba(141, 124, 255, 0.1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.16);
   animation: inviteNoticeIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.login-invite-notice[hidden] { display: none; }
+.login-invite-notice[hidden] {
+  display: none;
+}
 
 .login-invite-notice__icon {
   width: 38px;
@@ -83,12 +85,15 @@
   border: 1px solid rgba(0, 225, 255, 0.25);
 }
 
-.login-invite-notice__icon svg { width: 20px; height: 20px; }
+.login-invite-notice__icon svg {
+  width: 20px;
+  height: 20px;
+}
 
 .login-invite-notice strong {
   display: block;
   color: #f4fdff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.035em;
@@ -98,7 +103,7 @@
   display: block;
   margin-bottom: 2px;
   color: #8bfbdf;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -138,11 +143,14 @@
   border-radius: 11px;
   background: rgba(5, 16, 37, 0.34);
   color: rgba(241, 251, 255, 0.82);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
 .login-invite-notice__secondary:hover,
@@ -169,13 +177,23 @@
 }
 
 @keyframes inviteNoticeIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (max-width: 380px) {
-  .login-invite-notice__actions { grid-template-columns: 1fr; }
-  .login-invite-notice__secondary { padding: 9px 11px; }
+  .login-invite-notice__actions {
+    grid-template-columns: 1fr;
+  }
+  .login-invite-notice__secondary {
+    padding: 9px 11px;
+  }
 }
 
 .login-input {
@@ -186,12 +204,15 @@
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
   font-size: 0.92rem;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-align: center;
   outline: none;
-  transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    background 200ms ease;
 }
 
 .login-input:focus {
@@ -211,7 +232,7 @@
   border: none;
   background: linear-gradient(135deg, #00e1ff, #8d7cff);
   color: #fff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -219,14 +240,16 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: box-shadow 200ms ease, transform 200ms ease;
+  transition:
+    box-shadow 200ms ease,
+    transform 200ms ease;
 }
 
 .login-btn::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1));
   opacity: 0;
   transition: opacity 200ms ease;
 }
@@ -253,8 +276,8 @@
 
 .login-btn--secondary {
   background: transparent;
-  border: 1px solid var(--line, rgba(255,255,255,0.12));
-  color: var(--muted, rgba(255,255,255,0.6));
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  color: var(--muted, rgba(255, 255, 255, 0.6));
 }
 
 .login-btn--secondary:hover {
@@ -263,12 +286,14 @@
   box-shadow: 0 0 12px rgba(0, 225, 255, 0.15);
 }
 
-.login-btn--secondary::after { display: none; }
+.login-btn--secondary::after {
+  display: none;
+}
 
 .login-tabs {
   display: flex;
   gap: 4px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   padding: 3px;
   margin-bottom: 10px;
@@ -280,14 +305,16 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: rgba(255,255,255,0.5);
-  font-family: 'Rajdhani', sans-serif;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   cursor: pointer;
-  transition: background 200ms ease, color 200ms ease;
+  transition:
+    background 200ms ease,
+    color 200ms ease;
 }
 
 .login-tab.active {
@@ -311,16 +338,18 @@
   border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   background: transparent;
-  color: rgba(255,255,255,0.35);
-  font-family: 'Rajdhani', sans-serif;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color 200ms ease, border-color 200ms ease;
+  transition:
+    color 200ms ease,
+    border-color 200ms ease;
 }
 
 .login-skip:hover {
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -329,7 +358,7 @@
   font-size: 0.78rem;
   text-align: center;
   min-height: 1.2em;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-weight: 600;
 }
 
@@ -358,8 +387,14 @@
 }
 
 @keyframes stepSlide {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Email verification gate ── */
@@ -380,27 +415,34 @@
   margin: 4px 0 2px;
   border-radius: 18px;
   color: #9af0ff;
-  background:
-    radial-gradient(circle at 30% 25%, rgba(0, 225, 255, 0.28), transparent 55%),
-    rgba(0, 225, 255, 0.08);
+  background: radial-gradient(circle at 30% 25%, rgba(0, 225, 255, 0.28), transparent 55%), rgba(0, 225, 255, 0.08);
   border: 1px solid rgba(0, 225, 255, 0.28);
   box-shadow: 0 0 28px rgba(0, 225, 255, 0.12);
   animation: verifyPulse 2.4s ease-in-out infinite;
 }
 
 @keyframes verifyPulse {
-  0%, 100% { box-shadow: 0 0 18px rgba(0, 225, 255, 0.1); transform: translateY(0); }
-  50% { box-shadow: 0 0 32px rgba(0, 225, 255, 0.22); transform: translateY(-2px); }
+  0%,
+  100% {
+    box-shadow: 0 0 18px rgba(0, 225, 255, 0.1);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(0, 225, 255, 0.22);
+    transform: translateY(-2px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .verify-panel__icon { animation: none; }
+  .verify-panel__icon {
+    animation: none;
+  }
 }
 
 .verify-panel__eyebrow {
   margin: 0;
   color: #8bfbdf;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -423,14 +465,16 @@
   border: 1px solid rgba(0, 225, 255, 0.18);
   background: rgba(0, 225, 255, 0.06);
   color: #dffbff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   word-break: break-all;
 }
 
-.verify-panel__email[hidden] { display: none; }
+.verify-panel__email[hidden] {
+  display: none;
+}
 
 .verify-panel__steps {
   width: 100%;
@@ -467,7 +511,9 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.verify-panel__status[hidden] { display: none; }
+.verify-panel__status[hidden] {
+  display: none;
+}
 
 .verify-panel__status--ok {
   color: #9dffc5;
@@ -501,11 +547,16 @@
 }
 
 @keyframes verifySpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .verify-panel__status--wait::before { animation: none; opacity: 0.7; }
+  .verify-panel__status--wait::before {
+    animation: none;
+    opacity: 0.7;
+  }
 }
 
 .verify-panel__actions {
@@ -528,7 +579,7 @@
 }
 
 .onboarding-heading {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 1.25rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -548,7 +599,11 @@
   background: rgba(255, 255, 255, 0.025);
   color: var(--text, #eef0ff);
   cursor: pointer;
-  transition: border-color 250ms ease, background 250ms ease, box-shadow 250ms ease, transform 150ms ease;
+  transition:
+    border-color 250ms ease,
+    background 250ms ease,
+    box-shadow 250ms ease,
+    transform 150ms ease;
   text-align: left;
 }
 
@@ -575,19 +630,37 @@
 }
 
 .onboarding-choice__label {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
-.onboarding-choice__icon--google { background: rgba(66, 133, 244, 0.08); border-color: rgba(66, 133, 244, 0.15); }
-.onboarding-choice__icon--email { background: rgba(0, 225, 255, 0.06); border-color: rgba(0, 225, 255, 0.12); }
-.onboarding-choice__icon--discord { background: rgba(88, 101, 242, 0.08); border-color: rgba(88, 101, 242, 0.15); }
+.onboarding-choice__icon--google {
+  background: rgba(66, 133, 244, 0.08);
+  border-color: rgba(66, 133, 244, 0.15);
+}
+.onboarding-choice__icon--email {
+  background: rgba(0, 225, 255, 0.06);
+  border-color: rgba(0, 225, 255, 0.12);
+}
+.onboarding-choice__icon--discord {
+  background: rgba(88, 101, 242, 0.08);
+  border-color: rgba(88, 101, 242, 0.15);
+}
 
-.onboarding-choice[data-method="google"]:hover { border-color: rgba(66, 133, 244, 0.5); box-shadow: 0 0 16px rgba(66, 133, 244, 0.1); }
-.onboarding-choice[data-method="discord"]:hover { border-color: rgba(88, 101, 242, 0.5); box-shadow: 0 0 16px rgba(88, 101, 242, 0.1); }
-.onboarding-choice[data-method="email"]:hover { border-color: rgba(0, 225, 255, 0.5); box-shadow: 0 0 16px rgba(0, 225, 255, 0.1); }
+.onboarding-choice[data-method="google"]:hover {
+  border-color: rgba(66, 133, 244, 0.5);
+  box-shadow: 0 0 16px rgba(66, 133, 244, 0.1);
+}
+.onboarding-choice[data-method="discord"]:hover {
+  border-color: rgba(88, 101, 242, 0.5);
+  box-shadow: 0 0 16px rgba(88, 101, 242, 0.1);
+}
+.onboarding-choice[data-method="email"]:hover {
+  border-color: rgba(0, 225, 255, 0.5);
+  box-shadow: 0 0 16px rgba(0, 225, 255, 0.1);
+}
 
 .onboarding-back {
   display: inline-flex;
@@ -599,11 +672,13 @@
   border: none;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.5);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color 200ms ease, background 200ms ease;
+  transition:
+    color 200ms ease,
+    background 200ms ease;
   margin-bottom: 2px;
 }
 
@@ -615,7 +690,7 @@
 .onboarding-switch {
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.4);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   margin: 2px 0;
 }
 
@@ -623,7 +698,7 @@
   border: none;
   background: none;
   color: #00e1ff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
@@ -644,7 +719,7 @@
   width: 100%;
   color: rgba(255, 255, 255, 0.2);
   font-size: 0.68rem;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin: 2px 0;
@@ -677,12 +752,16 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text, #eef0ff);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: border-color 250ms ease, background 250ms ease, box-shadow 250ms ease, transform 150ms ease;
+  transition:
+    border-color 250ms ease,
+    background 250ms ease,
+    box-shadow 250ms ease,
+    transform 150ms ease;
 }
 
 .onboarding-provider-btn:hover {
@@ -696,8 +775,14 @@
   transform: translateY(0) scale(0.98);
 }
 
-.onboarding-provider-btn[data-method="google"]:hover { border-color: rgba(66, 133, 244, 0.5); box-shadow: 0 0 12px rgba(66, 133, 244, 0.08); }
-.onboarding-provider-btn[data-method="discord"]:hover { border-color: rgba(88, 101, 242, 0.5); box-shadow: 0 0 12px rgba(88, 101, 242, 0.08); }
+.onboarding-provider-btn[data-method="google"]:hover {
+  border-color: rgba(66, 133, 244, 0.5);
+  box-shadow: 0 0 12px rgba(66, 133, 244, 0.08);
+}
+.onboarding-provider-btn[data-method="discord"]:hover {
+  border-color: rgba(88, 101, 242, 0.5);
+  box-shadow: 0 0 12px rgba(88, 101, 242, 0.08);
+}
 
 .onboarding-providers-split {
   display: flex;
@@ -710,7 +795,7 @@
 
 /* ── Profile setup: labels ── */
 .onboarding-label {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -733,8 +818,13 @@
   scrollbar-color: rgba(0, 225, 255, 0.12) transparent;
 }
 
-.avatar-picker::-webkit-scrollbar { width: 3px; }
-.avatar-picker::-webkit-scrollbar-thumb { background: rgba(0, 225, 255, 0.12); border-radius: 3px; }
+.avatar-picker::-webkit-scrollbar {
+  width: 3px;
+}
+.avatar-picker::-webkit-scrollbar-thumb {
+  background: rgba(0, 225, 255, 0.12);
+  border-radius: 3px;
+}
 
 .avatar-picker__item {
   width: 100%;
@@ -746,7 +836,10 @@
   place-items: center;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 200ms ease, box-shadow 200ms ease, transform 150ms ease;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 150ms ease;
 }
 
 .avatar-picker__item:hover {
@@ -788,7 +881,9 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
-  transition: border-color 200ms ease, background 200ms ease;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease;
 }
 
 .privacy-option:hover {
@@ -828,7 +923,7 @@
 }
 
 .privacy-option__text {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.82rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.7);
@@ -853,7 +948,7 @@
 }
 
 .transfer-box__count {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 2rem;
   font-weight: 800;
   color: #00e1ff;
@@ -862,7 +957,7 @@
 }
 
 .transfer-box__label {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -871,7 +966,7 @@
 }
 
 .transfer-box__text {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.6);
   margin: 0;
@@ -891,11 +986,14 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.025);
   color: rgba(255, 255, 255, 0.55);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 200ms ease, background 200ms ease, color 200ms ease;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    color 200ms ease;
 }
 
 .transfer-actions__btn--reset:hover {
@@ -915,15 +1013,36 @@
 
 /* ── Mobile tweaks ── */
 @media (max-height: 700px) {
-  .login-card { padding: 24px 20px 20px; gap: 8px; }
-  .login-logo { width: min(220px, 72vw); margin: 0 0 4px; }
-  .avatar-picker { max-height: 120px; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .privacy-option { padding: 8px 12px; }
-  .onboarding-heading { font-size: 1.1rem; }
+  .login-card {
+    padding: 24px 20px 20px;
+    gap: 8px;
+  }
+  .login-logo {
+    width: min(220px, 72vw);
+    margin: 0 0 4px;
+  }
+  .avatar-picker {
+    max-height: 120px;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .privacy-option {
+    padding: 8px 12px;
+  }
+  .onboarding-heading {
+    font-size: 1.1rem;
+  }
 }
 
 @media (max-height: 550px) {
-  .login-card { padding: 16px 16px 14px; border-radius: 18px; }
-  .login-logo { width: min(180px, 68vw); }
-  .avatar-picker { max-height: 90px; }
+  .login-card {
+    padding: 16px 16px 14px;
+    border-radius: 18px;
+  }
+  .login-logo {
+    width: min(180px, 68vw);
+  }
+  .avatar-picker {
+    max-height: 90px;
+  }
 }

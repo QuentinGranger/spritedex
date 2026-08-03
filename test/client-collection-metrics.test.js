@@ -17,8 +17,12 @@ const entries = new Map([
   ["unknown-owned", { status: "owned" }]
 ]);
 const context = {
-  getAllItems() { return items; },
-  getEntry(id) { return entries.get(id) || { status: "new" }; }
+  getAllItems() {
+    return items;
+  },
+  getEntry(id) {
+    return entries.get(id) || { status: "new" };
+  }
 };
 vm.createContext(context);
 vm.runInContext(source.slice(start, end), context);
@@ -32,7 +36,10 @@ const items = [
 ];
 
 const released = context.getReleasedCollectionItems(items);
-assert.deepStrictEqual(released.map((item) => item.id), ["released-owned", "released-missing"]);
+assert.deepStrictEqual(
+  released.map((item) => item.id),
+  ["released-owned", "released-missing"]
+);
 
 const metrics = context.getCollectionMetrics(items);
 assert.deepStrictEqual(JSON.parse(JSON.stringify(metrics)), {

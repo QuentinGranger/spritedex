@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "percentiles + tendances + squad snapshots (Étapes 51–55)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const {
       percentileScores,
@@ -22,7 +22,13 @@ module.exports = {
     assert.strictEqual(INTEREST_TREND_LABEL, "Tendance sprite-index");
 
     // Étape 51 — percentiles 0–100.
-    const scores = percentileScores(new Map([["a", 1], ["b", 10], ["c", 100]]));
+    const scores = percentileScores(
+      new Map([
+        ["a", 1],
+        ["b", 10],
+        ["c", 100]
+      ])
+    );
     assert.strictEqual(scores.get("a"), 0);
     assert.strictEqual(scores.get("c"), 100);
     assert.ok(scores.get("b") > 0 && scores.get("b") < 100);
@@ -41,9 +47,7 @@ module.exports = {
     const dayPrev = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
 
     // Seed community + popularity so variant interest can compute.
-    const variantRes = await pool.query(
-      `SELECT v.id, v.sprite_id FROM sprite_variants v ORDER BY v.id LIMIT 1`
-    );
+    const variantRes = await pool.query(`SELECT v.id, v.sprite_id FROM sprite_variants v ORDER BY v.id LIMIT 1`);
     assert.ok(variantRes.rows.length);
     const variantId = variantRes.rows[0].id;
     const spriteId = variantRes.rows[0].sprite_id;
@@ -87,11 +91,7 @@ module.exports = {
     assert.ok(series.latest.peakInterestScore >= series.latest.interestScore);
     assert.ok(series.latest.change7d != null || series.latest.change7d === null);
     // Étape 81 — trend only when days/users/events gates pass.
-    if (
-      series.latest.sampleSize >= 20
-      && series.latest.change7d != null
-      && series.trendEligibility?.ok
-    ) {
+    if (series.latest.sampleSize >= 20 && series.latest.change7d != null && series.trendEligibility?.ok) {
       assert.ok(series.latest.trend);
     } else if (series.latest.sampleSize >= 20 && series.latest.change7d != null) {
       assert.strictEqual(series.latest.trend, null);

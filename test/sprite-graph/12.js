@@ -3,7 +3,72 @@ const ctx = require("./shared");
 module.exports = {
   name: "community_variant_stats + éligibilité + taux (Étapes 36–40)",
   async run() {
-    const { API, BASE, FRIEND_INVITATION_METHODS, FRIEND_INVITATION_PUBLIC_METRIC_KEYS, FUTURE_GRAPH_EVENT_TYPES, GOAL_SCOPES, GRAPH_DATA_LEVELS, GRAPH_EVENT_COMMON_FIELDS, GRAPH_EVENT_SPECIFIC_FIELDS, GRAPH_EVENT_TYPES, GRAPH_EVENT_TYPE_SET, GRAPH_EVENT_VERSIONS, GRAPH_INTERACTION_EVENT_TYPES, GRAPH_INTERACTION_EVENT_TYPE_SET, GRAPH_SOURCES, INSUFFICIENT_COMMUNITY_DATA_MESSAGE, OWNERSHIP_SAMPLE_STATUSES, PUBLIC_ANONYMIZATION_MIN_USERS, applyPublicAnonymizationGate, assert, auth, buildComparisonCompletedContext, buildDeduplicationKey, buildFriendInvitationSentContext, buildGoalCompletedContext, buildGraphEventEnvelope, buildNotificationOpenedContext, buildSquadJoinedContext, calculateCommunityVariantStats, computeSquadJoinImpact, correctGraphEvent, ensureCommunityStatsTables, ensureGraphEventsTable, extractTopDifferenceSpriteIds, formatCommunityOwnershipDisplay, formatCommunityPriorityDisplay, formatRecentPriorityAddsDisplay, formatSampleSizeDisplay, fs, getCommunityVariantOwnership, getFriendInvitationPublicMetrics, getGraphAggregate, getMostSoughtVariants, getPriorityInterestMetrics, isFriendInvitationPubliclyExposable, isGraphEventCancelled, listEligibleCommunityUserIds, normalizeComparisonPair, normalizeGraphSource, normalizeInvitationMethod, path, pool, processGraphEventOutbox, recordCollectionGraphEvents, recordGraphEvent, recordParticipantComparisonSession, register, resolveGoalScope, rnd, root, roundRate, sanitizeGraphContext, stopCommunityStatsDailyJob, stopGraphOutboxWorker } = ctx;
+    const {
+      API,
+      BASE,
+      FRIEND_INVITATION_METHODS,
+      FRIEND_INVITATION_PUBLIC_METRIC_KEYS,
+      FUTURE_GRAPH_EVENT_TYPES,
+      GOAL_SCOPES,
+      GRAPH_DATA_LEVELS,
+      GRAPH_EVENT_COMMON_FIELDS,
+      GRAPH_EVENT_SPECIFIC_FIELDS,
+      GRAPH_EVENT_TYPES,
+      GRAPH_EVENT_TYPE_SET,
+      GRAPH_EVENT_VERSIONS,
+      GRAPH_INTERACTION_EVENT_TYPES,
+      GRAPH_INTERACTION_EVENT_TYPE_SET,
+      GRAPH_SOURCES,
+      INSUFFICIENT_COMMUNITY_DATA_MESSAGE,
+      OWNERSHIP_SAMPLE_STATUSES,
+      PUBLIC_ANONYMIZATION_MIN_USERS,
+      applyPublicAnonymizationGate,
+      assert,
+      auth,
+      buildComparisonCompletedContext,
+      buildDeduplicationKey,
+      buildFriendInvitationSentContext,
+      buildGoalCompletedContext,
+      buildGraphEventEnvelope,
+      buildNotificationOpenedContext,
+      buildSquadJoinedContext,
+      calculateCommunityVariantStats,
+      computeSquadJoinImpact,
+      correctGraphEvent,
+      ensureCommunityStatsTables,
+      ensureGraphEventsTable,
+      extractTopDifferenceSpriteIds,
+      formatCommunityOwnershipDisplay,
+      formatCommunityPriorityDisplay,
+      formatRecentPriorityAddsDisplay,
+      formatSampleSizeDisplay,
+      fs,
+      getCommunityVariantOwnership,
+      getFriendInvitationPublicMetrics,
+      getGraphAggregate,
+      getMostSoughtVariants,
+      getPriorityInterestMetrics,
+      isFriendInvitationPubliclyExposable,
+      isGraphEventCancelled,
+      listEligibleCommunityUserIds,
+      normalizeComparisonPair,
+      normalizeGraphSource,
+      normalizeInvitationMethod,
+      path,
+      pool,
+      processGraphEventOutbox,
+      recordCollectionGraphEvents,
+      recordGraphEvent,
+      recordParticipantComparisonSession,
+      register,
+      resolveGoalScope,
+      rnd,
+      root,
+      roundRate,
+      sanitizeGraphContext,
+      stopCommunityStatsDailyJob,
+      stopGraphOutboxWorker
+    } = ctx;
     await ensureGraphEventsTable(pool);
     await ensureCommunityStatsTables(pool);
     stopCommunityStatsDailyJob();
@@ -18,14 +83,16 @@ module.exports = {
       `SELECT tablename FROM pg_tables
        WHERE schemaname = 'public'
          AND tablename = ANY($1::text[])`,
-      [[
-        "graph_daily_metrics",
-        "community_variant_stats",
-        "community_sprite_stats",
-        "comparison_daily_stats",
-        "squad_daily_stats",
-        "notification_daily_stats"
-      ]]
+      [
+        [
+          "graph_daily_metrics",
+          "community_variant_stats",
+          "community_sprite_stats",
+          "comparison_daily_stats",
+          "squad_daily_stats",
+          "notification_daily_stats"
+        ]
+      ]
     );
     const names = new Set(tables.rows.map((r) => r.tablename));
     assert.ok(names.has("community_variant_stats"));
@@ -75,19 +142,13 @@ module.exports = {
     assert.ok(eligible.includes(Number(misser.id)));
 
     // Test accounts excluded.
-    await pool.query(
-      `UPDATE users SET is_test_account = TRUE WHERE id = $1`,
-      [misser.id]
-    );
+    await pool.query(`UPDATE users SET is_test_account = TRUE WHERE id = $1`, [misser.id]);
     const eligible2 = await listEligibleCommunityUserIds(pool, {
       minFillRate: 0,
       requireAnalyticsConsent: true
     });
     assert.ok(!eligible2.includes(Number(misser.id)));
-    await pool.query(
-      `UPDATE users SET is_test_account = FALSE WHERE id = $1`,
-      [misser.id]
-    );
+    await pool.query(`UPDATE users SET is_test_account = FALSE WHERE id = $1`, [misser.id]);
 
     const day = new Date().toISOString().slice(0, 10);
     const calc = await calculateCommunityVariantStats(pool, {

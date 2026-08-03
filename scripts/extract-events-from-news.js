@@ -5,24 +5,30 @@ const { Pool } = require("pg");
 const crypto = require("crypto");
 const { databasePoolConfig } = require("../server/db");
 
-const pool = new Pool(process.env.DATABASE_URL
-  ? databasePoolConfig(process.env.DATABASE_URL)
-  : {
-      database: process.env.PGDATABASE || "sprite-index",
-      host: process.env.PGHOST || "localhost",
-      port: process.env.PGPORT || 5432,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-    });
+const pool = new Pool(
+  process.env.DATABASE_URL
+    ? databasePoolConfig(process.env.DATABASE_URL)
+    : {
+        database: process.env.PGDATABASE || "sprite-index",
+        host: process.env.PGHOST || "localhost",
+        port: process.env.PGPORT || 5432,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD
+      }
+);
 
 const EVENT_PATTERNS = [
   { regex: /mastery monday|lundi de la maîtrise/i, type: "weekly_event", name: "Mastery Monday" },
   { regex: /holofoil hours/i, type: "weekly_event", name: "Holofoil Hours" },
-  { regex: /gold\s*(?:&\s*gummy|\s*hours|fish)|gummy\s*hours|mythic goldfish/i, type: "weekly_event", name: "Gold & Gummy Hours" },
+  {
+    regex: /gold\s*(?:&\s*gummy|\s*hours|fish)|gummy\s*hours|mythic goldfish/i,
+    type: "weekly_event",
+    name: "Gold & Gummy Hours"
+  },
   { regex: /galaxy hours/i, type: "weekly_event", name: "Galaxy Hours" },
   { regex: /catch up day|catch up/i, type: "catch_up_event", name: "Catch Up Day" },
   { regex: /gone wild/i, type: "seasonal_event", name: "Gone Wild" },
-  { regex: /summer hits|summer adventure|fun in the sun/i, type: "seasonal_event", name: "Summer Event" },
+  { regex: /summer hits|summer adventure|fun in the sun/i, type: "seasonal_event", name: "Summer Event" }
 ];
 
 function detectEventInfo(text) {
@@ -59,7 +65,13 @@ async function main() {
       const eventInfo = detectEventInfo(text);
       if (!eventInfo) continue;
 
-      const eventId = "event_" + crypto.createHash("md5").update(`${eventInfo.name}|${item.date || ""}|${item.source}`).digest("hex").slice(0, 16);
+      const eventId =
+        "event_" +
+        crypto
+          .createHash("md5")
+          .update(`${eventInfo.name}|${item.date || ""}|${item.source}`)
+          .digest("hex")
+          .slice(0, 16);
       if (insertedEventIds.has(eventId)) continue;
       insertedEventIds.add(eventId);
 
@@ -76,7 +88,7 @@ async function main() {
           item.date || null,
           null,
           "observed",
-          JSON.stringify([item.source]),
+          JSON.stringify([item.source])
         ]
       );
 
@@ -86,7 +98,10 @@ async function main() {
           if (!sprite.name) continue;
           const spriteNameLower = sprite.name.toLowerCase();
           const shortName = spriteNameLower.replace(" sprite", "").trim();
-          if (normalizedText.includes(spriteNameLower) || (shortName.length > 2 && normalizedText.includes(shortName))) {
+          if (
+            normalizedText.includes(spriteNameLower) ||
+            (shortName.length > 2 && normalizedText.includes(shortName))
+          ) {
             const updateRes = await client.query(
               `UPDATE sprites SET event_id = $1 WHERE id = $2 AND event_id IS NULL RETURNING id`,
               [eventId, sprite.id]

@@ -17,7 +17,13 @@ async function extractEventsFromNews(newsItems) {
     const eventInfo = detectEventInfo(text);
     if (!eventInfo) continue;
 
-    const eventId = "event_" + crypto.createHash("md5").update(`${eventInfo.name}|${item.date || ""}|${item.source}`).digest("hex").slice(0, 16);
+    const eventId =
+      "event_" +
+      crypto
+        .createHash("md5")
+        .update(`${eventInfo.name}|${item.date || ""}|${item.source}`)
+        .digest("hex")
+        .slice(0, 16);
     if (insertedEventIds.has(eventId)) continue;
     insertedEventIds.add(eventId);
 
@@ -38,7 +44,7 @@ async function extractEventsFromNews(newsItems) {
           startDate,
           endDate,
           "observed",
-          JSON.stringify([item.source]),
+          JSON.stringify([item.source])
         ]
       );
     } catch (err) {
@@ -54,10 +60,20 @@ async function extractEventsFromNews(newsItems) {
         const spriteNameLower = sprite.name.toLowerCase();
         const shortName = spriteNameLower.replace(" sprite", "").trim();
         if (normalizedText.includes(spriteNameLower) || (shortName.length > 2 && normalizedText.includes(shortName))) {
-          await pool.query(
-            `UPDATE sprites SET event_id = $1 WHERE id = $2 AND event_id IS NULL`,
-            [eventId, sprite.id]
-          ).catch(() => {});
+          const current = await pool.query(`SELECT event_id FROM sprites WHERE id = $1`, [sprite.id]);
+          if (current.rows[0] && !current.rows[0].event_id) {
+            const registry = require("../catalog-registry");
+            await registry
+              .patchEntity(pool, {
+                entityType: "sprite",
+                entityId: sprite.id,
+                patch: { event_id: eventId },
+                source: registry.SOURCES.NEWS,
+                actorLabel: item.source || "news",
+                reason: "event link extracted from news"
+              })
+              .catch(() => {});
+          }
         }
       }
     }

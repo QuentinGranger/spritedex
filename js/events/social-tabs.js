@@ -5,7 +5,7 @@ function setSocialTab(tab, opts = {}) {
     button.setAttribute("aria-selected", String(active));
     button.tabIndex = active ? 0 : -1;
   });
-  document.querySelectorAll(".social-panel").forEach(p => {
+  document.querySelectorAll(".social-panel").forEach((p) => {
     const active = p.id === `social-panel-${tab}`;
     p.style.display = active ? "block" : "none";
     p.hidden = !active;
@@ -36,9 +36,12 @@ function setupRovingTabList(selector) {
       if (!keys.includes(event.key)) return;
       event.preventDefault();
       const current = tabs.indexOf(tab);
-      const nextIndex = event.key === "Home" ? 0
-        : event.key === "End" ? tabs.length - 1
-          : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      const nextIndex =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? tabs.length - 1
+            : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
       tabs[nextIndex].focus();
       tabs[nextIndex].click();
     });

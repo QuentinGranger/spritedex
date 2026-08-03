@@ -10,17 +10,19 @@ const STATIC_ASSETS = JSON.parse("__SPRITE_INDEX_STATIC_ASSETS__");
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
@@ -34,10 +36,13 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
-      fetch(event.request).catch(() => new Response(JSON.stringify({ error: "offline" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json" }
-      }))
+      fetch(event.request).catch(
+        () =>
+          new Response(JSON.stringify({ error: "offline" }), {
+            status: 503,
+            headers: { "Content-Type": "application/json" }
+          })
+      )
     );
     return;
   }
@@ -46,25 +51,27 @@ self.addEventListener("fetch", (event) => {
   // its documents and scripts out of both the application cache and offline
   // fallbacks so a shared device never receives a stale privileged shell.
   if (
-    url.pathname === "/admin"
-    || url.pathname === "/admin/access"
-    || url.pathname === "/css/admin.css"
-    || url.pathname === "/js/admin.js"
-    || url.pathname === "/js/admin-access.js"
+    url.pathname === "/admin" ||
+    url.pathname === "/admin/access" ||
+    url.pathname === "/css/admin.css" ||
+    url.pathname === "/js/admin.js" ||
+    url.pathname === "/js/admin-access.js"
   ) {
     event.respondWith(fetch(event.request));
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request).then(response => {
-        if (response && response.status === 200 && response.type === "basic") {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => cached);
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === "basic") {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
 
       return cached || fetchPromise;
     })

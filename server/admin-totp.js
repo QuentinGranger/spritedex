@@ -52,10 +52,11 @@ function hotp(secret, counter) {
   buffer.writeUInt32BE(counter & 0xffffffff, 4);
   const digest = crypto.createHmac("sha1", secret).update(buffer).digest();
   const offset = digest[digest.length - 1] & 0x0f;
-  const code = ((digest[offset] & 0x7f) << 24)
-    | ((digest[offset + 1] & 0xff) << 16)
-    | ((digest[offset + 2] & 0xff) << 8)
-    | (digest[offset + 3] & 0xff);
+  const code =
+    ((digest[offset] & 0x7f) << 24) |
+    ((digest[offset + 1] & 0xff) << 16) |
+    ((digest[offset + 2] & 0xff) << 8) |
+    (digest[offset + 3] & 0xff);
   return String(code % 1_000_000).padStart(6, "0");
 }
 
@@ -76,7 +77,9 @@ function isAdminMfaConfigured() {
 
 function isAdminMfaRequired() {
   if (isAdminMfaConfigured()) return true;
-  const flag = String(process.env.ADMIN_REQUIRE_MFA || "").trim().toLowerCase();
+  const flag = String(process.env.ADMIN_REQUIRE_MFA || "")
+    .trim()
+    .toLowerCase();
   return flag === "1" || flag === "true" || flag === "yes";
 }
 
@@ -84,12 +87,10 @@ function verifyTotpCode(code, options = {}) {
   return matchTotpCode(code, options) != null;
 }
 
-function matchTotpCode(code, {
-  secret = process.env.ADMIN_TOTP_SECRET || "",
-  window = 1,
-  stepSeconds = 30,
-  now = Date.now()
-} = {}) {
+function matchTotpCode(
+  code,
+  { secret = process.env.ADMIN_TOTP_SECRET || "", window = 1, stepSeconds = 30, now = Date.now() } = {}
+) {
   const key = configuredTotpSecret(secret);
   if (!key) return null;
   const digits = String(code || "").replace(/\s+/g, "");
@@ -108,25 +109,21 @@ function matchTotpCode(code, {
   return null;
 }
 
-async function consumeTotpCode(code, {
-  db = null,
-  purpose = "login",
-  secret = process.env.ADMIN_TOTP_SECRET || "",
-  window = 1,
-  now = Date.now()
-} = {}) {
+async function consumeTotpCode(
+  code,
+  { db = null, purpose = "login", secret = process.env.ADMIN_TOTP_SECRET || "", window = 1, now = Date.now() } = {}
+) {
   const key = configuredTotpSecret(secret);
   if (!key) return { ok: false, reason: "not_configured" };
   const matched = matchTotpCode(code, { secret, window, now });
   if (matched == null) return { ok: false, reason: "invalid" };
-  const replayKey = crypto.createHash("sha256")
+  const replayKey = crypto
+    .createHash("sha256")
     .update(Buffer.concat([key, Buffer.from(`:${matched}`)]))
     .digest("hex");
 
   const run = async (client) => {
-    await client.query(
-      `DELETE FROM admin_totp_replays WHERE used_at < NOW() - INTERVAL '15 minutes'`
-    );
+    await client.query(`DELETE FROM admin_totp_replays WHERE used_at < NOW() - INTERVAL '15 minutes'`);
     const inserted = await client.query(
       `INSERT INTO admin_totp_replays (replay_key, counter_value, purpose)
        VALUES ($1, $2, $3)
@@ -151,7 +148,9 @@ async function consumeTotpCode(code, {
     await client.query("COMMIT");
     return result;
   } catch (error) {
-    try { await client.query("ROLLBACK"); } catch (_) {}
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
     throw error;
   } finally {
     client.release();

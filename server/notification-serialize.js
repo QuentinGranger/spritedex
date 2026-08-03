@@ -62,7 +62,9 @@ const DEFAULT_ACTION_LABELS = Object.freeze({
 });
 
 function normalizeNotificationLocale(lang) {
-  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  const locale = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
   return locale === "en" || locale === "nl" ? locale : "fr";
 }
 
@@ -113,12 +115,18 @@ function normalizeActor(user) {
 function normalizeEntity(row = {}) {
   const data = row.data && typeof row.data === "object" ? row.data : {};
   const type = normalizeEntityType(row.entity_type || row.entityType || data.entityType || null);
-  const id = row.entity_id != null
-    ? String(row.entity_id)
-    : (data.entityId != null ? String(data.entityId)
-      : (data.variantId != null ? String(data.variantId)
-        : (data.eventId != null ? String(data.eventId)
-          : (data.squadId != null ? String(data.squadId) : null))));
+  const id =
+    row.entity_id != null
+      ? String(row.entity_id)
+      : data.entityId != null
+        ? String(data.entityId)
+        : data.variantId != null
+          ? String(data.variantId)
+          : data.eventId != null
+            ? String(data.eventId)
+            : data.squadId != null
+              ? String(data.squadId)
+              : null;
   if (!type && !id) return null;
   if (!id) return type ? { type, id: null } : null;
   return {
@@ -136,9 +144,7 @@ function normalizeAction(row = {}, lang = "fr") {
   const defaults = DEFAULT_ACTION_LABELS[locale] || DEFAULT_ACTION_LABELS.fr;
   // Never reuse a stored FR/EN actionLabel when it doesn't match the inbox locale.
   const storedLabelMatchesLocale = primary && primary.label && data.lang === locale;
-  const label = (storedLabelMatchesLocale ? primary.label : null)
-    || defaults[row.type]
-    || null;
+  const label = (storedLabelMatchesLocale ? primary.label : null) || defaults[row.type] || null;
   if (!url && !label) return null;
   return {
     label: label || (locale === "en" ? "Open" : locale === "nl" ? "Openen" : "Ouvrir"),
@@ -198,9 +204,10 @@ function normalizeNotification(row, actorUser = null, lang = null) {
   if (!row) return null;
   const data = row.data && typeof row.data === "object" ? row.data : {};
   const createdAt = toUtcIso(row.created_at || row.createdAt) || null;
-  const actor = normalizeActor(actorUser)
-    || (data.actor && typeof data.actor === "object" ? normalizeActor(data.actor) : null)
-    || (row.actor_id != null
+  const actor =
+    normalizeActor(actorUser) ||
+    (data.actor && typeof data.actor === "object" ? normalizeActor(data.actor) : null) ||
+    (row.actor_id != null
       ? {
           id: String(row.actor_id),
           displayName: data.actorName || String(row.actor_id),
@@ -210,22 +217,26 @@ function normalizeNotification(row, actorUser = null, lang = null) {
 
   // Étape 61 — expose structured translation payload when present.
   const translationKey = data.translationKey || null;
-  const translationParams = data.translationParams && typeof data.translationParams === "object"
-    ? data.translationParams
-    : null;
+  const translationParams =
+    data.translationParams && typeof data.translationParams === "object" ? data.translationParams : null;
   const imageUrl = resolveImageUrl(row, actorUser);
 
   const locale = normalizeNotificationLocale(lang || data.lang || "fr");
   let title = row.title || "";
   let body = row.body || row.message || "";
 
-  const isHidden = !!(data.hiddenDueToBlock || data.accessRevoked
-    || title === "Notification masquée" || title === "Hidden notification");
+  const isHidden = !!(
+    data.hiddenDueToBlock ||
+    data.accessRevoked ||
+    title === "Notification masquée" ||
+    title === "Hidden notification"
+  );
   if (isHidden) {
     try {
       const notifI18n = require("./notification-i18n");
-      title = notifI18n.tNotif("notifications.hidden.title", {}, locale)
-        || (locale === "en" ? "Hidden notification" : locale === "nl" ? "Verborgen melding" : "Notification masquée");
+      title =
+        notifI18n.tNotif("notifications.hidden.title", {}, locale) ||
+        (locale === "en" ? "Hidden notification" : locale === "nl" ? "Verborgen melding" : "Notification masquée");
     } catch (_err) {
       title = locale === "en" ? "Hidden notification" : locale === "nl" ? "Verborgen melding" : "Notification masquée";
     }
@@ -261,9 +272,7 @@ function normalizeNotification(row, actorUser = null, lang = null) {
 }
 
 async function loadNewsImagesById(pool, newsIds) {
-  const ids = [...new Set((newsIds || [])
-    .map((id) => Number(id))
-    .filter((id) => Number.isInteger(id) && id > 0))];
+  const ids = [...new Set((newsIds || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
   const map = new Map();
   if (!ids.length || !pool) return map;
   const res = await pool.query(
@@ -278,9 +287,7 @@ async function loadNewsImagesById(pool, newsIds) {
 }
 
 async function loadActorsById(pool, actorIds) {
-  const ids = [...new Set((actorIds || [])
-    .map((id) => Number(id))
-    .filter((id) => Number.isFinite(id)))];
+  const ids = [...new Set((actorIds || []).map((id) => Number(id)).filter((id) => Number.isFinite(id)))];
   const map = new Map();
   if (!ids.length) return map;
   const res = await pool.query(
@@ -311,34 +318,40 @@ async function normalizeNotificationList(pool, rows, lang = null) {
   const newsImages = await loadNewsImagesById(pool, newsIdsNeedingImage);
 
   let notifI18n = null;
-  try { notifI18n = require("./notification-i18n"); } catch (_err) { /* optional */ }
+  try {
+    notifI18n = require("./notification-i18n");
+  } catch (_err) {
+    /* optional */
+  }
 
-  const enrichedRows = await Promise.all(list.map(async (row) => {
-    const newsId = row.type === "news_article" ? newsIdFromRow(row) : null;
-    const scrapedImage = newsId != null ? newsImages.get(newsId) : null;
-    const data = row.data && typeof row.data === "object" ? { ...row.data } : {};
-    if (scrapedImage && !resolveImageUrl(row)) data.image = scrapedImage;
+  const enrichedRows = await Promise.all(
+    list.map(async (row) => {
+      const newsId = row.type === "news_article" ? newsIdFromRow(row) : null;
+      const scrapedImage = newsId != null ? newsImages.get(newsId) : null;
+      const data = row.data && typeof row.data === "object" ? { ...row.data } : {};
+      if (scrapedImage && !resolveImageUrl(row)) data.image = scrapedImage;
 
-    if (
-      notifI18n
-      && data.translationKey
-      && data.translationParams
-      && typeof data.translationParams === "object"
-      && (data.translationParams.variantId || data.translationParams.spriteId)
-    ) {
-      try {
-        data.translationParams = await notifI18n.enrichParamsWithLocalizedCatalog(
-          pool,
-          data.translationParams,
-          lang || data.lang || "fr"
-        );
-      } catch (_err) {
-        // Keep frozen params if catalog lookup fails.
+      if (
+        notifI18n &&
+        data.translationKey &&
+        data.translationParams &&
+        typeof data.translationParams === "object" &&
+        (data.translationParams.variantId || data.translationParams.spriteId)
+      ) {
+        try {
+          data.translationParams = await notifI18n.enrichParamsWithLocalizedCatalog(
+            pool,
+            data.translationParams,
+            lang || data.lang || "fr"
+          );
+        } catch (_err) {
+          // Keep frozen params if catalog lookup fails.
+        }
       }
-    }
 
-    return { ...row, data };
-  }));
+      return { ...row, data };
+    })
+  );
 
   return enrichedRows.map((row) => {
     const actor = row.actor_id != null ? actors.get(Number(row.actor_id)) : null;

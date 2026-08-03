@@ -8,9 +8,15 @@ const pool = process.env.DATABASE_URL
   ? new Pool({
       ...databasePoolConfig(process.env.DATABASE_URL),
       connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 10000,
+      idleTimeoutMillis: 10000
     })
-  : new Pool({ database: "sprite-index", host: "localhost", port: 5432, connectionTimeoutMillis: 10000, idleTimeoutMillis: 10000 });
+  : new Pool({
+      database: "sprite-index",
+      host: "localhost",
+      port: 5432,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 10000
+    });
 
 const MIGRATION_MAP = {
   "Water Sprite": "sprite_water",
@@ -33,7 +39,7 @@ const MIGRATION_MAP = {
   "John Wick Sprite": "sprite_john_wick",
   "Boss Sprite": "sprite_boss",
   "Dream Sprite": "sprite_dream",
-  "Burnt Peanut": "sprite_burnt_peanut",
+  "Burnt Peanut": "sprite_burnt_peanut"
 };
 
 // Add flat variant mappings from the user's example pattern.
@@ -46,7 +52,7 @@ const STATUS_WEIGHT = {
   missing: 70,
   unsure: 60,
   unavailable: 50,
-  new: 0,
+  new: 0
 };
 
 const PRIORITY_WEIGHT = {
@@ -55,7 +61,7 @@ const PRIORITY_WEIGHT = {
   medium: 60,
   low: 40,
   ignored: 20,
-  none: 0,
+  none: 0
 };
 
 function bestStatus(a, b) {
@@ -121,7 +127,11 @@ function parseLegacySpriteId(rawId, spriteMap, variantMap, flatVariantMap, error
       const suffixLower = suffix.toLowerCase();
       if (mapped.toLowerCase().endsWith(`_${suffixLower}`)) {
         const base = mapped.slice(0, -(suffix.length + 1));
-        return { spriteId: base, variant: normalizeVariantName(suffix), full: `${base}::${normalizeVariantName(suffix)}` };
+        return {
+          spriteId: base,
+          variant: normalizeVariantName(suffix),
+          full: `${base}::${normalizeVariantName(suffix)}`
+        };
       }
     }
     // Base only -> default Base variant.
@@ -214,7 +224,9 @@ async function loadMaps(client) {
     if (r.slug) spriteMap[r.slug.toLowerCase()] = r.id;
   }
 
-  const variantRows = await client.query(`SELECT id, sprite_id, variant_type, name, official_name FROM sprite_variants`);
+  const variantRows = await client.query(
+    `SELECT id, sprite_id, variant_type, name, official_name FROM sprite_variants`
+  );
   const variantMap = {};
   const flatVariantMap = {};
   for (const r of variantRows.rows) {
@@ -224,7 +236,9 @@ async function loadMaps(client) {
     if (r.name) flatVariantMap[r.name.toLowerCase()] = r.id;
   }
 
-  const mapRows = await client.query(`SELECT old_name, sprite_id, variant_name FROM legacy_sprite_name_map WHERE status = 'mapped'`);
+  const mapRows = await client.query(
+    `SELECT old_name, sprite_id, variant_name FROM legacy_sprite_name_map WHERE status = 'mapped'`
+  );
   const dbMap = {};
   for (const r of mapRows.rows) {
     dbMap[r.old_name] = `${r.sprite_id}::${r.variant_name}`;
@@ -233,7 +247,17 @@ async function loadMaps(client) {
   return { spriteMap, variantMap, flatVariantMap, dbMap };
 }
 
-async function resolveAndRecord(client, rawId, userId, tableName, spriteMap, variantMap, flatVariantMap, dbMap, errors) {
+async function resolveAndRecord(
+  client,
+  rawId,
+  userId,
+  tableName,
+  spriteMap,
+  variantMap,
+  flatVariantMap,
+  dbMap,
+  errors
+) {
   // If already in DB map, use it directly.
   if (dbMap[rawId]) {
     const [base, variant] = dbMap[rawId].split("::");
@@ -290,7 +314,17 @@ async function migrateSpriteEntries(client, spriteMap, variantMap, flatVariantMa
   const byUserVariant = {};
   for (const r of rows.rows) {
     const errors = [];
-    const resolved = await resolveAndRecord(client, r.sprite_id, r.user_id, "sprite_entries", spriteMap, variantMap, flatVariantMap, dbMap, errors);
+    const resolved = await resolveAndRecord(
+      client,
+      r.sprite_id,
+      r.user_id,
+      "sprite_entries",
+      spriteMap,
+      variantMap,
+      flatVariantMap,
+      dbMap,
+      errors
+    );
     if (!resolved) {
       console.warn(`[sprite_entries] Could not migrate id=${r.id} key=${r.sprite_id} user=${r.user_id}:`, errors);
       continue;
@@ -337,10 +371,22 @@ async function migrateSpriteEntries(client, spriteMap, variantMap, flatVariantMa
 }
 
 async function migrateCollectionHistory(client, spriteMap, variantMap, flatVariantMap, dbMap) {
-  const rows = await client.query(`SELECT id, user_id, sprite_id, old_status, new_status, created_at FROM collection_history`);
+  const rows = await client.query(
+    `SELECT id, user_id, sprite_id, old_status, new_status, created_at FROM collection_history`
+  );
   for (const r of rows.rows) {
     const errors = [];
-    const resolved = await resolveAndRecord(client, r.sprite_id, r.user_id, "collection_history", spriteMap, variantMap, flatVariantMap, dbMap, errors);
+    const resolved = await resolveAndRecord(
+      client,
+      r.sprite_id,
+      r.user_id,
+      "collection_history",
+      spriteMap,
+      variantMap,
+      flatVariantMap,
+      dbMap,
+      errors
+    );
     if (!resolved) {
       console.warn(`[collection_history] Could not migrate id=${r.id} key=${r.sprite_id}:`, errors);
       continue;
@@ -368,7 +414,17 @@ async function migrateSquadActivity(client, spriteMap, variantMap, flatVariantMa
   const rows = await client.query(`SELECT id, user_id, sprite_id, action, created_at FROM squad_activity`);
   for (const r of rows.rows) {
     const errors = [];
-    const resolved = await resolveAndRecord(client, r.sprite_id, r.user_id, "squad_activity", spriteMap, variantMap, flatVariantMap, dbMap, errors);
+    const resolved = await resolveAndRecord(
+      client,
+      r.sprite_id,
+      r.user_id,
+      "squad_activity",
+      spriteMap,
+      variantMap,
+      flatVariantMap,
+      dbMap,
+      errors
+    );
     if (!resolved) {
       console.warn(`[squad_activity] Could not migrate id=${r.id} key=${r.sprite_id}:`, errors);
       continue;

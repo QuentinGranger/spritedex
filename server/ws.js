@@ -1,6 +1,12 @@
 // ws.js — extracted from server.js
 
-const { validateSession, canViewCollection, hashSessionToken, accountRequiresEmailVerification } = require("./auth");
+const {
+  validateSession,
+  canViewCollection,
+  hashSessionToken,
+  accountRequiresEmailVerification,
+  readSessionTokenFromCookieHeader
+} = require("./auth");
 const { wss } = require("./core");
 const { pool, shouldUseSSL } = require("./db");
 const compare = require("./compare");
@@ -81,7 +87,9 @@ function closeWebSocket(ws, reason = "Authorization required") {
   try {
     ws.close(WS_POLICY_VIOLATION_CLOSE_CODE, reason);
   } catch {
-    try { ws.terminate(); } catch {}
+    try {
+      ws.terminate();
+    } catch {}
   }
 }
 
@@ -176,7 +184,7 @@ async function revalidateSocketAuthorization(ws, { force = false } = {}) {
            AND s.code = ANY($2::text[])`,
         [ws._userId, subscribedCodes]
       );
-      const activeCodes = new Set(memberResult.rows.map(row => row.code));
+      const activeCodes = new Set(memberResult.rows.map((row) => row.code));
       for (const code of subscribedCodes) {
         if (!activeCodes.has(code)) ws._squadCodes.delete(code);
       }
@@ -212,7 +220,7 @@ function revokeUserSockets(userId, reason = "Account access revoked") {
   return sockets.length;
 }
 
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, req) => {
   wsHealth.connections += 1;
   ws._userId = null;
   ws._sessionTokenHash = null;
@@ -238,6 +246,40 @@ wss.on("connection", (ws) => {
   if (typeof authTimeout.unref === "function") authTimeout.unref();
   ws._authTimeout = authTimeout;
 
+  async function authenticateSocketWithToken(token) {
+    const userId = token ? await validateSession(token) : null;
+    const sessionHash = hashSessionToken(token);
+    const sessionUsable = userId && sessionHash ? await isSessionStillValid(sessionHash, userId) : false;
+    if (!sessionUsable) {
+      try {
+        ws.send(JSON.stringify({ type: "auth_error" }));
+      } catch {}
+      wsHealth.authFailures += 1;
+      closeWebSocket(ws, "Invalid or suspended session");
+      return false;
+    }
+    if (await accountRequiresEmailVerification(userId)) {
+      try {
+        ws.send(JSON.stringify({ type: "auth_error", code: "email_not_verified" }));
+      } catch {}
+      wsHealth.authFailures += 1;
+      closeWebSocket(ws, "Email not verified");
+      return false;
+    }
+    registerAuthenticatedSocket(ws, userId, token);
+    recordPresence(ws).catch(() => {});
+    return true;
+  }
+
+  // Same-origin web: HttpOnly session cookie arrives on the upgrade request.
+  const cookieToken = readSessionTokenFromCookieHeader(req?.headers?.cookie || "");
+  if (cookieToken) {
+    authenticateSocketWithToken(cookieToken).catch(() => {
+      wsHealth.authFailures += 1;
+      closeWebSocket(ws, "Invalid or suspended session");
+    });
+  }
+
   async function handleMessage(raw, isBinary) {
     // `maxPayload` above enforces this before buffering; reject binary frames
     // as the protocol accepts compact JSON text only.
@@ -246,33 +288,23 @@ wss.on("connection", (ws) => {
       return;
     }
     let msg;
-    try { msg = JSON.parse(raw); } catch { return; }
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      return;
+    }
     if (msg.type === "auth") {
       // SECURITY: derive the WS identity from a valid session token, never
       // from a client-supplied userId. Otherwise anyone could subscribe as
       // any user and infer their squad activity from update pings.
-      const userId = msg.token ? await validateSession(msg.token) : null;
-      const sessionHash = hashSessionToken(msg.token);
-      // A suspension is a live-access freeze, not a session deletion: the
-      // same bearer remains usable for the dedicated unsuspend endpoint, but
-      // cannot establish or retain a private realtime channel.
-      const sessionUsable = userId && sessionHash
-        ? await isSessionStillValid(sessionHash, userId)
-        : false;
-      if (!sessionUsable) {
-        try { ws.send(JSON.stringify({ type: "auth_error" })); } catch {}
-        wsHealth.authFailures += 1;
-        closeWebSocket(ws, "Invalid or suspended session");
+      // Cookie-authenticated sockets may send `{ type: "auth" }` without a
+      // token; the upgrade Cookie header already bound the session.
+      if (ws._userId && !msg.token) {
+        recordPresence(ws).catch(() => {});
         return;
       }
-      if (await accountRequiresEmailVerification(userId)) {
-        try { ws.send(JSON.stringify({ type: "auth_error", code: "email_not_verified" })); } catch {}
-        wsHealth.authFailures += 1;
-        closeWebSocket(ws, "Email not verified");
-        return;
-      }
-      registerAuthenticatedSocket(ws, userId, msg.token);
-      recordPresence(ws).catch(() => {});
+      const token = msg.token || cookieToken;
+      await authenticateSocketWithToken(token);
     } else if (msg.type === "presence_ping" && ws._userId) {
       recordPresence(ws).catch(() => {});
     } else if (msg.type === "compare_subscribe" && msg.targetUserId) {
@@ -282,13 +314,17 @@ wss.on("connection", (ws) => {
       // private collection changes just by knowing their id.
       const target = String(msg.targetUserId);
       if (!ws._userId) {
-        try { ws.send(JSON.stringify({ type: "compare_error", reason: "auth_required" })); } catch {}
+        try {
+          ws.send(JSON.stringify({ type: "compare_error", reason: "auth_required" }));
+        } catch {}
         return;
       }
-      const allowed = ws._userId === target || await canViewCollection(ws._userId, target);
+      const allowed = ws._userId === target || (await canViewCollection(ws._userId, target));
       if (!allowed) {
         ws._compareTarget = null;
-        try { ws.send(JSON.stringify({ type: "compare_error", reason: "forbidden" })); } catch {}
+        try {
+          ws.send(JSON.stringify({ type: "compare_error", reason: "forbidden" }));
+        } catch {}
         return;
       }
       ws._compareTarget = target;
@@ -326,7 +362,9 @@ wss.on("connection", (ws) => {
       });
   });
 
-  ws.on("pong", () => { ws._alive = true; });
+  ws.on("pong", () => {
+    ws._alive = true;
+  });
 
   // Oversized/malformed frames emit `error` in ws. Listening prevents an
   // attacker from turning the new maxPayload limit into an unhandled error.
@@ -394,25 +432,29 @@ async function getSquadCompletionSummaryForAll(squad) {
     [squad.id]
   );
 
-  const members = membersRes.rows.map(r => ({
+  const members = membersRes.rows.map((r) => ({
     userId: r.user_id,
     username: r.username || String(r.user_id)
   }));
 
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const allMembers = members.map(m => ({ ...m, visible: true }));
+  const allMembers = members.map((m) => ({ ...m, visible: true }));
   const allMatrix = await compare.buildSquadCollectionMatrix(allMembers, activeCatalogue);
 
   const visibility = new Map();
-  await Promise.all(members.flatMap(viewer => members.map(async member => {
-    const key = `${viewer.userId}:${member.userId}`;
-    if (String(viewer.userId) === String(member.userId)) {
-      visibility.set(key, true);
-      return;
-    }
-    visibility.set(key, await canViewCollection(viewer.userId, member.userId));
-  })));
+  await Promise.all(
+    members.flatMap((viewer) =>
+      members.map(async (member) => {
+        const key = `${viewer.userId}:${member.userId}`;
+        if (String(viewer.userId) === String(member.userId)) {
+          visibility.set(key, true);
+          return;
+        }
+        visibility.set(key, await canViewCollection(viewer.userId, member.userId));
+      })
+    )
+  );
 
   const { computeCatalogueVersion } = require("./squad-analysis-cache");
   const catalogueVersion = computeCatalogueVersion(catalogueAll);
@@ -421,11 +463,11 @@ async function getSquadCompletionSummaryForAll(squad) {
   const summaries = new Map();
   for (const viewer of members) {
     const viewerKey = String(viewer.userId);
-    const memberVisibility = members.map(m =>
-      String(m.userId) === viewerKey || visibility.get(`${viewerKey}:${m.userId}`)
+    const memberVisibility = members.map(
+      (m) => String(m.userId) === viewerKey || visibility.get(`${viewerKey}:${m.userId}`)
     );
 
-    const derivedMatrix = allMatrix.map(row => {
+    const derivedMatrix = allMatrix.map((row) => {
       let ownerCount = 0;
       let missingCount = 0;
       let unknownCount = 0;
@@ -439,9 +481,16 @@ async function getSquadCompletionSummaryForAll(squad) {
           unknownMembers.push(m.username);
           return { ...m, status: "unknown", priority: "none", note: "", classification: "unknown", visible: false };
         }
-        if (m.classification === "owned") { ownerCount++; owners.push(m.username); }
-        else if (m.classification === "missing") { missingCount++; missingMembers.push(m.username); }
-        else { unknownCount++; unknownMembers.push(m.username); }
+        if (m.classification === "owned") {
+          ownerCount++;
+          owners.push(m.username);
+        } else if (m.classification === "missing") {
+          missingCount++;
+          missingMembers.push(m.username);
+        } else {
+          unknownCount++;
+          unknownMembers.push(m.username);
+        }
         return { ...m, visible: true };
       });
 
@@ -481,11 +530,13 @@ async function getSquadCompletionSummaryForAll(squad) {
       totalMissing: missing.totalMissing,
       totalUnique: uniqueOwners.totalUnique,
       totalShared: shared.totalShared,
-      mostComplementaryMember: mostComplementary ? {
-        userId: mostComplementary.userId,
-        username: mostComplementary.username,
-        uniqueVariantCount: mostComplementary.uniqueVariantCount
-      } : null
+      mostComplementaryMember: mostComplementary
+        ? {
+            userId: mostComplementary.userId,
+            username: mostComplementary.username,
+            uniqueVariantCount: mostComplementary.uniqueVariantCount
+          }
+        : null
     });
   }
 
@@ -529,7 +580,9 @@ async function broadcastCompareUpdate(userId, payload) {
     for (const ws of wss.clients) {
       if (ws.readyState !== 1) continue;
       if (ws._userId === uid) {
-        try { ws.send(data); } catch {}
+        try {
+          ws.send(data);
+        } catch {}
         continue;
       }
       if (ws._compareTarget !== uid || !ws._userId) continue;
@@ -554,9 +607,9 @@ async function broadcastCompareUpdate(userId, payload) {
 // relationship or collection data, so every client still obtains the current,
 // privacy-filtered view through the normal authenticated REST endpoint.
 function broadcastFriendsUpdate(userIds, reason = "relationship") {
-  const ids = new Set((Array.isArray(userIds) ? userIds : [userIds])
-    .filter((id) => id != null)
-    .map((id) => String(id)));
+  const ids = new Set(
+    (Array.isArray(userIds) ? userIds : [userIds]).filter((id) => id != null).map((id) => String(id))
+  );
   if (!ids.size) return;
   const payload = JSON.stringify({ type: "friends_update", reason, timestamp: new Date().toISOString() });
   for (const userId of ids) {
@@ -564,7 +617,9 @@ function broadcastFriendsUpdate(userIds, reason = "relationship") {
     if (!sockets) continue;
     for (const ws of sockets) {
       if (ws.readyState === 1) {
-        try { ws.send(payload); } catch {}
+        try {
+          ws.send(payload);
+        } catch {}
       }
     }
   }

@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "reconstruction des agrégats (Étape 95)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     await ensureCommunityStatsTables(pool);
     stopCommunityStatsDailyJob();
@@ -24,9 +24,7 @@ module.exports = {
       return `${y}-${m}-${dayNum}`;
     };
     const day = localDay(new Date());
-    const variantRes = await pool.query(
-      `SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`
-    );
+    const variantRes = await pool.query(`SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`);
     const variantId = variantRes.rows[0].id;
     const spriteId = variantRes.rows[0].sprite_id;
     const user = await register(`SgRecon${rnd()}`);
@@ -34,16 +32,20 @@ module.exports = {
 
     // Seed countable events for the day.
     for (let i = 0; i < 3; i++) {
-      await recordGraphEvent(pool, {
-        eventType: GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED,
-        actorUserId: user.id,
-        variantId,
-        spriteId,
-        source: "api",
-        occurredAt: `${day}T10:0${i}:00.000Z`,
-        context: { catalogueVersion: catVersion, seed: i },
-        deduplicationKey: `recon95-${user.id}-${i}-${rnd()}`
-      }, { skipGovernance: true });
+      await recordGraphEvent(
+        pool,
+        {
+          eventType: GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED,
+          actorUserId: user.id,
+          variantId,
+          spriteId,
+          source: "api",
+          occurredAt: `${day}T10:0${i}:00.000Z`,
+          context: { catalogueVersion: catVersion, seed: i },
+          deduplicationKey: `recon95-${user.id}-${i}-${rnd()}`
+        },
+        { skipGovernance: true }
+      );
     }
 
     await pool.query(
@@ -141,22 +143,10 @@ module.exports = {
       [day, variantId]
     );
     assert.strictEqual(communityAfter.rows.length, 1);
-    assert.strictEqual(
-      Number(communityAfter.rows[0].sample_size),
-      Number(snap.sample_size)
-    );
-    assert.strictEqual(
-      Number(communityAfter.rows[0].owner_user_count),
-      Number(snap.owner_user_count)
-    );
-    assert.strictEqual(
-      Number(communityAfter.rows[0].priority_user_count),
-      Number(snap.priority_user_count)
-    );
-    assert.strictEqual(
-      Number(communityAfter.rows[0].ownership_rate),
-      Number(snap.ownership_rate)
-    );
+    assert.strictEqual(Number(communityAfter.rows[0].sample_size), Number(snap.sample_size));
+    assert.strictEqual(Number(communityAfter.rows[0].owner_user_count), Number(snap.owner_user_count));
+    assert.strictEqual(Number(communityAfter.rows[0].priority_user_count), Number(snap.priority_user_count));
+    assert.strictEqual(Number(communityAfter.rows[0].ownership_rate), Number(snap.ownership_rate));
     assert.strictEqual(communityAfter.rows[0].catalogue_version, snap.catalogue_version);
 
     const doc = fs.readFileSync(path.join(root, "SPRITE_GRAPH.md"), "utf8");

@@ -28,11 +28,7 @@ module.exports = async function runNotificationAcceptance(ctx) {
       assert.strictEqual(accepted.length, 1, "exactly one friend_request_accepted for requester");
       const n = accepted[0];
       const actionUrl = n.action?.url || n.data?.actionUrl || n.data?.actions?.primary?.url;
-      assert.strictEqual(
-        actionUrl,
-        `/compare/${accepter.id}`,
-        "notification must open comparison with the accepter"
-      );
+      assert.strictEqual(actionUrl, `/compare/${accepter.id}`, "notification must open comparison with the accepter");
 
       notifRes = await fetch(`${API}/notifications`, { headers: auth(accepter.token) });
       notifs = await notifRes.json();

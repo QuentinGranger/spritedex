@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "progression des squads (Étape 94)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     const {
       ensureSquadDailyStatsTables,
       calculateSquadDailyStats,
@@ -15,8 +15,9 @@ module.exports = {
     const owner = await register(`Sq94A${rnd()}`);
     const member = await register(`Sq94B${rnd()}`);
     const compare = require("../server/compare");
-    const catalog = (await compare.getServerCompareCatalogItemsCached())
-      .filter(compare.isVariantReleasedAndActiveServer);
+    const catalog = (await compare.getServerCompareCatalogItemsCached()).filter(
+      compare.isVariantReleasedAndActiveServer
+    );
     assert.ok(catalog.length >= 2, "need active catalogue variants");
     const v1 = { id: catalog[0].variantId || catalog[0].id, sprite_id: catalog[0].spriteId };
     const v2 = { id: catalog[1].variantId || catalog[1].id, sprite_id: catalog[1].spriteId };
@@ -79,10 +80,10 @@ module.exports = {
       catalogueVariantCount: 100,
       eligibleSquadIds: [squadId]
     });
-    const before = await pool.query(
-      `SELECT * FROM squad_daily_stats WHERE metric_date = $1::date AND squad_id = $2`,
-      [day, squadId]
-    );
+    const before = await pool.query(`SELECT * FROM squad_daily_stats WHERE metric_date = $1::date AND squad_id = $2`, [
+      day,
+      squadId
+    ]);
     assert.strictEqual(before.rows.length, 1);
     assert.ok(before.rows[0].unique_owner_variant_count >= 1);
     assert.ok(before.rows[0].shared_variant_count >= 1);
@@ -137,10 +138,7 @@ module.exports = {
     assert.ok(Number(afterCat.rows[0].catalogue_variant_count) >= coveredWithBoth);
 
     // Collection privée exclue du couverture communautaire.
-    await pool.query(
-      `UPDATE users SET collection_visibility = 'private' WHERE id = $1`,
-      [member.id]
-    );
+    await pool.query(`UPDATE users SET collection_visibility = 'private' WHERE id = $1`, [member.id]);
     await calculateSquadDailyStats(pool, {
       metricDate: day,
       catalogueVersion: catB,
@@ -154,10 +152,7 @@ module.exports = {
     );
     assert.ok(Number(afterPrivate.rows[0].covered_variant_count) <= coveredWithBoth);
     assert.strictEqual(Number(afterPrivate.rows[0].active_member_count), 2);
-    await pool.query(
-      `UPDATE users SET collection_visibility = 'friends' WHERE id = $1`,
-      [member.id]
-    );
+    await pool.query(`UPDATE users SET collection_visibility = 'friends' WHERE id = $1`, [member.id]);
 
     // Départ d’un membre.
     const leaveRes = await fetch(`${API}/squads/${encodeURIComponent(code)}/leave`, {
@@ -179,19 +174,13 @@ module.exports = {
     assert.strictEqual(Number(afterLeave.rows[0].active_member_count), 1);
 
     // Squad inactive — membres inactifs → non éligible.
-    await pool.query(
-      `UPDATE users SET last_active_at = NOW() - INTERVAL '200 days' WHERE id = $1`,
-      [owner.id]
-    );
+    await pool.query(`UPDATE users SET last_active_at = NOW() - INTERVAL '200 days' WHERE id = $1`, [owner.id]);
     // Re-add member as inactive too so squad has 2 but no recent activity.
     await pool.query(
       `UPDATE squad_members SET status = 'active', left_at = NULL WHERE squad_id = $1 AND user_id = $2`,
       [squadId, member.id]
     );
-    await pool.query(
-      `UPDATE users SET last_active_at = NOW() - INTERVAL '200 days' WHERE id = $1`,
-      [member.id]
-    );
+    await pool.query(`UPDATE users SET last_active_at = NOW() - INTERVAL '200 days' WHERE id = $1`, [member.id]);
     const eligible = await listEligibleSquadIds(pool, {
       minActiveMembers: 2,
       minCollectionFillRate: 0,

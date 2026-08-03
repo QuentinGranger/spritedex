@@ -7,9 +7,7 @@
   align-items: center;
   justify-content: center;
   color: var(--accent-2);
-  background:
-    radial-gradient(circle at 30% 30%, rgba(0, 225, 255, 0.18), transparent 70%),
-    rgba(141, 124, 255, 0.1);
+  background: radial-gradient(circle at 30% 30%, rgba(0, 225, 255, 0.18), transparent 70%), rgba(141, 124, 255, 0.1);
   border: 1px solid rgba(0, 225, 255, 0.18);
 }
 
@@ -40,7 +38,10 @@
   gap: 12px;
   padding: 12px;
   border-radius: 15px;
-  transition: background 150ms, border-color 150ms, transform 120ms;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    transform 120ms;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -60,7 +61,9 @@
   content: "";
   opacity: 0;
   transform: scaleY(0.65);
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 
 .notif-item:last-child {
@@ -99,11 +102,31 @@ body.light .notif-item:hover {
   height: 18px;
 }
 
-.notif-item__icon--social { color: #7dd3fc; background: rgba(125, 211, 252, 0.12); border-color: rgba(125, 211, 252, 0.16); }
-.notif-item__icon--news { color: #c4b5fd; background: rgba(167, 139, 250, 0.14); border-color: rgba(167, 139, 250, 0.18); }
-.notif-item__icon--collection { color: #86efac; background: rgba(134, 239, 172, 0.12); border-color: rgba(134, 239, 172, 0.16); }
-.notif-item__icon--squads { color: #fcd34d; background: rgba(252, 211, 77, 0.12); border-color: rgba(252, 211, 77, 0.16); }
-.notif-item__icon--alerts { color: #fca5a5; background: rgba(252, 165, 165, 0.14); border-color: rgba(252, 165, 165, 0.18); }
+.notif-item__icon--social {
+  color: #7dd3fc;
+  background: rgba(125, 211, 252, 0.12);
+  border-color: rgba(125, 211, 252, 0.16);
+}
+.notif-item__icon--news {
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.14);
+  border-color: rgba(167, 139, 250, 0.18);
+}
+.notif-item__icon--collection {
+  color: #86efac;
+  background: rgba(134, 239, 172, 0.12);
+  border-color: rgba(134, 239, 172, 0.16);
+}
+.notif-item__icon--squads {
+  color: #fcd34d;
+  background: rgba(252, 211, 77, 0.12);
+  border-color: rgba(252, 211, 77, 0.16);
+}
+.notif-item__icon--alerts {
+  color: #fca5a5;
+  background: rgba(252, 165, 165, 0.14);
+  border-color: rgba(252, 165, 165, 0.18);
+}
 
 .notif-item__img {
   width: 48px;

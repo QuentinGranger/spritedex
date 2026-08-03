@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureGoalsSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS collection_goals (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

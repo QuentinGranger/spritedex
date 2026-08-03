@@ -73,12 +73,18 @@ function buildLegalDocumentsFromSource(sourceMap, lang) {
   return Object.freeze(out);
 }
 
-const LEGAL_DOCUMENTS_EN_SOURCE = typeof LEGAL_DOCUMENTS_EN !== "undefined"
-  ? LEGAL_DOCUMENTS_EN
-  : (typeof module !== "undefined" && module.exports ? require("./legal-content-en").LEGAL_DOCUMENTS_EN : null);
-const LEGAL_DOCUMENTS_NL_SOURCE = typeof LEGAL_DOCUMENTS_NL !== "undefined"
-  ? LEGAL_DOCUMENTS_NL
-  : (typeof module !== "undefined" && module.exports ? require("./legal-content-nl").LEGAL_DOCUMENTS_NL : null);
+const LEGAL_DOCUMENTS_EN_SOURCE =
+  typeof LEGAL_DOCUMENTS_EN !== "undefined"
+    ? LEGAL_DOCUMENTS_EN
+    : typeof module !== "undefined" && module.exports
+      ? require("./legal-content-en").LEGAL_DOCUMENTS_EN
+      : null;
+const LEGAL_DOCUMENTS_NL_SOURCE =
+  typeof LEGAL_DOCUMENTS_NL !== "undefined"
+    ? LEGAL_DOCUMENTS_NL
+    : typeof module !== "undefined" && module.exports
+      ? require("./legal-content-nl").LEGAL_DOCUMENTS_NL
+      : null;
 
 const LEGAL_DOCUMENTS_EN_RESOLVED = LEGAL_DOCUMENTS_EN_SOURCE
   ? buildLegalDocumentsFromSource(LEGAL_DOCUMENTS_EN_SOURCE, "en")
@@ -157,7 +163,11 @@ function validateLegalDocuments() {
     }
 
     // Heuristic: rendered EN body should not keep common French legal phrasing.
-    if (/\b(Dernière mise à jour|Mentions légales|Conditions générales|Politique de confidentialité)\b/.test(document.content)) {
+    if (
+      /\b(Dernière mise à jour|Mentions légales|Conditions générales|Politique de confidentialité)\b/.test(
+        document.content
+      )
+    ) {
       errors.push(`Document EN encore en français : ${key}`);
     }
   }
@@ -172,7 +182,11 @@ function validateLegalDocuments() {
     if (/\[[A-Z0-9_]+\]/.test(document.content)) {
       errors.push(`Placeholder non remplacé dans le document NL : ${key}`);
     }
-    if (/\b(Dernière mise à jour|Mentions légales|Conditions générales|Politique de confidentialité)\b/.test(document.content)) {
+    if (
+      /\b(Dernière mise à jour|Mentions légales|Conditions générales|Politique de confidentialité)\b/.test(
+        document.content
+      )
+    ) {
       errors.push(`Document NL encore en français : ${key}`);
     }
   }

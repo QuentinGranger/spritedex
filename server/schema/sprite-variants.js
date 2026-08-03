@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureSpriteVariantsSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS sprite_variants (
         id VARCHAR(100) PRIMARY KEY,
         sprite_id VARCHAR(50) NOT NULL REFERENCES sprites(id) ON DELETE CASCADE,

@@ -32,10 +32,22 @@ const isUnknown = (v) => v === null || v === undefined || v === "" || v === "unk
 
 const STATUS_WEIGHT = { owned: 100, spotted: 90, priority: 80, missing: 70, unsure: 60, unavailable: 50, new: 0 };
 const PRIORITY_WEIGHT = { urgent: 100, important: 80, medium: 60, low: 40, ignored: 20, none: 0 };
-function bestStatus(a, b) { return (STATUS_WEIGHT[a] || 0) >= (STATUS_WEIGHT[b] || 0) ? a : b; }
-function bestPriority(a, b) { return (PRIORITY_WEIGHT[a] || 0) >= (PRIORITY_WEIGHT[b] || 0) ? a : b; }
-function earliest(a, b) { if (!a) return b; if (!b) return a; return a < b ? a : b; }
-function latest(a, b) { if (!a) return b; if (!b) return a; return a > b ? a : b; }
+function bestStatus(a, b) {
+  return (STATUS_WEIGHT[a] || 0) >= (STATUS_WEIGHT[b] || 0) ? a : b;
+}
+function bestPriority(a, b) {
+  return (PRIORITY_WEIGHT[a] || 0) >= (PRIORITY_WEIGHT[b] || 0) ? a : b;
+}
+function earliest(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return a < b ? a : b;
+}
+function latest(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
+}
 
 // Rewrite the base part of a "base::variant" collection key.
 function rewriteBase(spriteId, oldBase, newBase) {
@@ -47,18 +59,17 @@ function rewriteBase(spriteId, oldBase, newBase) {
 }
 
 async function migrateSpriteEntries(client, oldId, newId) {
-  const rows = (await client.query(
-    `SELECT * FROM sprite_entries WHERE sprite_id = $1 OR sprite_id LIKE $2`,
-    [oldId, `${oldId}::%`]
-  )).rows;
-  let migrated = 0, merged = 0;
+  const rows = (
+    await client.query(`SELECT * FROM sprite_entries WHERE sprite_id = $1 OR sprite_id LIKE $2`, [oldId, `${oldId}::%`])
+  ).rows;
+  let migrated = 0,
+    merged = 0;
   for (const r of rows) {
     const newSpriteId = rewriteBase(r.sprite_id, oldId, newId);
     if (newSpriteId === r.sprite_id) continue;
-    const existing = (await client.query(
-      `SELECT * FROM sprite_entries WHERE user_id = $1 AND sprite_id = $2`,
-      [r.user_id, newSpriteId]
-    )).rows[0];
+    const existing = (
+      await client.query(`SELECT * FROM sprite_entries WHERE user_id = $1 AND sprite_id = $2`, [r.user_id, newSpriteId])
+    ).rows[0];
     if (!existing) {
       if (!DRY_RUN) {
         await client.query(`UPDATE sprite_entries SET sprite_id = $1 WHERE id = $2`, [newSpriteId, r.id]);
@@ -74,7 +85,7 @@ async function migrateSpriteEntries(client, oldId, newId) {
             [existing.note, r.note].filter(Boolean).join("\n---\n"),
             earliest(existing.obtained_at, r.obtained_at),
             latest(existing.updated_at, r.updated_at),
-            existing.id,
+            existing.id
           ]
         );
         await client.query(`DELETE FROM sprite_entries WHERE id = $1`, [r.id]);
@@ -86,10 +97,12 @@ async function migrateSpriteEntries(client, oldId, newId) {
 }
 
 async function migrateCollectionHistory(client, oldId, newId) {
-  const rows = (await client.query(
-    `SELECT id, sprite_id FROM collection_history WHERE sprite_id = $1 OR sprite_id LIKE $2`,
-    [oldId, `${oldId}::%`]
-  )).rows;
+  const rows = (
+    await client.query(`SELECT id, sprite_id FROM collection_history WHERE sprite_id = $1 OR sprite_id LIKE $2`, [
+      oldId,
+      `${oldId}::%`
+    ])
+  ).rows;
   let migrated = 0;
   for (const r of rows) {
     const newSpriteId = rewriteBase(r.sprite_id, oldId, newId);
@@ -139,32 +152,38 @@ async function repointChildRows(client, oldId, newId) {
   const childTables = [
     { table: "sprite_variants", uniqueCol: "variant_type" },
     { table: "sprite_images", uniqueCol: "variant" },
-    { table: "availability_periods", uniqueCol: null },
+    { table: "availability_periods", uniqueCol: null }
   ];
   for (const { table, uniqueCol } of childTables) {
     if (!(await tableExists(client, table))) continue;
     const dupRows = (await client.query(`SELECT * FROM ${table} WHERE sprite_id = $1`, [oldId])).rows;
-    let moved = 0, dropped = 0;
+    let moved = 0,
+      dropped = 0;
     for (const row of dupRows) {
       let clash = false;
       if (uniqueCol) {
-        const existing = await client.query(
-          `SELECT 1 FROM ${table} WHERE sprite_id = $1 AND ${uniqueCol} = $2`,
-          [newId, row[uniqueCol]]
-        );
+        const existing = await client.query(`SELECT 1 FROM ${table} WHERE sprite_id = $1 AND ${uniqueCol} = $2`, [
+          newId,
+          row[uniqueCol]
+        ]);
         clash = existing.rowCount > 0;
       }
       if (clash) {
-        if (!DRY_RUN) await client.query(`DELETE FROM ${table} WHERE ctid = $1`, [row.ctid]).catch(async () => {
-          if (row.id !== undefined) await client.query(`DELETE FROM ${table} WHERE id = $1`, [row.id]);
-        });
+        if (!DRY_RUN)
+          await client.query(`DELETE FROM ${table} WHERE ctid = $1`, [row.ctid]).catch(async () => {
+            if (row.id !== undefined) await client.query(`DELETE FROM ${table} WHERE id = $1`, [row.id]);
+          });
         dropped++;
       } else {
         if (!DRY_RUN) {
           if (row.id !== undefined) {
             await client.query(`UPDATE ${table} SET sprite_id = $1 WHERE id = $2`, [newId, row.id]);
           } else {
-            await client.query(`UPDATE ${table} SET sprite_id = $1 WHERE sprite_id = $2 AND ${uniqueCol} = $3`, [newId, oldId, row[uniqueCol]]);
+            await client.query(`UPDATE ${table} SET sprite_id = $1 WHERE sprite_id = $2 AND ${uniqueCol} = $3`, [
+              newId,
+              oldId,
+              row[uniqueCol]
+            ]);
           }
         }
         moved++;
@@ -179,9 +198,11 @@ async function repointChildRows(client, oldId, newId) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const sprites = (await client.query(
-      `SELECT id, name, slug, rarity, effect, color, image, official_name, season_id, event_id, variants FROM sprites`
-    )).rows;
+    const sprites = (
+      await client.query(
+        `SELECT id, name, slug, rarity, effect, color, image, official_name, season_id, event_id, variants FROM sprites`
+      )
+    ).rows;
 
     // Group by slug (fall back to normalized id).
     const groups = new Map();
@@ -195,8 +216,13 @@ async function repointChildRows(client, oldId, newId) {
     for (const [slug, group] of groups.entries()) {
       if (group.length < 2) continue;
       totalDupGroups++;
-      const canonical = group.find(s => s.id.startsWith("sprite_")) || group[0];
-      console.log(`\nSlug "${slug}" → canonical "${canonical.id}" (dups: ${group.filter(s => s !== canonical).map(s => s.id).join(", ")})`);
+      const canonical = group.find((s) => s.id.startsWith("sprite_")) || group[0];
+      console.log(
+        `\nSlug "${slug}" → canonical "${canonical.id}" (dups: ${group
+          .filter((s) => s !== canonical)
+          .map((s) => s.id)
+          .join(", ")})`
+      );
 
       for (const dup of group) {
         if (dup.id === canonical.id) continue;

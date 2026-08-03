@@ -61,13 +61,7 @@ function toIsoDate(value) {
   return null;
 }
 
-const TREND_CATEGORIES = Object.freeze([
-  "strongly_rising",
-  "rising",
-  "stable",
-  "falling",
-  "strongly_falling"
-]);
+const TREND_CATEGORIES = Object.freeze(["strongly_rising", "rising", "stable", "falling", "strongly_falling"]);
 
 const TREND_LABELS_FR = Object.freeze({
   strongly_rising: "fortement en hausse",
@@ -139,9 +133,10 @@ function evaluateTrendEligibility({
   const days = Math.max(0, Math.floor(Number(daysOfData) || 0));
   const users = Math.max(0, Math.floor(Number(sampleSize) || 0));
   const events = Math.max(0, Math.floor(Number(relevantEventCount) || 0));
-  const ok = days >= requirements.minDaysOfData
-    && users >= requirements.minEligibleUsers
-    && events >= requirements.minRelevantEvents;
+  const ok =
+    days >= requirements.minDaysOfData &&
+    users >= requirements.minEligibleUsers &&
+    events >= requirements.minRelevantEvents;
   return {
     ok,
     daysOfData: days,
@@ -155,15 +150,12 @@ function evaluateTrendEligibility({
 /**
  * Étape 54 + 81 — classify % change only when eligibility passes.
  */
-function resolveInterestTrend(changePct, sampleSize, {
-  minVolume = TREND_MIN_VOLUME,
-  daysOfData = null,
-  relevantEventCount = null,
-  enforceDisplayRequirements = true
-} = {}) {
-  if (enforceDisplayRequirements
-    && daysOfData != null
-    && relevantEventCount != null) {
+function resolveInterestTrend(
+  changePct,
+  sampleSize,
+  { minVolume = TREND_MIN_VOLUME, daysOfData = null, relevantEventCount = null, enforceDisplayRequirements = true } = {}
+) {
+  if (enforceDisplayRequirements && daysOfData != null && relevantEventCount != null) {
     const gate = evaluateTrendEligibility({
       daysOfData,
       sampleSize,
@@ -196,10 +188,7 @@ async function countTrendHistoryDays(db, variantId, asOfDay, { includeAsOfRow = 
   return includeAsOfRow ? prior + 1 : prior;
 }
 
-async function countRelevantTrendEvents(db, variantId, {
-  asOfDay,
-  windowDays = 7
-} = {}) {
+async function countRelevantTrendEvents(db, variantId, { asOfDay, windowDays = 7 } = {}) {
   const result = await db.query(
     `SELECT COUNT(*)::int AS n
      FROM graph_events e
@@ -233,30 +222,28 @@ function percentChange(current, previous) {
 /**
  * Étape 53 — upsert daily variant rows + 7d/30d/peak/trend.
  */
-async function calculateVariantInterestDaily(db = pool, {
-  metricDate = null,
-  catalogueVersion = null
-} = {}) {
+async function calculateVariantInterestDaily(db = pool, { metricDate = null, catalogueVersion = null } = {}) {
   await ensureTrendTables(db);
   try {
     await db.query(
       `ALTER TABLE variant_interest_daily
          ADD COLUMN IF NOT EXISTS catalogue_version VARCHAR(80)`
     );
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
   try {
     await require("./sprite-graph-formula").ensureFormulaVersionColumns(db);
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   let catVersion = catalogueVersion;
   if (!catVersion) {
     try {
-      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db))
-        .catalogueVersion;
+      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db)).catalogueVersion;
     } catch (_) {
       catVersion = null;
     }
@@ -280,9 +267,7 @@ async function calculateVariantInterestDaily(db = pool, {
 
   let upserted = 0;
   for (const row of rows.rows) {
-    const interestScore = row.sprite_interest_score != null
-      ? Number(row.sprite_interest_score)
-      : null;
+    const interestScore = row.sprite_interest_score != null ? Number(row.sprite_interest_score) : null;
     const sampleSize = Number(row.sample_size) || 0;
 
     const hist = await db.query(
@@ -294,9 +279,7 @@ async function calculateVariantInterestDaily(db = pool, {
        LIMIT 40`,
       [row.variant_id, day]
     );
-    const byDate = new Map(
-      hist.rows.map((r) => [toIsoDate(r.metric_date), Number(r.interest_score)])
-    );
+    const byDate = new Map(hist.rows.map((r) => [toIsoDate(r.metric_date), Number(r.interest_score)]));
 
     const d7 = new Date(`${day}T00:00:00.000Z`);
     d7.setUTCDate(d7.getUTCDate() - 7);
@@ -400,10 +383,11 @@ async function calculateInterestTrendsAndSquadSnapshots(db = pool, opts = {}) {
   return { variants, squads };
 }
 
-async function getVariantInterestSeries(db = pool, variantId, {
-  days = 30,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getVariantInterestSeries(
+  db = pool,
+  variantId,
+  { days = 30, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureTrendTables(db);
   const result = await db.query(
     `SELECT *
@@ -455,25 +439,23 @@ async function getVariantInterestSeries(db = pool, variantId, {
       sampleSize: latest.sample_size,
       change7d: latest.change_7d != null ? Number(latest.change_7d) : null,
       change30d: latest.change_30d != null ? Number(latest.change_30d) : null,
-      peakInterestScore: latest.peak_interest_score != null
-        ? Number(latest.peak_interest_score)
-        : null,
+      peakInterestScore: latest.peak_interest_score != null ? Number(latest.peak_interest_score) : null,
       trend,
       trendLabel: trend ? TREND_LABELS_FR[trend] || trend : null,
       trendMessage: trend ? null : TREND_INSUFFICIENT_MESSAGE
     },
-    series: result.rows.map((r) => ({
-      metricDate: r.metric_date,
-      priorityUserCount: r.priority_user_count,
-      ownershipRate: r.ownership_rate != null ? Number(r.ownership_rate) : null,
-      interestScore: r.interest_score != null ? Number(r.interest_score) : null
-    })).reverse()
+    series: result.rows
+      .map((r) => ({
+        metricDate: r.metric_date,
+        priorityUserCount: r.priority_user_count,
+        ownershipRate: r.ownership_rate != null ? Number(r.ownership_rate) : null,
+        interestScore: r.interest_score != null ? Number(r.interest_score) : null
+      }))
+      .reverse()
   };
 }
 
-async function getSquadProgression(db = pool, squadId, {
-  days = 30
-} = {}) {
+async function getSquadProgression(db = pool, squadId, { days = 30 } = {}) {
   await ensureTrendTables(db);
   const result = await db.query(
     `SELECT *
@@ -490,24 +472,23 @@ async function getSquadProgression(db = pool, squadId, {
     latest: {
       metricDate: latest.metric_date,
       coveredVariantCount: latest.covered_variant_count,
-      collectiveCompletionRate: latest.collective_completion_rate != null
-        ? Number(latest.collective_completion_rate)
-        : null,
+      collectiveCompletionRate:
+        latest.collective_completion_rate != null ? Number(latest.collective_completion_rate) : null,
       memberCount: latest.member_count,
       uniqueVariantCount: latest.unique_variant_count,
       progress1d: latest.progress_1d != null ? Number(latest.progress_1d) : null,
       progress7d: latest.progress_7d != null ? Number(latest.progress_7d) : null,
       progress30d: latest.progress_30d != null ? Number(latest.progress_30d) : null
     },
-    series: result.rows.map((r) => ({
-      metricDate: r.metric_date,
-      coveredVariantCount: r.covered_variant_count,
-      collectiveCompletionRate: r.collective_completion_rate != null
-        ? Number(r.collective_completion_rate)
-        : null,
-      memberCount: r.member_count,
-      uniqueVariantCount: r.unique_variant_count
-    })).reverse()
+    series: result.rows
+      .map((r) => ({
+        metricDate: r.metric_date,
+        coveredVariantCount: r.covered_variant_count,
+        collectiveCompletionRate: r.collective_completion_rate != null ? Number(r.collective_completion_rate) : null,
+        memberCount: r.member_count,
+        uniqueVariantCount: r.unique_variant_count
+      }))
+      .reverse()
   };
 }
 

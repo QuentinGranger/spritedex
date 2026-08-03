@@ -1,4 +1,4 @@
-const { app, pool, compare } = require("./shared");
+const { app, pool, compare, getRequestingUser } = require("./shared");
 
 async function getGoalFeasibility(goal, _reqUser) {
   const variantId =

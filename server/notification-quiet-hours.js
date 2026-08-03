@@ -45,9 +45,7 @@ function computeQuietHoursEnd(start, end, now = new Date(), timeZone = DEFAULT_T
   const parts = getZonedParts(now, tz);
   if (!parts) return null;
 
-  const inWindow = s < e
-    ? (parts.hour >= s && parts.hour < e)
-    : (parts.hour >= s || parts.hour < e);
+  const inWindow = s < e ? parts.hour >= s && parts.hour < e : parts.hour >= s || parts.hour < e;
   if (!inWindow) return null;
 
   if (s < e) {

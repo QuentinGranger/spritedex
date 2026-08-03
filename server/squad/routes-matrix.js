@@ -1,15 +1,55 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
-
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 
 app.get("/api/squads/:code/matrix", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -26,7 +66,7 @@ app.get("/api/squads/:code/matrix", async (req, res) => {
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-matrix", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
-      const publicMatrix = matrix.map(row => {
+      const publicMatrix = matrix.map((row) => {
         const { members, ...rest } = row;
         return rest;
       });
@@ -49,10 +89,9 @@ app.get("/api/squads/:code/missing-variants", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -88,10 +127,9 @@ app.get("/api/squads/:code/unique-owners", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -128,10 +166,9 @@ app.get("/api/squads/:code/shared-variants", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -168,10 +205,9 @@ app.delete("/api/squads/:code", requireNotSuspended, async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, created_by FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, created_by FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (String(squad.created_by) !== String(reqUser)) {
@@ -198,7 +234,9 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -212,7 +250,7 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
     );
 
     const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
-    const memberIds = members.map(m => m.userId);
+    const memberIds = members.map((m) => m.userId);
 
     const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
       pool.query(
@@ -229,7 +267,7 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
       )
     ]);
 
-    const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+    const activeGoalVariantIds = new Set(goalsResult.rows.map((r) => r.variant_id).filter(Boolean));
     const activeGoalVariantCounts = new Map();
     const memberGoalVariantSet = new Set();
     for (const r of goalsResult.rows) {
@@ -239,25 +277,31 @@ app.get("/api/squads/:code/acquisition-priority", async (req, res) => {
       activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
     }
 
-    const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
-    const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+    const activeGoalCounts = new Map(memberGoalsResult.rows.map((r) => [String(r.user_id), parseInt(r.cnt, 10)]));
+    const lastActiveByUser = new Map(lastActiveResult.rows.map((r) => [String(r.user_id), r.last_active]));
 
     const excludedSeasonIds = new Set(
       String(req.query.excludeSeason || "")
         .split(",")
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean)
     );
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "acquisition-priority", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
       const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-        excludedSeasonIds,
-        activeGoalVariantCounts,
-        memberGoalVariantSet,
-        maxGoalAssignments: 2
-      });
+      const assignments = await compare.getSquadAcquisitionAssignments(
+        matrix,
+        priorities,
+        activeGoalCounts,
+        lastActiveByUser,
+        {
+          excludedSeasonIds,
+          activeGoalVariantCounts,
+          memberGoalVariantSet,
+          maxGoalAssignments: 2
+        }
+      );
 
       return {
         squadCode: squad.code,
@@ -278,7 +322,9 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -291,13 +337,13 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
        WHERE sm.squad_id = $1 AND sm.status = 'active'`,
       [squad.id]
     );
-    if (!membersResult.rows.some(r => String(r.user_id) === String(targetUserId))) {
+    if (!membersResult.rows.some((r) => String(r.user_id) === String(targetUserId))) {
       return res.status(404).json({ error: "Membre introuvable dans l'escouade" });
     }
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "member-recommendations", async () => {
       const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
-      const memberIds = members.map(m => m.userId);
+      const memberIds = members.map((m) => m.userId);
 
       const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
         pool.query(
@@ -314,7 +360,7 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
         )
       ]);
 
-      const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+      const activeGoalVariantIds = new Set(goalsResult.rows.map((r) => r.variant_id).filter(Boolean));
       const activeGoalVariantCounts = new Map();
       const memberGoalVariantSet = new Set();
       for (const r of goalsResult.rows) {
@@ -323,27 +369,33 @@ app.get("/api/squads/:code/recommendations/:memberId", async (req, res) => {
         activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
       }
 
-      const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
-      const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+      const activeGoalCounts = new Map(memberGoalsResult.rows.map((r) => [String(r.user_id), parseInt(r.cnt, 10)]));
+      const lastActiveByUser = new Map(lastActiveResult.rows.map((r) => [String(r.user_id), r.last_active]));
 
       const excludedSeasonIds = new Set(
         String(req.query.excludeSeason || "")
           .split(",")
-          .map(s => s.trim())
+          .map((s) => s.trim())
           .filter(Boolean)
       );
 
       const matrix = await compare.buildSquadCollectionMatrix(members);
       const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-        excludedSeasonIds,
-        activeGoalVariantCounts,
-        memberGoalVariantSet,
-        maxGoalAssignments: 2
-      });
+      const assignments = await compare.getSquadAcquisitionAssignments(
+        matrix,
+        priorities,
+        activeGoalCounts,
+        lastActiveByUser,
+        {
+          excludedSeasonIds,
+          activeGoalVariantCounts,
+          memberGoalVariantSet,
+          maxGoalAssignments: 2
+        }
+      );
 
       const recommendations = compare.getSquadMemberRecommendations(matrix, assignments, targetUserId);
-      const targetRow = membersResult.rows.find(r => String(r.user_id) === String(targetUserId));
+      const targetRow = membersResult.rows.find((r) => String(r.user_id) === String(targetUserId));
 
       return {
         userId: targetUserId,
@@ -363,7 +415,9 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -377,7 +431,7 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
     );
 
     const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
-    const memberIds = members.map(m => m.userId);
+    const memberIds = members.map((m) => m.userId);
 
     const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
       pool.query(
@@ -394,7 +448,7 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
       )
     ]);
 
-    const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+    const activeGoalVariantIds = new Set(goalsResult.rows.map((r) => r.variant_id).filter(Boolean));
     const activeGoalVariantCounts = new Map();
     const memberGoalVariantSet = new Set();
     for (const r of goalsResult.rows) {
@@ -403,25 +457,31 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
       activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
     }
 
-    const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
-    const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
+    const activeGoalCounts = new Map(memberGoalsResult.rows.map((r) => [String(r.user_id), parseInt(r.cnt, 10)]));
+    const lastActiveByUser = new Map(lastActiveResult.rows.map((r) => [String(r.user_id), r.last_active]));
 
     const excludedSeasonIds = new Set(
       String(req.query.excludeSeason || "")
         .split(",")
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean)
     );
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "collective-plan", async () => {
       const matrix = await compare.buildSquadCollectionMatrix(members);
       const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-        excludedSeasonIds,
-        activeGoalVariantCounts,
-        memberGoalVariantSet,
-        maxGoalAssignments: 2
-      });
+      const assignments = await compare.getSquadAcquisitionAssignments(
+        matrix,
+        priorities,
+        activeGoalCounts,
+        lastActiveByUser,
+        {
+          excludedSeasonIds,
+          activeGoalVariantCounts,
+          memberGoalVariantSet,
+          maxGoalAssignments: 2
+        }
+      );
 
       const plan = compare.getSquadCollectivePlan(matrix, assignments);
 
@@ -429,7 +489,7 @@ app.get("/api/squads/:code/collective-plan", async (req, res) => {
         squadCode: squad.code,
         squadName: squad.name,
         totalCollectiveGain: plan.totalCollectiveGain,
-        summary: `Ce plan permettrait d'ajouter jusqu'à ${plan.totalCollectiveGain} variante${plan.totalCollectiveGain > 1 ? 's' : ''} unique${plan.totalCollectiveGain > 1 ? 's' : ''} à la couverture collective.`,
+        summary: `Ce plan permettrait d'ajouter jusqu'à ${plan.totalCollectiveGain} variante${plan.totalCollectiveGain > 1 ? "s" : ""} unique${plan.totalCollectiveGain > 1 ? "s" : ""} à la couverture collective.`,
         members: plan.members
       };
     });
@@ -445,7 +505,9 @@ app.get("/api/squads/:code/helpful/:memberId", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -459,7 +521,7 @@ app.get("/api/squads/:code/helpful/:memberId", async (req, res) => {
       [squad.id]
     );
 
-    const targetRow = membersResult.rows.find(r => String(r.user_id) === String(targetUserId));
+    const targetRow = membersResult.rows.find((r) => String(r.user_id) === String(targetUserId));
     if (!targetRow) return res.status(404).json({ error: "Membre introuvable dans l'escouade" });
 
     const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);

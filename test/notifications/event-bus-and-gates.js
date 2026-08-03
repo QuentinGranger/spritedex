@@ -1,17 +1,33 @@
 "use strict";
 
 async function register(ctx) {
-  const { assert, catalog, prefs, channels, bus, asyncTest, sampleContext, EXPECTED_CONTEXTUAL_IDS, EXPECTED_NOTIFICATION_TYPES, EXPECTED_DOMAIN_EVENTS } = ctx;
+  const {
+    assert,
+    catalog,
+    prefs,
+    channels,
+    bus,
+    asyncTest,
+    sampleContext,
+    EXPECTED_CONTEXTUAL_IDS,
+    EXPECTED_NOTIFICATION_TYPES,
+    EXPECTED_DOMAIN_EVENTS
+  } = ctx;
 
   await asyncTest("emitDomainEvent awaits handlers and passes the envelope", async () => {
     const EV = "test.event_a";
     bus.removeAllDomainListeners(EV);
     let seen = null;
     bus.onDomainEvent(EV, async (event) => {
-      await new Promise(r => setTimeout(r, 5));
+      await new Promise((r) => setTimeout(r, 5));
       seen = event;
     });
-    const emitted = await bus.emitDomainEvent(EV, { actorId: "u1", entityType: "user", entityId: "u2", context: { hello: "world" } });
+    const emitted = await bus.emitDomainEvent(EV, {
+      actorId: "u1",
+      entityType: "user",
+      entityId: "u2",
+      context: { hello: "world" }
+    });
     assert.ok(seen, "handler did not run before emit resolved");
     assert.strictEqual(seen.eventId, emitted.eventId, "handler should receive the same envelope");
     assert.strictEqual(seen.eventType, EV);
@@ -51,8 +67,12 @@ async function register(ctx) {
     const EV = "test.event_b";
     bus.removeAllDomainListeners(EV);
     let count = 0;
-    bus.onDomainEvent(EV, () => { count++; });
-    bus.onDomainEvent(EV, () => { count++; });
+    bus.onDomainEvent(EV, () => {
+      count++;
+    });
+    bus.onDomainEvent(EV, () => {
+      count++;
+    });
     await bus.emitDomainEvent(EV, {});
     assert.strictEqual(count, 2);
     bus.removeAllDomainListeners(EV);
@@ -62,8 +82,12 @@ async function register(ctx) {
     const EV = "test.event_c";
     bus.removeAllDomainListeners(EV);
     let otherRan = false;
-    bus.onDomainEvent(EV, () => { throw new Error("boom"); });
-    bus.onDomainEvent(EV, () => { otherRan = true; });
+    bus.onDomainEvent(EV, () => {
+      throw new Error("boom");
+    });
+    bus.onDomainEvent(EV, () => {
+      otherRan = true;
+    });
     await bus.emitDomainEvent(EV, {}); // must not throw
     assert.strictEqual(otherRan, true, "sibling handler should still run");
     bus.removeAllDomainListeners(EV);
@@ -73,7 +97,9 @@ async function register(ctx) {
     const EV = "test.event_d";
     bus.removeAllDomainListeners(EV);
     let ran = 0;
-    const off = bus.onDomainEvent(EV, () => { ran++; });
+    const off = bus.onDomainEvent(EV, () => {
+      ran++;
+    });
     off();
     await bus.emitDomainEvent(EV, {});
     assert.strictEqual(ran, 0);
@@ -149,10 +175,7 @@ async function register(ctx) {
   await asyncTest("wanted event recipient gates (Étape 34)", () => {
     const gates = require("../../server/notification-gates");
     assert.deepStrictEqual(gates.resolveWantedEventInterestStatuses(), ["priority"]);
-    assert.deepStrictEqual(
-      gates.resolveWantedEventInterestStatuses({ includeMissing: true }),
-      ["priority", "missing"]
-    );
+    assert.deepStrictEqual(gates.resolveWantedEventInterestStatuses({ includeMissing: true }), ["priority", "missing"]);
     assert.deepStrictEqual(
       gates.evaluateWantedEventVariantInterest({
         status: "priority",
@@ -200,35 +223,29 @@ async function register(ctx) {
     assert.strictEqual(gates.WANTED_EVENT_DEFAULT_THRESHOLD_ID, "3d");
     assert.strictEqual(gates.WANTED_EVENT_STRONG_THRESHOLD_ID, "24h");
     assert.deepStrictEqual(
-      gates.WANTED_EVENT_THRESHOLD_LIST.map(t => t.id),
+      gates.WANTED_EVENT_THRESHOLD_LIST.map((t) => t.id),
       ["7d", "3d", "24h"]
     );
 
     // Default anti-spam: 3d only; 24h added for strong priorities; 7d off.
     assert.deepStrictEqual(
-      gates.resolveWantedEventActiveThresholds().map(t => t.id),
+      gates.resolveWantedEventActiveThresholds().map((t) => t.id),
       ["3d"]
     );
     assert.deepStrictEqual(
-      gates.resolveWantedEventActiveThresholds({ hasStrongPriority: true }).map(t => t.id),
+      gates.resolveWantedEventActiveThresholds({ hasStrongPriority: true }).map((t) => t.id),
       ["3d", "24h"]
     );
 
     assert.ok(gates.isWantedEventThresholdAllowed({ thresholdId: "3d" }).ok);
-    assert.strictEqual(
-      gates.isWantedEventThresholdAllowed({ thresholdId: "24h" }).reason,
-      "strong_priority_required"
-    );
+    assert.strictEqual(gates.isWantedEventThresholdAllowed({ thresholdId: "24h" }).reason, "strong_priority_required");
     assert.ok(
       gates.isWantedEventThresholdAllowed({
         thresholdId: "24h",
         hasStrongPriority: true
       }).ok
     );
-    assert.strictEqual(
-      gates.isWantedEventThresholdAllowed({ thresholdId: "7d" }).reason,
-      "threshold_disabled"
-    );
+    assert.strictEqual(gates.isWantedEventThresholdAllowed({ thresholdId: "7d" }).reason, "threshold_disabled");
     assert.ok(
       gates.isWantedEventThresholdAllowed({
         thresholdId: "7d",
@@ -237,22 +254,10 @@ async function register(ctx) {
     );
 
     const now = new Date("2026-07-20T12:00:00Z");
-    assert.strictEqual(
-      gates.classifyWantedEventThreshold("2026-07-20T20:00:00Z", now),
-      "24h"
-    );
-    assert.strictEqual(
-      gates.classifyWantedEventThreshold("2026-07-22T12:00:00Z", now),
-      "3d"
-    );
-    assert.strictEqual(
-      gates.classifyWantedEventThreshold("2026-07-26T12:00:00Z", now),
-      "7d"
-    );
-    assert.strictEqual(
-      gates.classifyWantedEventThreshold("2026-08-20T12:00:00Z", now),
-      null
-    );
+    assert.strictEqual(gates.classifyWantedEventThreshold("2026-07-20T20:00:00Z", now), "24h");
+    assert.strictEqual(gates.classifyWantedEventThreshold("2026-07-22T12:00:00Z", now), "3d");
+    assert.strictEqual(gates.classifyWantedEventThreshold("2026-07-26T12:00:00Z", now), "7d");
+    assert.strictEqual(gates.classifyWantedEventThreshold("2026-08-20T12:00:00Z", now), null);
     assert.ok(gates.isStrongWantedPriority("urgent"));
     assert.ok(gates.isStrongWantedPriority("important"));
     assert.ok(!gates.isStrongWantedPriority("medium"));
@@ -263,26 +268,15 @@ async function register(ctx) {
     const scheduler = require("../../server/notification-event-ending-scheduler");
     assert.ok(scheduler.CRON_MS === 0 || scheduler.CRON_MS === 60 * 60 * 1000);
     assert.strictEqual(
-      gates.buildWantedEventEndingDedupeKey(
-        42,
-        "event_hot_bat_summer",
-        "3d"
-      ),
+      gates.buildWantedEventEndingDedupeKey(42, "event_hot_bat_summer", "3d"),
       "event_ending:42:event_hot_bat_summer:3d"
     );
     assert.strictEqual(
-      gates.buildWantedEventEndingDomainEventId(
-        "event_hot_bat_summer",
-        "24h",
-        "2026-08-20T23:59:59Z"
-      ),
+      gates.buildWantedEventEndingDomainEventId("event_hot_bat_summer", "24h", "2026-08-20T23:59:59Z"),
       "catalogue.event_ending_soon:event_hot_bat_summer:24h:2026-08-20"
     );
     assert.strictEqual(
-      gates.classifyWantedEventThreshold(
-        "2026-07-23T12:00:00Z",
-        new Date("2026-07-20T12:00:00Z")
-      ),
+      gates.classifyWantedEventThreshold("2026-07-23T12:00:00Z", new Date("2026-07-20T12:00:00Z")),
       "3d"
     );
   });
@@ -334,29 +328,26 @@ async function register(ctx) {
       }).reason,
       "prefs_disabled"
     );
-    assert.strictEqual(
-      gates.normalizeEndDateKey("2026-08-20T23:59:59.000Z"),
-      gates.normalizeEndDateKey("2026-08-20")
-    );
+    assert.strictEqual(gates.normalizeEndDateKey("2026-08-20T23:59:59.000Z"), gates.normalizeEndDateKey("2026-08-20"));
   });
 
   await asyncTest("wanted_event_ending_soon groups variants (Étape 37)", () => {
     const type = catalog.NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON;
     // Same UTC calendar day span → "dans 3 jours" (Étape 40 relative wording).
-    const fr = catalog.renderNotification(type, {
-      eventName: "Hot Bat Summer",
-      eventId: "event_hot_bat_summer",
-      endingAt: "2026-08-20T12:00:00Z",
-      remainingPriorityVariantIds: [
-        "sprite_batman_gold",
-        "sprite_batman_galaxy",
-        "sprite_batman_holofoil"
-      ],
-      remainingCount: 3,
-      threshold: "3d",
-      timeZone: "UTC",
-      now: "2026-08-17T12:00:00Z"
-    }, "fr");
+    const fr = catalog.renderNotification(
+      type,
+      {
+        eventName: "Hot Bat Summer",
+        eventId: "event_hot_bat_summer",
+        endingAt: "2026-08-20T12:00:00Z",
+        remainingPriorityVariantIds: ["sprite_batman_gold", "sprite_batman_galaxy", "sprite_batman_holofoil"],
+        remainingCount: 3,
+        threshold: "3d",
+        timeZone: "UTC",
+        now: "2026-08-17T12:00:00Z"
+      },
+      "fr"
+    );
     assert.strictEqual(fr.title, "Hot Bat Summer se termine dans 3 jours");
     assert.strictEqual(fr.body, "Il vous manque encore 3 variantes prioritaires.");
     assert.strictEqual(fr.data.eventId, "event_hot_bat_summer");
@@ -407,7 +398,6 @@ async function register(ctx) {
       "missing_end_date"
     );
   });
-
 }
 
 module.exports = { register };

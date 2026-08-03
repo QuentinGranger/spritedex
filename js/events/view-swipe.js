@@ -5,20 +5,24 @@ function isViewSwipeBlockedTarget(target, clientX = 0) {
   const edge = 28;
   const nearEdge = clientX <= edge || clientX >= window.innerWidth - edge;
   if (nearEdge) return false;
-  return Boolean(target.closest([
-    ".sprite-card",
-    ".deck-zone",
-    ".swipe-actions",
-    "button",
-    "a",
-    "label",
-    ".filter-chips-bar",
-    ".social-tabs",
-    ".friends-tabs",
-    ".squad-engine__tabs",
-    ".squad-view-btn",
-    ".engine-filter-bar"
-  ].join(",")));
+  return Boolean(
+    target.closest(
+      [
+        ".sprite-card",
+        ".deck-zone",
+        ".swipe-actions",
+        "button",
+        "a",
+        "label",
+        ".filter-chips-bar",
+        ".social-tabs",
+        ".friends-tabs",
+        ".squad-engine__tabs",
+        ".squad-view-btn",
+        ".engine-filter-bar"
+      ].join(",")
+    )
+  );
 }
 
 function setupViewSwipe() {
@@ -62,14 +66,18 @@ function setupViewSwipe() {
         return;
       }
       main.classList.add("main-views--swiping");
-      try { main.setPointerCapture(event.pointerId); } catch (_) { /* ignore */ }
+      try {
+        main.setPointerCapture(event.pointerId);
+      } catch (_) {
+        /* ignore */
+      }
     }
     if (locked !== "h") return;
     event.preventDefault();
     const idx = MAIN_VIEWS.indexOf(getActiveMainView());
     const atStart = idx <= 0 && dx > 0;
     const atEnd = idx >= MAIN_VIEWS.length - 1 && dx < 0;
-    const resistance = (atStart || atEnd) ? 0.28 : 0.55;
+    const resistance = atStart || atEnd ? 0.28 : 0.55;
     main.style.setProperty("--view-swipe-x", `${dx * resistance}px`);
   });
 

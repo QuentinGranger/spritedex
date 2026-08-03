@@ -1,17 +1,13 @@
 "use strict";
 
-const { NOTIFICATION_TYPES, DEFAULT_LANGUAGE } = require("./constants");
+const { NOTIFICATION_TYPES, DEFAULT_LANGUAGE, normalizeLang } = require("./constants");
 
 // Étape 52 — global safety cap for ordinary sprite-index push notifications.
 // Counted per local calendar day in the user's timezone. 0 disables the cap.
 const DEFAULT_PUSH_MAX_PER_DAY = 8;
 
 // Critical / legal / account-security pushes may bypass the daily cap.
-const PUSH_DAILY_LIMIT_EXEMPT_TYPES = Object.freeze([
-  "account_security",
-  "legal_notice",
-  "service_critical"
-]);
+const PUSH_DAILY_LIMIT_EXEMPT_TYPES = Object.freeze(["account_security", "legal_notice", "service_critical"]);
 
 function isExemptFromPushDailyLimit(type, context = {}) {
   const id = String(type || "").toLowerCase();
@@ -102,9 +98,7 @@ function classifySendPriority(score) {
 }
 
 function getSendPriorityLabel(scoreOrLevel, lang = DEFAULT_LANGUAGE) {
-  const level = typeof scoreOrLevel === "string"
-    ? scoreOrLevel
-    : classifySendPriority(scoreOrLevel);
+  const level = typeof scoreOrLevel === "string" ? scoreOrLevel : classifySendPriority(scoreOrLevel);
   const locale = normalizeLang(lang);
   const labels = {
     critical: { fr: "Critique", en: "Critical", nl: "Kritiek" },
@@ -116,5 +110,16 @@ function getSendPriorityLabel(scoreOrLevel, lang = DEFAULT_LANGUAGE) {
   return (row && (row[locale] || row.en || row.fr)) || level;
 }
 
-
-module.exports = { isExemptFromPushDailyLimit, resolvePushDailyLimit, clampSendPriority, resolveSendPriority, classifySendPriority, getSendPriorityLabel, DEFAULT_PUSH_MAX_PER_DAY, PUSH_DAILY_LIMIT_EXEMPT_TYPES, SEND_PRIORITY_LEVELS, PUSH_DAILY_LIMIT_BYPASS_MIN_SCORE, SEND_PRIORITY_BY_TYPE };
+module.exports = {
+  isExemptFromPushDailyLimit,
+  resolvePushDailyLimit,
+  clampSendPriority,
+  resolveSendPriority,
+  classifySendPriority,
+  getSendPriorityLabel,
+  DEFAULT_PUSH_MAX_PER_DAY,
+  PUSH_DAILY_LIMIT_EXEMPT_TYPES,
+  SEND_PRIORITY_LEVELS,
+  PUSH_DAILY_LIMIT_BYPASS_MIN_SCORE,
+  SEND_PRIORITY_BY_TYPE
+};

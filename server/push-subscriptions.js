@@ -25,7 +25,9 @@ const TRUSTED_WEB_PUSH_HOSTS = Object.freeze([
 let tableReady = false;
 
 function normalizePlatform(platform) {
-  const p = String(platform || "web").toLowerCase().trim();
+  const p = String(platform || "web")
+    .toLowerCase()
+    .trim();
   if (p === "fcm") return "android";
   if (p === "apns") return "ios";
   if (PLATFORMS.includes(p)) return p;
@@ -42,11 +44,18 @@ function isTrustedWebPushEndpoint(value) {
   if (typeof value !== "string" || value.length === 0 || value.length > MAX_WEB_PUSH_ENDPOINT_LENGTH) return false;
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443") || !url.pathname || url.pathname === "/") {
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      (url.port && url.port !== "443") ||
+      !url.pathname ||
+      url.pathname === "/"
+    ) {
       return false;
     }
     const host = url.hostname.toLowerCase().replace(/\.$/, "");
-    return TRUSTED_WEB_PUSH_HOSTS.some(allowed => host === allowed || host.endsWith(`.${allowed}`));
+    return TRUSTED_WEB_PUSH_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
   } catch {
     return false;
   }
@@ -57,14 +66,23 @@ function isValidPushKey(value, { min = 16, max = 512 } = {}) {
 }
 
 function isValidNativePushToken(value) {
-  return typeof value === "string" && value.length >= 16 && value.length <= MAX_NATIVE_PUSH_TOKEN_LENGTH && /^[A-Za-z0-9:._-]+$/.test(value);
+  return (
+    typeof value === "string" &&
+    value.length >= 16 &&
+    value.length <= MAX_NATIVE_PUSH_TOKEN_LENGTH &&
+    /^[A-Za-z0-9:._-]+$/.test(value)
+  );
 }
 
 function parseWebSubscription(tokenOrSub) {
   if (!tokenOrSub) return null;
   let sub = tokenOrSub;
   if (typeof sub === "string") {
-    try { sub = JSON.parse(sub); } catch { return null; }
+    try {
+      sub = JSON.parse(sub);
+    } catch {
+      return null;
+    }
   }
   if (!sub || typeof sub !== "object" || !sub.endpoint) return null;
   const keys = sub.keys || {};
@@ -114,17 +132,27 @@ async function ensurePushSubscriptionsTable(pool) {
     CREATE INDEX IF NOT EXISTS idx_push_subscriptions_endpoint
       ON push_subscriptions (endpoint);
   `);
-  await pool.query(`
+  await pool
+    .query(
+      `
     ALTER TABLE push_subscriptions
       ADD COLUMN IF NOT EXISTS invalidation_reason TEXT
-  `).catch(() => {});
-  await pool.query(`
+  `
+    )
+    .catch(() => {});
+  await pool
+    .query(
+      `
     ALTER TABLE users
       ADD COLUMN IF NOT EXISTS push_reactivation_needed BOOLEAN NOT NULL DEFAULT FALSE
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
 
   // One-time bridge from legacy push_tokens → push_subscriptions.
-  await pool.query(`
+  await pool
+    .query(
+      `
     INSERT INTO push_subscriptions (
       id, user_id, platform, endpoint, token, public_key, auth_secret,
       is_active, created_at, updated_at
@@ -164,7 +192,9 @@ async function ensurePushSubscriptionsTable(pool) {
     FROM push_tokens pt
     WHERE pt.user_id IS NOT NULL AND pt.token IS NOT NULL
     ON CONFLICT (user_id, endpoint) DO NOTHING
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
 
   tableReady = true;
 }
@@ -242,10 +272,7 @@ async function registerSubscription(pool, userId, input = {}) {
   );
 
   // Étape 45 — successful re-registration clears the reactivation prompt.
-  await pool.query(
-    `UPDATE users SET push_reactivation_needed = FALSE WHERE id = $1`,
-    [userId]
-  ).catch(() => {});
+  await pool.query(`UPDATE users SET push_reactivation_needed = FALSE WHERE id = $1`, [userId]).catch(() => {});
 
   return res.rows[0];
 }
@@ -303,7 +330,7 @@ function isPermanentProviderFailure({ statusCode = null, error = null, expired =
     "canonical_id", // FCM replaced token — treat as stale
     "gone"
   ];
-  return needles.some(n => err.includes(n));
+  return needles.some((n) => err.includes(n));
 }
 
 /**
@@ -312,9 +339,7 @@ function isPermanentProviderFailure({ statusCode = null, error = null, expired =
  * push_reactivation_needed so the client can prompt them.
  */
 /** Étape 59 — user-initiated device disable (scoped to owner). */
-async function deactivateSubscriptionForUser(pool, userId, subscriptionId, {
-  reason = "user_disabled"
-} = {}) {
+async function deactivateSubscriptionForUser(pool, userId, subscriptionId, { reason = "user_disabled" } = {}) {
   await ensurePushSubscriptionsTable(pool);
   if (userId == null || !subscriptionId) return { deactivated: false };
   const res = await pool.query(
@@ -338,12 +363,10 @@ async function deactivateSubscriptionForUser(pool, userId, subscriptionId, {
   };
 }
 
-async function deactivateInvalidSubscription(pool, {
-  endpoint = null,
-  subscriptionId = null,
-  userId = null,
-  reason = "provider_invalid"
-} = {}) {
+async function deactivateInvalidSubscription(
+  pool,
+  { endpoint = null, subscriptionId = null, userId = null, reason = "provider_invalid" } = {}
+) {
   await ensurePushSubscriptionsTable(pool);
   if (!endpoint && !subscriptionId) return { deactivated: false };
 
@@ -366,15 +389,17 @@ async function deactivateInvalidSubscription(pool, {
   const ownerId = userId || res.rows[0].user_id;
 
   // Cancel pending push-only queue jobs for this user — no point retrying a dead token.
-  await pool.query(
-    `UPDATE notification_delivery_queue
+  await pool
+    .query(
+      `UPDATE notification_delivery_queue
      SET status = 'cancelled', processed_at = NOW(), updated_at = NOW(),
          last_error = 'subscription_invalid'
      WHERE recipient_id = $1
        AND status IN ('pending', 'processing')
        AND channels = ARRAY['push']::text[]`,
-    [ownerId]
-  ).catch(() => {});
+      [ownerId]
+    )
+    .catch(() => {});
 
   const active = await pool.query(
     `SELECT COUNT(*)::int AS c FROM push_subscriptions
@@ -417,10 +442,9 @@ async function userNeedsPushReactivation(pool, userId) {
 
 async function touchSubscription(pool, subscriptionId) {
   if (!subscriptionId) return;
-  await pool.query(
-    `UPDATE push_subscriptions SET last_used_at = NOW(), updated_at = NOW() WHERE id = $1`,
-    [subscriptionId]
-  ).catch(() => {});
+  await pool
+    .query(`UPDATE push_subscriptions SET last_used_at = NOW(), updated_at = NOW() WHERE id = $1`, [subscriptionId])
+    .catch(() => {});
 }
 
 /** Active subscriptions for a user (multi-device). */
@@ -477,9 +501,9 @@ function toDispatchTarget(row) {
     }
     return null;
   }
-  const token = row.token || (row.endpoint && row.endpoint.includes(":")
-    ? row.endpoint.slice(row.endpoint.indexOf(":") + 1)
-    : null);
+  const token =
+    row.token ||
+    (row.endpoint && row.endpoint.includes(":") ? row.endpoint.slice(row.endpoint.indexOf(":") + 1) : null);
   // Legacy database rows bypassed registerSubscription(), so never trust a
   // token merely because it was persisted before the current validation was
   // introduced. In particular, an arbitrary APNS token is interpolated into

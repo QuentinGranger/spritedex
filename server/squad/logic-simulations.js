@@ -1,12 +1,53 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
-
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 
 async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariantIds) {
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
   const total = catalogue.length;
-  const validIds = new Set(catalogue.map(i => i.id));
+  const validIds = new Set(catalogue.map((i) => i.id));
 
   const membersResult = await pool.query(
     `SELECT sm.user_id, u.username
@@ -16,7 +57,7 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
     [squad.id]
   );
 
-  const targetRow = membersResult.rows.find(r => String(r.user_id) === String(memberId));
+  const targetRow = membersResult.rows.find((r) => String(r.user_id) === String(memberId));
   if (!targetRow) throw new Error("Membre introuvable dans l'escouade");
   if (!(await canViewCollection(reqUser, memberId))) {
     throw new Error("La collection de ce membre n'est pas visible");
@@ -24,7 +65,7 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
 
   const members = [];
   for (const r of membersResult.rows) {
-    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    const visible = String(r.user_id) === String(reqUser) || (await canViewCollection(reqUser, r.user_id));
     if (!visible) continue;
     const collection = await compare.loadServerCompareCollection(r.user_id);
     const owned = new Set();
@@ -36,8 +77,11 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
 
   const rawIds = Array.isArray(acquireVariantIds)
     ? acquireVariantIds
-    : String(acquireVariantIds || "").split(",").map(s => s.trim()).filter(Boolean);
-  const newVariantIds = rawIds.filter(id => validIds.has(id));
+    : String(acquireVariantIds || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+  const newVariantIds = rawIds.filter((id) => validIds.has(id));
   const extraSet = new Set(newVariantIds);
 
   function computeCoverage(extraByUser = null) {
@@ -70,14 +114,17 @@ async function simulateSquadAcquisition(squad, reqUser, memberId, acquireVariant
 
 function toVariantIdList(value) {
   if (Array.isArray(value)) return value.map(String).filter(Boolean);
-  return String(value || "").split(",").map(s => s.trim()).filter(Boolean);
+  return String(value || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 async function simulateSquadChanges(squad, reqUser, changes = []) {
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const catalogueById = new Map(activeCatalogue.map(i => [i.id, i]));
-  const validIds = new Set(activeCatalogue.map(i => i.id));
+  const catalogueById = new Map(activeCatalogue.map((i) => [i.id, i]));
+  const validIds = new Set(activeCatalogue.map((i) => i.id));
 
   const membersResult = await pool.query(
     `SELECT sm.user_id, u.username, u.display_name
@@ -89,7 +136,7 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
 
   const members = [];
   for (const r of membersResult.rows) {
-    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    const visible = String(r.user_id) === String(reqUser) || (await canViewCollection(reqUser, r.user_id));
     if (!visible) continue;
     const collection = await compare.loadServerCompareCollection(r.user_id);
     const owned = new Set();
@@ -121,7 +168,7 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
 
   const before = computeCoverage(members, activeIds);
 
-  const simulatedMembers = members.map(m => ({ ...m, owned: new Set(m.owned) }));
+  const simulatedMembers = members.map((m) => ({ ...m, owned: new Set(m.owned) }));
 
   for (const change of changes) {
     if (!change || !change.type) continue;
@@ -129,7 +176,7 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
       case "acquire": {
         const targetId = String(change.memberId);
         const variantIds = toVariantIdList(change.variantIds);
-        const m = simulatedMembers.find(x => String(x.userId) === targetId);
+        const m = simulatedMembers.find((x) => String(x.userId) === targetId);
         if (m) {
           for (const vid of variantIds) {
             if (activeIds.has(vid)) m.owned.add(vid);
@@ -154,7 +201,7 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
       }
       case "leave": {
         const leaveId = String(change.memberId);
-        const idx = simulatedMembers.findIndex(x => String(x.userId) === leaveId);
+        const idx = simulatedMembers.findIndex((x) => String(x.userId) === leaveId);
         if (idx >= 0) simulatedMembers.splice(idx, 1);
         break;
       }
@@ -192,7 +239,7 @@ async function simulateSquadChanges(squad, reqUser, changes = []) {
 async function getSquadWhatIfImpact(squad, reqUser, change) {
   const catalogueAll = await compare.getServerCompareCatalogItemsCached();
   const activeCatalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const validIds = new Set(activeCatalogue.map(i => i.id));
+  const validIds = new Set(activeCatalogue.map((i) => i.id));
 
   const membersResult = await pool.query(
     `SELECT sm.user_id, u.username, u.display_name
@@ -205,7 +252,7 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
   const members = [];
   const memberIds = [];
   for (const r of membersResult.rows) {
-    const visible = String(r.user_id) === String(reqUser) || await canViewCollection(reqUser, r.user_id);
+    const visible = String(r.user_id) === String(reqUser) || (await canViewCollection(reqUser, r.user_id));
     if (!visible) continue;
     const collection = await compare.loadServerCompareCollection(r.user_id);
     const owned = new Set();
@@ -216,7 +263,7 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
     memberIds.push(r.user_id);
   }
 
-  const memberSet = new Set(members.map(m => String(m.userId)));
+  const memberSet = new Set(members.map((m) => String(m.userId)));
   const activeGoals = await pool.query(
     `SELECT id, user_id, squad_id, title, variant_id
      FROM collection_goals
@@ -256,7 +303,12 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
         if (idSet.has(vid) && variantOwnerCount.get(vid) === 1) unique++;
       }
       if (!mostComplementary || unique > mostComplementary.uniqueVariantCount) {
-        mostComplementary = { userId: m.userId, username: m.username, displayName: m.displayName, uniqueVariantCount: unique };
+        mostComplementary = {
+          userId: m.userId,
+          username: m.username,
+          displayName: m.displayName,
+          uniqueVariantCount: unique
+        };
       }
     }
 
@@ -272,7 +324,11 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
           bestCoverage = covered;
           bestPair = {
             members: [
-              { userId: memberList[i].userId, username: memberList[i].username, displayName: memberList[i].displayName },
+              {
+                userId: memberList[i].userId,
+                username: memberList[i].username,
+                displayName: memberList[i].displayName
+              },
               { userId: memberList[j].userId, username: memberList[j].username, displayName: memberList[j].displayName }
             ],
             coveredVariantCount: covered,
@@ -284,13 +340,13 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
 
     function isGoalCompleted(goal, list) {
       if (goal.squad_id) {
-        return list.some(m => m.owned.has(goal.variant_id));
+        return list.some((m) => m.owned.has(goal.variant_id));
       }
-      const m = list.find(x => String(x.userId) === String(goal.user_id));
+      const m = list.find((x) => String(x.userId) === String(goal.user_id));
       return m ? m.owned.has(goal.variant_id) : false;
     }
 
-    const goals = activeGoals.rows.map(goal => ({
+    const goals = activeGoals.rows.map((goal) => ({
       goalId: goal.id,
       title: goal.title,
       variantId: goal.variant_id,
@@ -311,14 +367,14 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
   }
 
   let activeIds = new Set(validIds);
-  const simulatedMembers = members.map(m => ({ ...m, owned: new Set(m.owned) }));
+  const simulatedMembers = members.map((m) => ({ ...m, owned: new Set(m.owned) }));
 
   if (change && change.type) {
     switch (change.type) {
       case "acquire": {
         const targetId = String(change.memberId);
         const variantIds = toVariantIdList(change.variantIds);
-        const m = simulatedMembers.find(x => String(x.userId) === targetId);
+        const m = simulatedMembers.find((x) => String(x.userId) === targetId);
         if (m) {
           for (const vid of variantIds) if (activeIds.has(vid)) m.owned.add(vid);
         }
@@ -339,7 +395,7 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
       }
       case "leave": {
         const leaveId = String(change.memberId);
-        const idx = simulatedMembers.findIndex(x => String(x.userId) === leaveId);
+        const idx = simulatedMembers.findIndex((x) => String(x.userId) === leaveId);
         if (idx >= 0) simulatedMembers.splice(idx, 1);
         break;
       }
@@ -363,7 +419,7 @@ async function getSquadWhatIfImpact(squad, reqUser, change) {
 
   const affectedGoals = after.goals
     .map((g, i) => ({ ...g, beforeCompleted: before.goals[i].completed }))
-    .filter(g => g.completed !== g.beforeCompleted);
+    .filter((g) => g.completed !== g.beforeCompleted);
 
   function diff(key) {
     return Math.round((after[key] - before[key]) * 100) / 100;

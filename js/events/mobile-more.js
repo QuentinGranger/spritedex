@@ -35,12 +35,18 @@ function setupMobileMoreEvents() {
       moreButton.focus({ preventScroll: true });
     }, 220);
   };
-  moreButton?.addEventListener("click", () => setMoreMenu(moreMenu?.hidden || moreMenu?.classList.contains("is-closing")));
-  moreMenu?.querySelectorAll("[data-mobile-more-close]").forEach((button) => button.addEventListener("click", () => setMoreMenu(false)));
-  moreMenu?.querySelectorAll("[data-mobile-view]").forEach((button) => button.addEventListener("click", () => {
-    setMoreMenu(false);
-    activateMainView(button.dataset.mobileView);
-  }));
+  moreButton?.addEventListener("click", () =>
+    setMoreMenu(moreMenu?.hidden || moreMenu?.classList.contains("is-closing"))
+  );
+  moreMenu
+    ?.querySelectorAll("[data-mobile-more-close]")
+    .forEach((button) => button.addEventListener("click", () => setMoreMenu(false)));
+  moreMenu?.querySelectorAll("[data-mobile-view]").forEach((button) =>
+    button.addEventListener("click", () => {
+      setMoreMenu(false);
+      activateMainView(button.dataset.mobileView);
+    })
+  );
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && moreMenu && !moreMenu.hidden) setMoreMenu(false);
   });
@@ -78,5 +84,4 @@ function setupMobileMoreEvents() {
     moreHandle.addEventListener("pointerup", endMoreDrag);
     moreHandle.addEventListener("pointercancel", endMoreDrag);
   }
-
 }

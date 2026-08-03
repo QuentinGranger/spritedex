@@ -2,8 +2,7 @@
 
 async function loadFriendsData() {
   if (friendsState.loadPromise) return friendsState.loadPromise;
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return;
+  if (!hasAuthSession()) return;
   friendsState.loadPromise = (async () => {
     friendsState.loading = true;
     try {

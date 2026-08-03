@@ -34,18 +34,12 @@ async function migrate() {
 
     // 4. Update sprite_images sprite_id using mapping
     for (const [shortId, stableId] of Object.entries(mapping)) {
-      await client.query(
-        `UPDATE sprite_images SET sprite_id = $1 WHERE sprite_id = $2`,
-        [stableId, shortId]
-      );
+      await client.query(`UPDATE sprite_images SET sprite_id = $1 WHERE sprite_id = $2`, [stableId, shortId]);
     }
 
     // 5. Update sprite_variants sprite_id using mapping
     for (const [shortId, stableId] of Object.entries(mapping)) {
-      await client.query(
-        `UPDATE sprite_variants SET sprite_id = $1 WHERE sprite_id = $2`,
-        [stableId, shortId]
-      );
+      await client.query(`UPDATE sprite_variants SET sprite_id = $1 WHERE sprite_id = $2`, [stableId, shortId]);
     }
 
     // 6. Re-add FK constraints

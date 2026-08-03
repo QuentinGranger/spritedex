@@ -1,8 +1,8 @@
 "use strict";
 
 async function ensureNotificationIndexes(pool) {
-    // Indexes: drop legacy (user_*) names and recreate on recipient_id/data.
-    await pool.query(`
+  // Indexes: drop legacy (user_*) names and recreate on recipient_id/data.
+  await pool.query(`
       DROP INDEX IF EXISTS idx_notifications_user_created;
       DROP INDEX IF EXISTS idx_notifications_context;
       DROP INDEX IF EXISTS idx_notifications_unread;

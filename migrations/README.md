@@ -32,3 +32,6 @@ npm run migrate:status
 
 Ne modifiez jamais un fichier déjà appliqué : le déploiement sera bloqué par le
 contrôle de checksum. Créez une nouvelle migration corrective à la place.
+
+Ce registre technique ne remplace pas le **registre métier catalogue**
+(sprites / variantes / empreintes). Voir [`CATALOG_REGISTRY.md`](../CATALOG_REGISTRY.md).

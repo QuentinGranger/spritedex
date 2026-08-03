@@ -24,9 +24,10 @@ async function resolveCatalogueContext(db = pool) {
   }
   if (!Array.isArray(catalogue)) catalogue = [];
 
-  const active = typeof compare.isVariantReleasedAndActiveServer === "function"
-    ? catalogue.filter(compare.isVariantReleasedAndActiveServer)
-    : catalogue;
+  const active =
+    typeof compare.isVariantReleasedAndActiveServer === "function"
+      ? catalogue.filter(compare.isVariantReleasedAndActiveServer)
+      : catalogue;
 
   const catalogueVersion = computeCatalogueVersion(catalogue) || "unknown";
   const catalogueVariantCount = active.length || catalogue.length;
@@ -35,9 +36,7 @@ async function resolveCatalogueContext(db = pool) {
   if (!catalogueVariantCount) {
     const res = await db.query(`SELECT COUNT(*)::int AS n FROM sprite_variants`);
     return {
-      catalogueVersion: catalogueVersion === "unknown"
-        ? `db-${res.rows[0]?.n || 0}`
-        : catalogueVersion,
+      catalogueVersion: catalogueVersion === "unknown" ? `db-${res.rows[0]?.n || 0}` : catalogueVersion,
       catalogueVariantCount: res.rows[0]?.n || 0,
       catalogue
     };

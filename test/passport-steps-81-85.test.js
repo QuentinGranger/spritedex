@@ -210,8 +210,11 @@ async function run() {
       assert.ok(!vers.rows[vers.rows.length - 1].ended_at);
 
       const sections = await getEventProgressSections(user.id, new Set([vLive]));
-      assert.ok(sections.completedCount >= 1 || (sections.historical || []).length >= 1
-        || (sections.completed || []).length >= 1);
+      assert.ok(
+        sections.completedCount >= 1 ||
+          (sections.historical || []).length >= 1 ||
+          (sections.completed || []).length >= 1
+      );
       // Historical accomplishment not revoked.
       const still = await pool.query(
         `SELECT 1 FROM user_event_completions WHERE user_id = $1 AND event_id = $2 LIMIT 1`,
@@ -296,16 +299,10 @@ async function run() {
         let comp = await evaluateAndAwardComplementaryBadge(user.id, peer.id, fakeCompare);
         assert.ok(["no_social_link", "account_too_recent"].includes(comp.skippedReason));
 
-        await pool.query(
-          "UPDATE users SET suspended_until = NOW() + INTERVAL '1 hour' WHERE id = $1",
-          [user.id]
-        );
+        await pool.query("UPDATE users SET suspended_until = NOW() + INTERVAL '1 hour' WHERE id = $1", [user.id]);
         comp = await evaluateAndAwardComplementaryBadge(user.id, peer.id, fakeCompare);
         assert.strictEqual(comp.skippedReason, "suspended");
-        await pool.query(
-          "UPDATE users SET suspended_until = NULL, suspended_at = NULL WHERE id = $1",
-          [user.id]
-        );
+        await pool.query("UPDATE users SET suspended_until = NULL, suspended_at = NULL WHERE id = $1", [user.id]);
 
         // Early collector: suspended → false
         await pool.query(
@@ -314,10 +311,7 @@ async function run() {
           [user.id, new Date(new Date(EARLY_COLLECTOR_BEFORE).getTime() - 86400000).toISOString()]
         );
         assert.ok(!(await evaluateEarlyCollectorQualified(user.id)));
-        await pool.query(
-          "UPDATE users SET suspended_until = NULL WHERE id = $1",
-          [user.id]
-        );
+        await pool.query("UPDATE users SET suspended_until = NULL WHERE id = $1", [user.id]);
 
         // Archivist: 3 reviews
         await recordCatalogueReview(user.id, "arch-v1", 95);
@@ -347,10 +341,7 @@ async function run() {
           const squad = await create.json();
           assert.ok(create.ok, JSON.stringify(squad));
           const squadId = squad.id;
-          await pool.query(
-            "UPDATE squads SET created_at = NOW() - INTERVAL '25 hours' WHERE id = $1",
-            [squadId]
-          );
+          await pool.query("UPDATE squads SET created_at = NOW() - INTERVAL '25 hours' WHERE id = $1", [squadId]);
           // Join member via SQL (active)
           await pool.query(
             `INSERT INTO squad_members (squad_id, user_id, role, status)
@@ -363,10 +354,7 @@ async function run() {
           const againFounder = await maybeAwardSquadFounder(founder.id);
           assert.ok(!againFounder || againFounder === null || againFounder.badge_code, "idempotent founder");
           const founderBadges = await listUserBadges(founder.id);
-          assert.strictEqual(
-            founderBadges.filter((b) => b.code === "squad_founder").length,
-            1
-          );
+          assert.strictEqual(founderBadges.filter((b) => b.code === "squad_founder").length, 1);
         } finally {
           await cleanup(founder);
           await cleanup(member);
@@ -434,8 +422,10 @@ async function run() {
         badgesVisibility: "public"
       });
       assert.ok(await canViewPassportSection(squadMate.id, owner.id, "passport"));
-      assert.ok(!(await canViewPassportSection(squadMate.id, owner.id, "activity")),
-        "squad member must not see friends-only activity");
+      assert.ok(
+        !(await canViewPassportSection(squadMate.id, owner.id, "activity")),
+        "squad member must not see friends-only activity"
+      );
 
       // Block
       const block = await fetch(`${API}/users/${owner.id}/block`, {
@@ -560,14 +550,8 @@ async function run() {
       assert.strictEqual(leftover.rows.length, 0);
 
       // Click destinations (Étape 84)
-      assert.deepStrictEqual(
-        PassportRender.passportActionDestination("open-filter").view,
-        "checklist"
-      );
-      assert.deepStrictEqual(
-        PassportRender.passportActionDestination("event-missing").view,
-        "checklist"
-      );
+      assert.deepStrictEqual(PassportRender.passportActionDestination("open-filter").view, "checklist");
+      assert.deepStrictEqual(PassportRender.passportActionDestination("event-missing").view, "checklist");
       assert.ok(PassportRender.passportActionDestination("compare_collections").view === "social");
       assert.ok(ACTIVITY_RETENTION_DAYS >= 30);
     } finally {
@@ -579,8 +563,12 @@ async function run() {
   // ── Étape 85 — UI contracts ────────────────────────────────────
   await test("interface : viewports, vides, noms longs, badges, squads (Étape 85)", () => {
     const accountCss = fs.readFileSync(path.join(__dirname, "../css/account.css"), "utf8");
-    const css = [accountCss, ...[...accountCss.matchAll(/@import url\("\.\/account\/([^\"]+)"\);/g)]
-      .map((match) => fs.readFileSync(path.join(__dirname, "../css/account", match[1]), "utf8"))].join("\n");
+    const css = [
+      accountCss,
+      ...[...accountCss.matchAll(/@import url\("\.\/account\/([^\"]+)"\);/g)].map((match) =>
+        fs.readFileSync(path.join(__dirname, "../css/account", match[1]), "utf8")
+      )
+    ].join("\n");
     assert.ok(css.includes("@media (max-width: 480px)"), "phone breakpoint");
     assert.ok(css.includes("@media (min-width: 481px) and (max-width: 1023px)"), "tablet breakpoint");
     assert.ok(css.includes("@media (min-width: 1024px)"), "desktop breakpoint");
@@ -595,13 +583,16 @@ async function run() {
     }));
 
     for (const viewport of ["phone", "tablet", "desktop"]) {
-      const html = PassportRender.renderPassportContractHtml({
-        user: { username: longName, displayName: longName },
-        collection: { ownedVariantCount: 0, completionRateDisplay: 0, catalogueVersion: "2026.07.26-1" },
-        badgeProgress: manyBadges,
-        primarySquad: null,
-        availableSquads: []
-      }, { viewport, showReliabilityWarning: true });
+      const html = PassportRender.renderPassportContractHtml(
+        {
+          user: { username: longName, displayName: longName },
+          collection: { ownedVariantCount: 0, completionRateDisplay: 0, catalogueVersion: "2026.07.26-1" },
+          badgeProgress: manyBadges,
+          primarySquad: null,
+          availableSquads: []
+        },
+        { viewport, showReliabilityWarning: true }
+      );
 
       assert.ok(html.includes(`data-viewport="${viewport}"`));
       assert.ok(html.includes("Collection vide"));
@@ -613,13 +604,16 @@ async function run() {
       assert.ok(html.includes('data-badge-count="40"'));
     }
 
-    const multiSquad = PassportRender.renderPassportContractHtml({
-      user: { username: "multi" },
-      collection: { ownedVariantCount: 3, completionRateDisplay: 12.5 },
-      primarySquad: { name: "Bravo Six", private: false },
-      availableSquads: [{ id: 1 }, { id: 2 }, { id: 3 }],
-      badges: [{ label: "Première collection" }]
-    }, { viewport: "desktop" });
+    const multiSquad = PassportRender.renderPassportContractHtml(
+      {
+        user: { username: "multi" },
+        collection: { ownedVariantCount: 3, completionRateDisplay: 12.5 },
+        primarySquad: { name: "Bravo Six", private: false },
+        availableSquads: [{ id: 1 }, { id: 2 }, { id: 3 }],
+        badges: [{ label: "Première collection" }]
+      },
+      { viewport: "desktop" }
+    );
     assert.ok(multiSquad.includes("Bravo Six"));
 
     const privateSquad = PassportRender.renderPassportContractHtml({
@@ -636,18 +630,23 @@ async function run() {
     });
     assert.ok(partial.includes("Statistiques masquées"));
 
-    const longFr = PassportRender.renderPassportContractHtml({
-      user: { username: "fr" },
-      collection: { ownedVariantCount: 1, completionRateDisplay: 12.5 }
-    }, {
-      showReliabilityWarning: true,
-      longCopy: "Cette collection n’est renseignée qu’à 12,5 %. Certaines statistiques peuvent être incomplètes."
-    });
+    const longFr = PassportRender.renderPassportContractHtml(
+      {
+        user: { username: "fr" },
+        collection: { ownedVariantCount: 1, completionRateDisplay: 12.5 }
+      },
+      {
+        showReliabilityWarning: true,
+        longCopy: "Cette collection n’est renseignée qu’à 12,5 %. Certaines statistiques peuvent être incomplètes."
+      }
+    );
     assert.ok(longFr.includes("12,5"));
-    assert.ok(PassportRender.passportActivityLabel({
-      activityType: "variants_owned",
-      data: { count: 12 }
-    }).includes("12"));
+    assert.ok(
+      PassportRender.passportActivityLabel({
+        activityType: "variants_owned",
+        data: { count: 12 }
+      }).includes("12")
+    );
   });
 
   console.log(`\n${passed} passed, ${failed} failed\n`);

@@ -11,123 +11,81 @@
 
 const TRANSLATIONS = Object.freeze({
   fr: Object.freeze({
-    "notifications.friend_request_accepted.title":
-      "{friendName} a accepté votre invitation",
-    "notifications.friend_request_accepted.body":
-      "Vous pouvez maintenant comparer vos collections.",
+    "notifications.friend_request_accepted.title": "{friendName} a accepté votre invitation",
+    "notifications.friend_request_accepted.body": "Vous pouvez maintenant comparer vos collections.",
 
-    "notifications.friend_acquired_missing_variant.title":
-      "Une nouvelle correspondance avec {friendName}",
+    "notifications.friend_acquired_missing_variant.title": "Une nouvelle correspondance avec {friendName}",
     "notifications.friend_acquired_missing_variant.body":
       "{friendName} possède désormais {variantName}, qui manque à votre collection.",
-    "notifications.friend_acquired_missing_variant.priority.title":
-      "{friendName} possède une variante prioritaire",
+    "notifications.friend_acquired_missing_variant.priority.title": "{friendName} possède une variante prioritaire",
     "notifications.friend_acquired_missing_variant.priority.body":
       "{friendName} vient d'ajouter {variantName}, que vous recherchez en priorité.",
-    "notifications.friend_acquired_missing_variant.batch.title":
-      "{friendName} a plusieurs variantes qui vous manquent",
+    "notifications.friend_acquired_missing_variant.batch.title": "{friendName} a plusieurs variantes qui vous manquent",
     "notifications.friend_acquired_missing_variant.batch.body":
       "{friendName} possède désormais {count} variantes qui manquent à votre collection, dont {variantName}.",
 
-    "notifications.squad_completion_increased.title":
-      "{squadName} progresse",
+    "notifications.squad_completion_increased.title": "{squadName} progresse",
     "notifications.squad_completion_increased.body":
       "{friendName} a ajouté {variantName}. La squad couvre maintenant {completionRate} % du catalogue.",
-    "notifications.squad_completion_increased.batch.title":
-      "{squadName} progresse",
+    "notifications.squad_completion_increased.batch.title": "{squadName} progresse",
     "notifications.squad_completion_increased.batch.body":
       "{squadName} a ajouté {count} nouvelles variantes et atteint {completionRate} % de complétion.",
-    "notifications.squad_completion_increased.milestone.title":
-      "{squadName} atteint {milestone} %",
+    "notifications.squad_completion_increased.milestone.title": "{squadName} atteint {milestone} %",
     "notifications.squad_completion_increased.milestone.body":
       "Votre squad couvre désormais {coveredCount} variantes sur {totalVariants}.",
     "notifications.squad_completion_increased.milestone_rate.body":
       "Votre squad couvre désormais {completionRate} % du catalogue.",
 
-    "notifications.priority_variant_available.title":
-      "{variantName} est disponible",
+    "notifications.priority_variant_available.title": "{variantName} est disponible",
     "notifications.priority_variant_available.body":
       "Une variante que vous recherchez en priorité est maintenant disponible.",
-    "notifications.priority_variant_available.with_end.title":
-      "{variantName} est disponible",
-    "notifications.priority_variant_available.with_end.body":
-      "{variantName} est disponible jusqu'au {availableUntil}.",
+    "notifications.priority_variant_available.with_end.title": "{variantName} est disponible",
+    "notifications.priority_variant_available.with_end.body": "{variantName} est disponible jusqu'au {availableUntil}.",
 
-    "notifications.wanted_event_ending_soon.title":
-      "{eventName} se termine {when}",
-    "notifications.wanted_event_ending_soon.body":
-      "Il vous manque encore {remainingCount} {remainingLabel}.",
-    "notifications.wanted_event_ending_soon.empty.body":
-      "Il vous manque encore des variantes prioritaires.",
+    "notifications.wanted_event_ending_soon.title": "{eventName} se termine {when}",
+    "notifications.wanted_event_ending_soon.body": "Il vous manque encore {remainingCount} {remainingLabel}.",
+    "notifications.wanted_event_ending_soon.empty.body": "Il vous manque encore des variantes prioritaires.",
 
-    "notifications.friend_request_received.title":
-      "Nouvelle demande d'ami",
-    "notifications.friend_request_received.body":
-      "{friendName} vous a envoyé une demande d'ami.",
+    "notifications.friend_request_received.title": "Nouvelle demande d'ami",
+    "notifications.friend_request_received.body": "{friendName} vous a envoyé une demande d'ami.",
 
-    "notifications.friend_removed.title":
-      "Amitié terminée",
-    "notifications.friend_removed.body":
-      "{friendName} a supprimé votre amitié.",
+    "notifications.friend_removed.title": "Amitié terminée",
+    "notifications.friend_removed.body": "{friendName} a supprimé votre amitié.",
 
-    "notifications.friend_collection_updated.title":
-      "Collection mise à jour",
-    "notifications.friend_collection_updated.body":
-      "{friendName} a mis à jour sa collection.",
+    "notifications.friend_collection_updated.title": "Collection mise à jour",
+    "notifications.friend_collection_updated.body": "{friendName} a mis à jour sa collection.",
 
-    "notifications.squad_member_joined.title":
-      "Nouveau membre",
-    "notifications.squad_member_joined.body":
-      "{friendName} a rejoint l'escouade {squadName}.",
+    "notifications.squad_member_joined.title": "Nouveau membre",
+    "notifications.squad_member_joined.body": "{friendName} a rejoint l'escouade {squadName}.",
 
-    "notifications.goal_completed.title":
-      "Objectif atteint",
-    "notifications.goal_completed.body":
-      "Objectif{goalTitleSuffix} atteint par {friendName}.",
-    "notifications.goal_completed.titled.body":
-      "Objectif : {goalTitle} atteint par {friendName}.",
+    "notifications.goal_completed.title": "Objectif atteint",
+    "notifications.goal_completed.body": "Objectif{goalTitleSuffix} atteint par {friendName}.",
+    "notifications.goal_completed.titled.body": "Objectif : {goalTitle} atteint par {friendName}.",
 
-    "notifications.badge_unlocked.title":
-      "Nouveau badge débloqué",
-    "notifications.badge_unlocked.body":
-      "{badgeLabel}",
-    "notifications.badge_unlocked.batch.title":
-      "Nouveaux badges débloqués",
-    "notifications.badge_unlocked.batch.body":
-      "Vous avez débloqué {count} badges : {badgeList}.",
+    "notifications.badge_unlocked.title": "Nouveau badge débloqué",
+    "notifications.badge_unlocked.body": "{badgeLabel}",
+    "notifications.badge_unlocked.batch.title": "Nouveaux badges débloqués",
+    "notifications.badge_unlocked.batch.body": "Vous avez débloqué {count} badges : {badgeList}.",
 
-    "notifications.passport_catalogue_updated.title":
-      "Le catalogue a été mis à jour",
+    "notifications.passport_catalogue_updated.title": "Le catalogue a été mis à jour",
     "notifications.passport_catalogue_updated.body":
       "Votre complétion passe de {fromRate} % à {toRate} %. Renseignez les nouvelles variantes.",
-    "notifications.passport_catalogue_updated.single.title":
-      "Une nouvelle variante a été ajoutée",
+    "notifications.passport_catalogue_updated.single.title": "Une nouvelle variante a été ajoutée",
     "notifications.passport_catalogue_updated.single.body":
       "Votre complétion passe de {fromRate} % à {toRate} %. Renseignez les nouvelles variantes.",
 
-    "notifications.news_article.title":
-      "Nouvelle actu SPRITE-INDEX",
-    "notifications.news_article.body":
-      "{articleTitle}",
-    "notifications.news_article.batch.title":
-      "{count} nouvelles actus",
-    "notifications.news_article.batch.body":
-      "{articleTitle}",
+    "notifications.news_article.title": "Nouvelle actu SPRITE-INDEX",
+    "notifications.news_article.body": "{articleTitle}",
+    "notifications.news_article.batch.title": "{count} nouvelles actus",
+    "notifications.news_article.batch.body": "{articleTitle}",
 
-    "notifications.squad_activity.title":
-      "SPRITE-INDEX — Escouade",
-    "notifications.squad_activity.member_joined.body":
-      "{friendName} a rejoint la squad.",
-    "notifications.squad_activity.friendship.body":
-      "{usernameA} et {usernameB} sont devenus amis.",
-    "notifications.squad_activity.milestone.body":
-      "La squad a atteint {threshold} % de complétion.",
-    "notifications.squad_activity.goal_created.body":
-      "{friendName} a créé un objectif collectif{goalTitleSuffix}.",
-    "notifications.squad_activity.goal_completed.body":
-      "Objectif collectif{goalTitleSuffix} atteint par {friendName}.",
-    "notifications.squad_activity.collection.body":
-      "{friendName} {actionLabel} {spriteName}.",
+    "notifications.squad_activity.title": "SPRITE-INDEX — Escouade",
+    "notifications.squad_activity.member_joined.body": "{friendName} a rejoint la squad.",
+    "notifications.squad_activity.friendship.body": "{usernameA} et {usernameB} sont devenus amis.",
+    "notifications.squad_activity.milestone.body": "La squad a atteint {threshold} % de complétion.",
+    "notifications.squad_activity.goal_created.body": "{friendName} a créé un objectif collectif{goalTitleSuffix}.",
+    "notifications.squad_activity.goal_completed.body": "Objectif collectif{goalTitleSuffix} atteint par {friendName}.",
+    "notifications.squad_activity.collection.body": "{friendName} {actionLabel} {spriteName}.",
 
     "notifications.actions.compare": "Comparer",
     "notifications.actions.open": "Ouvrir",
@@ -142,127 +100,84 @@ const TRANSLATIONS = Object.freeze({
     "notifications.fallback.articles": "{count} articles sur les sprites",
     "notifications.action.obtained": "a obtenu",
     "notifications.action.spotted": "a repéré",
-    "notifications.hidden.title": "Notification masquée",
+    "notifications.hidden.title": "Notification masquée"
   }),
 
   en: Object.freeze({
-    "notifications.friend_request_accepted.title":
-      "{friendName} accepted your friend request",
-    "notifications.friend_request_accepted.body":
-      "You can now compare your collections.",
+    "notifications.friend_request_accepted.title": "{friendName} accepted your friend request",
+    "notifications.friend_request_accepted.body": "You can now compare your collections.",
 
-    "notifications.friend_acquired_missing_variant.title":
-      "A new match with {friendName}",
+    "notifications.friend_acquired_missing_variant.title": "A new match with {friendName}",
     "notifications.friend_acquired_missing_variant.body":
       "{friendName} now owns {variantName}, which is missing from your collection.",
-    "notifications.friend_acquired_missing_variant.priority.title":
-      "{friendName} owns a priority variant",
+    "notifications.friend_acquired_missing_variant.priority.title": "{friendName} owns a priority variant",
     "notifications.friend_acquired_missing_variant.priority.body":
       "{friendName} just added {variantName}, which you marked as a priority.",
-    "notifications.friend_acquired_missing_variant.batch.title":
-      "{friendName} has several variants you're missing",
+    "notifications.friend_acquired_missing_variant.batch.title": "{friendName} has several variants you're missing",
     "notifications.friend_acquired_missing_variant.batch.body":
       "{friendName} now owns {count} variants missing from your collection, including {variantName}.",
 
-    "notifications.squad_completion_increased.title":
-      "{squadName} is progressing",
+    "notifications.squad_completion_increased.title": "{squadName} is progressing",
     "notifications.squad_completion_increased.body":
       "{friendName} added {variantName}. The squad now covers {completionRate}% of the catalogue.",
-    "notifications.squad_completion_increased.batch.title":
-      "{squadName} is progressing",
+    "notifications.squad_completion_increased.batch.title": "{squadName} is progressing",
     "notifications.squad_completion_increased.batch.body":
       "{squadName} added {count} new variants and reached {completionRate}% completion.",
-    "notifications.squad_completion_increased.milestone.title":
-      "{squadName} reached {milestone}%",
+    "notifications.squad_completion_increased.milestone.title": "{squadName} reached {milestone}%",
     "notifications.squad_completion_increased.milestone.body":
       "Your squad now covers {coveredCount} variants out of {totalVariants}.",
     "notifications.squad_completion_increased.milestone_rate.body":
       "Your squad now covers {completionRate}% of the catalogue.",
 
-    "notifications.priority_variant_available.title":
-      "{variantName} is available",
-    "notifications.priority_variant_available.body":
-      "A variant you marked as a priority is now available.",
-    "notifications.priority_variant_available.with_end.title":
-      "{variantName} is available",
-    "notifications.priority_variant_available.with_end.body":
-      "{variantName} is available until {availableUntil}.",
+    "notifications.priority_variant_available.title": "{variantName} is available",
+    "notifications.priority_variant_available.body": "A variant you marked as a priority is now available.",
+    "notifications.priority_variant_available.with_end.title": "{variantName} is available",
+    "notifications.priority_variant_available.with_end.body": "{variantName} is available until {availableUntil}.",
 
-    "notifications.wanted_event_ending_soon.title":
-      "{eventName} ends {when}",
-    "notifications.wanted_event_ending_soon.body":
-      "You still need {remainingCount} {remainingLabel}.",
-    "notifications.wanted_event_ending_soon.empty.body":
-      "You still need priority variants from this event.",
+    "notifications.wanted_event_ending_soon.title": "{eventName} ends {when}",
+    "notifications.wanted_event_ending_soon.body": "You still need {remainingCount} {remainingLabel}.",
+    "notifications.wanted_event_ending_soon.empty.body": "You still need priority variants from this event.",
 
-    "notifications.friend_request_received.title":
-      "New friend request",
-    "notifications.friend_request_received.body":
-      "{friendName} sent you a friend request.",
+    "notifications.friend_request_received.title": "New friend request",
+    "notifications.friend_request_received.body": "{friendName} sent you a friend request.",
 
-    "notifications.friend_removed.title":
-      "Friendship ended",
-    "notifications.friend_removed.body":
-      "{friendName} removed your friendship.",
+    "notifications.friend_removed.title": "Friendship ended",
+    "notifications.friend_removed.body": "{friendName} removed your friendship.",
 
-    "notifications.friend_collection_updated.title":
-      "Collection updated",
-    "notifications.friend_collection_updated.body":
-      "{friendName} updated their collection.",
+    "notifications.friend_collection_updated.title": "Collection updated",
+    "notifications.friend_collection_updated.body": "{friendName} updated their collection.",
 
-    "notifications.squad_member_joined.title":
-      "New member",
-    "notifications.squad_member_joined.body":
-      "{friendName} joined the squad {squadName}.",
+    "notifications.squad_member_joined.title": "New member",
+    "notifications.squad_member_joined.body": "{friendName} joined the squad {squadName}.",
 
-    "notifications.goal_completed.title":
-      "Goal completed",
-    "notifications.goal_completed.body":
-      "Goal{goalTitleSuffix} completed by {friendName}.",
-    "notifications.goal_completed.titled.body":
-      "Goal: {goalTitle} completed by {friendName}.",
+    "notifications.goal_completed.title": "Goal completed",
+    "notifications.goal_completed.body": "Goal{goalTitleSuffix} completed by {friendName}.",
+    "notifications.goal_completed.titled.body": "Goal: {goalTitle} completed by {friendName}.",
 
-    "notifications.badge_unlocked.title":
-      "New badge unlocked",
-    "notifications.badge_unlocked.body":
-      "{badgeLabel}",
-    "notifications.badge_unlocked.batch.title":
-      "New badges unlocked",
-    "notifications.badge_unlocked.batch.body":
-      "You've unlocked {count} badges: {badgeList}.",
+    "notifications.badge_unlocked.title": "New badge unlocked",
+    "notifications.badge_unlocked.body": "{badgeLabel}",
+    "notifications.badge_unlocked.batch.title": "New badges unlocked",
+    "notifications.badge_unlocked.batch.body": "You've unlocked {count} badges: {badgeList}.",
 
-    "notifications.passport_catalogue_updated.title":
-      "The catalogue was updated",
+    "notifications.passport_catalogue_updated.title": "The catalogue was updated",
     "notifications.passport_catalogue_updated.body":
       "Your completion went from {fromRate}% to {toRate}%. Fill in the new variants.",
-    "notifications.passport_catalogue_updated.single.title":
-      "A new variant was added",
+    "notifications.passport_catalogue_updated.single.title": "A new variant was added",
     "notifications.passport_catalogue_updated.single.body":
       "Your completion went from {fromRate}% to {toRate}%. Fill in the new variants.",
 
-    "notifications.news_article.title":
-      "New SPRITE-INDEX news",
-    "notifications.news_article.body":
-      "{articleTitle}",
-    "notifications.news_article.batch.title":
-      "{count} new articles",
-    "notifications.news_article.batch.body":
-      "{articleTitle}",
+    "notifications.news_article.title": "New SPRITE-INDEX news",
+    "notifications.news_article.body": "{articleTitle}",
+    "notifications.news_article.batch.title": "{count} new articles",
+    "notifications.news_article.batch.body": "{articleTitle}",
 
-    "notifications.squad_activity.title":
-      "SPRITE-INDEX — Squad",
-    "notifications.squad_activity.member_joined.body":
-      "{friendName} joined the squad.",
-    "notifications.squad_activity.friendship.body":
-      "{usernameA} and {usernameB} became friends.",
-    "notifications.squad_activity.milestone.body":
-      "The squad reached {threshold}% completion.",
-    "notifications.squad_activity.goal_created.body":
-      "{friendName} created a collective goal{goalTitleSuffix}.",
-    "notifications.squad_activity.goal_completed.body":
-      "Collective goal{goalTitleSuffix} completed by {friendName}.",
-    "notifications.squad_activity.collection.body":
-      "{friendName} {actionLabel} {spriteName}.",
+    "notifications.squad_activity.title": "SPRITE-INDEX — Squad",
+    "notifications.squad_activity.member_joined.body": "{friendName} joined the squad.",
+    "notifications.squad_activity.friendship.body": "{usernameA} and {usernameB} became friends.",
+    "notifications.squad_activity.milestone.body": "The squad reached {threshold}% completion.",
+    "notifications.squad_activity.goal_created.body": "{friendName} created a collective goal{goalTitleSuffix}.",
+    "notifications.squad_activity.goal_completed.body": "Collective goal{goalTitleSuffix} completed by {friendName}.",
+    "notifications.squad_activity.collection.body": "{friendName} {actionLabel} {spriteName}.",
 
     "notifications.actions.compare": "Compare",
     "notifications.actions.open": "Open",
@@ -277,15 +192,12 @@ const TRANSLATIONS = Object.freeze({
     "notifications.fallback.articles": "{count} sprite articles",
     "notifications.action.obtained": "obtained",
     "notifications.action.spotted": "spotted",
-    "notifications.hidden.title": "Hidden notification",
+    "notifications.hidden.title": "Hidden notification"
   }),
   nl: Object.freeze({
-    "notifications.friend_request_accepted.title":
-      "{friendName} heeft je uitnodiging geaccepteerd",
-    "notifications.friend_request_accepted.body":
-      "Je kunt nu jullie collecties vergelijken.",
-    "notifications.friend_acquired_missing_variant.title":
-      "Een nieuwe match met {friendName}",
+    "notifications.friend_request_accepted.title": "{friendName} heeft je uitnodiging geaccepteerd",
+    "notifications.friend_request_accepted.body": "Je kunt nu jullie collecties vergelijken.",
+    "notifications.friend_acquired_missing_variant.title": "Een nieuwe match met {friendName}",
     "notifications.friend_acquired_missing_variant.body":
       "{friendName} is nu eigenaar van {variantName}, die ontbreekt in je verzameling.",
     "notifications.friend_acquired_missing_variant.priority.title":
@@ -296,122 +208,73 @@ const TRANSLATIONS = Object.freeze({
       "{friendName} heeft verschillende varianten die je mist",
     "notifications.friend_acquired_missing_variant.batch.body":
       "{friendName} bezit nu {count} varianten die ontbreken in je verzameling, inclusief {variantName}.",
-    "notifications.squad_completion_increased.title":
-      "{squadName} vordert",
+    "notifications.squad_completion_increased.title": "{squadName} vordert",
     "notifications.squad_completion_increased.body":
       "{friendName} heeft {variantName} toegevoegd. De ploeg beslaat nu {completionRate}% van de catalogus.",
-    "notifications.squad_completion_increased.batch.title":
-      "{squadName} vordert",
+    "notifications.squad_completion_increased.batch.title": "{squadName} vordert",
     "notifications.squad_completion_increased.batch.body":
       "{squadName} heeft {count} nieuwe varianten toegevoegd en een voltooiing van {completionRate}% bereikt.",
-    "notifications.squad_completion_increased.milestone.title":
-      "{squadName} heeft {milestone}% bereikt",
+    "notifications.squad_completion_increased.milestone.title": "{squadName} heeft {milestone}% bereikt",
     "notifications.squad_completion_increased.milestone.body":
       "Je team beslaat nu {coveredCount} varianten van {totalVariants}.",
     "notifications.squad_completion_increased.milestone_rate.body":
       "Je team beslaat nu {completionRate}% van de catalogus.",
-    "notifications.priority_variant_available.title":
-      "{variantName} is beschikbaar",
+    "notifications.priority_variant_available.title": "{variantName} is beschikbaar",
     "notifications.priority_variant_available.body":
       "Een variant die u als prioriteit heeft gemarkeerd, is nu beschikbaar.",
-    "notifications.priority_variant_available.with_end.title":
-      "{variantName} is beschikbaar",
-    "notifications.priority_variant_available.with_end.body":
-      "{variantName} is beschikbaar tot {availableUntil}.",
-    "notifications.wanted_event_ending_soon.title":
-      "{eventName} eindigt {when}",
-    "notifications.wanted_event_ending_soon.body":
-      "Je hebt nog steeds {remainingCount} {remainingLabel} nodig.",
+    "notifications.priority_variant_available.with_end.title": "{variantName} is beschikbaar",
+    "notifications.priority_variant_available.with_end.body": "{variantName} is beschikbaar tot {availableUntil}.",
+    "notifications.wanted_event_ending_soon.title": "{eventName} eindigt {when}",
+    "notifications.wanted_event_ending_soon.body": "Je hebt nog steeds {remainingCount} {remainingLabel} nodig.",
     "notifications.wanted_event_ending_soon.empty.body":
       "Je hebt nog steeds prioriteitsvarianten van dit evenement nodig.",
-    "notifications.friend_request_received.title":
-      "Nieuwe vriendschapsverzoek",
-    "notifications.friend_request_received.body":
-      "{friendName} heeft je een vriendschapsverzoek gestuurd.",
-    "notifications.friend_removed.title":
-      "Vriendschap eindigde",
-    "notifications.friend_removed.body":
-      "{friendName} heeft je vriendschap verwijderd.",
-    "notifications.friend_collection_updated.title":
-      "Collectie bijgewerkt",
-    "notifications.friend_collection_updated.body":
-      "{friendName} heeft de collectie bijgewerkt.",
-    "notifications.squad_member_joined.title":
-      "Nieuw lid",
-    "notifications.squad_member_joined.body":
-      "{friendName} sloot zich aan bij de ploeg {squadName}.",
-    "notifications.goal_completed.title":
-      "Doel voltooid",
-    "notifications.goal_completed.body":
-      "Doel{goalTitleSuffix} voltooid door {friendName}.",
-    "notifications.goal_completed.titled.body":
-      "Doel: {goalTitle} voltooid door {friendName}.",
-    "notifications.badge_unlocked.title":
-      "Nieuwe badge ontgrendeld",
-    "notifications.badge_unlocked.body":
-      "{badgeLabel}",
-    "notifications.badge_unlocked.batch.title":
-      "Nieuwe badges ontgrendeld",
-    "notifications.badge_unlocked.batch.body":
-      "Je hebt {count} badges ontgrendeld: {badgeList}.",
-    "notifications.passport_catalogue_updated.title":
-      "De catalogus is bijgewerkt",
+    "notifications.friend_request_received.title": "Nieuwe vriendschapsverzoek",
+    "notifications.friend_request_received.body": "{friendName} heeft je een vriendschapsverzoek gestuurd.",
+    "notifications.friend_removed.title": "Vriendschap eindigde",
+    "notifications.friend_removed.body": "{friendName} heeft je vriendschap verwijderd.",
+    "notifications.friend_collection_updated.title": "Collectie bijgewerkt",
+    "notifications.friend_collection_updated.body": "{friendName} heeft de collectie bijgewerkt.",
+    "notifications.squad_member_joined.title": "Nieuw lid",
+    "notifications.squad_member_joined.body": "{friendName} sloot zich aan bij de ploeg {squadName}.",
+    "notifications.goal_completed.title": "Doel voltooid",
+    "notifications.goal_completed.body": "Doel{goalTitleSuffix} voltooid door {friendName}.",
+    "notifications.goal_completed.titled.body": "Doel: {goalTitle} voltooid door {friendName}.",
+    "notifications.badge_unlocked.title": "Nieuwe badge ontgrendeld",
+    "notifications.badge_unlocked.body": "{badgeLabel}",
+    "notifications.badge_unlocked.batch.title": "Nieuwe badges ontgrendeld",
+    "notifications.badge_unlocked.batch.body": "Je hebt {count} badges ontgrendeld: {badgeList}.",
+    "notifications.passport_catalogue_updated.title": "De catalogus is bijgewerkt",
     "notifications.passport_catalogue_updated.body":
       "Je voltooiing ging van {fromRate}% naar {toRate}%. Vul de nieuwe varianten in.",
-    "notifications.passport_catalogue_updated.single.title":
-      "Er is een nieuwe variant toegevoegd",
+    "notifications.passport_catalogue_updated.single.title": "Er is een nieuwe variant toegevoegd",
     "notifications.passport_catalogue_updated.single.body":
       "Je voltooiing ging van {fromRate}% naar {toRate}%. Vul de nieuwe varianten in.",
-    "notifications.news_article.title":
-      "Nieuw SPRITE-INDEX-nieuws",
-    "notifications.news_article.body":
-      "{articleTitle}",
-    "notifications.news_article.batch.title":
-      "{count} nieuwe artikelen",
-    "notifications.news_article.batch.body":
-      "{articleTitle}",
-    "notifications.squad_activity.title":
-      "SPRITE-INDEX — Selectie",
-    "notifications.squad_activity.member_joined.body":
-      "{friendName} sloot zich aan bij het team.",
-    "notifications.squad_activity.friendship.body":
-      "{usernameA} en {usernameB} zijn vrienden geworden.",
-    "notifications.squad_activity.milestone.body":
-      "De ploeg heeft een voltooiing van {threshold}% bereikt.",
+    "notifications.news_article.title": "Nieuw SPRITE-INDEX-nieuws",
+    "notifications.news_article.body": "{articleTitle}",
+    "notifications.news_article.batch.title": "{count} nieuwe artikelen",
+    "notifications.news_article.batch.body": "{articleTitle}",
+    "notifications.squad_activity.title": "SPRITE-INDEX — Selectie",
+    "notifications.squad_activity.member_joined.body": "{friendName} sloot zich aan bij het team.",
+    "notifications.squad_activity.friendship.body": "{usernameA} en {usernameB} zijn vrienden geworden.",
+    "notifications.squad_activity.milestone.body": "De ploeg heeft een voltooiing van {threshold}% bereikt.",
     "notifications.squad_activity.goal_created.body":
       "{friendName} heeft een collectief doel {goalTitleSuffix} gemaakt.",
-    "notifications.squad_activity.goal_completed.body":
-      "Gezamenlijk doel{goalTitleSuffix} voltooid door {friendName}.",
-    "notifications.squad_activity.collection.body":
-      "{friendName} {actionLabel} {spriteName}.",
-    "notifications.actions.compare":
-      "Vergelijken",
-    "notifications.actions.open":
-      "Openen",
-    "notifications.actions.view":
-      "Bekijken",
-    "notifications.actions.viewPassport":
-      "Mijn paspoort bekijken",
-    "notifications.actions.updateCollection":
-      "Mijn collectie bijwerken",
-    "notifications.actions.viewFriends":
-      "Vrienden bekijken",
-    "notifications.fallback.someone":
-      "Iemand",
-    "notifications.fallback.member":
-      "Een lid",
-    "notifications.fallback.player":
-      "Een speler",
-    "notifications.fallback.article":
-      "Er is een nieuw artikel toegevoegd",
-    "notifications.fallback.articles":
-      "{count} sprite-artikelen",
-    "notifications.action.obtained":
-      "verkregen",
-    "notifications.action.spotted":
-      "gespot",
-    "notifications.hidden.title":
-      "Verborgen melding"
+    "notifications.squad_activity.goal_completed.body": "Gezamenlijk doel{goalTitleSuffix} voltooid door {friendName}.",
+    "notifications.squad_activity.collection.body": "{friendName} {actionLabel} {spriteName}.",
+    "notifications.actions.compare": "Vergelijken",
+    "notifications.actions.open": "Openen",
+    "notifications.actions.view": "Bekijken",
+    "notifications.actions.viewPassport": "Mijn paspoort bekijken",
+    "notifications.actions.updateCollection": "Mijn collectie bijwerken",
+    "notifications.actions.viewFriends": "Vrienden bekijken",
+    "notifications.fallback.someone": "Iemand",
+    "notifications.fallback.member": "Een lid",
+    "notifications.fallback.player": "Een speler",
+    "notifications.fallback.article": "Er is een nieuw artikel toegevoegd",
+    "notifications.fallback.articles": "{count} sprite-artikelen",
+    "notifications.action.obtained": "verkregen",
+    "notifications.action.spotted": "gespot",
+    "notifications.hidden.title": "Verborgen melding"
   })
 });
 
@@ -421,7 +284,9 @@ const FALLBACK_SQUAD = Object.freeze({ fr: "Votre squad", en: "Your squad", nl: 
 const FALLBACK_EVENT = Object.freeze({ fr: "L'événement", en: "The event", nl: "Het evenement" });
 
 function getTranslations(lang) {
-  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  const locale = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
   return TRANSLATIONS[locale] || TRANSLATIONS.fr;
 }
 
@@ -454,7 +319,9 @@ function lookupMessage(lang, type, part, template = "default") {
  * FR → local `name`, EN → `official_name`, with sensible fallbacks.
  */
 function pickLocalizedName(lang, { name = null, officialName = null } = {}) {
-  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  const locale = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
   if (locale === "en" || locale === "nl") {
     return officialName || name || null;
   }
@@ -464,10 +331,7 @@ function pickLocalizedName(lang, { name = null, officialName = null } = {}) {
 /**
  * Load sprite/variant display names from the localized catalog.
  */
-async function lookupLocalizedCatalogNames(pool, {
-  variantId = null,
-  spriteId = null
-} = {}, lang = "fr") {
+async function lookupLocalizedCatalogNames(pool, { variantId = null, spriteId = null } = {}, lang = "fr") {
   if (!pool) return { variantName: null, spriteName: null, spriteId: null, variantId: null };
   if (variantId) {
     const res = await pool.query(
@@ -496,10 +360,7 @@ async function lookupLocalizedCatalogNames(pool, {
     };
   }
   if (spriteId) {
-    const res = await pool.query(
-      `SELECT id, name, official_name FROM sprites WHERE id = $1`,
-      [spriteId]
-    );
+    const res = await pool.query(`SELECT id, name, official_name FROM sprites WHERE id = $1`, [spriteId]);
     const row = res.rows[0];
     if (!row) return { variantName: null, spriteName: null, spriteId: String(spriteId), variantId: null };
     return {
@@ -535,9 +396,11 @@ function pct(value) {
  */
 function buildInterpolateParams(type, rawParams = {}, lang = "fr") {
   const p = rawParams && typeof rawParams === "object" ? { ...rawParams } : {};
-  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
-  const friendName = p.friendName || p.actorName || p.ownerName || p.joinerName
-    || FALLBACK_NAME[locale] || FALLBACK_NAME.fr;
+  const locale = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
+  const friendName =
+    p.friendName || p.actorName || p.ownerName || p.joinerName || FALLBACK_NAME[locale] || FALLBACK_NAME.fr;
   const variantLabel = formatVariantDisplay(p, locale);
 
   const out = {
@@ -620,16 +483,13 @@ function renderTranslatedMessage(type, translationParams = {}, lang = "fr") {
   let bodyTemplateKey = template;
   // Milestone without covered/total uses the rate-only body.
   if (
-    type === "squad_completion_increased"
-    && template === "milestone"
-    && !(Number(translationParams.totalVariants) > 0)
+    type === "squad_completion_increased" &&
+    template === "milestone" &&
+    !(Number(translationParams.totalVariants) > 0)
   ) {
     bodyTemplateKey = "milestone_rate";
   }
-  if (
-    type === "wanted_event_ending_soon"
-    && !(Number(translationParams.remainingCount) > 0)
-  ) {
+  if (type === "wanted_event_ending_soon" && !(Number(translationParams.remainingCount) > 0)) {
     bodyTemplateKey = "empty";
   }
 

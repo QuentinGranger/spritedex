@@ -12,7 +12,9 @@ function setupSwipeControlEvents() {
     shortcutGuide.hidden = !open;
     document.getElementById("swipeShortcutsToggle")?.setAttribute("aria-expanded", String(open));
   };
-  document.getElementById("swipeShortcutsToggle")?.addEventListener("click", () => setShortcutGuide(shortcutGuide?.hidden));
+  document
+    .getElementById("swipeShortcutsToggle")
+    ?.addEventListener("click", () => setShortcutGuide(shortcutGuide?.hidden));
   document.getElementById("swipeShortcutsClose")?.addEventListener("click", () => setShortcutGuide(false));
   document.addEventListener("keydown", (event) => {
     if (getActiveMainView() !== "swipe" || event.defaultPrevented || event.altKey) return;
@@ -33,11 +35,22 @@ function setupSwipeControlEvents() {
       setShortcutGuide(shortcutGuide?.hidden);
       return;
     }
-    const shortcuts = { ArrowRight: "owned", ArrowLeft: "missing", ArrowUp: "priority", ArrowDown: "unsure", "1": "missing", "2": "unsure", "3": "priority", "4": "owned" };
+    const shortcuts = {
+      ArrowRight: "owned",
+      ArrowLeft: "missing",
+      ArrowUp: "priority",
+      ArrowDown: "unsure",
+      1: "missing",
+      2: "unsure",
+      3: "priority",
+      4: "owned"
+    };
     if (shortcuts[event.key]) {
       event.preventDefault();
       const status = shortcuts[event.key];
-      const button = document.getElementById({ owned: "markOwned", missing: "markMissing", priority: "markPriority", unsure: "markUnsure" }[status]);
+      const button = document.getElementById(
+        { owned: "markOwned", missing: "markMissing", priority: "markPriority", unsure: "markUnsure" }[status]
+      );
       button?.classList.remove("is-shortcut-fired");
       void button?.offsetWidth;
       button?.classList.add("is-shortcut-fired");
@@ -65,5 +78,4 @@ function setupSwipeControlEvents() {
       toast(masteryLevel === 5 ? t("mastery.masterReached") : t("mastery.saved", { level: masteryLevel }));
     });
   }
-
 }

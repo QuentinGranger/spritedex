@@ -77,9 +77,7 @@ const GRAPH_CONTEXT_PII_KEYS = Object.freeze([
   "profilePhotoData"
 ]);
 
-const GRAPH_CONTEXT_PII_KEY_SET = new Set(
-  GRAPH_CONTEXT_PII_KEYS.map((k) => k.toLowerCase())
-);
+const GRAPH_CONTEXT_PII_KEY_SET = new Set(GRAPH_CONTEXT_PII_KEYS.map((k) => k.toLowerCase()));
 
 const EMAIL_LIKE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const JWT_LIKE = /^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
@@ -157,9 +155,10 @@ function applyPublicAnonymizationGate({
   minUsers = PUBLIC_ANONYMIZATION_MIN_USERS
 } = {}) {
   const users = Number(uniqueUserCount) || 0;
-  const threshold = Number.isFinite(Number(minUsers)) && Number(minUsers) > 0
-    ? Math.floor(Number(minUsers))
-    : PUBLIC_ANONYMIZATION_MIN_USERS;
+  const threshold =
+    Number.isFinite(Number(minUsers)) && Number(minUsers) > 0
+      ? Math.floor(Number(minUsers))
+      : PUBLIC_ANONYMIZATION_MIN_USERS;
   if (users < threshold) {
     return {
       ok: false,

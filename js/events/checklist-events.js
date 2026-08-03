@@ -53,7 +53,13 @@ function setupChecklistEvents() {
     if (masteryButton) {
       const id = masteryButton.dataset.id;
       const masteryLevel = Number(masteryButton.dataset.masteryLevel);
-      if (id && getEntry(id).status === "owned" && Number.isInteger(masteryLevel) && masteryLevel >= 1 && masteryLevel <= 5) {
+      if (
+        id &&
+        getEntry(id).status === "owned" &&
+        Number.isInteger(masteryLevel) &&
+        masteryLevel >= 1 &&
+        masteryLevel <= 5
+      ) {
         setEntry(id, { masteryLevel });
         toast(masteryLevel === 5 ? t("mastery.masterReached") : t("mastery.saved", { level: masteryLevel }));
       }
@@ -91,5 +97,4 @@ function setupChecklistEvents() {
       return;
     }
   });
-
 }

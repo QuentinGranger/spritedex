@@ -73,7 +73,6 @@ const EXPECTED_DOMAIN_EVENTS = {
   SQUAD_CREATED: "squad.created"
 };
 
-
 function sampleContext(id) {
   switch (id) {
     case catalog.NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED:
@@ -136,7 +135,6 @@ function sampleContext(id) {
   }
 }
 
-
 module.exports = {
   assert,
   catalog,
@@ -149,5 +147,7 @@ module.exports = {
   EXPECTED_CONTEXTUAL_IDS,
   EXPECTED_NOTIFICATION_TYPES,
   EXPECTED_DOMAIN_EVENTS,
-  get result() { return result; }
+  get result() {
+    return result;
+  }
 };

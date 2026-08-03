@@ -7,19 +7,30 @@ module.exports = async function runSquadInvitations(ctx) {
     const alice = await register(`FrInvAlice${rnd()}`);
     const bob = await register(`FrInvBob${rnd()}`);
     try {
-      let res = await fetch(`${API}/friends/requests`, { method: "POST", headers: auth(alice.token), body: JSON.stringify({ addresseeId: bob.id }) });
+      let res = await fetch(`${API}/friends/requests`, {
+        method: "POST",
+        headers: auth(alice.token),
+        body: JSON.stringify({ addresseeId: bob.id })
+      });
       const { requestId } = await okJson(res, "friend request");
       res = await fetch(`${API}/friends/requests/${requestId}/accept`, { method: "POST", headers: auth(bob.token) });
       await okJson(res, "accept request");
 
-      res = await fetch(`${API}/squads`, { method: "POST", headers: auth(alice.token), body: JSON.stringify({ name: "Canonical Squad" }) });
+      res = await fetch(`${API}/squads`, {
+        method: "POST",
+        headers: auth(alice.token),
+        body: JSON.stringify({ name: "Canonical Squad" })
+      });
       const { code } = await okJson(res, "create squad");
 
       res = await fetch(`${API}/squads/${code}/invite/${bob.id}`, { method: "POST", headers: auth(alice.token) });
       const { invitationId } = await okJson(res, "invite bob");
 
       // Bob declines via canonical path.
-      res = await fetch(`${API}/squads/invitations/${invitationId}/decline`, { method: "POST", headers: auth(bob.token) });
+      res = await fetch(`${API}/squads/invitations/${invitationId}/decline`, {
+        method: "POST",
+        headers: auth(bob.token)
+      });
       await okJson(res, "decline invitation");
 
       // Bob no longer has pending invitations.
@@ -32,7 +43,10 @@ module.exports = async function runSquadInvitations(ctx) {
       const { invitationId: newInvitationId } = await okJson(res, "re-invite bob");
 
       // Bob accepts via canonical path.
-      res = await fetch(`${API}/squads/invitations/${newInvitationId}/accept`, { method: "POST", headers: auth(bob.token) });
+      res = await fetch(`${API}/squads/invitations/${newInvitationId}/accept`, {
+        method: "POST",
+        headers: auth(bob.token)
+      });
       const acceptData = await okJson(res, "accept via canonical path");
       assert.strictEqual(acceptData.squadCode, code);
 

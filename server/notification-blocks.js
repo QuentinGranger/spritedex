@@ -23,10 +23,7 @@ const PRIVATE_PAIRWISE_TYPES = Object.freeze([
 ]);
 
 // Types that must never be created while a block exists between actor & recipient.
-const BLOCKED_PAIRWISE_TYPES = Object.freeze([
-  ...PENDING_SOCIAL_TYPES,
-  ...PRIVATE_PAIRWISE_TYPES
-]);
+const BLOCKED_PAIRWISE_TYPES = Object.freeze([...PENDING_SOCIAL_TYPES, ...PRIVATE_PAIRWISE_TYPES]);
 
 function isBlockedPairwiseType(type) {
   return BLOCKED_PAIRWISE_TYPES.includes(String(type || ""));
@@ -34,8 +31,7 @@ function isBlockedPairwiseType(type) {
 
 function isPendingSocialType(type) {
   const t = String(type || "");
-  return PENDING_SOCIAL_TYPES.includes(t)
-    || t.startsWith("friend_request_");
+  return PENDING_SOCIAL_TYPES.includes(t) || t.startsWith("friend_request_");
 }
 
 function isPrivatePairwiseType(type) {
@@ -47,11 +43,15 @@ async function ensureNotificationHiddenColumn(pool) {
     ALTER TABLE notifications
       ADD COLUMN IF NOT EXISTS hidden_at TIMESTAMPTZ
   `);
-  await pool.query(`
+  await pool
+    .query(
+      `
     CREATE INDEX IF NOT EXISTS idx_notifications_hidden
       ON notifications (recipient_id, created_at DESC)
       WHERE hidden_at IS NULL AND archived_at IS NULL
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
 }
 
 function technicalStubData(row = {}) {
@@ -73,9 +73,7 @@ function technicalStubData(row = {}) {
  * Deliveries / queue history for hidden rows are left as technical logs.
  */
 async function cancelPendingJobsForNotifications(pool, notificationIds) {
-  const ids = (Array.isArray(notificationIds) ? notificationIds : [])
-    .map(Number)
-    .filter((id) => Number.isFinite(id));
+  const ids = (Array.isArray(notificationIds) ? notificationIds : []).map(Number).filter((id) => Number.isFinite(id));
   if (!ids.length) return 0;
   const res = await pool.query(
     `UPDATE notification_delivery_queue
@@ -140,10 +138,7 @@ async function applyBlockNotificationCleanup(pool, userA, userB) {
 
   let deletedPending = 0;
   if (pendingIds.length) {
-    const del = await pool.query(
-      `DELETE FROM notifications WHERE id = ANY($1::int[]) RETURNING id`,
-      [pendingIds]
-    );
+    const del = await pool.query(`DELETE FROM notifications WHERE id = ANY($1::int[]) RETURNING id`, [pendingIds]);
     deletedPending = del.rowCount || 0;
   }
 
@@ -193,10 +188,9 @@ async function applyBlockNotificationCleanup(pool, userA, userB) {
   const pendingPrivateIds = pendingPrivate.rows.map((r) => r.id);
   cancelledJobs += await cancelPendingJobsForNotifications(pool, pendingPrivateIds);
   if (pendingPrivateIds.length) {
-    const delPriv = await pool.query(
-      `DELETE FROM notifications WHERE id = ANY($1::int[]) RETURNING id`,
-      [pendingPrivateIds]
-    );
+    const delPriv = await pool.query(`DELETE FROM notifications WHERE id = ANY($1::int[]) RETURNING id`, [
+      pendingPrivateIds
+    ]);
     deletedPending += delPriv.rowCount || 0;
   }
 

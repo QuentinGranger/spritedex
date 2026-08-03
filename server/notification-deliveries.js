@@ -60,14 +60,10 @@ function newDeliveryId() {
 /**
  * Upsert a delivery row for one channel. Returns the delivery id.
  */
-async function ensureDelivery(pool, {
-  notificationId,
-  channel,
-  status = DELIVERY_STATUSES.QUEUED,
-  provider = null,
-  scheduledAt = null,
-  id = null
-} = {}) {
+async function ensureDelivery(
+  pool,
+  { notificationId, channel, status = DELIVERY_STATUSES.QUEUED, provider = null, scheduledAt = null, id = null } = {}
+) {
   if (!notificationId || !DELIVERY_CHANNELS.includes(channel)) return null;
   await ensureDeliveriesTable(pool);
 
@@ -112,10 +108,7 @@ async function recordInAppDelivery(pool, notificationId) {
   return res.rows[0]?.id || null;
 }
 
-async function markDeliveryAttempt(pool, notificationId, channel, {
-  provider = null,
-  providerMessageId = null
-} = {}) {
+async function markDeliveryAttempt(pool, notificationId, channel, { provider = null, providerMessageId = null } = {}) {
   await ensureDeliveriesTable(pool);
   await ensureDelivery(pool, { notificationId, channel, provider, status: DELIVERY_STATUSES.QUEUED });
   const res = await pool.query(
@@ -133,10 +126,12 @@ async function markDeliveryAttempt(pool, notificationId, channel, {
   return res.rows[0] || null;
 }
 
-async function markDeliveryDelivered(pool, notificationId, channel, {
-  provider = null,
-  providerMessageId = null
-} = {}) {
+async function markDeliveryDelivered(
+  pool,
+  notificationId,
+  channel,
+  { provider = null, providerMessageId = null } = {}
+) {
   await ensureDeliveriesTable(pool);
   await ensureDelivery(pool, { notificationId, channel, provider, status: DELIVERY_STATUSES.QUEUED });
   const res = await pool.query(
@@ -158,11 +153,12 @@ async function markDeliveryDelivered(pool, notificationId, channel, {
   return res.rows[0]?.id || null;
 }
 
-async function markDeliveryFailed(pool, notificationId, channel, {
-  errorCode = null,
-  errorMessage = null,
-  provider = null
-} = {}) {
+async function markDeliveryFailed(
+  pool,
+  notificationId,
+  channel,
+  { errorCode = null, errorMessage = null, provider = null } = {}
+) {
   await ensureDeliveriesTable(pool);
   await ensureDelivery(pool, { notificationId, channel, provider, status: DELIVERY_STATUSES.QUEUED });
   const res = await pool.query(
@@ -181,10 +177,7 @@ async function markDeliveryFailed(pool, notificationId, channel, {
   return res.rows[0]?.id || null;
 }
 
-async function markDeliveryCancelled(pool, notificationId, channel, {
-  errorCode = null,
-  errorMessage = null
-} = {}) {
+async function markDeliveryCancelled(pool, notificationId, channel, { errorCode = null, errorMessage = null } = {}) {
   await ensureDeliveriesTable(pool);
   const res = await pool.query(
     `UPDATE notification_deliveries

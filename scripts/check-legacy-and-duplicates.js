@@ -7,9 +7,15 @@ const pool = process.env.DATABASE_URL
   ? new Pool({
       ...databasePoolConfig(process.env.DATABASE_URL),
       connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 5000,
+      idleTimeoutMillis: 5000
     })
-  : new Pool({ database: "sprite-index", host: "localhost", port: 5432, connectionTimeoutMillis: 5000, idleTimeoutMillis: 5000 });
+  : new Pool({
+      database: "sprite-index",
+      host: "localhost",
+      port: 5432,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 5000
+    });
 
 const timeout = setTimeout(() => {
   console.error("[TIMEOUT] Database query took too long; exiting.");
@@ -33,7 +39,10 @@ const timeout = setTimeout(() => {
         `SELECT DISTINCT sprite_id FROM ${table} WHERE sprite_id NOT LIKE 'sprite_%' LIMIT 50`
       );
       if (legacy.rowCount > 0) {
-        console.log(`[${table}] legacy ids:`, legacy.rows.map((r) => r.sprite_id));
+        console.log(
+          `[${table}] legacy ids:`,
+          legacy.rows.map((r) => r.sprite_id)
+        );
       }
     }
 

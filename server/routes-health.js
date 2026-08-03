@@ -21,18 +21,24 @@ app.get("/health/ready", async (_req, res) => {
   try {
     await pool.query("SELECT 1");
     const ready = runtimeHealth.isReady();
-    return res.set("Cache-Control", "no-store").status(ready ? 200 : 503).json({
-      status: ready ? "ready" : "starting",
-      database: { status: "ok", latencyMs: Date.now() - startedAt },
-      rateLimitStore: getRateLimitStoreHealth(),
-      runtime
-    });
+    return res
+      .set("Cache-Control", "no-store")
+      .status(ready ? 200 : 503)
+      .json({
+        status: ready ? "ready" : "starting",
+        database: { status: "ok", latencyMs: Date.now() - startedAt },
+        rateLimitStore: getRateLimitStoreHealth(),
+        runtime
+      });
   } catch {
-    return res.set("Cache-Control", "no-store").status(503).json({
-      status: "not_ready",
-      database: { status: "unavailable", latencyMs: Date.now() - startedAt },
-      rateLimitStore: getRateLimitStoreHealth(),
-      runtime
-    });
+    return res
+      .set("Cache-Control", "no-store")
+      .status(503)
+      .json({
+        status: "not_ready",
+        database: { status: "unavailable", latencyMs: Date.now() - startedAt },
+        rateLimitStore: getRateLimitStoreHealth(),
+        runtime
+      });
   }
 });

@@ -7,7 +7,9 @@ const { renderIndexPage } = require("../scripts/index-page");
 
 const root = path.join(__dirname, "..");
 const index = renderIndexPage(root);
-const scripts = [...index.matchAll(/<script src="(js\/account(?:\/[^\"]+)?)\.js"><\/script>/g)].map((match) => match[1]);
+const scripts = [...index.matchAll(/<script src="(js\/account(?:\/[^\"]+)?)\.js"><\/script>/g)].map(
+  (match) => match[1]
+);
 
 assert.strictEqual(scripts.length, 12, "account behaviour must load through focused modules and one entry point");
 assert.strictEqual(scripts[0], "js/account/context", "account context must load before feature modules");

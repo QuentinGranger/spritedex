@@ -7,7 +7,12 @@ process.env.OAUTH_REDIRECT_BASE ||= process.env.APP_URL;
 process.env.CORS_ORIGIN ||= process.env.APP_URL;
 
 const assert = require("node:assert");
-const { passportReliability, buildBadges, computePassportProgress, computeOwnedRarityStats } = require("../../server/passport");
+const {
+  passportReliability,
+  buildBadges,
+  computePassportProgress,
+  computeOwnedRarityStats
+} = require("../../server/passport");
 const { sameVariantSet } = require("../../server/passport-achievements");
 const { OFFICIAL_RARITY_SCORE, specialVariantScore } = require("../../server/passport-math");
 const {
@@ -118,18 +123,47 @@ async function getActiveVariants(token) {
   return { ids, bySprite };
 }
 
-
 function results() {
   return { passed, failed };
 }
 
 module.exports = {
-  assert, passportReliability, buildBadges, computePassportProgress, computeOwnedRarityStats,
-  sameVariantSet, OFFICIAL_RARITY_SCORE, specialVariantScore, resolveCompareSource,
-  isCountableCompareResult, recordComparisonSession, getComparisonStatsForUser,
-  ensureComparisonSessionsTable, ensurePassportActivityTable, recordOwnedVariants,
-  listRecentActivity, writeActivity, ALLOWED_ACTIVITY_TYPES, ACTIVITY_FEED_LIMIT,
-  ensurePassportBadgeTables, evaluateBadgeCondition, listBadgeDefinitions, listUserBadges,
-  VERIFICATION_STATUSES, meetsCompletionThreshold, evaluateAndAwardComplementaryBadge, pool,
-  BASE, API, test, rnd, register, auth, cleanup, getPassport, setEntry, getActiveVariants, results
+  assert,
+  passportReliability,
+  buildBadges,
+  computePassportProgress,
+  computeOwnedRarityStats,
+  sameVariantSet,
+  OFFICIAL_RARITY_SCORE,
+  specialVariantScore,
+  resolveCompareSource,
+  isCountableCompareResult,
+  recordComparisonSession,
+  getComparisonStatsForUser,
+  ensureComparisonSessionsTable,
+  ensurePassportActivityTable,
+  recordOwnedVariants,
+  listRecentActivity,
+  writeActivity,
+  ALLOWED_ACTIVITY_TYPES,
+  ACTIVITY_FEED_LIMIT,
+  ensurePassportBadgeTables,
+  evaluateBadgeCondition,
+  listBadgeDefinitions,
+  listUserBadges,
+  VERIFICATION_STATUSES,
+  meetsCompletionThreshold,
+  evaluateAndAwardComplementaryBadge,
+  pool,
+  BASE,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  getPassport,
+  setEntry,
+  getActiveVariants,
+  results
 };

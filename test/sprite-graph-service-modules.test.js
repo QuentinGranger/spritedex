@@ -29,10 +29,18 @@ assert.ok(facade.split("\n").length <= 75, "server/sprite-graph.js must remain a
 
 const graph = require("../server/sprite-graph");
 for (const name of [
-  "ensureGraphEventsTable", "buildGraphEventEnvelope", "recordGraphEvent",
-  "correctGraphEvent", "recordCollectionGraphEvents", "buildDeduplicationKey",
-  "getPriorityInterestMetrics", "computeSquadJoinImpact", "buildGoalCompletedContext",
-  "buildComparisonCompletedContext", "sanitizeGraphContext", "applyPublicAnonymizationGate"
+  "ensureGraphEventsTable",
+  "buildGraphEventEnvelope",
+  "recordGraphEvent",
+  "correctGraphEvent",
+  "recordCollectionGraphEvents",
+  "buildDeduplicationKey",
+  "getPriorityInterestMetrics",
+  "computeSquadJoinImpact",
+  "buildGoalCompletedContext",
+  "buildComparisonCompletedContext",
+  "sanitizeGraphContext",
+  "applyPublicAnonymizationGate"
 ]) {
   assert.strictEqual(typeof graph[name], "function", `${name} must remain public`);
 }

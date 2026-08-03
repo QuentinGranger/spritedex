@@ -31,7 +31,9 @@ function getGraphFormulaRegistry() {
   let catalog = null;
   try {
     catalog = require("./sprite-graph-metric-catalog").getGraphMetricCatalog();
-  } catch (_) { /* optional */ }
+  } catch (_) {
+    /* optional */
+  }
   return {
     version: 1,
     note: "Les formules sont versionnées ; une nouvelle version n’écrase pas l’interprétation historique.",
@@ -45,9 +47,7 @@ function getGraphFormulaRegistry() {
     },
     rewriteHistoryOnDailyJob: false,
     rebuildMayOverwriteExplicitRange: true,
-    documentation: catalog
-      ? { metricCount: catalog.count, lastReview: catalog.lastReview }
-      : null
+    documentation: catalog ? { metricCount: catalog.count, lastReview: catalog.lastReview } : null
   };
 }
 
@@ -62,7 +62,9 @@ async function ensureFormulaVersionColumns(db) {
   for (const sql of alters) {
     try {
       await db.query(sql);
-    } catch (_) { /* table may not exist yet */ }
+    } catch (_) {
+      /* table may not exist yet */
+    }
   }
 }
 

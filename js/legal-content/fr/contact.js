@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "contact": legalDocument({
-    id: "contact",
-    title: "Contacter SPRITE-INDEX",
-    short: "Support, données personnelles, signalements et sécurité.",
-    content: `
+    contact: legalDocument({
+      id: "contact",
+      title: "Contacter SPRITE-INDEX",
+      short: "Support, données personnelles, signalements et sécurité.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Support général</h2>
@@ -39,8 +39,7 @@
       <h2>6. Délais indicatifs</h2>
       <p>Les demandes sont traitées dans un délai raisonnable selon leur urgence et leur complexité. Les demandes relatives aux droits RGPD reçoivent une réponse dans les délais prévus par la réglementation, en principe un mois.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

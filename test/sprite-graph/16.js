@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "squad_daily_stats + catalogue bias + daily pipeline (Étapes 56–60)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const {
       decomposeCatalogueVsAcquisition,
@@ -126,10 +126,7 @@ module.exports = {
     assert.ok(pipeline.publish);
     assert.ok(pipeline.publish.anonymizationMinUsers >= 1);
 
-    const published = await pool.query(
-      `SELECT * FROM graph_daily_publish WHERE metric_date = $1::date`,
-      [day]
-    );
+    const published = await pool.query(`SELECT * FROM graph_daily_publish WHERE metric_date = $1::date`, [day]);
     assert.strictEqual(published.rows.length, 1);
     assert.strictEqual(published.rows[0].catalogue_version, pipeline.catalogueVersion);
 

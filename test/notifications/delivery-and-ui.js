@@ -1,7 +1,18 @@
 "use strict";
 
 async function register(ctx) {
-  const { assert, catalog, prefs, channels, bus, asyncTest, sampleContext, EXPECTED_CONTEXTUAL_IDS, EXPECTED_NOTIFICATION_TYPES, EXPECTED_DOMAIN_EVENTS } = ctx;
+  const {
+    assert,
+    catalog,
+    prefs,
+    channels,
+    bus,
+    asyncTest,
+    sampleContext,
+    EXPECTED_CONTEXTUAL_IDS,
+    EXPECTED_NOTIFICATION_TYPES,
+    EXPECTED_DOMAIN_EVENTS
+  } = ctx;
 
   await asyncTest("global push daily limit is 8 with critical exceptions (Étape 52)", async () => {
     const channels = require("../../server/notification-channels");
@@ -19,9 +30,7 @@ async function register(ctx) {
     assert.ok(!catalog.isExemptFromPushDailyLimit("friend_request_accepted"));
     assert.ok(catalog.isExemptFromPushDailyLimit("priority_variant_available"));
     assert.ok(!catalog.isExemptFromPushDailyLimit("wanted_event_ending_soon"));
-    assert.ok(
-      catalog.isExemptFromPushDailyLimit("wanted_event_ending_soon", { threshold: "24h" })
-    );
+    assert.ok(catalog.isExemptFromPushDailyLimit("wanted_event_ending_soon", { threshold: "24h" }));
 
     const queries = [];
     const pool = {
@@ -98,27 +107,16 @@ async function register(ctx) {
       push: PUSH_MODES.ENABLED
     });
 
-    assert.strictEqual(
-      shouldAllowPushForDelivery("priorities_only", { priorityLevel: "strong" }),
-      true
-    );
-    assert.strictEqual(
-      shouldAllowPushForDelivery("priorities_only", { priorityLevel: "normal" }),
-      false
-    );
-    assert.strictEqual(
-      shouldAllowPushForDelivery("milestones_only", { milestone: 50, kind: "milestone" }),
-      true
-    );
-    assert.strictEqual(
-      shouldAllowPushForDelivery("milestones_only", { kind: "progress", milestone: null }),
-      false
-    );
+    assert.strictEqual(shouldAllowPushForDelivery("priorities_only", { priorityLevel: "strong" }), true);
+    assert.strictEqual(shouldAllowPushForDelivery("priorities_only", { priorityLevel: "normal" }), false);
+    assert.strictEqual(shouldAllowPushForDelivery("milestones_only", { milestone: 50, kind: "milestone" }), true);
+    assert.strictEqual(shouldAllowPushForDelivery("milestones_only", { kind: "progress", milestone: null }), false);
     assert.strictEqual(shouldAllowPushForDelivery("enabled", {}), true);
     assert.strictEqual(shouldAllowPushForDelivery("disabled", { milestone: 100 }), false);
 
     const screen = getNotificationSettingsScreen("fr");
-    const acquired = screen.groups.flatMap((g) => g.types)
+    const acquired = screen.groups
+      .flatMap((g) => g.types)
       .find((t) => t.id === NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT);
     assert.strictEqual(acquired.defaultPush, "priorities_only");
     assert.strictEqual(acquired.defaultInApp, true);
@@ -126,10 +124,7 @@ async function register(ctx) {
 
     const defaults = prefs.defaultTypeDelivery();
     assert.strictEqual(defaults[NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED].push, "milestones_only");
-    assert.strictEqual(
-      getDefaultTypeDelivery(NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED).push,
-      "enabled"
-    );
+    assert.strictEqual(getDefaultTypeDelivery(NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED).push, "enabled");
   });
 
   // Étape 50 — configurable frequencies
@@ -146,10 +141,7 @@ async function register(ctx) {
     } = catalog;
     const { nextDailyDigestAt } = require("../../server/timezone");
 
-    assert.deepStrictEqual(
-      [...catalog.NOTIFICATION_FREQUENCY_LIST],
-      ["immediate", "daily_digest", "disabled"]
-    );
+    assert.deepStrictEqual([...catalog.NOTIFICATION_FREQUENCY_LIST], ["immediate", "daily_digest", "disabled"]);
     assert.ok(FREQUENCY_CONFIGURABLE_TYPES.includes(NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT));
     assert.ok(FREQUENCY_CONFIGURABLE_TYPES.includes(NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE));
     assert.ok(FREQUENCY_CONFIGURABLE_TYPES.includes(NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON));
@@ -196,12 +188,18 @@ async function register(ctx) {
   await asyncTest("notification settings screen covers channels, types and comfort (Étape 49)", () => {
     const screen = catalog.getNotificationSettingsScreen("fr");
     assert.strictEqual(screen.title, "Notifications");
-    assert.deepStrictEqual(screen.channels.map((c) => c.id), ["in_app", "push", "email"]);
+    assert.deepStrictEqual(
+      screen.channels.map((c) => c.id),
+      ["in_app", "push", "email"]
+    );
     assert.strictEqual(screen.channels[0].label, "Dans l'application");
     assert.strictEqual(screen.channels[1].label, "Notifications push");
     assert.strictEqual(screen.channels[2].label, "E-mails");
 
-    assert.deepStrictEqual(screen.groups.map((g) => g.id), ["social", "collection", "alerts"]);
+    assert.deepStrictEqual(
+      screen.groups.map((g) => g.id),
+      ["social", "collection", "alerts"]
+    );
     assert.strictEqual(screen.groups[0].label, "Social");
     assert.strictEqual(screen.groups[0].types[0].id, "friend_request_accepted");
     assert.strictEqual(screen.groups[0].types[0].label, "Invitations d'amis acceptées");
@@ -215,7 +213,10 @@ async function register(ctx) {
       screen.groups[2].types.map((t) => t.id),
       ["priority_variant_available", "wanted_event_ending_soon"]
     );
-    assert.deepStrictEqual(screen.comfort.map((c) => c.id), ["quiet_hours", "timezone"]);
+    assert.deepStrictEqual(
+      screen.comfort.map((c) => c.id),
+      ["quiet_hours", "timezone"]
+    );
     assert.strictEqual(screen.comfort[0].label, "Heures silencieuses");
     assert.strictEqual(screen.comfort[1].label, "Fuseau horaire");
 
@@ -234,10 +235,7 @@ async function register(ctx) {
       NOTIFICATION_TYPES
     } = catalog;
 
-    assert.strictEqual(
-      buildFriendCompareActionUrl({ friendId: "u1" }),
-      "/compare/u1"
-    );
+    assert.strictEqual(buildFriendCompareActionUrl({ friendId: "u1" }), "/compare/u1");
     assert.strictEqual(
       buildFriendCompareActionUrl({ friendId: "u1", variantId: "v1" }, { withVariant: true }),
       "/compare/u1?variantId=v1"
@@ -247,10 +245,7 @@ async function register(ctx) {
       buildPriorityVariantActionUrl({ spriteId: "s1", variantType: "Gold" }),
       "/sprites/s1?variant=Gold"
     );
-    assert.strictEqual(
-      buildWantedEventActionUrl({ eventId: "e1" }),
-      "/events/e1?filter=priority"
-    );
+    assert.strictEqual(buildWantedEventActionUrl({ eventId: "e1" }), "/events/e1?filter=priority");
 
     // Incomplete context must not collapse to "/".
     assert.strictEqual(buildFriendCompareActionUrl({}), null);
@@ -258,15 +253,27 @@ async function register(ctx) {
     assert.strictEqual(buildPriorityVariantActionUrl({}), null);
     assert.strictEqual(buildWantedEventActionUrl({}), null);
 
-    const accepted = catalog.renderNotification(NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED, {
-      friendId: "friend_9", actorName: "Ada"
-    }, "fr");
+    const accepted = catalog.renderNotification(
+      NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED,
+      {
+        friendId: "friend_9",
+        actorName: "Ada"
+      },
+      "fr"
+    );
     assert.strictEqual(accepted.url, "/compare/friend_9");
     assert.notStrictEqual(accepted.url, "/");
 
-    const squad = catalog.renderNotification(NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED, {
-      squadCode: "ZULU", squadName: "Zulu", kind: "progress", newRate: 10
-    }, "fr");
+    const squad = catalog.renderNotification(
+      NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED,
+      {
+        squadCode: "ZULU",
+        squadName: "Zulu",
+        kind: "progress",
+        newRate: 10
+      },
+      "fr"
+    );
     assert.strictEqual(squad.url, "/squad/ZULU/engine");
   });
 
@@ -285,12 +292,14 @@ async function register(ctx) {
         }
         if (/UPDATE notifications SET[\s\S]*read_at = COALESCE/i.test(sql)) {
           return {
-            rows: [{
-              id: params[0],
-              read_at: new Date("2026-07-26T08:00:00Z"),
-              clicked_at: params[2] ? new Date("2026-07-26T08:00:00Z") : null,
-              status: "read"
-            }]
+            rows: [
+              {
+                id: params[0],
+                read_at: new Date("2026-07-26T08:00:00Z"),
+                clicked_at: params[2] ? new Date("2026-07-26T08:00:00Z") : null,
+                status: "read"
+              }
+            ]
           };
         }
         if (/UPDATE notifications SET read_at = NOW\(\),\s*status = 'read'/i.test(sql)) {
@@ -318,7 +327,9 @@ async function register(ctx) {
 
     const readOnly = await markNotificationRead(pool, 42, 100, { clicked: false });
     assert.ok(readOnly);
-    const notificationUpdates = calls.filter(({ sql }) => /UPDATE notifications SET[\s\S]*read_at = COALESCE/i.test(sql));
+    const notificationUpdates = calls.filter(({ sql }) =>
+      /UPDATE notifications SET[\s\S]*read_at = COALESCE/i.test(sql)
+    );
     assert.strictEqual(notificationUpdates[1].params[2], false);
 
     const missing = await markNotificationRead(pool, 42, "nope");
@@ -333,11 +344,13 @@ async function register(ctx) {
     const EV = bus.DOMAIN_EVENTS.FRIENDSHIP_ACCEPTED;
     bus.removeAllDomainListeners(EV);
     let seen = null;
-    bus.onDomainEvent(EV, (event) => { seen = event; });
+    bus.onDomainEvent(EV, (event) => {
+      seen = event;
+    });
     const emitted = await bus.emitDomainEvent(EV, {
-      actorId: "user_lucy",          // accepter
+      actorId: "user_lucy", // accepter
       entityType: "user",
-      entityId: "user_quentin",      // original requester = notification recipient
+      entityId: "user_quentin", // original requester = notification recipient
       context: {
         previousStatus: "pending",
         newStatus: "accepted",

@@ -23,7 +23,9 @@ async function ensureUsernameHistoryTable(db = pool) {
 }
 
 function normalizeUsername(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 /**

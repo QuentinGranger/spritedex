@@ -114,4 +114,3 @@ function activateMainView(view, opts = {}) {
   scrollActiveTabIntoView();
   return true;
 }
-

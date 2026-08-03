@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureSquadsAndSocialSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS squads (
         id SERIAL PRIMARY KEY,
         code VARCHAR(20) UNIQUE NOT NULL,

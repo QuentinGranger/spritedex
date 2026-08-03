@@ -2,9 +2,19 @@
 
 const { isBlocked } = require("./shared");
 const { compareServerIsPriority } = require("./engine");
-const { getSquadAcquisitionPriority, computeSquadMemberStats, isVariantAssignableForAcquisition } = require("./acquisition-priority");
+const {
+  getSquadAcquisitionPriority,
+  computeSquadMemberStats,
+  isVariantAssignableForAcquisition
+} = require("./acquisition-priority");
 
-async function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts = {}, lastActiveByUser = {}, options = {}) {
+async function getSquadAcquisitionAssignments(
+  matrix,
+  priorities,
+  activeGoalCounts = {},
+  lastActiveByUser = {},
+  options = {}
+) {
   const {
     excludedSeasonIds = new Set(),
     activeGoalVariantCounts = new Map(),
@@ -18,7 +28,7 @@ async function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCoun
   const now = Date.now();
 
   const firstRow = matrix[0];
-  const matrixMemberIds = (firstRow && firstRow.members || []).map(m => m.userId).filter(Boolean);
+  const matrixMemberIds = ((firstRow && firstRow.members) || []).map((m) => m.userId).filter(Boolean);
   const blockedPairs = new Set();
   for (let i = 0; i < matrixMemberIds.length; i++) {
     for (let j = i + 1; j < matrixMemberIds.length; j++) {
@@ -32,10 +42,19 @@ async function getSquadAcquisitionAssignments(matrix, priorities, activeGoalCoun
   }
 
   for (const variant of priorities) {
-    const row = matrix.find(r => r.variantId === variant.variantId);
+    const row = matrix.find((r) => r.variantId === variant.variantId);
     if (!row) continue;
 
-    if (!isVariantAssignableForAcquisition(row, variant, excludedSeasonIds, activeGoalVariantCounts, memberGoalVariantSet, maxGoalAssignments)) {
+    if (
+      !isVariantAssignableForAcquisition(
+        row,
+        variant,
+        excludedSeasonIds,
+        activeGoalVariantCounts,
+        memberGoalVariantSet,
+        maxGoalAssignments
+      )
+    ) {
       assignments.push({
         ...variant,
         responsible: null,
@@ -154,7 +173,9 @@ function formatSquadMemberRecommendation(assignment, memberEntry = null) {
     explanation.push("Personne dans la squad ne possède cette variante.");
   } else {
     codes.push("partially_missing");
-    explanation.push(`Cette variante est déjà possédée par ${assignment.ownerCount} membre${assignment.ownerCount > 1 ? 's' : ''} de la squad.`);
+    explanation.push(
+      `Cette variante est déjà possédée par ${assignment.ownerCount} membre${assignment.ownerCount > 1 ? "s" : ""} de la squad.`
+    );
   }
 
   if (assignment.availability === "available_now") {
@@ -168,7 +189,7 @@ function formatSquadMemberRecommendation(assignment, memberEntry = null) {
   if (assignment.deadlineScore > 0 && assignment.endDate) {
     codes.push("event_ending_soon");
     const days = Math.max(1, Math.ceil((new Date(assignment.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
-    explanation.push(`Son événement se termine dans ${days} jour${days > 1 ? 's' : ''}.`);
+    explanation.push(`Son événement se termine dans ${days} jour${days > 1 ? "s" : ""}.`);
   }
 
   if (assignment.isObjectiveTarget) {
@@ -178,7 +199,9 @@ function formatSquadMemberRecommendation(assignment, memberEntry = null) {
 
   if (assignment.priorityCount > 0) {
     codes.push("priority_by_members");
-    explanation.push(`${assignment.priorityCount} membre${assignment.priorityCount > 1 ? 's' : ''} ${assignment.priorityCount > 1 ? 'l\'ont' : 'l\'a'} marquée prioritaire.`);
+    explanation.push(
+      `${assignment.priorityCount} membre${assignment.priorityCount > 1 ? "s" : ""} ${assignment.priorityCount > 1 ? "l'ont" : "l'a"} marquée prioritaire.`
+    );
   }
 
   if (memberEntry && compareServerIsPriority(memberEntry)) {
@@ -192,7 +215,9 @@ function formatSquadMemberRecommendation(assignment, memberEntry = null) {
   }
 
   if (assignment.collectiveCoverageDelta > 0) {
-    explanation.push(`Cette acquisition ferait progresser la squad de ${assignment.collectiveCoverageDelta} point${assignment.collectiveCoverageDelta === 1 ? '' : 's'}.`);
+    explanation.push(
+      `Cette acquisition ferait progresser la squad de ${assignment.collectiveCoverageDelta} point${assignment.collectiveCoverageDelta === 1 ? "" : "s"}.`
+    );
   }
 
   if (assignment.assignmentReason && assignment.assignmentReason !== "Aucun membre éligible") {
@@ -220,8 +245,8 @@ function getSquadMemberRecommendations(matrix, assignments, memberId) {
   const result = [];
   for (const assignment of assignments) {
     if (!assignment.responsible || String(assignment.responsible.userId) !== String(memberId)) continue;
-    const row = matrix.find(r => r.variantId === assignment.variantId);
-    const memberEntry = row ? (row.members || []).find(m => String(m.userId) === String(memberId)) : null;
+    const row = matrix.find((r) => r.variantId === assignment.variantId);
+    const memberEntry = row ? (row.members || []).find((m) => String(m.userId) === String(memberId)) : null;
     result.push(formatSquadMemberRecommendation(assignment, memberEntry));
   }
   return result;
@@ -242,8 +267,8 @@ function getSquadCollectivePlan(matrix, assignments) {
         recommendations: []
       };
     }
-    const row = matrix.find(r => r.variantId === assignment.variantId);
-    const memberEntry = row ? (row.members || []).find(m => String(m.userId) === key) : null;
+    const row = matrix.find((r) => r.variantId === assignment.variantId);
+    const memberEntry = row ? (row.members || []).find((m) => String(m.userId) === key) : null;
     byMember[key].recommendations.push(formatSquadMemberRecommendation(assignment, memberEntry));
   }
 
@@ -251,5 +276,9 @@ function getSquadCollectivePlan(matrix, assignments) {
   return { members, totalCollectiveGain };
 }
 
-
-module.exports = { getSquadAcquisitionAssignments, formatSquadMemberRecommendation, getSquadMemberRecommendations, getSquadCollectivePlan };
+module.exports = {
+  getSquadAcquisitionAssignments,
+  formatSquadMemberRecommendation,
+  getSquadMemberRecommendations,
+  getSquadCollectivePlan
+};

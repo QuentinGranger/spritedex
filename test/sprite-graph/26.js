@@ -3,7 +3,72 @@ const ctx = require("./shared");
 module.exports = {
   name: "agrégats communautaires (Étape 92)",
   async run() {
-    const { API, BASE, FRIEND_INVITATION_METHODS, FRIEND_INVITATION_PUBLIC_METRIC_KEYS, FUTURE_GRAPH_EVENT_TYPES, GOAL_SCOPES, GRAPH_DATA_LEVELS, GRAPH_EVENT_COMMON_FIELDS, GRAPH_EVENT_SPECIFIC_FIELDS, GRAPH_EVENT_TYPES, GRAPH_EVENT_TYPE_SET, GRAPH_EVENT_VERSIONS, GRAPH_INTERACTION_EVENT_TYPES, GRAPH_INTERACTION_EVENT_TYPE_SET, GRAPH_SOURCES, INSUFFICIENT_COMMUNITY_DATA_MESSAGE, OWNERSHIP_SAMPLE_STATUSES, PUBLIC_ANONYMIZATION_MIN_USERS, applyPublicAnonymizationGate, assert, auth, buildComparisonCompletedContext, buildDeduplicationKey, buildFriendInvitationSentContext, buildGoalCompletedContext, buildGraphEventEnvelope, buildNotificationOpenedContext, buildSquadJoinedContext, calculateCommunityVariantStats, computeSquadJoinImpact, correctGraphEvent, ensureCommunityStatsTables, ensureGraphEventsTable, extractTopDifferenceSpriteIds, formatCommunityOwnershipDisplay, formatCommunityPriorityDisplay, formatRecentPriorityAddsDisplay, formatSampleSizeDisplay, fs, getCommunityVariantOwnership, getFriendInvitationPublicMetrics, getGraphAggregate, getMostSoughtVariants, getPriorityInterestMetrics, isFriendInvitationPubliclyExposable, isGraphEventCancelled, listEligibleCommunityUserIds, normalizeComparisonPair, normalizeGraphSource, normalizeInvitationMethod, path, pool, processGraphEventOutbox, recordCollectionGraphEvents, recordGraphEvent, recordParticipantComparisonSession, register, resolveGoalScope, rnd, root, roundRate, sanitizeGraphContext, stopCommunityStatsDailyJob, stopGraphOutboxWorker } = ctx;
+    const {
+      API,
+      BASE,
+      FRIEND_INVITATION_METHODS,
+      FRIEND_INVITATION_PUBLIC_METRIC_KEYS,
+      FUTURE_GRAPH_EVENT_TYPES,
+      GOAL_SCOPES,
+      GRAPH_DATA_LEVELS,
+      GRAPH_EVENT_COMMON_FIELDS,
+      GRAPH_EVENT_SPECIFIC_FIELDS,
+      GRAPH_EVENT_TYPES,
+      GRAPH_EVENT_TYPE_SET,
+      GRAPH_EVENT_VERSIONS,
+      GRAPH_INTERACTION_EVENT_TYPES,
+      GRAPH_INTERACTION_EVENT_TYPE_SET,
+      GRAPH_SOURCES,
+      INSUFFICIENT_COMMUNITY_DATA_MESSAGE,
+      OWNERSHIP_SAMPLE_STATUSES,
+      PUBLIC_ANONYMIZATION_MIN_USERS,
+      applyPublicAnonymizationGate,
+      assert,
+      auth,
+      buildComparisonCompletedContext,
+      buildDeduplicationKey,
+      buildFriendInvitationSentContext,
+      buildGoalCompletedContext,
+      buildGraphEventEnvelope,
+      buildNotificationOpenedContext,
+      buildSquadJoinedContext,
+      calculateCommunityVariantStats,
+      computeSquadJoinImpact,
+      correctGraphEvent,
+      ensureCommunityStatsTables,
+      ensureGraphEventsTable,
+      extractTopDifferenceSpriteIds,
+      formatCommunityOwnershipDisplay,
+      formatCommunityPriorityDisplay,
+      formatRecentPriorityAddsDisplay,
+      formatSampleSizeDisplay,
+      fs,
+      getCommunityVariantOwnership,
+      getFriendInvitationPublicMetrics,
+      getGraphAggregate,
+      getMostSoughtVariants,
+      getPriorityInterestMetrics,
+      isFriendInvitationPubliclyExposable,
+      isGraphEventCancelled,
+      listEligibleCommunityUserIds,
+      normalizeComparisonPair,
+      normalizeGraphSource,
+      normalizeInvitationMethod,
+      path,
+      pool,
+      processGraphEventOutbox,
+      recordCollectionGraphEvents,
+      recordGraphEvent,
+      recordParticipantComparisonSession,
+      register,
+      resolveGoalScope,
+      rnd,
+      root,
+      roundRate,
+      sanitizeGraphContext,
+      stopCommunityStatsDailyJob,
+      stopGraphOutboxWorker
+    } = ctx;
     await ensureCommunityStatsTables(pool);
     stopCommunityStatsDailyJob();
 
@@ -49,10 +114,7 @@ module.exports = {
     );
 
     // Suspended excluded.
-    await pool.query(
-      `UPDATE users SET suspended_until = NOW() + INTERVAL '2 hours' WHERE id = $1`,
-      [uSuspended.id]
-    );
+    await pool.query(`UPDATE users SET suspended_until = NOW() + INTERVAL '2 hours' WHERE id = $1`, [uSuspended.id]);
     const eligible = await listEligibleCommunityUserIds(pool, {
       minFillRate: 0,
       requireAnalyticsConsent: true
@@ -79,10 +141,7 @@ module.exports = {
     assert.strictEqual(row.rows.length, 1);
     const stats = row.rows[0];
     assert.ok(stats.sample_size >= 1);
-    assert.strictEqual(
-      Number(stats.ownership_rate),
-      roundRate(stats.owner_user_count, stats.sample_size)
-    );
+    assert.strictEqual(Number(stats.ownership_rate), roundRate(stats.owner_user_count, stats.sample_size));
     assert.ok(stats.priority_rate == null || Number.isFinite(Number(stats.priority_rate)));
     // unknown must not inflate sample relative to owned+missing+priority(+spotted).
     assert.ok(Number(stats.sample_size) >= Number(stats.owner_user_count));

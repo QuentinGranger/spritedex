@@ -1,6 +1,44 @@
 "use strict";
 
-const { assert, passportReliability, buildBadges, computePassportProgress, computeOwnedRarityStats, sameVariantSet, OFFICIAL_RARITY_SCORE, specialVariantScore, resolveCompareSource, isCountableCompareResult, recordComparisonSession, getComparisonStatsForUser, ensureComparisonSessionsTable, ensurePassportActivityTable, recordOwnedVariants, listRecentActivity, writeActivity, ALLOWED_ACTIVITY_TYPES, ACTIVITY_FEED_LIMIT, ensurePassportBadgeTables, evaluateBadgeCondition, listBadgeDefinitions, listUserBadges, VERIFICATION_STATUSES, meetsCompletionThreshold, evaluateAndAwardComplementaryBadge, pool, BASE, API, test, rnd, register, auth, cleanup, getPassport, setEntry, getActiveVariants } = require("./shared");
+const {
+  assert,
+  passportReliability,
+  buildBadges,
+  computePassportProgress,
+  computeOwnedRarityStats,
+  sameVariantSet,
+  OFFICIAL_RARITY_SCORE,
+  specialVariantScore,
+  resolveCompareSource,
+  isCountableCompareResult,
+  recordComparisonSession,
+  getComparisonStatsForUser,
+  ensureComparisonSessionsTable,
+  ensurePassportActivityTable,
+  recordOwnedVariants,
+  listRecentActivity,
+  writeActivity,
+  ALLOWED_ACTIVITY_TYPES,
+  ACTIVITY_FEED_LIMIT,
+  ensurePassportBadgeTables,
+  evaluateBadgeCondition,
+  listBadgeDefinitions,
+  listUserBadges,
+  VERIFICATION_STATUSES,
+  meetsCompletionThreshold,
+  evaluateAndAwardComplementaryBadge,
+  pool,
+  BASE,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  getPassport,
+  setEntry,
+  getActiveVariants
+} = require("./shared");
 
 async function run() {
   await test("fiabilité : niveaux complete / usable / insufficient", () => {
@@ -34,7 +72,6 @@ async function run() {
     assert.ok(!isCountableCompareResult({ summary: { insufficientData: true, catalogueVariantCount: 10 } }));
     assert.ok(isCountableCompareResult({ summary: { insufficientData: false, catalogueVariantCount: 10 } }));
   });
-
 }
 
 module.exports = { run };

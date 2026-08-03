@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureCollectionEntriesSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       ALTER TABLE availability_periods ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'unknown';
       CREATE TABLE IF NOT EXISTS sprite_entries (
         id SERIAL PRIMARY KEY,

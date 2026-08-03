@@ -79,7 +79,11 @@ async function run() {
     let result = await entry(user, variantId, { status: "owned", masteryLevel: 5 });
     assert.strictEqual(result.response.status, 200, `Master write failed: ${JSON.stringify(result.body)}`);
     assert.strictEqual(result.body.masteryLevel, 5, "the write response must confirm Master level");
-    assert.strictEqual((await collection(user))[variantId]?.masteryLevel, 5, "Master level must persist in GET collection");
+    assert.strictEqual(
+      (await collection(user))[variantId]?.masteryLevel,
+      5,
+      "Master level must persist in GET collection"
+    );
     console.log("  ✓ owned variant persists level 5 (Master)");
 
     result = await entry(user, variantId, { status: "missing" });

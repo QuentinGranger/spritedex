@@ -46,26 +46,19 @@ module.exports = async function runNotificationAcquisition(ctx) {
       assert.strictEqual(notifRes.status, 200);
       let notifs = await notifRes.json();
       const forMissing = notifs.notifications.filter(
-        (n) => n.type === "friend_acquired_missing_variant"
-          && String(n.actor_id || n.actor?.id) === String(actor.id)
-          && String(n.entity_id || n.entity?.id) === String(v1)
+        (n) =>
+          n.type === "friend_acquired_missing_variant" &&
+          String(n.actor_id || n.actor?.id) === String(actor.id) &&
+          String(n.entity_id || n.entity?.id) === String(v1)
       );
       assert.strictEqual(forMissing.length, 1, "missing friend should be notified once");
-      assert.ok(
-        /correspondance|manque|possède/i.test(forMissing[0].title || ""),
-        "missing-level wording expected"
-      );
-      assert.notStrictEqual(
-        forMissing[0].data?.priorityLevel,
-        "strong",
-        "simple missing must not be strong priority"
-      );
+      assert.ok(/correspondance|manque|possède/i.test(forMissing[0].title || ""), "missing-level wording expected");
+      assert.notStrictEqual(forMissing[0].data?.priorityLevel, "strong", "simple missing must not be strong priority");
 
       notifRes = await fetch(`${API}/notifications`, { headers: auth(priorityFriend.token) });
       notifs = await notifRes.json();
       const forPriority = notifs.notifications.filter(
-        (n) => n.type === "friend_acquired_missing_variant"
-          && String(n.actor_id || n.actor?.id) === String(actor.id)
+        (n) => n.type === "friend_acquired_missing_variant" && String(n.actor_id || n.actor?.id) === String(actor.id)
       );
       assert.strictEqual(forPriority.length, 1, "priority friend should be notified");
       assert.ok(
@@ -105,16 +98,16 @@ module.exports = async function runNotificationAcquisition(ctx) {
       notifRes = await fetch(`${API}/notifications`, { headers: auth(missingFriend.token) });
       notifs = await notifRes.json();
       const grouped = notifs.notifications.filter(
-        (n) => n.type === "friend_acquired_missing_variant"
-          && String(n.actor_id || n.actor?.id) === String(actor.id)
-          && n.read_at == null
+        (n) =>
+          n.type === "friend_acquired_missing_variant" &&
+          String(n.actor_id || n.actor?.id) === String(actor.id) &&
+          n.read_at == null
       );
       assert.strictEqual(grouped.length, 1, "multiple acquisitions should flush as one grouped notification");
       const groupCount = Number(grouped[0].data?.count || grouped[0].data?.group?.eventCount || 0);
       assert.ok(groupCount >= 2, `grouped count expected >= 2, got ${groupCount}`);
       assert.ok(
-        Array.isArray(grouped[0].data?.variantIds)
-          && grouped[0].data.variantIds.length >= 2,
+        Array.isArray(grouped[0].data?.variantIds) && grouped[0].data.variantIds.length >= 2,
         "grouped payload should list multiple variants"
       );
 
@@ -144,9 +137,7 @@ module.exports = async function runNotificationAcquisition(ctx) {
       notifRes = await fetch(`${API}/notifications`, { headers: auth(missingFriend.token) });
       notifs = await notifRes.json();
       assert.ok(
-        !notifs.notifications.some(
-          (n) => n.type === "friend_acquired_missing_variant" && n.read_at == null
-        ),
+        !notifs.notifications.some((n) => n.type === "friend_acquired_missing_variant" && n.read_at == null),
         "private collections must not reveal acquisitions"
       );
     } finally {

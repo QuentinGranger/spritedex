@@ -15,24 +15,63 @@
 // SX (Sint Maarten) · BQ (Bonaire, Sint Eustatius, Saba)
 // Flanders / Dutch-speaking Brussels resolve via `nl` / `nl-BE` language tags.
 const FRANCOPHONE_REGIONS = new Set([
-  "BJ", "BI", "CM", "KM", "CI", "DJ", "GA", "GN", "GQ", "MG",
-  "CF", "CD", "CG", "RW", "SN", "SC", "TD", "TG",
-  "DZ", "BF", "ML", "MA", "MU", "MR", "NE", "TN",
-  "BE", "FR", "LU", "MC", "CH", "AD",
-  "CA", "HT",
+  "BJ",
+  "BI",
+  "CM",
+  "KM",
+  "CI",
+  "DJ",
+  "GA",
+  "GN",
+  "GQ",
+  "MG",
+  "CF",
+  "CD",
+  "CG",
+  "RW",
+  "SN",
+  "SC",
+  "TD",
+  "TG",
+  "DZ",
+  "BF",
+  "ML",
+  "MA",
+  "MU",
+  "MR",
+  "NE",
+  "TN",
+  "BE",
+  "FR",
+  "LU",
+  "MC",
+  "CH",
+  "AD",
+  "CA",
+  "HT",
   "LB",
   "VU",
-  "GP", "MQ", "GF", "RE", "YT",
-  "PF", "BL", "MF", "PM", "WF",
-  "NC", "TF", "CP"
+  "GP",
+  "MQ",
+  "GF",
+  "RE",
+  "YT",
+  "PF",
+  "BL",
+  "MF",
+  "PM",
+  "WF",
+  "NC",
+  "TF",
+  "CP"
 ]);
 
-const DUTCH_REGIONS = new Set([
-  "NL", "SR", "AW", "CW", "SX", "BQ"
-]);
+const DUTCH_REGIONS = new Set(["NL", "SR", "AW", "CW", "SX", "BQ"]);
 
 function resolveLocale(acceptLanguage) {
-  const candidates = String(acceptLanguage || "").split(",").map((value) => value.trim().split(";")[0]);
+  const candidates = String(acceptLanguage || "")
+    .split(",")
+    .map((value) => value.trim().split(";")[0]);
   for (const candidate of candidates) {
     const [language, region] = candidate.replace(/_/g, "-").split("-");
     const lang = String(language || "").toLowerCase();
@@ -47,11 +86,13 @@ function resolveLocale(acceptLanguage) {
 
 const ERROR_EN = Object.freeze({
   "Abonnement push invalide": "Invalid push subscription",
-  "Accès interdit : vous ne pouvez modifier que votre propre collection": "Forbidden: you can only modify your own collection",
+  "Accès interdit : vous ne pouvez modifier que votre propre collection":
+    "Forbidden: you can only modify your own collection",
   "Accès refusé": "Access denied",
   "Accès réservé": "Access restricted",
   "Activité non accessible": "Activity not accessible",
-  "Alerte forte : variante prioritaire, peu possédée, événement bientôt terminé.": "Strong alert: priority variant, rarely owned, event ending soon.",
+  "Alerte forte : variante prioritaire, peu possédée, événement bientôt terminé.":
+    "Strong alert: priority variant, rarely owned, event ending soon.",
   "Appareil introuvable": "Device not found",
   "Aucun membre dans le périmètre de l'objectif": "No members in the goal scope",
   "Aucune équipe ne peut couvrir l'objectif": "No team can cover the goal",
@@ -68,7 +109,8 @@ const ERROR_EN = Object.freeze({
   "Ce pseudo est déjà pris ou temporairement réservé": "This username is already taken or temporarily reserved",
   "Cet objectif n'est pas lié à une variante": "This goal is not linked to a variant",
   "Cet utilisateur est déjà membre de l'escouade": "This user is already a squad member",
-  "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune": "This user only accepts invitations from members of a shared squad",
+  "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune":
+    "This user only accepts invitations from members of a shared squad",
   "Cet utilisateur n'accepte pas les invitations": "This user does not accept invitations",
   "Cet utilisateur n'accepte pas les invitations d'escouade": "This user does not accept squad invitations",
   "Cet utilisateur n'est pas bloqué": "This user is not blocked",
@@ -79,7 +121,8 @@ const ERROR_EN = Object.freeze({
   "changes doit être un tableau": "changes must be an array",
   "Cible de recommendation invalide": "Invalid recommendation target",
   "Clé d'objet invalide": "Invalid object key",
-  "Client OAuth obsolète : recharge l'application avant de réessayer.": "Outdated OAuth client: reload the application and try again.",
+  "Client OAuth obsolète : recharge l'application avant de réessayer.":
+    "Outdated OAuth client: reload the application and try again.",
   "Code d'escouade introuvable": "Squad code not found",
   "Code déjà pris, réessayez": "Code already taken, try again",
   "Collection non accessible": "Collection not accessible",
@@ -132,7 +175,8 @@ const ERROR_EN = Object.freeze({
   "Impossible de partager une collection privée": "Unable to share a private collection",
   "Impossible de préparer la carte": "Unable to prepare card",
   "JSON invalide": "Invalid JSON",
-  "La squad principale doit être une squad active de l'utilisateur": "Primary squad must be one of the user's active squads",
+  "La squad principale doit être une squad active de l'utilisateur":
+    "Primary squad must be one of the user's active squads",
   "La taille d'équipe doit être entre 2 et 4": "Team size must be between 2 and 4",
   "Le badge épinglé doit être débloqué et visible": "Pinned badge must be unlocked and visible",
   "Le créateur ne peut pas être retiré": "The creator cannot be removed",
@@ -200,7 +244,8 @@ const ERROR_EN = Object.freeze({
   "Squad invalide": "Invalid squad",
   "squadId invalide": "Invalid squadId",
   "subscriptionId invalide": "Invalid subscriptionId",
-  "Suggestion de comparaison : plus de 15 variantes complémentaires et collections bien renseignées.": "Comparison suggestion: more than 15 complementary variants and well-filled collections.",
+  "Suggestion de comparaison : plus de 15 variantes complémentaires et collections bien renseignées.":
+    "Comparison suggestion: more than 15 complementary variants and well-filled collections.",
   "Surface d’interaction invalide": "Invalid interaction surface",
   "targetType invalide": "Invalid targetType",
   "targetUserId invalide": "Invalid targetUserId",
@@ -214,13 +259,18 @@ const ERROR_EN = Object.freeze({
   "Trop d'enregistrements d'appareil. Réessaie plus tard.": "Too many device registrations. Try again later.",
   "Trop d'escouades créées. Réessaie plus tard.": "Too many squads created. Try again later.",
   "Trop d'événements analytiques. Réessaie plus tard.": "Too many analytics events. Try again later.",
-  "Trop de comptes créés depuis cette adresse. Réessaie plus tard.": "Too many accounts created from this address. Try again later.",
-  "Trop de créations d'objectifs depuis des recommandations. Réessaie dans quelques minutes.": "Too many goal creations from recommendations. Try again in a few minutes.",
+  "Trop de comptes créés depuis cette adresse. Réessaie plus tard.":
+    "Too many accounts created from this address. Try again later.",
+  "Trop de créations d'objectifs depuis des recommandations. Réessaie dans quelques minutes.":
+    "Too many goal creations from recommendations. Try again in a few minutes.",
   "Trop de demandes de réinitialisation. Réessaie plus tard.": "Too many reset requests. Try again later.",
-  "Trop de liens actifs : révoque un lien avant d'en créer un autre": "Too many active links: revoke one before creating another",
+  "Trop de liens actifs : révoque un lien avant d'en créer un autre":
+    "Too many active links: revoke one before creating another",
   "Trop de liens créés. Réessaie plus tard.": "Too many links created. Try again later.",
-  "Trop de mises à jour des préférences. Réessaie dans quelques minutes.": "Too many preference updates. Try again in a few minutes.",
-  "Trop de mises à jour du consentement. Réessaie dans quelques minutes.": "Too many consent updates. Try again in a few minutes.",
+  "Trop de mises à jour des préférences. Réessaie dans quelques minutes.":
+    "Too many preference updates. Try again in a few minutes.",
+  "Trop de mises à jour du consentement. Réessaie dans quelques minutes.":
+    "Too many consent updates. Try again in a few minutes.",
   "Trop de recherches, ralentis un peu.": "Too many searches, slow down a bit.",
   "Trop de régénérations de code. Réessaie plus tard.": "Too many code regenerations. Try again later.",
   "Trop de renvois d'email. Réessaie plus tard.": "Too many email resends. Try again later.",
@@ -228,7 +278,8 @@ const ERROR_EN = Object.freeze({
   "Trop de synchronisations. Ralentis un peu.": "Too many syncs. Slow down a bit.",
   "Trop de tentatives de connexion. Réessaie dans 15 minutes.": "Too many login attempts. Try again in 15 minutes.",
   "Trop de tentatives OAuth. Réessaie dans quelques minutes.": "Too many OAuth attempts. Try again in a few minutes.",
-  "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard.": "Too many attempts to join a squad. Try again later.",
+  "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard.":
+    "Too many attempts to join a squad. Try again later.",
   "Trop de tentatives, réessaie plus tard.": "Too many attempts, try again later.",
   "Tu as récemment envoyé une demande. Réessaie dans 7 jours.": "You recently sent a request. Try again in 7 days.",
   "Tu as récemment refusé une demande. Réessaie dans 7 jours.": "You recently declined a request. Try again in 7 days.",
@@ -260,14 +311,15 @@ const ERROR_EN = Object.freeze({
   "Vous ne pouvez pas interagir avec cet utilisateur": "You cannot interact with this user"
 });
 
-
 const ERROR_NL = Object.freeze({
   "Abonnement push invalide": "Ongeldig push-abonnement",
-  "Accès interdit : vous ne pouvez modifier que votre propre collection": "Verboden: u kunt alleen uw eigen collectie wijzigen",
+  "Accès interdit : vous ne pouvez modifier que votre propre collection":
+    "Verboden: u kunt alleen uw eigen collectie wijzigen",
   "Accès refusé": "Toegang geweigerd",
   "Accès réservé": "Toegang beperkt",
   "Activité non accessible": "Activiteit niet toegankelijk",
-  "Alerte forte : variante prioritaire, peu possédée, événement bientôt terminé.": "Sterke waarschuwing: prioriteitsvariant, zelden in bezit, evenement eindigt binnenkort.",
+  "Alerte forte : variante prioritaire, peu possédée, événement bientôt terminé.":
+    "Sterke waarschuwing: prioriteitsvariant, zelden in bezit, evenement eindigt binnenkort.",
   "Appareil introuvable": "Apparaat niet gevonden",
   "Aucun membre dans le périmètre de l'objectif": "Geen leden in het doelbereik",
   "Aucune équipe ne peut couvrir l'objectif": "Geen enkel team kan het doel bereiken",
@@ -284,7 +336,8 @@ const ERROR_NL = Object.freeze({
   "Ce pseudo est déjà pris ou temporairement réservé": "Deze gebruikersnaam is al in gebruik of tijdelijk gereserveerd",
   "Cet objectif n'est pas lié à une variante": "Dit doel is niet gekoppeld aan een variant",
   "Cet utilisateur est déjà membre de l'escouade": "Deze gebruiker is al een teamlid",
-  "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune": "Deze gebruiker accepteert alleen uitnodigingen van leden van een gedeeld team",
+  "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune":
+    "Deze gebruiker accepteert alleen uitnodigingen van leden van een gedeeld team",
   "Cet utilisateur n'accepte pas les invitations": "Deze gebruiker accepteert geen uitnodigingen",
   "Cet utilisateur n'accepte pas les invitations d'escouade": "Deze gebruiker accepteert geen teamuitnodigingen",
   "Cet utilisateur n'est pas bloqué": "Deze gebruiker is niet geblokkeerd",
@@ -295,7 +348,8 @@ const ERROR_NL = Object.freeze({
   "changes doit être un tableau": "wijzigingen moeten een array zijn",
   "Cible de recommendation invalide": "Ongeldig aanbevelingsdoel",
   "Clé d'objet invalide": "Ongeldige objectsleutel",
-  "Client OAuth obsolète : recharge l'application avant de réessayer.": "Verouderde OAuth-client: laad de applicatie opnieuw en probeer het opnieuw.",
+  "Client OAuth obsolète : recharge l'application avant de réessayer.":
+    "Verouderde OAuth-client: laad de applicatie opnieuw en probeer het opnieuw.",
   "Code d'escouade introuvable": "Teamcode niet gevonden",
   "Code déjà pris, réessayez": "Code al in gebruik, probeer het opnieuw",
   "Collection non accessible": "Collectie niet toegankelijk",
@@ -348,12 +402,14 @@ const ERROR_NL = Object.freeze({
   "Impossible de partager une collection privée": "Kan een privécollectie niet delen",
   "Impossible de préparer la carte": "Kan de kaart niet voorbereiden",
   "JSON invalide": "Ongeldige JSON",
-  "La squad principale doit être une squad active de l'utilisateur": "De primaire squad moet een actieve squad van de gebruiker zijn",
+  "La squad principale doit être une squad active de l'utilisateur":
+    "De primaire squad moet een actieve squad van de gebruiker zijn",
   "La taille d'équipe doit être entre 2 et 4": "De teamgrootte moet tussen 2 en 4 zijn",
   "Le badge épinglé doit être débloqué et visible": "De vastgezette badge moet ontgrendeld en zichtbaar zijn",
   "Le créateur ne peut pas être retiré": "De maker kan niet worden verwijderd",
   "Le niveau de maîtrise nécessite une variante possédée.": "Beheersingsniveau vereist een eigen variant.",
-  "Les membres assignés doivent être des membres actifs de l'escouade": "Toegewezen leden moeten actieve teamleden zijn",
+  "Les membres assignés doivent être des membres actifs de l'escouade":
+    "Toegewezen leden moeten actieve teamleden zijn",
   "Lien de partage invalide": "Ongeldige deellink",
   "Lien de partage invalide ou révoqué": "Ongeldige of ingetrokken deellink",
   "Lien expiré ou révoqué": "Link verlopen of ingetrokken",
@@ -416,7 +472,8 @@ const ERROR_NL = Object.freeze({
   "Squad invalide": "Ongeldige ploeg",
   "squadId invalide": "Ongeldige squadId",
   "subscriptionId invalide": "Ongeldige abonnements-ID",
-  "Suggestion de comparaison : plus de 15 variantes complémentaires et collections bien renseignées.": "Vergelijkingssuggestie: ruim 15 complementaire varianten en goed gevulde collecties.",
+  "Suggestion de comparaison : plus de 15 variantes complémentaires et collections bien renseignées.":
+    "Vergelijkingssuggestie: ruim 15 complementaire varianten en goed gevulde collecties.",
   "Surface d’interaction invalide": "Ongeldig interactieoppervlak",
   "targetType invalide": "Ongeldig doeltype",
   "targetUserId invalide": "Ongeldige targetUserId",
@@ -430,25 +487,37 @@ const ERROR_NL = Object.freeze({
   "Trop d'enregistrements d'appareil. Réessaie plus tard.": "Te veel apparaatregistraties. Probeer het later opnieuw.",
   "Trop d'escouades créées. Réessaie plus tard.": "Er zijn te veel squadrons gemaakt. Probeer het later opnieuw.",
   "Trop d'événements analytiques. Réessaie plus tard.": "Te veel analysegebeurtenissen. Probeer het later opnieuw.",
-  "Trop de comptes créés depuis cette adresse. Réessaie plus tard.": "Er zijn te veel accounts aangemaakt vanaf dit adres. Probeer het later opnieuw.",
-  "Trop de créations d'objectifs depuis des recommandations. Réessaie dans quelques minutes.": "Te veel doelcreaties op basis van aanbevelingen. Probeer het over een paar minuten opnieuw.",
+  "Trop de comptes créés depuis cette adresse. Réessaie plus tard.":
+    "Er zijn te veel accounts aangemaakt vanaf dit adres. Probeer het later opnieuw.",
+  "Trop de créations d'objectifs depuis des recommandations. Réessaie dans quelques minutes.":
+    "Te veel doelcreaties op basis van aanbevelingen. Probeer het over een paar minuten opnieuw.",
   "Trop de demandes de réinitialisation. Réessaie plus tard.": "Te veel resetverzoeken. Probeer het later opnieuw.",
-  "Trop de liens actifs : révoque un lien avant d'en créer un autre": "Te veel actieve links: trek er één in voordat u een nieuwe maakt",
+  "Trop de liens actifs : révoque un lien avant d'en créer un autre":
+    "Te veel actieve links: trek er één in voordat u een nieuwe maakt",
   "Trop de liens créés. Réessaie plus tard.": "Er zijn te veel links gemaakt. Probeer het later opnieuw.",
-  "Trop de mises à jour des préférences. Réessaie dans quelques minutes.": "Te veel voorkeursupdates. Probeer het over een paar minuten opnieuw.",
-  "Trop de mises à jour du consentement. Réessaie dans quelques minutes.": "Te veel toestemmingsupdates. Probeer het over een paar minuten opnieuw.",
+  "Trop de mises à jour des préférences. Réessaie dans quelques minutes.":
+    "Te veel voorkeursupdates. Probeer het over een paar minuten opnieuw.",
+  "Trop de mises à jour du consentement. Réessaie dans quelques minutes.":
+    "Te veel toestemmingsupdates. Probeer het over een paar minuten opnieuw.",
   "Trop de recherches, ralentis un peu.": "Te veel zoekopdrachten, doe het een beetje langzamer.",
   "Trop de régénérations de code. Réessaie plus tard.": "Te veel coderegeneraties. Probeer het later opnieuw.",
-  "Trop de renvois d'email. Réessaie plus tard.": "Er worden te veel e-mails opnieuw verzonden. Probeer het later opnieuw.",
+  "Trop de renvois d'email. Réessaie plus tard.":
+    "Er worden te veel e-mails opnieuw verzonden. Probeer het later opnieuw.",
   "Trop de simulations. Réessaie dans une minute.": "Te veel simulaties. Probeer het over een minuut opnieuw.",
   "Trop de synchronisations. Ralentis un peu.": "Te veel synchronisaties. Doe een beetje langzamer.",
-  "Trop de tentatives de connexion. Réessaie dans 15 minutes.": "Te veel inlogpogingen. Probeer het over 15 minuten opnieuw.",
-  "Trop de tentatives OAuth. Réessaie dans quelques minutes.": "Te veel OAuth-pogingen. Probeer het over een paar minuten opnieuw.",
-  "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard.": "Te veel pogingen om lid te worden van een team. Probeer het later opnieuw.",
+  "Trop de tentatives de connexion. Réessaie dans 15 minutes.":
+    "Te veel inlogpogingen. Probeer het over 15 minuten opnieuw.",
+  "Trop de tentatives OAuth. Réessaie dans quelques minutes.":
+    "Te veel OAuth-pogingen. Probeer het over een paar minuten opnieuw.",
+  "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard.":
+    "Te veel pogingen om lid te worden van een team. Probeer het later opnieuw.",
   "Trop de tentatives, réessaie plus tard.": "Te veel pogingen. Probeer het later opnieuw.",
-  "Tu as récemment envoyé une demande. Réessaie dans 7 jours.": "U heeft onlangs een verzoek verzonden. Probeer het over 7 dagen opnieuw.",
-  "Tu as récemment refusé une demande. Réessaie dans 7 jours.": "U heeft onlangs een verzoek afgewezen. Probeer het over 7 dagen opnieuw.",
-  "Tu dois avoir au moins 15 ans pour créer un compte.": "Om een ​​account aan te maken moet je minimaal 15 jaar oud zijn.",
+  "Tu as récemment envoyé une demande. Réessaie dans 7 jours.":
+    "U heeft onlangs een verzoek verzonden. Probeer het over 7 dagen opnieuw.",
+  "Tu as récemment refusé une demande. Réessaie dans 7 jours.":
+    "U heeft onlangs een verzoek afgewezen. Probeer het over 7 dagen opnieuw.",
+  "Tu dois avoir au moins 15 ans pour créer un compte.":
+    "Om een ​​account aan te maken moet je minimaal 15 jaar oud zijn.",
   "Tu ne peux pas t'interagir toi-même": "Je kunt geen interactie met jezelf aangaan",
   "Tu ne peux pas t'inviter toi-même": "Je kunt jezelf niet uitnodigen",
   "Tu ne peux pas te comparer toi-même": "Je kunt jezelf niet vergelijken",
@@ -483,9 +552,7 @@ function localizeError(message, locale) {
   if (dict[source]) return dict[source];
   let match = source.match(/^Provider ([\w-]+) non configuré$/i);
   if (match) {
-    return locale === "nl"
-      ? `Provider ${match[1]} is niet geconfigureerd`
-      : `Provider ${match[1]} is not configured`;
+    return locale === "nl" ? `Provider ${match[1]} is niet geconfigureerd` : `Provider ${match[1]} is not configured`;
   }
   match = source.match(/^Ce pseudo est déjà pris(?: ou temporairement réservé)?$/i);
   if (match) {
@@ -500,9 +567,7 @@ function localizeError(message, locale) {
   }
   match = source.match(/^Trop de variantes \((\d+) max\)$/i);
   if (match) {
-    return locale === "nl"
-      ? `Te veel varianten (${match[1]} max)`
-      : `Too many variants (${match[1]} max)`;
+    return locale === "nl" ? `Te veel varianten (${match[1]} max)` : `Too many variants (${match[1]} max)`;
   }
   match = source.match(/^Trop de membres assignés \((\d+) max\)$/i);
   if (match) {
@@ -512,21 +577,15 @@ function localizeError(message, locale) {
   }
   match = source.match(/^Trop de participants \((\d+) max\)$/i);
   if (match) {
-    return locale === "nl"
-      ? `Te veel deelnemers (${match[1]} max)`
-      : `Too many participants (${match[1]} max)`;
+    return locale === "nl" ? `Te veel deelnemers (${match[1]} max)` : `Too many participants (${match[1]} max)`;
   }
   match = source.match(/^Trop de changements \((\d+) max\)$/i);
   if (match) {
-    return locale === "nl"
-      ? `Te veel wijzigingen (${match[1]} max)`
-      : `Too many changes (${match[1]} max)`;
+    return locale === "nl" ? `Te veel wijzigingen (${match[1]} max)` : `Too many changes (${match[1]} max)`;
   }
   match = source.match(/^(.+) trop long \((\d+) max\)$/i);
   if (match) {
-    return locale === "nl"
-      ? `${match[1]} te lang (${match[2]} max)`
-      : `${match[1]} too long (${match[2]} max)`;
+    return locale === "nl" ? `${match[1]} te lang (${match[2]} max)` : `${match[1]} too long (${match[2]} max)`;
   }
   match = source.match(/^(.+) trop volumineux$/i);
   if (match) {
@@ -551,8 +610,12 @@ function localizeErrorResponse(req, res, next) {
   res.locals.locale = resolveLocale(req.get("accept-language"));
   const sendJson = res.json.bind(res);
   res.json = function localizedJson(payload) {
-    if ((res.locals.locale === "en" || res.locals.locale === "nl")
-      && payload && typeof payload === "object" && !Array.isArray(payload)) {
+    if (
+      (res.locals.locale === "en" || res.locals.locale === "nl") &&
+      payload &&
+      typeof payload === "object" &&
+      !Array.isArray(payload)
+    ) {
       const result = { ...payload };
       const loc = res.locals.locale;
       if (typeof result.error === "string") result.error = localizeError(result.error, loc);

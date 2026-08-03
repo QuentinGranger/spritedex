@@ -1,6 +1,44 @@
 "use strict";
 
-const { assert, passportReliability, buildBadges, computePassportProgress, computeOwnedRarityStats, sameVariantSet, OFFICIAL_RARITY_SCORE, specialVariantScore, resolveCompareSource, isCountableCompareResult, recordComparisonSession, getComparisonStatsForUser, ensureComparisonSessionsTable, ensurePassportActivityTable, recordOwnedVariants, listRecentActivity, writeActivity, ALLOWED_ACTIVITY_TYPES, ACTIVITY_FEED_LIMIT, ensurePassportBadgeTables, evaluateBadgeCondition, listBadgeDefinitions, listUserBadges, VERIFICATION_STATUSES, meetsCompletionThreshold, evaluateAndAwardComplementaryBadge, pool, BASE, API, test, rnd, register, auth, cleanup, getPassport, setEntry, getActiveVariants } = require("./shared");
+const {
+  assert,
+  passportReliability,
+  buildBadges,
+  computePassportProgress,
+  computeOwnedRarityStats,
+  sameVariantSet,
+  OFFICIAL_RARITY_SCORE,
+  specialVariantScore,
+  resolveCompareSource,
+  isCountableCompareResult,
+  recordComparisonSession,
+  getComparisonStatsForUser,
+  ensureComparisonSessionsTable,
+  ensurePassportActivityTable,
+  recordOwnedVariants,
+  listRecentActivity,
+  writeActivity,
+  ALLOWED_ACTIVITY_TYPES,
+  ACTIVITY_FEED_LIMIT,
+  ensurePassportBadgeTables,
+  evaluateBadgeCondition,
+  listBadgeDefinitions,
+  listUserBadges,
+  VERIFICATION_STATUSES,
+  meetsCompletionThreshold,
+  evaluateAndAwardComplementaryBadge,
+  pool,
+  BASE,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  getPassport,
+  setEntry,
+  getActiveVariants
+} = require("./shared");
 
 async function run() {
   await test("rareté officielle ≠ type de variante (Étapes 21–23)", () => {
@@ -30,7 +68,9 @@ async function run() {
     assert.strictEqual(stats.rarestSpecialVariant.label, "Holofoil");
     assert.notStrictEqual(stats.highestOfficialRarity.key, "holofoil");
     assert.ok(stats.rarityBreakdown.some((r) => r.key === "rare" && r.ownedCount === 1));
-    assert.ok(stats.variantTypeBreakdown.some((v) => v.key === "gold" && v.ownedCount === 1 && v.filter === "variant:Gold"));
+    assert.ok(
+      stats.variantTypeBreakdown.some((v) => v.key === "gold" && v.ownedCount === 1 && v.filter === "variant:Gold")
+    );
     assert.ok(stats.variantTypeBreakdown.some((v) => v.key === "base"));
   });
 
@@ -54,12 +94,47 @@ async function run() {
   await test("statistiques : filtre catalogue + progression (Étape 80 unit)", () => {
     const { isVariantReleasedAndActiveServer } = require("../../server/compare");
     const catalogue = [
-      { id: "a1", spriteId: "A", rarity: "common", variantType: "Base", releaseStatus: "released", dataStatus: "active" },
+      {
+        id: "a1",
+        spriteId: "A",
+        rarity: "common",
+        variantType: "Base",
+        releaseStatus: "released",
+        dataStatus: "active"
+      },
       { id: "a2", spriteId: "A", rarity: "rare", variantType: "Gold", releaseStatus: "released", dataStatus: "active" },
-      { id: "b1", spriteId: "B", rarity: "mythic", variantType: "Base", releaseStatus: "released", dataStatus: "active" },
-      { id: "u1", spriteId: "U", rarity: "legendary", variantType: "Base", releaseStatus: "unreleased", dataStatus: "active" },
-      { id: "x1", spriteId: "X", rarity: "epic", variantType: "Base", releaseStatus: "released", dataStatus: "archived" },
-      { id: "y1", spriteId: "Y", rarity: "legendary", variantType: "Base", releaseStatus: "released", dataStatus: "legacy" }
+      {
+        id: "b1",
+        spriteId: "B",
+        rarity: "mythic",
+        variantType: "Base",
+        releaseStatus: "released",
+        dataStatus: "active"
+      },
+      {
+        id: "u1",
+        spriteId: "U",
+        rarity: "legendary",
+        variantType: "Base",
+        releaseStatus: "unreleased",
+        dataStatus: "active"
+      },
+      {
+        id: "x1",
+        spriteId: "X",
+        rarity: "epic",
+        variantType: "Base",
+        releaseStatus: "released",
+        dataStatus: "archived"
+      },
+      {
+        id: "y1",
+        spriteId: "Y",
+        rarity: "legendary",
+        variantType: "Base",
+        releaseStatus: "released",
+        dataStatus: "legacy"
+      }
     ];
     const live = catalogue.filter(isVariantReleasedAndActiveServer);
     assert.strictEqual(live.length, 3, "unreleased + archived + legacy excluded");

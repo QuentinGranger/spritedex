@@ -61,5 +61,4 @@ app.get("/api/compare/:userA/:userB", async (req, res) => {
   }
 });
 
-
-module.exports = {  };
+module.exports = {};

@@ -17,13 +17,19 @@ function validateEnv() {
   }
 
   // OAuth is optional but must be consistent (both id+secret or neither)
-  if ((process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_SECRET) ||
-      (!process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)) {
+  if (
+    (process.env.GOOGLE_CLIENT_ID && !process.env.GOOGLE_CLIENT_SECRET) ||
+    (!process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
+  ) {
     warnings.push("GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET : un des deux est manquant, Google OAuth sera désactivé.");
   }
-  if ((process.env.DISCORD_CLIENT_ID && !process.env.DISCORD_CLIENT_SECRET) ||
-      (!process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET)) {
-    warnings.push("DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET : un des deux est manquant, Discord OAuth sera désactivé.");
+  if (
+    (process.env.DISCORD_CLIENT_ID && !process.env.DISCORD_CLIENT_SECRET) ||
+    (!process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET)
+  ) {
+    warnings.push(
+      "DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET : un des deux est manquant, Discord OAuth sera désactivé."
+    );
   }
   if (!process.env.RESEND_API_KEY) {
     warnings.push("RESEND_API_KEY manquant : les emails de vérification/réinitialisation ne seront pas envoyés.");
@@ -36,15 +42,26 @@ function validateEnv() {
   if (process.env.ERROR_WEBHOOK_URL) {
     try {
       const webhook = new URL(process.env.ERROR_WEBHOOK_URL);
-      if (webhook.username || webhook.password || (process.env.NODE_ENV === "production" && webhook.protocol !== "https:")) {
+      if (
+        webhook.username ||
+        webhook.password ||
+        (process.env.NODE_ENV === "production" && webhook.protocol !== "https:")
+      ) {
         warnings.push("ERROR_WEBHOOK_URL invalide : utilise un webhook HTTPS sans identifiants dans l’URL.");
       }
     } catch {
       warnings.push("ERROR_WEBHOOK_URL invalide : indique une URL HTTPS complète.");
     }
   }
-  if (process.env.RESEND_FROM_DOMAIN && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(process.env.RESEND_FROM_DOMAIN.trim())) {
-    warnings.push("RESEND_FROM_DOMAIN invalide : indique uniquement le domaine vérifié dans Resend, sans protocole ni adresse e-mail.");
+  if (
+    process.env.RESEND_FROM_DOMAIN &&
+    !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(
+      process.env.RESEND_FROM_DOMAIN.trim()
+    )
+  ) {
+    warnings.push(
+      "RESEND_FROM_DOMAIN invalide : indique uniquement le domaine vérifié dans Resend, sans protocole ni adresse e-mail."
+    );
   }
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
     warnings.push("VAPID keys non définis : des clés VAPID seront générées automatiquement au premier démarrage.");
@@ -60,19 +77,29 @@ function validateEnv() {
       missing.push("EMAIL_VERIFICATION_REQUIRED ne peut pas être désactivé (0) en production");
     }
     if (!process.env.DATABASE_URL) {
-      warnings.push("DATABASE_URL manquant en production : la connexion Postgres locale par défaut sera utilisée (déconseillé).");
+      warnings.push(
+        "DATABASE_URL manquant en production : la connexion Postgres locale par défaut sera utilisée (déconseillé)."
+      );
     }
     if (!process.env.CORS_ORIGIN && !process.env.APP_URL) {
       warnings.push("CORS_ORIGIN / APP_URL manquant en production : CORS pourrait rester trop permissif.");
     }
     if (process.env.RESEND_API_KEY && !process.env.RESEND_FROM_DOMAIN) {
-      warnings.push("RESEND_FROM_DOMAIN manquant : configure le domaine Resend vérifié pour empêcher un expéditeur mal aligné.");
+      warnings.push(
+        "RESEND_FROM_DOMAIN manquant : configure le domaine Resend vérifié pour empêcher un expéditeur mal aligné."
+      );
     }
-    if ((process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || "").startsWith("http://")) {
+    if (
+      (process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || "").startsWith(
+        "http://"
+      )
+    ) {
       missing.push("APP_URL / OAUTH_REDIRECT_BASE en HTTPS");
     }
     if (!process.env.REDIS_URL) {
-      warnings.push("REDIS_URL manquant : les rate limits restent locaux à chaque instance. Configure Redis avant de multiplier les services web.");
+      warnings.push(
+        "REDIS_URL manquant : les rate limits restent locaux à chaque instance. Configure Redis avant de multiplier les services web."
+      );
     } else if (!validRedisUrl(process.env.REDIS_URL.trim())) {
       missing.push("REDIS_URL valide (redis:// ou rediss://)");
     }
@@ -83,7 +110,7 @@ function validateEnv() {
     process.exit(1);
   }
   if (warnings.length) {
-    warnings.forEach(w => console.warn(`[ENV][WARN] ${w}`));
+    warnings.forEach((w) => console.warn(`[ENV][WARN] ${w}`));
   }
 }
 
@@ -184,7 +211,7 @@ const PUBLIC_STATIC_DIRECTORIES = new Map([
   ["/icons/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
   ["/assets/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
   ["/logo/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
-  ["/trophet/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])],
+  ["/trophet/", new Set([".png", ".jpg", ".jpeg", ".webp", ".svg", ".ico"])]
 ]);
 
 function normalizeStaticPath(requestPath) {
@@ -216,7 +243,7 @@ function blockSensitiveFiles(req, res, next) {
   if (!p) return res.status(404).send("Not found");
   if (
     BLOCKED_STATIC.has(p) ||
-    BLOCKED_STATIC_PREFIXES.some(prefix => p === prefix.slice(0, -1) || p.startsWith(prefix)) ||
+    BLOCKED_STATIC_PREFIXES.some((prefix) => p === prefix.slice(0, -1) || p.startsWith(prefix)) ||
     p.endsWith(".sql") ||
     p.endsWith(".env") ||
     p.endsWith(".md")
@@ -249,9 +276,11 @@ function normalizeCorsOrigin(value) {
 }
 
 function resolveCorsOrigins() {
-  const raw = process.env.CORS_ORIGIN || process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
-  const configured = raw.split(",")
-    .map(s => s.trim())
+  const raw =
+    process.env.CORS_ORIGIN || process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
+  const configured = raw
+    .split(",")
+    .map((s) => s.trim())
     .filter(Boolean)
     .map(normalizeCorsOrigin)
     .filter(Boolean);
@@ -268,18 +297,24 @@ function resolveCorsOrigins() {
 // them from an incoming Host header: proxies can forward attacker-controlled
 // Host values, turning redirects and generated links into phishing vectors.
 function resolvePublicAppUrl({ fallback = "http://localhost:3000" } = {}) {
-  const candidate = process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || fallback;
+  const candidate =
+    process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || fallback;
   try {
     const url = new URL(candidate);
-    if (!/^https?:$/.test(url.protocol) ||
-        (process.env.NODE_ENV === "production" && url.protocol !== "https:") ||
-        url.username || url.password ||
-        (url.pathname !== "/" && url.pathname !== "")) {
+    if (
+      !/^https?:$/.test(url.protocol) ||
+      (process.env.NODE_ENV === "production" && url.protocol !== "https:") ||
+      url.username ||
+      url.password ||
+      (url.pathname !== "/" && url.pathname !== "")
+    ) {
       throw new Error("invalid public app URL");
     }
     return url.origin;
   } catch (err) {
-    throw new Error("APP_URL / OAUTH_REDIRECT_BASE invalide : utilise une URL HTTPS en production, sans chemin ni identifiants.");
+    throw new Error(
+      "APP_URL / OAUTH_REDIRECT_BASE invalide : utilise une URL HTTPS en production, sans chemin ni identifiants."
+    );
   }
 }
 
@@ -330,7 +365,12 @@ function rateLimit({ windowMs, max, keyPrefix = "rl", message, keyGenerator = nu
 }
 
 // Preconfigured limiters for sensitive routes
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: "login", message: "Trop de tentatives de connexion. Réessaie dans 15 minutes." });
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyPrefix: "login",
+  message: "Trop de tentatives de connexion. Réessaie dans 15 minutes."
+});
 // Secondary cap keyed on a digest of the email so credential stuffing against
 // one inbox is throttled even across many source IPs / proxies.
 const loginEmailLimiter = rateLimit({
@@ -339,7 +379,9 @@ const loginEmailLimiter = rateLimit({
   keyPrefix: "login-email",
   message: "Trop de tentatives de connexion. Réessaie dans 15 minutes.",
   keyGenerator: (req) => {
-    const email = String(req.body?.email || "").trim().toLowerCase();
+    const email = String(req.body?.email || "")
+      .trim()
+      .toLowerCase();
     if (!email) return "missing-email";
     return crypto.createHash("sha256").update(`login:${email}`).digest("hex").slice(0, 40);
   }
@@ -350,7 +392,12 @@ const registerLimiter = rateLimit({
   keyPrefix: "register",
   message: "Trop de comptes créés depuis cette adresse. Réessaie plus tard."
 });
-const passwordResetLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "pwreset", message: "Trop de demandes de réinitialisation. Réessaie plus tard." });
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  keyPrefix: "pwreset",
+  message: "Trop de demandes de réinitialisation. Réessaie plus tard."
+});
 const squadCreateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: positiveEnvInteger("SQUAD_CREATE_RATE_LIMIT_MAX", process.env.NODE_ENV === "production" ? 10 : 100),
@@ -363,31 +410,81 @@ const squadJoinLimiter = rateLimit({
   keyPrefix: "squad-join",
   message: "Trop de tentatives pour rejoindre une escouade. Réessaie plus tard."
 });
-const squadCodeLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 15, keyPrefix: "squad-code", message: "Trop de régénérations de code. Réessaie plus tard." });
-const syncLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, keyPrefix: "sync", message: "Trop de synchronisations. Ralentis un peu." });
-const emailVerifLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "email-verif", message: "Trop de renvois d'email. Réessaie plus tard." });
-const oauthExchangeLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 20, keyPrefix: "oauth-exchange", message: "Trop de tentatives OAuth. Réessaie dans quelques minutes." });
-const capabilityLinkLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 30, keyPrefix: "capability-link", message: "Trop de liens créés. Réessaie plus tard." });
-const pushRegistrationLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 30, keyPrefix: "push-register", message: "Trop d'enregistrements d'appareil. Réessaie plus tard." });
-const analyticsLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 60, keyPrefix: "analytics", message: "Trop d'événements analytiques. Réessaie plus tard." });
+const squadCodeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 15,
+  keyPrefix: "squad-code",
+  message: "Trop de régénérations de code. Réessaie plus tard."
+});
+const syncLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  keyPrefix: "sync",
+  message: "Trop de synchronisations. Ralentis un peu."
+});
+const emailVerifLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  keyPrefix: "email-verif",
+  message: "Trop de renvois d'email. Réessaie plus tard."
+});
+const oauthExchangeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  keyPrefix: "oauth-exchange",
+  message: "Trop de tentatives OAuth. Réessaie dans quelques minutes."
+});
+const capabilityLinkLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  keyPrefix: "capability-link",
+  message: "Trop de liens créés. Réessaie plus tard."
+});
+const pushRegistrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  keyPrefix: "push-register",
+  message: "Trop d'enregistrements d'appareil. Réessaie plus tard."
+});
+const analyticsLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  keyPrefix: "analytics",
+  message: "Trop d'événements analytiques. Réessaie plus tard."
+});
 
 // ─────────────────────────────────────────────────────────────────
 // Zod validation schemas
 // ─────────────────────────────────────────────────────────────────
 const USERNAME_RE = /^[a-zA-Z0-9_-]{3,24}$/;
 const DISPLAY_NAME_RE = /^[^<>"']{1,50}$/;
-const RESERVED_USERNAMES = ["admin", "administrator", "root", "support", "sprite-index", "sprite", "api", "www", "null", "undefined"];
+const RESERVED_USERNAMES = [
+  "admin",
+  "administrator",
+  "root",
+  "support",
+  "sprite-index",
+  "sprite",
+  "api",
+  "www",
+  "null",
+  "undefined"
+];
 
 function isReservedUsername(name) {
   const lower = name.toLowerCase();
   return RESERVED_USERNAMES.includes(lower) || lower.startsWith("admin") || lower.includes("@");
 }
 
-const usernameSchema = z.string().trim()
+const usernameSchema = z
+  .string()
+  .trim()
   .regex(USERNAME_RE, "Pseudo invalide (3-24 caractères : lettres, chiffres, - _)")
   .refine((v) => !isReservedUsername(v), { message: "Pseudo réservé ou interdit" });
 
-const displayNameSchema = z.string().trim()
+const displayNameSchema = z
+  .string()
+  .trim()
   .min(1, "Nom affiché requis")
   .max(50, "Nom affiché trop long (max 50)")
   .regex(DISPLAY_NAME_RE, "Nom affiché invalide");
@@ -403,7 +500,12 @@ const statusSchema = z.enum(["new", "owned", "missing", "priority", "unsure", "u
 const prioritySchema = z.enum(["none", "urgent", "important", "medium", "low", "ignored"]);
 const noteSchema = z.string().max(500).optional();
 const squadNameSchema = z.string().trim().min(1).max(50);
-const squadCodeSchema = z.string().trim().min(4).max(30).regex(/^[A-Z0-9\-]+$/i, "Format de code invalide");
+const squadCodeSchema = z
+  .string()
+  .trim()
+  .min(4)
+  .max(30)
+  .regex(/^[A-Z0-9\-]+$/i, "Format de code invalide");
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
 // Validate raw JSON before Zod builds its output.  Some object constructors
@@ -434,35 +536,37 @@ function rejectUnsafeBodyKeys(req, res, next) {
 }
 
 function isPrivateOrLocalHostname(value) {
-  const host = String(value || "").toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  const host = String(value || "")
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.$/, "");
   if (!host) return true;
   // Do not make an application client automatically load a literal IP. This
   // blocks loopback, link-local and private-network probes in addition to
   // avoiding ambiguous IPv6 handling.
   if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) return true;
-  return host === "localhost"
-    || host.endsWith(".localhost")
-    || host.endsWith(".local")
-    || host.endsWith(".internal")
-    || host.endsWith(".home")
-    || host.endsWith(".lan")
-    || host.endsWith(".test")
-    || host === "nip.io"
-    || host.endsWith(".nip.io")
-    || host === "sslip.io"
-    || host.endsWith(".sslip.io")
-    || host === "localtest.me"
-    || host.endsWith(".localtest.me");
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host.endsWith(".home") ||
+    host.endsWith(".lan") ||
+    host.endsWith(".test") ||
+    host === "nip.io" ||
+    host.endsWith(".nip.io") ||
+    host === "sslip.io" ||
+    host.endsWith(".sslip.io") ||
+    host === "localtest.me" ||
+    host.endsWith(".localtest.me")
+  );
 }
 
 function isSafeRemoteHttpsUrl(value) {
   if (typeof value !== "string" || value.length > 500) return false;
   try {
     const url = new URL(value);
-    return url.protocol === "https:"
-      && !url.username
-      && !url.password
-      && !isPrivateOrLocalHostname(url.hostname);
+    return url.protocol === "https:" && !url.username && !url.password && !isPrivateOrLocalHostname(url.hostname);
   } catch {
     return false;
   }
@@ -475,7 +579,9 @@ const registerSchema = z.object({
   displayName: displayNameSchema.optional(),
   cguAccepted: z.boolean().optional(),
   cguVersion: z.string().max(32).optional(),
-  ageConfirmed: z.boolean().refine((v) => v === true, { message: "Tu dois avoir au moins 15 ans pour créer un compte." }),
+  ageConfirmed: z
+    .boolean()
+    .refine((v) => v === true, { message: "Tu dois avoir au moins 15 ans pour créer un compte." }),
   cookieConsent: z.any().optional()
 });
 
@@ -484,55 +590,68 @@ const loginSchema = z.object({
   password: z.string().min(1).max(200)
 });
 
-const forgotPasswordSchema = z.object({
-  email: emailSchema
-}).strict();
+const forgotPasswordSchema = z
+  .object({
+    email: emailSchema
+  })
+  .strict();
 
-const resetPasswordSchema = z.object({
-  token: z.string().regex(/^[a-f0-9]{64}$/i, "Token invalide"),
-  newPassword: passwordSchema
-}).strict();
+const resetPasswordSchema = z
+  .object({
+    token: z.string().regex(/^[a-f0-9]{64}$/i, "Token invalide"),
+    newPassword: passwordSchema
+  })
+  .strict();
 
 // Avatars come either from the built-in local picker (Personna/*.png|webp) or
 // from an OAuth provider's https picture URL. Never accept javascript:/data:
 // URIs or arbitrary strings to avoid link-based XSS or open redirect abuse.
-const avatarUrlSchema = z.string().max(500).refine(
-  (val) => val === "" || /^Personna\/[\w\-. ]+\.(png|webp|jpe?g)$/i.test(val) || isSafeRemoteHttpsUrl(val),
-  { message: "URL d'avatar invalide" }
-);
+const avatarUrlSchema = z
+  .string()
+  .max(500)
+  .refine((val) => val === "" || /^Personna\/[\w\-. ]+\.(png|webp|jpe?g)$/i.test(val) || isSafeRemoteHttpsUrl(val), {
+    message: "URL d'avatar invalide"
+  });
 
-const visibilityObjectSchema = z.object({
-  profile: visibilitySchema.optional(),
-  collection: visibilitySchema.optional(),
-  priorities: visibilitySchema.optional(),
-  statistics: visibilitySchema.optional(),
-  activity: visibilitySchema.optional(),
-  notes: visibilitySchema.optional()
-}).strict().optional();
+const visibilityObjectSchema = z
+  .object({
+    profile: visibilitySchema.optional(),
+    collection: visibilitySchema.optional(),
+    priorities: visibilitySchema.optional(),
+    statistics: visibilitySchema.optional(),
+    activity: visibilitySchema.optional(),
+    notes: visibilitySchema.optional()
+  })
+  .strict()
+  .optional();
 
-const profilePatchSchema = z.object({
-  username: usernameSchema.optional(),
-  displayName: displayNameSchema.optional(),
-  avatarUrl: avatarUrlSchema.optional(),
-  privacy: legacyPrivacySchema.optional(),
-  visibility: visibilityObjectSchema,
-  profileVisibility: visibilitySchema.optional(),
-  collectionVisibility: visibilitySchema.optional(),
-  priorityVisibility: visibilitySchema.optional(),
-  notesVisibility: visibilitySchema.optional(),
-  friendInvitesFrom: friendInvitesFromSchema.optional(),
-  squadInvitesFrom: squadInvitesFromSchema.optional(),
-  pushPrefFriendCollectionUpdates: z.boolean().optional(),
-  pushPrefFriendPriorityMatches: z.boolean().optional()
-}).strict();
+const profilePatchSchema = z
+  .object({
+    username: usernameSchema.optional(),
+    displayName: displayNameSchema.optional(),
+    avatarUrl: avatarUrlSchema.optional(),
+    privacy: legacyPrivacySchema.optional(),
+    visibility: visibilityObjectSchema,
+    profileVisibility: visibilitySchema.optional(),
+    collectionVisibility: visibilitySchema.optional(),
+    priorityVisibility: visibilitySchema.optional(),
+    notesVisibility: visibilitySchema.optional(),
+    friendInvitesFrom: friendInvitesFromSchema.optional(),
+    squadInvitesFrom: squadInvitesFromSchema.optional(),
+    pushPrefFriendCollectionUpdates: z.boolean().optional(),
+    pushPrefFriendPriorityMatches: z.boolean().optional()
+  })
+  .strict();
 
-const collectionEntrySchema = z.object({
-  status: statusSchema.optional(),
-  note: noteSchema,
-  priority: prioritySchema.optional(),
-  masteryLevel: z.number().int().min(0).max(5).optional(),
-  obtainedAt: z.string().datetime().nullable().optional().or(z.literal(""))
-}).strict();
+const collectionEntrySchema = z
+  .object({
+    status: statusSchema.optional(),
+    note: noteSchema,
+    priority: prioritySchema.optional(),
+    masteryLevel: z.number().int().min(0).max(5).optional(),
+    obtainedAt: z.string().datetime().nullable().optional().or(z.literal(""))
+  })
+  .strict();
 
 const collectionSyncEntrySchema = z.object({
   status: statusSchema.optional(),
@@ -548,38 +667,49 @@ const collectionSyncEntrySchema = z.object({
 const collectionSyncValueSchema = z.union([z.boolean(), collectionSyncEntrySchema]);
 
 const collectionSyncSchema = z.object({
-  collection: z.record(z.string().max(120), collectionSyncValueSchema).refine(
-    (obj) => Object.keys(obj).length <= 2000,
-    { message: "Collection trop volumineuse" }
-  )
+  collection: z
+    .record(z.string().max(120), collectionSyncValueSchema)
+    .refine((obj) => Object.keys(obj).length <= 2000, { message: "Collection trop volumineuse" })
 });
 
-const squadCreateSchema = z.object({
-  name: squadNameSchema.optional()
-}).strict(); // userId must come from the session, never from the body
+const squadCreateSchema = z
+  .object({
+    name: squadNameSchema.optional()
+  })
+  .strict(); // userId must come from the session, never from the body
 
-const squadJoinSchema = z.object({
-  code: squadCodeSchema
-}).strict();
+const squadJoinSchema = z
+  .object({
+    code: squadCodeSchema
+  })
+  .strict();
 
-const friendSearchSchema = z.object({
-  q: z.string().trim().min(2).max(50)
-}).passthrough();
+const friendSearchSchema = z
+  .object({
+    q: z.string().trim().min(2).max(50)
+  })
+  .passthrough();
 
-const friendRequestSchema = z.object({
-  addresseeId: z.string().trim().min(1).or(z.number()),
-  invitationMethod: z.enum(["username", "invite_link", "qr_code", "squad_member", "passport"]).optional(),
-  invitationSource: z.string().trim().min(1).max(80).optional(),
-  source: z.string().trim().min(1).max(80).optional()
-}).strict();
+const friendRequestSchema = z
+  .object({
+    addresseeId: z.string().trim().min(1).or(z.number()),
+    invitationMethod: z.enum(["username", "invite_link", "qr_code", "squad_member", "passport"]).optional(),
+    invitationSource: z.string().trim().min(1).max(80).optional(),
+    source: z.string().trim().min(1).max(80).optional()
+  })
+  .strict();
 
-const profileSuspendSchema = z.object({
-  durationMinutes: z.number().int().min(1).max(525600).optional()
-}).strict();
+const profileSuspendSchema = z
+  .object({
+    durationMinutes: z.number().int().min(1).max(525600).optional()
+  })
+  .strict();
 
-const friendInviteLinkCreateSchema = z.object({
-  duration: z.enum(["permanent", "24h", "7d", "single_use"])
-}).strict();
+const friendInviteLinkCreateSchema = z
+  .object({
+    duration: z.enum(["permanent", "24h", "7d", "single_use"])
+  })
+  .strict();
 
 function validateBody(schema) {
   return (req, res, next) => {

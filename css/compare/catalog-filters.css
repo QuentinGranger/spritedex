@@ -17,7 +17,9 @@
   margin-bottom: 10px;
 }
 
-.compare-catalog-filters__summary::-webkit-details-marker { display: none; }
+.compare-catalog-filters__summary::-webkit-details-marker {
+  display: none;
+}
 
 .compare-catalog-filters__grid {
   display: grid;
@@ -64,4 +66,3 @@
     grid-template-columns: 1fr;
   }
 }
-

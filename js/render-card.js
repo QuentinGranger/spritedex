@@ -125,11 +125,13 @@ function revealFreshCard() {
   const token = cardRenderToken;
   // Two frames ensure the new content is committed while the shell is hidden
   // before the entrance animation can make it visible.
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    if (token !== cardRenderToken) return;
-    els.card.classList.remove("is-refreshing");
-    els.card.classList.add("card-entering", "revealing");
-  }));
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      if (token !== cardRenderToken) return;
+      els.card.classList.remove("is-refreshing");
+      els.card.classList.add("card-entering", "revealing");
+    })
+  );
 }
 
 function renderCard() {
@@ -137,10 +139,23 @@ function renderCard() {
   cardRenderToken += 1;
   els.card.classList.add("is-refreshing");
   els.card.classList.remove(
-    "out", "out-left", "out-right", "out-up", "out-down",
-    "dragging", "drag-left", "drag-right", "drag-up", "drag-down",
-    "confirming", "confirm-owned", "confirm-missing", "confirm-priority", "confirm-unsure",
-    "card-entering", "revealing"
+    "out",
+    "out-left",
+    "out-right",
+    "out-up",
+    "out-down",
+    "dragging",
+    "drag-left",
+    "drag-right",
+    "drag-up",
+    "drag-down",
+    "confirming",
+    "confirm-owned",
+    "confirm-missing",
+    "confirm-priority",
+    "confirm-unsure",
+    "card-entering",
+    "revealing"
   );
   els.card.style.setProperty("--tx", "0px");
   els.card.style.setProperty("--ty", "0px");
@@ -150,7 +165,8 @@ function renderCard() {
   renderSwipeSession();
 
   if (!item) {
-    els.cardAvatar.innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><circle cx="12" cy="12" r="10"/></svg>';
+    els.cardAvatar.innerHTML =
+      '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/><circle cx="12" cy="12" r="10"/></svg>';
     els.cardRarity.textContent = t("swipe.done");
     els.cardName.textContent = t("swipe.emptyDeck");
     els.cardVariant.textContent = t("swipe.changeFilter");
@@ -166,7 +182,9 @@ function renderCard() {
 
   const entry = getEntry(item.id);
   const imageUrl = safeImageUrl(item.img);
-  els.cardAvatar.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="avatar-img" />` : `<span class="avatar-placeholder">?</span>`;
+  els.cardAvatar.innerHTML = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="avatar-img" />`
+    : `<span class="avatar-placeholder">?</span>`;
   els.cardRarity.textContent = localizedRarity(item.rarity);
   els.cardRarity.setAttribute("data-rarity", item.rarity);
   els.card.setAttribute("data-rarity", item.rarity);
@@ -188,15 +206,19 @@ function renderCard() {
         const currentLevel = index + 1;
         const active = currentLevel <= level;
         const master = currentLevel === 5;
-        const aria = master ? t("swipe.masteryAriaMaster", { level: currentLevel }) : t("swipe.masteryAriaLevel", { level: currentLevel });
+        const aria = master
+          ? t("swipe.masteryAriaMaster", { level: currentLevel })
+          : t("swipe.masteryAriaLevel", { level: currentLevel });
         return `<button type="button" class="card-mastery__level ${active ? "is-active" : ""} ${master ? "is-master" : ""}" data-card-mastery="${currentLevel}" aria-label="${escapeHtml(aria)}" aria-pressed="${currentLevel === level}">${master ? "♛" : currentLevel}</button>`;
       }).join("");
     }
   }
 
-  const sprite = SPRITES.find(s => s.id === item.spriteId);
+  const sprite = SPRITES.find((s) => s.id === item.spriteId);
   if (sprite) {
-    const spriteItems = getReleasedCollectionItems(getAllItems().filter((candidate) => String(candidate.spriteId) === String(sprite.id)));
+    const spriteItems = getReleasedCollectionItems(
+      getAllItems().filter((candidate) => String(candidate.spriteId) === String(sprite.id))
+    );
     const totalVariants = spriteItems.length;
     const ownedVariants = spriteItems.filter((candidate) => getEntry(candidate.id).status === "owned").length;
     const pct = collectionPercent(ownedVariants, totalVariants);
@@ -307,7 +329,8 @@ function animateAndMark(status, direction, gestureScrollPosition = null) {
   if (!item || swipeCommitInProgress || swipeSessionIsPaused()) return;
   swipeCommitInProgress = true;
   const pageScroll = document.scrollingElement;
-  const scrollPosition = gestureScrollPosition || (pageScroll ? { top: pageScroll.scrollTop, left: pageScroll.scrollLeft } : null);
+  const scrollPosition =
+    gestureScrollPosition || (pageScroll ? { top: pageScroll.scrollTop, left: pageScroll.scrollLeft } : null);
 
   // Persist before playing the exit animation. Previously the write happened
   // only after its 320 ms timeout, so refreshing during that small window

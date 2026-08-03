@@ -138,12 +138,10 @@ function normalizeEntityId(value) {
 /**
  * Étape 61–62 — atomic increment (no community % recalculation).
  */
-async function incrementMetricCounter(db = pool, {
-  metricDate,
-  metricType,
-  entityId = COUNTER_TOTAL_ENTITY,
-  delta = 1
-} = {}) {
+async function incrementMetricCounter(
+  db = pool,
+  { metricDate, metricType, entityId = COUNTER_TOTAL_ENTITY, delta = 1 } = {}
+) {
   if (!GRAPH_COUNTER_METRIC_SET.has(metricType)) return null;
   await ensureMetricCounterTables(db);
   const day = String(metricDate || new Date().toISOString().slice(0, 10)).slice(0, 10);
@@ -174,9 +172,7 @@ function counterBumpsForEvent(eventRow) {
   const type = eventRow.event_type || eventRow.eventType;
   const variantId = eventRow.variant_id || eventRow.variantId || null;
   const spriteId = eventRow.sprite_id || eventRow.spriteId || null;
-  const context = eventRow.context && typeof eventRow.context === "object"
-    ? eventRow.context
-    : {};
+  const context = eventRow.context && typeof eventRow.context === "object" ? eventRow.context : {};
   const bumps = [];
 
   if (type === EVENT.COLLECTION_PRIORITY_ADDED) {
@@ -213,9 +209,7 @@ function counterBumpsForEvent(eventRow) {
       entityId: COUNTER_TOTAL_ENTITY,
       delta: 1
     });
-    const diffs = Array.isArray(context.topDifferenceSpriteIds)
-      ? context.topDifferenceSpriteIds
-      : [];
+    const diffs = Array.isArray(context.topDifferenceSpriteIds) ? context.topDifferenceSpriteIds : [];
     const unique = new Set(diffs.map(String).filter(Boolean));
     for (const sid of unique) {
       bumps.push({
@@ -275,22 +269,14 @@ async function applyRealtimeCountersFromEvent(db = pool, eventRow) {
   return { metricDate: day, applied, recalculatedCommunity: false };
 }
 
-async function getMetricCounter(db = pool, {
-  metricDate,
-  metricType,
-  entityId = COUNTER_TOTAL_ENTITY
-} = {}) {
+async function getMetricCounter(db = pool, { metricDate, metricType, entityId = COUNTER_TOTAL_ENTITY } = {}) {
   await ensureMetricCounterTables(db);
   const result = await db.query(
     `SELECT * FROM graph_metric_counters
      WHERE metric_date = $1::date
        AND metric_type = $2
        AND entity_id = $3`,
-    [
-      String(metricDate).slice(0, 10),
-      metricType,
-      normalizeEntityId(entityId)
-    ]
+    [String(metricDate).slice(0, 10), metricType, normalizeEntityId(entityId)]
   );
   const row = result.rows[0];
   if (!row) return null;
@@ -360,10 +346,12 @@ async function rebuildMetricCountersFromEvents(db = pool, startDate, endDate) {
  * Étape 64 — full rebuild from raw events for a date range.
  * Corrects formula / eligibility / catalogue version mistakes by replaying history.
  */
-async function rebuildGraphMetrics(db = pool, startDate, endDate, {
-  runDailyPipeline = true,
-  rebuildCounters = true
-} = {}) {
+async function rebuildGraphMetrics(
+  db = pool,
+  startDate,
+  endDate,
+  { runDailyPipeline = true, rebuildCounters = true } = {}
+) {
   const startedAt = new Date();
   const start = String(startDate).slice(0, 10);
   const end = String(endDate).slice(0, 10);
@@ -405,7 +393,9 @@ async function rebuildGraphMetrics(db = pool, startDate, endDate, {
       ok: true,
       details: { startDate: start, endDate: end, days: days.length }
     });
-  } catch (_) { /* ops best-effort */ }
+  } catch (_) {
+    /* ops best-effort */
+  }
 
   return summary;
 }
@@ -413,12 +403,15 @@ async function rebuildGraphMetrics(db = pool, startDate, endDate, {
 /**
  * Étape 65 — prune technical artifacts only (never raw event rows by default).
  */
-async function pruneGraphTechnicalArtifacts(db = pool, {
-  outboxRetentionDays = GRAPH_RETENTION.outboxRetentionDays,
-  counterRetentionDays = GRAPH_RETENTION.counterRetentionDays,
-  compactTechnicalContext = false,
-  technicalContextRetentionDays = GRAPH_RETENTION.technicalContextRetentionDays
-} = {}) {
+async function pruneGraphTechnicalArtifacts(
+  db = pool,
+  {
+    outboxRetentionDays = GRAPH_RETENTION.outboxRetentionDays,
+    counterRetentionDays = GRAPH_RETENTION.counterRetentionDays,
+    compactTechnicalContext = false,
+    technicalContextRetentionDays = GRAPH_RETENTION.technicalContextRetentionDays
+  } = {}
+) {
   await ensureMetricCounterTables(db);
 
   const outbox = await db.query(
@@ -459,10 +452,10 @@ async function pruneGraphTechnicalArtifacts(db = pool, {
  * Temporarily disables append-only trigger for context-only UPDATEs.
  * Never deletes rows; never removes useful analytics keys.
  */
-async function compactGraphEventTechnicalContext(db = pool, {
-  olderThanDays = GRAPH_RETENTION.technicalContextRetentionDays,
-  limit = 500
-} = {}) {
+async function compactGraphEventTechnicalContext(
+  db = pool,
+  { olderThanDays = GRAPH_RETENTION.technicalContextRetentionDays, limit = 500 } = {}
+) {
   const days = Math.max(1, Math.floor(Number(olderThanDays) || 90));
   const batch = Math.max(1, Math.min(2000, Number(limit) || 500));
   const techKeys = GRAPH_RETENTION.technicalContextKeys;
@@ -493,10 +486,10 @@ async function compactGraphEventTechnicalContext(db = pool, {
         }
       }
       if (!changed) continue;
-      await client.query(
-        `UPDATE graph_events SET context = $2::jsonb WHERE id = $1::uuid`,
-        [row.id, JSON.stringify(ctx)]
-      );
+      await client.query(`UPDATE graph_events SET context = $2::jsonb WHERE id = $1::uuid`, [
+        row.id,
+        JSON.stringify(ctx)
+      ]);
       compacted += 1;
     }
 
@@ -506,7 +499,9 @@ async function compactGraphEventTechnicalContext(db = pool, {
     await client.query("ROLLBACK").catch(() => {});
     try {
       await client.query("ALTER TABLE graph_events ENABLE TRIGGER trg_graph_events_append_only");
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     throw err;
   } finally {
     client.release();

@@ -1,6 +1,47 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
-
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 
 async function getSquadRecommendedFriends(squad, reqUser) {
   const [catalogueAll, membersRes] = await Promise.all([
@@ -9,23 +50,27 @@ async function getSquadRecommendedFriends(squad, reqUser) {
   ]);
 
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const itemMap = new Map(catalogue.map(i => [i.id, i]));
+  const itemMap = new Map(catalogue.map((i) => [i.id, i]));
   const total = catalogue.length;
 
   const viewerMembers = await getViewerSafeSquadMembers(membersRes.rows, reqUser);
-  const memberIds = viewerMembers.map(r => r.userId);
-  const reqUserMembership = viewerMembers.find(r => String(r.userId) === String(reqUser));
+  const memberIds = viewerMembers.map((r) => r.userId);
+  const reqUserMembership = viewerMembers.find((r) => String(r.userId) === String(reqUser));
   if (!reqUserMembership) return [];
 
-  const canInviteAnyone = reqUserMembership.role === "owner" || reqUserMembership.role === "admin" || (reqUserMembership.role === "member" && squad.join_open !== false);
+  const canInviteAnyone =
+    reqUserMembership.role === "owner" ||
+    reqUserMembership.role === "admin" ||
+    (reqUserMembership.role === "member" && squad.join_open !== false);
 
   const memberCollections = await Promise.all(
-    viewerMembers.filter(member => member.visible).map(loadViewerSafeCollection)
+    viewerMembers.filter((member) => member.visible).map(loadViewerSafeCollection)
   );
   const currentOwned = new Set();
   for (const c of memberCollections) {
     for (const item of catalogue) {
-      if (compare.compareServerClassify(c[item.id] || compare.compareServerDefaultEntry()) === "owned") currentOwned.add(item.id);
+      if (compare.compareServerClassify(c[item.id] || compare.compareServerDefaultEntry()) === "owned")
+        currentOwned.add(item.id);
     }
   }
   const squadMissingCount = total - currentOwned.size;
@@ -44,7 +89,7 @@ async function getSquadRecommendedFriends(squad, reqUser) {
   const candidates = [];
   for (const row of friendsRes.rows) {
     if (String(row.id) === String(reqUser)) continue;
-    if (memberIds.some(m => String(m) === String(row.id))) continue;
+    if (memberIds.some((m) => String(m) === String(row.id))) continue;
     if (await isBlocked(reqUser, row.id)) continue;
     if (!(await canViewCollection(reqUser, row.id))) continue;
     const prioritiesVisible = await canViewCollection(reqUser, row.id, { visibilityKey: "priorities" });
@@ -52,7 +97,8 @@ async function getSquadRecommendedFriends(squad, reqUser) {
     const invitePref = row.squad_invites_from || "friends";
     let canReceiveInvite = false;
     if (invitePref === "everyone") canReceiveInvite = true;
-    else if (invitePref === "friends") canReceiveInvite = true; // friend of reqUser by query
+    else if (invitePref === "friends")
+      canReceiveInvite = true; // friend of reqUser by query
     else if (invitePref === "mutual_squad_members") canReceiveInvite = await shareSquad(reqUser, row.id);
     else if (invitePref === "nobody") canReceiveInvite = false;
     if (!canReceiveInvite) continue;
@@ -80,15 +126,19 @@ async function getSquadRecommendedFriends(squad, reqUser) {
       if (item && (item.rarity || "").toLowerCase() === "mythic") mythicNewVariants.push(vid);
     }
 
-    const inter = new Set([...cOwned].filter(v => currentOwned.has(v))).size;
+    const inter = new Set([...cOwned].filter((v) => currentOwned.has(v))).size;
     const collectiveOwned = currentOwned.size + cOwned.size - inter;
     const onlyOne = collectiveOwned - inter;
     const complementarityRate = collectiveOwned ? Math.round((onlyOne / collectiveOwned) * 10000) / 100 : 0;
 
-    const records = catalogue.map(item => ({
+    const records = catalogue.map((item) => ({
       ...item,
       userA: { status: currentOwned.has(item.id) ? "owned" : "missing", priority: "none", note: "" },
-      userB: { status: cOwned.has(item.id) ? "owned" : (cPriority.has(item.id) ? "priority" : "missing"), priority: cPriority.has(item.id) ? "high" : "none", note: "" }
+      userB: {
+        status: cOwned.has(item.id) ? "owned" : cPriority.has(item.id) ? "priority" : "missing",
+        priority: cPriority.has(item.id) ? "high" : "none",
+        note: ""
+      }
     }));
     const complementarityScore = compare.computeComplementarityScore(complementarityRate, records);
 
@@ -126,10 +176,9 @@ app.get("/api/squads/:code/recommended-friends", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name, join_open FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name, join_open FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -151,7 +200,7 @@ async function getSquadComplementaryPairs(squad, reqUser) {
     pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
   ]);
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const memberIds = membersRes.rows.map(r => r.user_id);
+  const memberIds = membersRes.rows.map((r) => r.user_id);
 
   const usersRes = await pool.query(
     `SELECT id, username, display_name, avatar_url
@@ -160,8 +209,7 @@ async function getSquadComplementaryPairs(squad, reqUser) {
     [memberIds]
   );
 
-  const allowed = (await getViewerSafeSquadMembers(usersRes.rows, reqUser))
-    .filter(member => member.visible);
+  const allowed = (await getViewerSafeSquadMembers(usersRes.rows, reqUser)).filter((member) => member.visible);
 
   const memberCollections = await Promise.all(allowed.map(loadViewerSafeCollection));
 

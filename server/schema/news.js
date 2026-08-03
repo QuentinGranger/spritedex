@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureNewsSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS sprite_news (
         id SERIAL PRIMARY KEY,
         hash VARCHAR(32) UNIQUE NOT NULL,

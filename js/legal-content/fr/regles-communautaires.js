@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "regles-communautaires": legalDocument({
-    id: "regles-communautaires",
-    title: "Règles communautaires",
-    short: "Comportements attendus, sécurité, signalement et sanctions.",
-    content: `
+    "regles-communautaires": legalDocument({
+      id: "regles-communautaires",
+      title: "Règles communautaires",
+      short: "Comportements attendus, sécurité, signalement et sanctions.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Principe général</h2>
@@ -66,8 +66,7 @@
       <p>Une décision de modération peut être contestée à <a href="mailto:[REPORT_EMAIL]">[REPORT_EMAIL]</a>. La demande doit indiquer le compte concerné, la décision contestée et les raisons de la contestation.</p>
       <p>La contestation est examinée dans un délai raisonnable, sans garantie de rétablissement lorsque la mesure est justifiée par la loi, la sécurité ou une violation des règles.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

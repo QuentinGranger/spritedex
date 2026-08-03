@@ -110,7 +110,9 @@ async function buildUserDataExport(userId, { allowDeleted = false } = {}) {
        FROM user_reports WHERE reported_id = $1 ORDER BY created_at DESC LIMIT 100`,
       [id]
     ),
-    require("./sprite-graph-governance").getCommunityStatsOptIn(pool, id).catch(() => null)
+    require("./sprite-graph-governance")
+      .getCommunityStatsOptIn(pool, id)
+      .catch(() => null)
   ]);
 
   const collection = Object.create(null);
@@ -184,11 +186,12 @@ async function listDeletionQueue({ limit = 50, status = "all" } = {}) {
   const count = Math.max(1, Math.min(100, Number(limit) || 50));
   const days = retentionDays();
   const filter = ["ready", "pending"].includes(String(status)) ? String(status) : "all";
-  const statusClause = filter === "ready"
-    ? "AND deleted_at < NOW() - ($1::text || ' days')::interval"
-    : filter === "pending"
-      ? "AND deleted_at >= NOW() - ($1::text || ' days')::interval"
-      : "";
+  const statusClause =
+    filter === "ready"
+      ? "AND deleted_at < NOW() - ($1::text || ' days')::interval"
+      : filter === "pending"
+        ? "AND deleted_at >= NOW() - ($1::text || ' days')::interval"
+        : "";
   const [result, summary] = await Promise.all([
     pool.query(
       `SELECT u.id, u.username, u.email, u.created_at, u.last_active_at, u.deleted_at,
@@ -272,15 +275,15 @@ async function purgeDeletedAccounts({
 
   const result = id
     ? await db.query(
-      `DELETE FROM users
+        `DELETE FROM users
        WHERE id = $1
          AND deleted_at IS NOT NULL
          AND deleted_at < NOW() - ($2::text || ' days')::interval
        RETURNING id, username, deleted_at`,
-      [id, String(days)]
-    )
+        [id, String(days)]
+      )
     : await db.query(
-      `DELETE FROM users
+        `DELETE FROM users
        WHERE id IN (
          SELECT id FROM users
          WHERE deleted_at IS NOT NULL
@@ -289,8 +292,8 @@ async function purgeDeletedAccounts({
          LIMIT $2
        )
        RETURNING id, username, deleted_at`,
-      [String(days), max]
-    );
+        [String(days), max]
+      );
 
   if (result.rows.length > 0) {
     console.log(`[PURGE] ${result.rows.length} deleted account(s) permanently removed.`);

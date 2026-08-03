@@ -43,5 +43,4 @@ async function applyCollectionVisibilityFilters(result, reqUser, userMap) {
   });
 }
 
-
 module.exports = { applyCollectionVisibilityFilters };

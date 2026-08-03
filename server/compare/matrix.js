@@ -1,7 +1,13 @@
 "use strict";
 
 const { isBlocked } = require("./shared");
-const { compareServerClassify, compareServerDefaultEntry, compareServerIsPriority, compareServerIsRecommend, isVariantReleasedAndActiveServer } = require("./engine");
+const {
+  compareServerClassify,
+  compareServerDefaultEntry,
+  compareServerIsPriority,
+  compareServerIsRecommend,
+  isVariantReleasedAndActiveServer
+} = require("./engine");
 const { loadServerCompareCollection } = require("./catalog");
 const { getServerCompareCatalogItemsCached } = require("./cache");
 
@@ -16,7 +22,7 @@ const SQUAD_MATRIX_STATUS = {
 
 async function buildSquadCollectionMatrix(members, catalogue) {
   if (!members || members.length === 0) return [];
-  const memberList = members.map(m => {
+  const memberList = members.map((m) => {
     if (m && typeof m === "object" && m.userId !== undefined) {
       return {
         userId: m.userId,
@@ -32,11 +38,15 @@ async function buildSquadCollectionMatrix(members, catalogue) {
     return { userId: m, username: String(m), visible: true, prioritiesVisible: true };
   });
 
-  const activeCatalogue = (catalogue || await getServerCompareCatalogItemsCached()).filter(isVariantReleasedAndActiveServer);
-  const collections = await Promise.all(memberList.map(async (m) => {
-    if (!m.visible) return {};
-    return loadServerCompareCollection(m.userId);
-  }));
+  const activeCatalogue = (catalogue || (await getServerCompareCatalogItemsCached())).filter(
+    isVariantReleasedAndActiveServer
+  );
+  const collections = await Promise.all(
+    memberList.map(async (m) => {
+      if (!m.visible) return {};
+      return loadServerCompareCollection(m.userId);
+    })
+  );
 
   const matrix = [];
   for (const item of activeCatalogue) {
@@ -48,13 +58,11 @@ async function buildSquadCollectionMatrix(members, catalogue) {
     for (let i = 0; i < memberList.length; i++) {
       const m = memberList[i];
       const rawEntry = m.visible
-        ? (collections[i][item.id] || compareServerDefaultEntry())
+        ? collections[i][item.id] || compareServerDefaultEntry()
         : { status: "unknown", priority: "none", note: "" };
       // Do not mutate the cached collection object.  It may be reused by a
       // later request that is authorized to see priority levels.
-      const entry = m.visible && !m.prioritiesVisible
-        ? { ...rawEntry, priority: "none" }
-        : rawEntry;
+      const entry = m.visible && !m.prioritiesVisible ? { ...rawEntry, priority: "none" } : rawEntry;
       const classification = m.visible ? compareServerClassify(entry) : "unknown";
 
       memberDetails.push({
@@ -122,9 +130,9 @@ async function buildSquadCollectionMatrix(members, catalogue) {
 
 function getSquadCollectiveCompletion(matrix, squadName = "La squad") {
   const total = matrix.length;
-  const covered = matrix.filter(r => r.ownerCount > 0).length;
+  const covered = matrix.filter((r) => r.ownerCount > 0).length;
   const rate = total ? Math.round((covered / total) * 10000) / 100 : 0;
-  const formattedRate = rate.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  const formattedRate = rate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   const display = `${squadName} couvre ${formattedRate} % du catalogue.`;
   return {
     collectiveCompletionRate: rate,
@@ -150,10 +158,9 @@ function getSquadAverageOwnership(matrix, squadName = "La squad") {
   }
 
   const averageVariantCount = memberCount ? ownedVariantsSum / memberCount : 0;
-  const rate = totalVariants && memberCount
-    ? Math.round((ownedVariantsSum / (memberCount * totalVariants)) * 10000) / 100
-    : 0;
-  const formattedRate = rate.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  const rate =
+    totalVariants && memberCount ? Math.round((ownedVariantsSum / (memberCount * totalVariants)) * 10000) / 100 : 0;
+  const formattedRate = rate.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   const display = `Le membre moyen de ${squadName} possède ${formattedRate} % du catalogue.`;
 
   return {
@@ -168,7 +175,7 @@ async function getSquadCollectiveCompletionSummary(memberIds, catalogue) {
   if (!memberIds || memberIds.length === 0) {
     return { collectiveCompletionRate: 0, totalVariants: 0, ownedCount: 0 };
   }
-  const members = memberIds.map(id => ({ userId: id, username: String(id), visible: true }));
+  const members = memberIds.map((id) => ({ userId: id, username: String(id), visible: true }));
   const matrix = await buildSquadCollectionMatrix(members, catalogue);
   const result = getSquadCollectiveCompletion(matrix, "");
   return {
@@ -192,7 +199,7 @@ async function getSquadRecommendations(memberIds, catalogue) {
   // Callers that know the viewer's granular permissions can pass the member
   // descriptors built for their matrix.  Keep accepting a plain list of IDs
   // for internal, system-wide computations (for example squad stat refreshes).
-  const members = memberIds.map(member => {
+  const members = memberIds.map((member) => {
     if (member && typeof member === "object" && member.userId !== undefined) return member;
     return { userId: member, username: String(member), visible: true, prioritiesVisible: true };
   });
@@ -222,8 +229,10 @@ async function getSquadRecommendations(memberIds, catalogue) {
     }
   }
   recs.sort((a, b) => b.score - a.score);
-  const immediate = recs.filter(r => r.availability === "available_now" || r.availability === "upcoming");
-  const watchList = recs.filter(r => r.availability === "ended" || r.availability === "not_observed" || r.availability === "unknown");
+  const immediate = recs.filter((r) => r.availability === "available_now" || r.availability === "upcoming");
+  const watchList = recs.filter(
+    (r) => r.availability === "ended" || r.availability === "not_observed" || r.availability === "unknown"
+  );
 
   return {
     immediate: immediate.slice(0, 50),
@@ -233,5 +242,12 @@ async function getSquadRecommendations(memberIds, catalogue) {
   };
 }
 
-
-module.exports = { buildSquadCollectionMatrix, getSquadCollectiveCompletion, getSquadAverageOwnership, getSquadCollectiveCompletionSummary, classifyRecommendationAvailability, getSquadRecommendations, SQUAD_MATRIX_STATUS };
+module.exports = {
+  buildSquadCollectionMatrix,
+  getSquadCollectiveCompletion,
+  getSquadAverageOwnership,
+  getSquadCollectiveCompletionSummary,
+  classifyRecommendationAvailability,
+  getSquadRecommendations,
+  SQUAD_MATRIX_STATUS
+};

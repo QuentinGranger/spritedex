@@ -3,22 +3,27 @@ const ctx = require("./shared");
 module.exports = {
   name: "catalogue métriques + validation v1 (Étapes 100–101)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     const {
       GRAPH_METRIC_CATALOG,
       getGraphMetricCatalog,
       getGraphMetricDoc,
       METRIC_CATALOG_LAST_REVIEW
     } = require("../server/sprite-graph-metric-catalog");
-    const {
-      GRAPH_V1_VALIDATION_CRITERIA,
-      evaluateGraphV1Readiness
-    } = require("../server/sprite-graph-v1-validation");
+    const { GRAPH_V1_VALIDATION_CRITERIA, evaluateGraphV1Readiness } = require("../server/sprite-graph-v1-validation");
 
     // Étape 100 — chaque métrique a les champs requis.
     const requiredFields = [
-      "id", "name", "description", "formula", "eligiblePopulation",
-      "timeWindow", "minimumThreshold", "version", "limits", "lastModified"
+      "id",
+      "name",
+      "description",
+      "formula",
+      "eligiblePopulation",
+      "timeWindow",
+      "minimumThreshold",
+      "version",
+      "limits",
+      "lastModified"
     ];
     assert.ok(GRAPH_METRIC_CATALOG.length >= 8);
     for (const m of GRAPH_METRIC_CATALOG) {
@@ -66,7 +71,10 @@ module.exports = {
     assert.strictEqual(readiness.version, 1);
     assert.strictEqual(readiness.staticReady, true);
     assert.strictEqual(readiness.ready, true);
-    assert.ok(readiness.criteria.every((c) => c.ok), "all static v1 criteria must pass");
+    assert.ok(
+      readiness.criteria.every((c) => c.ok),
+      "all static v1 criteria must pass"
+    );
     assert.ok(Array.isArray(readiness.liveProbes));
     assert.ok(readiness.metricCatalog.count >= 8);
 

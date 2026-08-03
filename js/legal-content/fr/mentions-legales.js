@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "mentions-legales": legalDocument({
-    id: "mentions-legales",
-    title: "Mentions légales",
-    short: "Édition, hébergement, propriété intellectuelle et avertissement Epic Games.",
-    content: `
+    "mentions-legales": legalDocument({
+      id: "mentions-legales",
+      title: "Mentions légales",
+      short: "Édition, hébergement, propriété intellectuelle et avertissement Epic Games.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Édition du service</h2>
@@ -53,8 +53,7 @@
       <p>L'éditeur s'efforce de présenter des informations exactes et à jour, sans pouvoir garantir l'absence totale d'erreur, notamment lorsque des noms, variantes ou visuels évoluent à la suite d'une mise à jour de Fortnite.</p>
       <p>Les liens externes sont fournis à titre informatif. L'éditeur n'exerce aucun contrôle sur leur contenu ou leur disponibilité.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

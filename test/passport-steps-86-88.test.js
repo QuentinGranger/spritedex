@@ -105,8 +105,12 @@ async function main() {
     assert.ok(html.includes('role="list"'));
 
     const accountCss = fs.readFileSync(path.join(__dirname, "../css/account.css"), "utf8");
-    const css = [accountCss, ...[...accountCss.matchAll(/@import url\("\.\/account\/([^\"]+)"\);/g)]
-      .map((match) => fs.readFileSync(path.join(__dirname, "../css/account", match[1]), "utf8"))].join("\n");
+    const css = [
+      accountCss,
+      ...[...accountCss.matchAll(/@import url\("\.\/account\/([^\"]+)"\);/g)].map((match) =>
+        fs.readFileSync(path.join(__dirname, "../css/account", match[1]), "utf8")
+      )
+    ].join("\n");
     assert.ok(/\.sr-only\s*\{/.test(css));
     assert.ok(css.includes(":focus-visible"));
     assert.ok(css.includes(".collector-passport__progress-text"));
@@ -120,7 +124,8 @@ async function main() {
     assert.ok(accountJs.includes("announcePassportStatus"));
     assert.ok(accountJs.includes("logPassportAnalytics"));
   });
-  if (ok) passed++; else failed++;
+  if (ok) passed++;
+  else failed++;
 
   const ok2 = await run("analytics : événements produit + métriques (Étape 87)", async () => {
     const required = [
@@ -202,7 +207,8 @@ async function main() {
     const product = await analytics.getProductAnalyticsMetrics(pool, { days: 30 });
     assert.ok(product.passport && typeof product.passport.passportsOpened === "number");
   });
-  if (ok2) passed++; else failed++;
+  if (ok2) passed++;
+  else failed++;
 
   const ok3 = await run("validation : checklist prête (Étape 88)", async () => {
     const doc = fs.readFileSync(path.join(__dirname, "../PASSPORT_VALIDATION.md"), "utf8");
@@ -233,9 +239,13 @@ async function main() {
     assert.match(doc, /npm run test:passport/);
     const rows = doc.split("\n").filter((l) => /^\| \d+ \|/.test(l));
     assert.ok(rows.length >= 15, `expected >=15 criteria rows, got ${rows.length}`);
-    assert.ok(rows.every((l) => l.includes("✅")), "all criteria should be marked ready");
+    assert.ok(
+      rows.every((l) => l.includes("✅")),
+      "all criteria should be marked ready"
+    );
   });
-  if (ok3) passed++; else failed++;
+  if (ok3) passed++;
+  else failed++;
 
   console.log(`\n${passed} passed, ${failed} failed\n`);
   process.exit(failed ? 1 : 0);

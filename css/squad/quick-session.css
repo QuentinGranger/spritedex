@@ -49,9 +49,15 @@
   border-bottom: 1px solid var(--line);
 }
 
-.session-block__title--prio { color: #ffcc00; }
-.session-block__title--nobody { color: #ff3a6e; }
-.session-block__title--check { color: #8d7cff; }
+.session-block__title--prio {
+  color: #ffcc00;
+}
+.session-block__title--nobody {
+  color: #ff3a6e;
+}
+.session-block__title--check {
+  color: #8d7cff;
+}
 
 .session-list {
   list-style: none;
@@ -118,4 +124,3 @@
   padding: 8px 0 2px;
   font-style: italic;
 }
-

@@ -3,9 +3,10 @@
 
 const { buildTotpUri, generateTotpSecret, totpAt, decodeBase32 } = require("../server/admin-totp");
 
-const secret = process.argv[2] && !process.argv[2].startsWith("-")
-  ? String(process.argv[2]).trim().toUpperCase()
-  : generateTotpSecret();
+const secret =
+  process.argv[2] && !process.argv[2].startsWith("-")
+    ? String(process.argv[2]).trim().toUpperCase()
+    : generateTotpSecret();
 
 if (!decodeBase32(secret)) {
   console.error("Invalid base32 secret.");

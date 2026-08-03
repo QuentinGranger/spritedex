@@ -47,11 +47,7 @@ const SIMPLE_GRAPH_RULES = Object.freeze([
   Object.freeze({
     id: "strong_priority_alert",
     label: "Alerte forte priorité + rareté communautaire + événement finissant",
-    conditions: Object.freeze([
-      "is_priority",
-      "low_ownership_rate",
-      "event_ending_soon"
-    ]),
+    conditions: Object.freeze(["is_priority", "low_ownership_rate", "event_ending_soon"]),
     outcome: Object.freeze({
       kind: "alert",
       strength: "strong",
@@ -62,10 +58,7 @@ const SIMPLE_GRAPH_RULES = Object.freeze([
   Object.freeze({
     id: "suggest_comparison",
     label: "Suggestion de comparaison entre deux collections complémentaires",
-    conditions: Object.freeze([
-      "complementary_variants_gte_15",
-      "both_collections_fill_gte_80"
-    ]),
+    conditions: Object.freeze(["complementary_variants_gte_15", "both_collections_fill_gte_80"]),
     outcome: Object.freeze({
       kind: "suggestion",
       action: "compare",
@@ -107,11 +100,11 @@ function assertNoForbiddenUserValueScores(payload, { path = "$" } = {}) {
       // Also catch camel/snake aliases commonly used for prestige-style ranks.
       const normalized = key.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
       if (
-        normalized === "prestige_score"
-        || normalized === "collector_value_score"
-        || normalized === "social_quality_score"
-        || normalized === "hidden_social_score"
-        || normalized === "user_worth_score"
+        normalized === "prestige_score" ||
+        normalized === "collector_value_score" ||
+        normalized === "social_quality_score" ||
+        normalized === "hidden_social_score" ||
+        normalized === "user_worth_score"
       ) {
         if (!violations.includes(next)) violations.push(next);
       }
@@ -133,35 +126,33 @@ function hoursUntil(isoOrDate) {
  * Normalize caller facts into boolean condition map.
  */
 function resolveSimpleRuleConditions(facts = {}, thresholds = SIMPLE_RULE_THRESHOLDS) {
-  const ownershipRate = facts.ownershipRate != null
-    ? Number(facts.ownershipRate)
-    : (facts.communityOwnershipRate != null ? Number(facts.communityOwnershipRate) : null);
-  const endingInHours = facts.eventEndingInHours != null
-    ? Number(facts.eventEndingInHours)
-    : hoursUntil(facts.eventEndsAt || facts.eventEndAt);
-  const complementary = Number(
-    facts.complementaryVariantCount
-      ?? facts.complementaryVariants
-      ?? 0
-  );
+  const ownershipRate =
+    facts.ownershipRate != null
+      ? Number(facts.ownershipRate)
+      : facts.communityOwnershipRate != null
+        ? Number(facts.communityOwnershipRate)
+        : null;
+  const endingInHours =
+    facts.eventEndingInHours != null
+      ? Number(facts.eventEndingInHours)
+      : hoursUntil(facts.eventEndsAt || facts.eventEndAt);
+  const complementary = Number(facts.complementaryVariantCount ?? facts.complementaryVariants ?? 0);
   const fillA = Number(facts.collectionFillPctA ?? facts.fillRateA ?? 0);
   const fillB = Number(facts.collectionFillPctB ?? facts.fillRateB ?? 0);
-  const isPriority = facts.isPriority === true
-    || String(facts.status || "").toLowerCase() === "priority"
-    || facts.userPriority === true;
+  const isPriority =
+    facts.isPriority === true || String(facts.status || "").toLowerCase() === "priority" || facts.userPriority === true;
 
   return {
     is_priority: !!isPriority,
-    low_ownership_rate: ownershipRate != null
-      && Number.isFinite(ownershipRate)
-      && ownershipRate <= thresholds.lowOwnershipRateMax,
-    event_ending_soon: endingInHours != null
-      && Number.isFinite(endingInHours)
-      && endingInHours >= 0
-      && endingInHours <= thresholds.eventEndingSoonHours,
+    low_ownership_rate:
+      ownershipRate != null && Number.isFinite(ownershipRate) && ownershipRate <= thresholds.lowOwnershipRateMax,
+    event_ending_soon:
+      endingInHours != null &&
+      Number.isFinite(endingInHours) &&
+      endingInHours >= 0 &&
+      endingInHours <= thresholds.eventEndingSoonHours,
     complementary_variants_gte_15: complementary >= thresholds.complementaryVariantsMin,
-    both_collections_fill_gte_80: fillA >= thresholds.collectionFillMinPct
-      && fillB >= thresholds.collectionFillMinPct,
+    both_collections_fill_gte_80: fillA >= thresholds.collectionFillMinPct && fillB >= thresholds.collectionFillMinPct,
     _meta: {
       ownershipRate,
       endingInHours,
@@ -177,10 +168,10 @@ function resolveSimpleRuleConditions(facts = {}, thresholds = SIMPLE_RULE_THRESH
  * Étape 86 — evaluate simple AND-rules against explicit facts.
  * No ML, no user prestige scoring.
  */
-function evaluateSimpleGraphRules(facts = {}, {
-  rules = SIMPLE_GRAPH_RULES,
-  thresholds = SIMPLE_RULE_THRESHOLDS
-} = {}) {
+function evaluateSimpleGraphRules(
+  facts = {},
+  { rules = SIMPLE_GRAPH_RULES, thresholds = SIMPLE_RULE_THRESHOLDS } = {}
+) {
   const conditions = resolveSimpleRuleConditions(facts, thresholds);
   const matches = [];
 

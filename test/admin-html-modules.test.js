@@ -8,7 +8,10 @@ const { renderAdminPage } = require("../server/admin-page");
 const root = path.join(__dirname, "..");
 const template = fs.readFileSync(path.join(root, "admin.html"), "utf8");
 const fragmentsDir = path.join(root, "admin", "fragments");
-const fragments = fs.readdirSync(fragmentsDir).filter(name => name.endsWith(".html")).sort();
+const fragments = fs
+  .readdirSync(fragmentsDir)
+  .filter((name) => name.endsWith(".html"))
+  .sort();
 
 assert.ok(fragments.length >= 25, "the admin page should be split into focused HTML fragments");
 for (const name of fragments) {

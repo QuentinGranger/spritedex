@@ -86,7 +86,10 @@ function setupSwipeGestures() {
 
   const release = (event) => {
     clearTimeout(longPressTimer);
-    if (longPressed) { longPressed = false; return; }
+    if (longPressed) {
+      longPressed = false;
+      return;
+    }
     if (!dragging) return;
     dragging = false;
     els.card.classList.remove("dragging");

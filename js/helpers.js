@@ -20,10 +20,7 @@ function escapeHtml(str) {
 const UNSAFE_RECORD_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
 function isSafeRecordKey(key) {
-  return typeof key === "string"
-    && key.length > 0
-    && key.length <= 240
-    && !UNSAFE_RECORD_KEYS.has(key);
+  return typeof key === "string" && key.length > 0 && key.length <= 240 && !UNSAFE_RECORD_KEYS.has(key);
 }
 
 function createSafeRecord() {
@@ -48,25 +45,30 @@ function safeFiniteNumber(value, fallback = 0, { min = -Number.MAX_SAFE_INTEGER,
 }
 
 function isPrivateOrLocalHostname(value) {
-  const host = String(value || "").toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  const host = String(value || "")
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.$/, "");
   if (!host) return true;
   // Automatically rendered images must never be used as probes for a
   // visitor's local network. Reject literal IPs and common local/DNS-rebind
   // hostnames; normal public HTTPS image hosts remain supported.
   if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(":")) return true;
-  return host === "localhost"
-    || host.endsWith(".localhost")
-    || host.endsWith(".local")
-    || host.endsWith(".internal")
-    || host.endsWith(".home")
-    || host.endsWith(".lan")
-    || host.endsWith(".test")
-    || host === "nip.io"
-    || host.endsWith(".nip.io")
-    || host === "sslip.io"
-    || host.endsWith(".sslip.io")
-    || host === "localtest.me"
-    || host.endsWith(".localtest.me");
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    host.endsWith(".home") ||
+    host.endsWith(".lan") ||
+    host.endsWith(".test") ||
+    host === "nip.io" ||
+    host.endsWith(".nip.io") ||
+    host === "sslip.io" ||
+    host.endsWith(".sslip.io") ||
+    host === "localtest.me" ||
+    host.endsWith(".localtest.me")
+  );
 }
 
 function safePercentage(value, fallback = 0) {
@@ -135,24 +137,29 @@ function safeImageUrl(value) {
     // retained for same-origin local development assets.
     const current = new URL(window.location.href);
     if (parsed.protocol === "https:" && !isPrivateOrLocalHostname(parsed.hostname)) return parsed.href;
-    if (parsed.protocol === "http:" && parsed.protocol === current.protocol && parsed.host === current.host) return parsed.href;
+    if (parsed.protocol === "http:" && parsed.protocol === current.protocol && parsed.host === current.host)
+      return parsed.href;
     // Capacitor serves bundled files from capacitor://localhost. The API stores
     // sprite paths relative to the web root (for example Sprite/Air/Air.webp),
     // which resolve to that origin on iOS. Keep this deliberately restricted to
     // known packaged asset directories instead of treating all local URLs as
     // safe image sources.
-    const isBundledAppOrigin = parsed.protocol === current.protocol
-      && parsed.host === current.host
-      && (current.protocol === "capacitor:" || current.protocol === "file:");
-    const isBundledSpriteAsset = parsed.pathname.startsWith("/Sprite/")
-      || parsed.pathname.startsWith("/Favicon/")
-      || parsed.pathname === "/LogoApp.png"
-      || parsed.pathname === "/MainLogo.png"
-      || parsed.pathname === "/js/MainLogo.png";
+    const isBundledAppOrigin =
+      parsed.protocol === current.protocol &&
+      parsed.host === current.host &&
+      (current.protocol === "capacitor:" || current.protocol === "file:");
+    const isBundledSpriteAsset =
+      parsed.pathname.startsWith("/Sprite/") ||
+      parsed.pathname.startsWith("/Favicon/") ||
+      parsed.pathname === "/LogoApp.png" ||
+      parsed.pathname === "/MainLogo.png" ||
+      parsed.pathname === "/js/MainLogo.png";
     if (isBundledAppOrigin && isBundledSpriteAsset) return parsed.href;
     // Avatar assets served from the same web origin (HTTP or HTTPS).
-    const isSameWebOrigin = parsed.protocol === current.protocol && parsed.host === current.host
-      && (current.protocol === "http:" || current.protocol === "https:");
+    const isSameWebOrigin =
+      parsed.protocol === current.protocol &&
+      parsed.host === current.host &&
+      (current.protocol === "http:" || current.protocol === "https:");
     const isAvatarAsset = parsed.pathname.startsWith("/Personna/") || parsed.pathname.startsWith("/personna/");
     if (isSameWebOrigin && isAvatarAsset) return parsed.href;
   } catch {
@@ -166,7 +173,8 @@ function safeExternalUrl(value) {
   try {
     const parsed = new URL(value.trim());
     if (parsed.username || parsed.password) return "";
-    if ((parsed.protocol !== "https:" && parsed.protocol !== "http:") || isPrivateOrLocalHostname(parsed.hostname)) return "";
+    if ((parsed.protocol !== "https:" && parsed.protocol !== "http:") || isPrivateOrLocalHostname(parsed.hostname))
+      return "";
     return parsed.href;
   } catch {
     return "";
@@ -181,11 +189,7 @@ function safeAppWebUrl(value) {
   try {
     const app = new URL(webOrigin());
     const parsed = new URL(value.trim(), app.href);
-    if (
-      parsed.protocol !== app.protocol ||
-      parsed.host !== app.host ||
-      !parsed.pathname.startsWith("/")
-    ) return "";
+    if (parsed.protocol !== app.protocol || parsed.host !== app.host || !parsed.pathname.startsWith("/")) return "";
     return parsed.href;
   } catch {
     return "";
@@ -202,11 +206,8 @@ function safeAppPath(value, fallback = "#") {
     const current = new URL(window.location.href);
     // `origin` is "null" for custom-scheme desktop URLs, so compare the
     // protocol and host too. This rejects e.g. sprite-index://untrusted/path.
-    if (
-      parsed.protocol !== current.protocol ||
-      parsed.host !== current.host ||
-      !parsed.pathname.startsWith("/")
-    ) return fallback;
+    if (parsed.protocol !== current.protocol || parsed.host !== current.host || !parsed.pathname.startsWith("/"))
+      return fallback;
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
     return fallback;
@@ -227,16 +228,24 @@ function safeCssColor(value, fallback = "#8d7cff") {
 
 function sanitizeCollectionEntry(value) {
   const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-  const allowedStatuses = new Set(["owned", "missing", "priority", "unsure", "unknown", "unavailable", "spotted", "new"]);
+  const allowedStatuses = new Set([
+    "owned",
+    "missing",
+    "priority",
+    "unsure",
+    "unknown",
+    "unavailable",
+    "spotted",
+    "new"
+  ]);
   const allowedPriorities = new Set(["urgent", "important", "medium", "low", "ignored", "none"]);
   const status = allowedStatuses.has(source.status) ? source.status : "new";
   const priority = allowedPriorities.has(source.priority) ? source.priority : "none";
   // A collector receives level 1 as soon as a variant becomes owned. Levels
   // 2–5 represent the progression in Fortnite; level 5 is Master.
   const rawMastery = Number(source.masteryLevel);
-  const masteryLevel = status === "owned"
-    ? (Number.isInteger(rawMastery) && rawMastery >= 1 && rawMastery <= 5 ? rawMastery : 1)
-    : 0;
+  const masteryLevel =
+    status === "owned" ? (Number.isInteger(rawMastery) && rawMastery >= 1 && rawMastery <= 5 ? rawMastery : 1) : 0;
   const dateOrNull = (value) => {
     if (typeof value !== "string" || value.length > 64 || Number.isNaN(Date.parse(value))) return null;
     return value;
@@ -287,9 +296,12 @@ function spriteImgTag(spriteId, variantType, className) {
 function getAllItems() {
   return SPRITES.flatMap((sprite) => {
     const details = sprite.variantDetails || SPRITE_VARIANTS?.[sprite.id] || {};
-    const variantTypes = Object.keys(details).length > 0
-      ? Object.keys(details)
-      : (Array.isArray(sprite.variants) ? sprite.variants : ["Base"]);
+    const variantTypes =
+      Object.keys(details).length > 0
+        ? Object.keys(details)
+        : Array.isArray(sprite.variants)
+          ? sprite.variants
+          : ["Base"];
     return variantTypes.map((variantType) => {
       const variant = details[variantType] || { type: variantType, name: variantType };
       return {
@@ -340,8 +352,7 @@ function collectionPercent(owned, total) {
 }
 
 function getSpriteCollectionItems(spriteId, items = getAllItems()) {
-  return getReleasedCollectionItems(items)
-    .filter((item) => String(item?.spriteId) === String(spriteId));
+  return getReleasedCollectionItems(items).filter((item) => String(item?.spriteId) === String(spriteId));
 }
 
 function getSpriteCollectionMetrics(spriteId, items = getAllItems()) {
@@ -384,11 +395,11 @@ function defaultEntry() {
 
 function priorityLabel(p) {
   if (p === "none" || !p) return "—";
-  return typeof t === "function" ? t(`prio.${p}`) : (PRIORITIES.find(x => x.id === p)?.label ?? "—");
+  return typeof t === "function" ? t(`prio.${p}`) : (PRIORITIES.find((x) => x.id === p)?.label ?? "—");
 }
 
 function priorityColor(p) {
-  return PRIORITIES.find(x => x.id === p)?.color ?? "transparent";
+  return PRIORITIES.find((x) => x.id === p)?.color ?? "transparent";
 }
 
 function priorityOrder(p) {
@@ -427,10 +438,18 @@ const STATUS_CATEGORIES = {
   unknown: ["new", "unknown", "unsure"]
 };
 
-function isOwnedStatus(status) { return STATUS_CATEGORIES.owned.includes(status); }
-function isMissingStatus(status) { return STATUS_CATEGORIES.missing.includes(status); }
-function isUnknownStatus(status) { return !status || STATUS_CATEGORIES.unknown.includes(status); }
-function isCollectibleMissingStatus(status) { return ["missing", "priority", "spotted"].includes(status); }
+function isOwnedStatus(status) {
+  return STATUS_CATEGORIES.owned.includes(status);
+}
+function isMissingStatus(status) {
+  return STATUS_CATEGORIES.missing.includes(status);
+}
+function isUnknownStatus(status) {
+  return !status || STATUS_CATEGORIES.unknown.includes(status);
+}
+function isCollectibleMissingStatus(status) {
+  return ["missing", "priority", "spotted"].includes(status);
+}
 function classifyStatus(status) {
   if (isOwnedStatus(status)) return "owned";
   if (isMissingStatus(status)) return "missing";
@@ -453,13 +472,20 @@ function statusLabel(status) {
 
 function statusEmoji(status) {
   const icons = {
-    owned: '<svg class="status-icon status-icon--success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-    missing: '<svg class="status-icon status-icon--danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-    priority: '<svg class="status-icon status-icon--star" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-    unsure: '<svg class="status-icon status-icon--neutral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
-    unknown: '<svg class="status-icon status-icon--neutral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
-    unavailable: '<svg class="status-icon status-icon--locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-    spotted: '<svg class="status-icon status-icon--spotted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    owned:
+      '<svg class="status-icon status-icon--success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    missing:
+      '<svg class="status-icon status-icon--danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    priority:
+      '<svg class="status-icon status-icon--star" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    unsure:
+      '<svg class="status-icon status-icon--neutral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
+    unknown:
+      '<svg class="status-icon status-icon--neutral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
+    unavailable:
+      '<svg class="status-icon status-icon--locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    spotted:
+      '<svg class="status-icon status-icon--spotted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
     new: '<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'
   };
   return icons[status] || icons.new;
@@ -512,7 +538,7 @@ function confidenceLabel(confidence) {
     secondary: "helpers.confidenceCommunity",
     tertiary: "helpers.confidenceCommunity",
     estimated: "helpers.confidenceEstimated",
-    unknown: "helpers.confidenceUnknown",
+    unknown: "helpers.confidenceUnknown"
   };
   return t(map[c] || "helpers.confidenceUnknown");
 }
@@ -584,16 +610,19 @@ function acquisitionPhrase(acquisition) {
       ? t("helpers.acquireUnconfirmedDesc", { desc: a.description })
       : t("helpers.acquireUnconfirmed");
   }
-  const base = a.description || {
-    quest: t("helpers.acquireQuest"),
-    event: t("helpers.acquireEvent"),
-    exploration: t("helpers.acquireExploration"),
-    interaction: t("helpers.acquireInteraction"),
-    reward: t("helpers.acquireReward"),
-    challenge: t("helpers.acquireChallenge"),
-    purchase: t("helpers.acquirePurchase"),
-    automatic: t("helpers.acquireAutomatic"),
-  }[type] || t("helpers.acquireKnown");
+  const base =
+    a.description ||
+    {
+      quest: t("helpers.acquireQuest"),
+      event: t("helpers.acquireEvent"),
+      exploration: t("helpers.acquireExploration"),
+      interaction: t("helpers.acquireInteraction"),
+      reward: t("helpers.acquireReward"),
+      challenge: t("helpers.acquireChallenge"),
+      purchase: t("helpers.acquirePurchase"),
+      automatic: t("helpers.acquireAutomatic")
+    }[type] ||
+    t("helpers.acquireKnown");
   if (conf === "observed") return t("helpers.acquireObservedSuffix", { base });
   if (conf === "community") return t("helpers.acquireCommunitySuffix", { base });
   if (conf === "official") return t("helpers.acquireOfficialSuffix", { base });
@@ -619,7 +648,8 @@ function sourceReliabilityLabel(source) {
   if (type === "official" || rel === "primary") return t("helpers.sourceOfficial");
   if (type === "in_game") return t("helpers.sourceInGame");
   if (type === "creator") return t("helpers.sourceCreator");
-  if (type === "community" || type === "database" || rel === "secondary" || rel === "tertiary") return t("helpers.sourceCommunity");
+  if (type === "community" || type === "database" || rel === "secondary" || rel === "tertiary")
+    return t("helpers.sourceCommunity");
   return t("helpers.sourceUnconfirmed");
 }
 
@@ -631,7 +661,17 @@ function getStats(items = getAllItems()) {
   const unsure = released.filter((item) => getEntry(item.id).status === "unsure").length;
   const unavailable = released.filter((item) => getEntry(item.id).status === "unavailable").length;
   const spotted = released.filter((item) => getEntry(item.id).status === "spotted").length;
-  return { total: metrics.releasedTotal, owned: metrics.owned, missing, priority, unsure, unavailable, spotted, percent: metrics.percent, catalogueTotal: metrics.catalogueTotal };
+  return {
+    total: metrics.releasedTotal,
+    owned: metrics.owned,
+    missing,
+    priority,
+    unsure,
+    unavailable,
+    spotted,
+    percent: metrics.percent,
+    catalogueTotal: metrics.catalogueTotal
+  };
 }
 
 function updateThemeButton() {

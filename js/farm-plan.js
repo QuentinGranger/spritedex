@@ -34,9 +34,21 @@ function farmContext(item) {
   const availability = variant.availability || sprite.availability || {};
   const status = typeof availability === "string" ? availability : availability.status;
   const confidence = variant.confidence || availability.confidence || sprite.confidence || "unknown";
-  const rawSource = variant.acquisitionMethod || sprite.acquisitionMethod || variant.sources?.[0]?.title || sprite.sources?.[0]?.title || "";
-  const source = typeof rawSource === "string" ? rawSource : (rawSource?.label || rawSource?.name || rawSource?.title || "");
-  return { event: EVENTS?.[eventId] || (sprite.event && typeof sprite.event === "object" ? sprite.event : null), eventId, status: String(status || "unknown").toLowerCase(), confidence: String(confidence || "unknown"), source: String(source || "") };
+  const rawSource =
+    variant.acquisitionMethod ||
+    sprite.acquisitionMethod ||
+    variant.sources?.[0]?.title ||
+    sprite.sources?.[0]?.title ||
+    "";
+  const source =
+    typeof rawSource === "string" ? rawSource : rawSource?.label || rawSource?.name || rawSource?.title || "";
+  return {
+    event: EVENTS?.[eventId] || (sprite.event && typeof sprite.event === "object" ? sprite.event : null),
+    eventId,
+    status: String(status || "unknown").toLowerCase(),
+    confidence: String(confidence || "unknown"),
+    source: String(source || "")
+  };
 }
 
 function farmDateLabel(date) {
@@ -86,7 +98,9 @@ function farmRelevantEvents(items) {
   return [...grouped.values()]
     .filter(({ event, items }) => {
       const end = new Date(event.endDate || "").getTime();
-      return items.some(({ item }) => farmPlanData().entries[item.id]?.status) || !Number.isFinite(end) || end >= Date.now();
+      return (
+        items.some(({ item }) => farmPlanData().entries[item.id]?.status) || !Number.isFinite(end) || end >= Date.now()
+      );
     })
     .sort((a, b) => new Date(a.event.endDate || "2999-01-01") - new Date(b.event.endDate || "2999-01-01"));
 }
@@ -94,9 +108,14 @@ function farmRelevantEvents(items) {
 function farmPlanRow({ item, context }) {
   const status = farmStatusFor(item);
   const image = safeImageUrl(item.img);
-  const controls = ["target", "obtained", "abandoned"].map((value) => `<button type="button" class="farm-plan__status ${status === value ? "is-active" : ""}" data-farm-status="${value}" data-farm-id="${escapeHtml(String(item.id))}" aria-pressed="${status === value}">${escapeHtml(farmStatusLabel(value))}</button>`).join("");
+  const controls = ["target", "obtained", "abandoned"]
+    .map(
+      (value) =>
+        `<button type="button" class="farm-plan__status ${status === value ? "is-active" : ""}" data-farm-status="${value}" data-farm-id="${escapeHtml(String(item.id))}" aria-pressed="${status === value}">${escapeHtml(farmStatusLabel(value))}</button>`
+    )
+    .join("");
   return `<article class="farm-plan__row">
-    <div class="farm-plan__avatar">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : "<span aria-hidden=\"true\">?</span>"}</div>
+    <div class="farm-plan__avatar">${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy">` : '<span aria-hidden="true">?</span>'}</div>
     <div class="farm-plan__identity"><strong>${escapeHtml(item.spriteName)}</strong><span>${escapeHtml(item.variant)}</span>
       <div class="farm-plan__meta"><span class="farm-chip farm-chip--${escapeHtml(context.status)}">${escapeHtml(farmAvailabilityLabel(context.status))}</span><span class="farm-chip farm-chip--deadline">${escapeHtml(farmDateLabel(context.event?.endDate))}</span>${context.source ? `<span class="farm-chip">${escapeHtml(context.source)}</span>` : ""}<span class="farm-chip farm-chip--confidence">${escapeHtml(t("farm.confidence", { value: context.confidence }))}</span></div>
     </div>
@@ -112,12 +131,14 @@ function renderFarmPlan() {
     mount.innerHTML = `<header class="farm-planner__heading"><div><p class="eyebrow">${escapeHtml(t("farm.eyebrow"))}</p><h3>${escapeHtml(t("farm.title"))}</h3><p>${escapeHtml(t("farm.empty"))}</p></div></header>`;
     return;
   }
-  mount.innerHTML = `<header class="farm-planner__heading"><div><p class="eyebrow">${escapeHtml(t("farm.eyebrow"))}</p><h3>${escapeHtml(t("farm.title"))}</h3><p>${escapeHtml(t("farm.description"))}</p></div></header>${events.map(({ id, event, items }) => {
-    const plan = farmPlanData();
-    const targets = items.filter(({ item }) => farmStatusFor(item) === "target").length;
-    const reminderOn = Boolean(plan.reminders[id]);
-    return `<section class="farm-event-card"><header class="farm-event-card__header"><div><span class="farm-event-card__deadline">${escapeHtml(farmDeadline(event))}</span><h4>${escapeHtml(event.name || id)}</h4><p>${escapeHtml(t("farm.eventProgress", { target: targets, total: items.length }))} · ${escapeHtml(farmDateLabel(event.endDate))}</p></div><label class="farm-reminder"><input type="checkbox" data-farm-reminder="${escapeHtml(id)}" ${reminderOn ? "checked" : ""}><span>${escapeHtml(t("farm.reminder"))}</span></label></header><div class="farm-plan__rows">${items.map(farmPlanRow).join("")}</div></section>`;
-  }).join("")}`;
+  mount.innerHTML = `<header class="farm-planner__heading"><div><p class="eyebrow">${escapeHtml(t("farm.eyebrow"))}</p><h3>${escapeHtml(t("farm.title"))}</h3><p>${escapeHtml(t("farm.description"))}</p></div></header>${events
+    .map(({ id, event, items }) => {
+      const plan = farmPlanData();
+      const targets = items.filter(({ item }) => farmStatusFor(item) === "target").length;
+      const reminderOn = Boolean(plan.reminders[id]);
+      return `<section class="farm-event-card"><header class="farm-event-card__header"><div><span class="farm-event-card__deadline">${escapeHtml(farmDeadline(event))}</span><h4>${escapeHtml(event.name || id)}</h4><p>${escapeHtml(t("farm.eventProgress", { target: targets, total: items.length }))} · ${escapeHtml(farmDateLabel(event.endDate))}</p></div><label class="farm-reminder"><input type="checkbox" data-farm-reminder="${escapeHtml(id)}" ${reminderOn ? "checked" : ""}><span>${escapeHtml(t("farm.reminder"))}</span></label></header><div class="farm-plan__rows">${items.map(farmPlanRow).join("")}</div></section>`;
+    })
+    .join("")}`;
   farmScheduleReminders();
 }
 
@@ -125,9 +146,16 @@ function farmPlanSetStatus(itemId, status) {
   const plan = farmPlanData();
   plan.entries[itemId] = { status, updatedAt: new Date().toISOString() };
   const entry = getEntry(itemId);
-  if (status === "target") setEntry(itemId, { status: "priority", priority: entry.priority === "none" ? "medium" : entry.priority }, { render: false });
-  if (status === "obtained") setEntry(itemId, { status: "owned", obtainedAt: entry.obtainedAt || new Date().toISOString() }, { render: false });
-  if (status === "abandoned" && entry.status === "priority") setEntry(itemId, { status: "missing", priority: "none" }, { render: false });
+  if (status === "target")
+    setEntry(
+      itemId,
+      { status: "priority", priority: entry.priority === "none" ? "medium" : entry.priority },
+      { render: false }
+    );
+  if (status === "obtained")
+    setEntry(itemId, { status: "owned", obtainedAt: entry.obtainedAt || new Date().toISOString() }, { render: false });
+  if (status === "abandoned" && entry.status === "priority")
+    setEntry(itemId, { status: "missing", priority: "none" }, { render: false });
   saveFarmPlan();
   renderAll();
   toast(farmStatusLabel(status));

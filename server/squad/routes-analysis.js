@@ -1,5 +1,47 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 const friends = require("./logic-friends");
 const teams = require("./logic-teams");
 const simulations = require("./logic-simulations");
@@ -17,15 +59,23 @@ app.get("/api/squads/:code/complementary-pairs", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-complementary-pairs", async () => {
-      const pairs = await getSquadComplementaryPairs(squad, reqUser);
-      return { squadCode: squad.code, squadName: squad.name, pairs };
-    });
+    const response = await getCachedOrComputeSquadAnalysis(
+      req,
+      squad,
+      reqUser,
+      "legacy-complementary-pairs",
+      async () => {
+        const pairs = await getSquadComplementaryPairs(squad, reqUser);
+        return { squadCode: squad.code, squadName: squad.name, pairs };
+      }
+    );
     res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/complementary-pairs]", err);
@@ -38,16 +88,24 @@ app.get("/api/squads/:code/most-complementary-pair", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-most-complementary-pair", async () => {
-      const pairs = await getSquadComplementaryPairs(squad, reqUser);
-      const mostComplementaryPair = pairs[0] || null;
-      return { squadCode: squad.code, squadName: squad.name, mostComplementaryPair };
-    });
+    const response = await getCachedOrComputeSquadAnalysis(
+      req,
+      squad,
+      reqUser,
+      "legacy-most-complementary-pair",
+      async () => {
+        const pairs = await getSquadComplementaryPairs(squad, reqUser);
+        const mostComplementaryPair = pairs[0] || null;
+        return { squadCode: squad.code, squadName: squad.name, mostComplementaryPair };
+      }
+    );
     res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/most-complementary-pair]", err);
@@ -60,7 +118,9 @@ app.get("/api/squads/:code/best-pair", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -90,7 +150,9 @@ app.get("/api/squads/:code/best-teams", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -134,7 +196,9 @@ app.get("/api/squads/:code/minimum-team", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -167,7 +231,7 @@ app.get("/api/squads/:code/minimum-team", async (req, res) => {
         squadCode: squad.code,
         squadName: squad.name,
         ...result,
-        display: `${result.minPlayers} joueur${result.minPlayers > 1 ? 's' : ''} suffisent pour couvrir ${result.targetLabel} (${result.coveredTargetCount}/${result.targetTotal}).`
+        display: `${result.minPlayers} joueur${result.minPlayers > 1 ? "s" : ""} suffisent pour couvrir ${result.targetLabel} (${result.coveredTargetCount}/${result.targetTotal}).`
       };
     });
     if (!response) {
@@ -185,7 +249,9 @@ app.post("/api/squads/:code/simulate-acquisition", requireNotSuspended, squadSim
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -224,7 +290,9 @@ app.post("/api/squads/:code/simulate", requireNotSuspended, squadSimulationLimit
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -250,7 +318,9 @@ app.post("/api/squads/:code/what-if", requireNotSuspended, squadSimulationLimite
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -277,10 +347,9 @@ app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
@@ -295,11 +364,17 @@ app.get("/api/squads/:code/most-complementary-member", async (req, res) => {
 
     const members = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
 
-    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-most-complementary-member", async () => {
-      const matrix = await compare.buildSquadCollectionMatrix(members);
-      const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
-      return { squadCode: squad.code, squadName: squad.name, mostComplementaryMember };
-    });
+    const response = await getCachedOrComputeSquadAnalysis(
+      req,
+      squad,
+      reqUser,
+      "legacy-most-complementary-member",
+      async () => {
+        const matrix = await compare.buildSquadCollectionMatrix(members);
+        const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
+        return { squadCode: squad.code, squadName: squad.name, mostComplementaryMember };
+      }
+    );
     res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/most-complementary-member]", err);
@@ -312,18 +387,23 @@ app.get("/api/squads/:code/recommended-goals", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, code, name FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "legacy-recommended-goals", async () => {
-      const result = await getSquadRecommendedGoals(squad, reqUser);
-      return { squadCode: squad.code, squadName: squad.name, ...result };
-    });
+    const response = await getCachedOrComputeSquadAnalysis(
+      req,
+      squad,
+      reqUser,
+      "legacy-recommended-goals",
+      async () => {
+        const result = await getSquadRecommendedGoals(squad, reqUser);
+        return { squadCode: squad.code, squadName: squad.name, ...result };
+      }
+    );
     res.json(response);
   } catch (err) {
     console.error("[/api/squads/:code/recommended-goals]", err);
@@ -336,7 +416,9 @@ app.get("/api/squads/:code/analysis", async (req, res) => {
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [req.params.code.trim().toUpperCase()]);
+    const squadResult = await pool.query("SELECT id, code, name FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;

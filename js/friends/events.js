@@ -62,10 +62,11 @@ function setupFriendsEvents() {
 
   const showQrBtn = getFriendsEl("friendShowQrBtn");
   const generateQrBtn = getFriendsEl("friendGenerateQrBtn");
-  if (showQrBtn) showQrBtn.addEventListener("click", () => {
-    setFriendsTab("qr");
-    showMyQrCode();
-  });
+  if (showQrBtn)
+    showQrBtn.addEventListener("click", () => {
+      setFriendsTab("qr");
+      showMyQrCode();
+    });
   if (generateQrBtn) generateQrBtn.addEventListener("click", showMyQrCode);
 
   ["friendsList", "receivedList", "sentList", "addFriendResults", "friendSuggestions", "blockedList"].forEach((id) => {

@@ -1,6 +1,13 @@
 "use strict";
 
-const { NOTIFICATION_TYPES, NOTIFICATION_CATEGORIES, NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LIST, DEFAULT_LANGUAGE, normalizeLang } = require("./constants");
+const {
+  NOTIFICATION_TYPES,
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_CHANNEL_LIST,
+  DEFAULT_LANGUAGE,
+  normalizeLang
+} = require("./constants");
 
 const CHANNEL_DEFINITIONS = {
   [NOTIFICATION_CHANNELS.IN_APP]: {
@@ -72,10 +79,7 @@ const NOTIFICATION_SETTINGS_SCREEN = Object.freeze({
       id: "alerts",
       category: NOTIFICATION_CATEGORIES.ALERTS,
       label: { fr: "Priorités et événements", en: "Priorities & events", nl: "Prioriteiten en evenementen" },
-      types: Object.freeze([
-        NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE,
-        NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON
-      ])
+      types: Object.freeze([NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE, NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON])
     })
   ]),
   comfort: Object.freeze([
@@ -149,7 +153,9 @@ function getDefaultFrequency(type) {
 }
 
 function normalizeFrequency(frequency, type = null) {
-  const raw = String(frequency || "").toLowerCase().trim();
+  const raw = String(frequency || "")
+    .toLowerCase()
+    .trim();
   if (isKnownFrequency(raw)) return raw;
   return type ? getDefaultFrequency(type) : NOTIFICATION_FREQUENCIES.IMMEDIATE;
 }
@@ -193,10 +199,7 @@ const PUSH_MODE_LABELS = {
 
 // Which push modes a type may expose in settings (besides enabled/disabled).
 const TYPE_PUSH_MODE_OPTIONS = Object.freeze({
-  [NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED]: Object.freeze([
-    PUSH_MODES.ENABLED,
-    PUSH_MODES.DISABLED
-  ]),
+  [NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED]: Object.freeze([PUSH_MODES.ENABLED, PUSH_MODES.DISABLED]),
   [NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT]: Object.freeze([
     PUSH_MODES.ENABLED,
     PUSH_MODES.PRIORITIES_ONLY,
@@ -207,14 +210,8 @@ const TYPE_PUSH_MODE_OPTIONS = Object.freeze({
     PUSH_MODES.MILESTONES_ONLY,
     PUSH_MODES.DISABLED
   ]),
-  [NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE]: Object.freeze([
-    PUSH_MODES.ENABLED,
-    PUSH_MODES.DISABLED
-  ]),
-  [NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON]: Object.freeze([
-    PUSH_MODES.ENABLED,
-    PUSH_MODES.DISABLED
-  ])
+  [NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE]: Object.freeze([PUSH_MODES.ENABLED, PUSH_MODES.DISABLED]),
+  [NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON]: Object.freeze([PUSH_MODES.ENABLED, PUSH_MODES.DISABLED])
 });
 
 const DEFAULT_TYPE_DELIVERY = Object.freeze({
@@ -253,7 +250,9 @@ function getPushModeOptions(type) {
 }
 
 function normalizePushMode(mode, type = null) {
-  const raw = String(mode || "").toLowerCase().trim();
+  const raw = String(mode || "")
+    .toLowerCase()
+    .trim();
   const allowed = type ? getPushModeOptions(type) : PUSH_MODE_LIST;
   if (allowed.includes(raw)) return raw;
   if (isKnownPushMode(raw) && (!type || allowed.includes(raw))) return raw;
@@ -275,9 +274,11 @@ function shouldAllowPushForDelivery(pushMode, context = {}) {
   if (mode === PUSH_MODES.DISABLED) return false;
   if (mode === PUSH_MODES.ENABLED) return true;
   if (mode === PUSH_MODES.PRIORITIES_ONLY) {
-    return context.priorityLevel === "strong"
-      || context.recipientCollectionStatus === "priority"
-      || context.hasStrongPriority === true;
+    return (
+      context.priorityLevel === "strong" ||
+      context.recipientCollectionStatus === "priority" ||
+      context.hasStrongPriority === true
+    );
   }
   if (mode === PUSH_MODES.MILESTONES_ONLY) {
     return context.milestone != null || context.kind === "milestone";
@@ -324,5 +325,30 @@ function getNotificationSettingsScreen(lang = DEFAULT_LANGUAGE) {
   };
 }
 
-
-module.exports = { isKnownFrequency, isFrequencyConfigurable, getDefaultFrequency, normalizeFrequency, getFrequencyLabel, isKnownPushMode, getDefaultTypeDelivery, getPushModeOptions, normalizePushMode, getPushModeLabel, shouldAllowPushForDelivery, getNotificationSettingsScreen, CHANNEL_DEFINITIONS, SETTINGS_TYPE_LABELS, NOTIFICATION_SETTINGS_SCREEN, NOTIFICATION_FREQUENCIES, NOTIFICATION_FREQUENCY_LIST, FREQUENCY_LABELS, FREQUENCY_CONFIGURABLE_TYPES, DEFAULT_TYPE_FREQUENCIES, PUSH_MODES, PUSH_MODE_LIST, PUSH_MODE_LABELS, TYPE_PUSH_MODE_OPTIONS, DEFAULT_TYPE_DELIVERY };
+module.exports = {
+  isKnownFrequency,
+  isFrequencyConfigurable,
+  getDefaultFrequency,
+  normalizeFrequency,
+  getFrequencyLabel,
+  isKnownPushMode,
+  getDefaultTypeDelivery,
+  getPushModeOptions,
+  normalizePushMode,
+  getPushModeLabel,
+  shouldAllowPushForDelivery,
+  getNotificationSettingsScreen,
+  CHANNEL_DEFINITIONS,
+  SETTINGS_TYPE_LABELS,
+  NOTIFICATION_SETTINGS_SCREEN,
+  NOTIFICATION_FREQUENCIES,
+  NOTIFICATION_FREQUENCY_LIST,
+  FREQUENCY_LABELS,
+  FREQUENCY_CONFIGURABLE_TYPES,
+  DEFAULT_TYPE_FREQUENCIES,
+  PUSH_MODES,
+  PUSH_MODE_LIST,
+  PUSH_MODE_LABELS,
+  TYPE_PUSH_MODE_OPTIONS,
+  DEFAULT_TYPE_DELIVERY
+};

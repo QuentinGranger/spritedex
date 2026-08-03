@@ -2,15 +2,16 @@
 
 function sgEscape(s) {
   if (typeof escapeHtml === "function") return escapeHtml(s);
-  return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => (
-    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]
-  ));
+  return String(s == null ? "" : s).replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]
+  );
 }
 
 function sgFormatRate(rate, digits = 1) {
   if (rate == null || !Number.isFinite(Number(rate))) return "—";
   const n = Number(rate);
-  const rounded = Math.round(n * (10 ** digits)) / (10 ** digits);
+  const rounded = Math.round(n * 10 ** digits) / 10 ** digits;
   return formatUiNumber(rounded, { maximumFractionDigits: digits });
 }
 
@@ -20,7 +21,9 @@ function sgFormatPercent(rate, digits = 1) {
 }
 
 function sgTrendLabel(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   const key = {
     strongly_rising: "community.trendStronglyRising",
     "fortement en hausse": "community.trendStronglyRising",
@@ -57,29 +60,33 @@ function sgCommunityLines(data) {
 }
 
 function sgTrendsSectionTitle(key) {
-  return t({
-    mostOwned: "community.trendsMostOwned",
-    rarestInSpriteIndex: "community.trendsRarest",
-    mostSought: "community.trendsMostSought",
-    mostPriorityAdds: "community.trendsPriorityAdds",
-    strongestRisers: "community.trendsStrongestRisers",
-    mostCompared: "community.trendsMostCompared",
-    interestLeaders: "community.trendsInterestLeaders"
-  }[key] || "community.trendsTitle");
+  return t(
+    {
+      mostOwned: "community.trendsMostOwned",
+      rarestInSpriteIndex: "community.trendsRarest",
+      mostSought: "community.trendsMostSought",
+      mostPriorityAdds: "community.trendsPriorityAdds",
+      strongestRisers: "community.trendsStrongestRisers",
+      mostCompared: "community.trendsMostCompared",
+      interestLeaders: "community.trendsInterestLeaders"
+    }[key] || "community.trendsTitle"
+  );
 }
 
 // Fine interaction signals are optional and never block the user action. Only
 // allow-listed metadata is sent; no collection, search term or profile data.
 function trackSpriteGraphInteraction(type, details = {}) {
   try {
-    if (!localStorage.getItem(TOKEN_KEY) || !API_BASE || typeof authHeaders !== "function") return;
+    if (!hasAuthSession() || !API_BASE || typeof authHeaders !== "function") return;
     const source = typeof isNativePlatform === "function" && isNativePlatform() ? "ios" : "web";
     fetch(`${API_BASE}/sprite-graph/interactions`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ type, source, ...details })
     }).catch(() => {});
-  } catch (_) { /* analytics must stay non-blocking */ }
+  } catch (_) {
+    /* analytics must stay non-blocking */
+  }
 }
 
 function renderCommunityPublicBlock(data, { includeHistory = false, history = null } = {}) {
@@ -100,10 +107,15 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
     const own = history.ownership;
     const prio = history.priorities;
     const lang = uiLocale();
-    const points = (history.series || []).slice(-5).map((p) => `
+    const points = (history.series || [])
+      .slice(-5)
+      .map(
+        (p) => `
       <li><span>${sgEscape(new Date(p.date).toLocaleDateString(lang, { day: "numeric", month: "long" }))}</span>
           <strong>${sgFormatPercent(p.ownershipRate)}</strong></li>
-    `).join("");
+    `
+      )
+      .join("");
     historyHtml = `
       <div class="sg-community__history">
         <h4 class="sg-community__subtitle">${sgEscape(t("community.ownershipHistory"))}</h4>
@@ -117,19 +129,27 @@ function renderCommunityPublicBlock(data, { includeHistory = false, history = nu
   return `
     <div class="sg-community">
       <h3 class="sg-community__title">${sgEscape(t("community.sgTitle"))}</h3>
-      ${sep.officialRarity ? `
+      ${
+        sep.officialRarity
+          ? `
         <p class="sg-community__official">
           <span class="sg-community__label">${sgEscape(t("community.officialRarityLabel"))}</span>
           <strong>${sgEscape(localizedRarity(sep.officialRarity))}</strong>
         </p>
-        ${sep.ownershipLabel ? `
+        ${
+          sep.ownershipLabel
+            ? `
           <p class="sg-community__ownership">
             <span class="sg-community__label">${sgEscape(t("community.spriteIndexOwnershipLabel"))}</span>
             <strong>${sgFormatPercent(sep.spriteIndexOwnershipRate)}</strong>
           </p>
-        ` : ""}
+        `
+            : ""
+        }
         <p class="sg-community__note">${sgEscape(t("community.raritySeparationNote"))}</p>
-      ` : ""}
+      `
+          : ""
+      }
       <ul class="sg-community__lines">
         ${lines.map((l) => `<li>${sgEscape(t(l))}</li>`).join("")}
       </ul>
@@ -195,9 +215,10 @@ async function loadSpriteDetailCommunity(spriteId) {
     const board = await fetchSpriteCommunity(spriteId);
     const variants = board.variants || [];
     // Prefer Base variant, else first with data.
-    let pick = variants.find((v) => !v.insufficient && v.official?.variantName === "Base")
-      || variants.find((v) => !v.insufficient)
-      || variants[0];
+    let pick =
+      variants.find((v) => !v.insufficient && v.official?.variantName === "Base") ||
+      variants.find((v) => !v.insufficient) ||
+      variants[0];
 
     let history = null;
     if (pick && pick.variantId && !pick.insufficient) {
@@ -236,12 +257,16 @@ async function loadSpriteDetailCommunity(spriteId) {
     mount.innerHTML = `
       ${header}
       ${renderCommunityPublicBlock(pick, { includeHistory: true, history })}
-      ${compact ? `
+      ${
+        compact
+          ? `
         <div class="sg-community__variants">
           <h4 class="sg-community__subtitle">${sgEscape(t("community.variantOwnership"))}</h4>
           <ul class="sg-community__series">${compact}</ul>
         </div>
-      ` : ""}
+      `
+          : ""
+      }
     `;
   } catch (_) {
     mount.innerHTML = `<p class="sg-community__muted">${sgEscape(t("community.statsUnavailable"))}</p>`;
@@ -277,48 +302,55 @@ async function renderSpriteIndexTrends() {
       "mostCompared"
     ];
 
-    const blocks = order.map((key) => {
-      const sec = sections[key];
-      if (!sec) return "";
-      const items = sec.items || [];
-      if (!items.length) {
-        return `
+    const blocks = order
+      .map((key) => {
+        const sec = sections[key];
+        if (!sec) return "";
+        const items = sec.items || [];
+        if (!items.length) {
+          return `
           <div class="sg-trends__section">
             <h4 class="sg-trends__title">${sgEscape(sgTrendsSectionTitle(key))}</h4>
             <p class="sg-community__muted">${sgEscape(t("community.notEnoughData"))}</p>
           </div>
         `;
-      }
-      const rows = items.map((it) => {
-        const name = it.spriteName
-          ? `${it.spriteName}${it.variantName && it.variantName !== "Base" ? ` · ${it.variantName}` : ""}`
-          : (it.variantName || it.variantId || it.spriteId || "?");
-        let metric = "";
-        if (it.ownershipRate != null) metric = sgFormatPercent(it.ownershipRate);
-        else if (it.priorityUserCount != null) metric = t("community.prioritiesCount", { count: it.priorityUserCount });
-        else if (it.priorityAdds7d != null) metric = t("community.priorityAdds7d", { count: it.priorityAdds7d });
-        else if (it.change7d != null) metric = `${it.change7d >= 0 ? "+" : "−"}${sgFormatPercent(Math.abs(it.change7d), 0)}`;
-        else if (it.differenceAppearanceCount != null) metric = t("community.diffsCount", { count: it.differenceAppearanceCount });
-        else if (it.interestScore != null) metric = `${sgFormatRate(it.interestScore, 0)}`;
-        const rarity = it.officialRarity
-          ? `<span class="sg-trends__rarity">${sgEscape(t("community.officialRarityLabel"))} : ${sgEscape(localizedRarity(it.officialRarity))}</span>`
-          : "";
-        return `
+        }
+        const rows = items
+          .map((it) => {
+            const name = it.spriteName
+              ? `${it.spriteName}${it.variantName && it.variantName !== "Base" ? ` · ${it.variantName}` : ""}`
+              : it.variantName || it.variantId || it.spriteId || "?";
+            let metric = "";
+            if (it.ownershipRate != null) metric = sgFormatPercent(it.ownershipRate);
+            else if (it.priorityUserCount != null)
+              metric = t("community.prioritiesCount", { count: it.priorityUserCount });
+            else if (it.priorityAdds7d != null) metric = t("community.priorityAdds7d", { count: it.priorityAdds7d });
+            else if (it.change7d != null)
+              metric = `${it.change7d >= 0 ? "+" : "−"}${sgFormatPercent(Math.abs(it.change7d), 0)}`;
+            else if (it.differenceAppearanceCount != null)
+              metric = t("community.diffsCount", { count: it.differenceAppearanceCount });
+            else if (it.interestScore != null) metric = `${sgFormatRate(it.interestScore, 0)}`;
+            const rarity = it.officialRarity
+              ? `<span class="sg-trends__rarity">${sgEscape(t("community.officialRarityLabel"))} : ${sgEscape(localizedRarity(it.officialRarity))}</span>`
+              : "";
+            return `
           <li class="sg-trends__item">
             <span class="sg-trends__name">${sgEscape(name)}</span>
             ${rarity}
             <strong class="sg-trends__metric">${sgEscape(metric)}</strong>
           </li>
         `;
-      }).join("");
-      return `
+          })
+          .join("");
+        return `
         <div class="sg-trends__section">
           <h4 class="sg-trends__title">${sgEscape(sgTrendsSectionTitle(key))}</h4>
           ${sec.note ? `<p class="sg-community__note">${sgEscape(t("community.raritySeparationNote"))}</p>` : ""}
           <ul class="sg-trends__list">${rows}</ul>
         </div>
       `;
-    }).join("");
+      })
+      .join("");
 
     container.innerHTML = `
       <div class="stats-module sg-trends">

@@ -15,7 +15,7 @@ function compareItemHTML(item, extraHTML = "") {
     ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="ci-thumb" />`
     : `<span class="ci-thumb ci-thumb--empty">?</span>`;
   return `
-    <div class="compare-item" style="--card-color:${safeCssColor(item.color, '#8d7cff')}">
+    <div class="compare-item" style="--card-color:${safeCssColor(item.color, "#8d7cff")}">
       ${img}
       <div class="compare-item__info">
         <span class="compare-item__name">${escapeHtml(item.spriteName)}</span>
@@ -65,14 +65,23 @@ function scoreCompareHelp(record) {
   const reasons = [];
   let score = compareHelpPriorityWeight(recipient);
   if (score) reasons.push("priority");
-  if (isItemAvailable(record)) { score += 12; reasons.push("available"); }
+  if (isItemAvailable(record)) {
+    score += 12;
+    reasons.push("available");
+  }
   const days = compareHelpDeadline(record);
   if (days !== null && days >= 0 && days <= 14) {
     score += days <= 2 ? 32 : days <= 7 ? 22 : 12;
     reasons.push("deadline");
   }
-  const rarity = { mythic: 20, mythique: 20, legendary: 15, "légendaire": 15, epic: 9, "épique": 9, rare: 5 }[String(record.rarity || "").toLowerCase()] || 0;
-  if (rarity) { score += rarity; reasons.push("rarity"); }
+  const rarity =
+    { mythic: 20, mythique: 20, legendary: 15, légendaire: 15, epic: 9, épique: 9, rare: 5 }[
+      String(record.rarity || "").toLowerCase()
+    ] || 0;
+  if (rarity) {
+    score += rarity;
+    reasons.push("rarity");
+  }
   return { score, direction, reasons, days };
 }
 
@@ -91,8 +100,11 @@ function renderCompareHelpPanel(result, aName, bName) {
   const aidable = getCompareHelpRecords(records, "aidable");
   const iCanHelp = getCompareHelpRecords(records, "i-help");
   const friendCanHelp = getCompareHelpRecords(records, "friend-helps");
-  const best = aidable.map(record => ({ record, ...scoreCompareHelp(record) })).sort((a, b) => b.score - a.score)[0];
-  const bestCard = best && best.score >= 0 ? `<button type="button" class="compare-help-panel__best" data-compare-help-filter="${best.direction.friendCanHelp ? "friend-helps" : "i-help"}"><span>${escapeHtml(t("compare.smartPick"))}</span><strong>${escapeHtml(`${best.record.spriteName} · ${best.record.variantName || best.record.variantType || "Base"}`)}</strong><small>${escapeHtml(t(best.direction.friendCanHelp ? "compare.smartFriendHelps" : "compare.smartIHelp", { name: best.direction.friendCanHelp ? bName : aName }))} · ${escapeHtml(best.reasons.map(reason => t(`compare.smartReason.${reason}`)).join(" · ") || t("compare.smartReason.default"))}</small></button>` : "";
+  const best = aidable.map((record) => ({ record, ...scoreCompareHelp(record) })).sort((a, b) => b.score - a.score)[0];
+  const bestCard =
+    best && best.score >= 0
+      ? `<button type="button" class="compare-help-panel__best" data-compare-help-filter="${best.direction.friendCanHelp ? "friend-helps" : "i-help"}"><span>${escapeHtml(t("compare.smartPick"))}</span><strong>${escapeHtml(`${best.record.spriteName} · ${best.record.variantName || best.record.variantType || "Base"}`)}</strong><small>${escapeHtml(t(best.direction.friendCanHelp ? "compare.smartFriendHelps" : "compare.smartIHelp", { name: best.direction.friendCanHelp ? bName : aName }))} · ${escapeHtml(best.reasons.map((reason) => t(`compare.smartReason.${reason}`)).join(" · ") || t("compare.smartReason.default"))}</small></button>`
+      : "";
   return `<section class="compare-help-panel"><div class="compare-help-panel__lead"><span class="compare-help-panel__icon" aria-hidden="true">↔</span><div><p>${escapeHtml(t("compare.helpKicker"))}</p><h3>${escapeHtml(t("compare.helpTitle", { count: aidable.length }))}</h3><span>${escapeHtml(t("compare.helpDetail", { mine: iCanHelp.length, friend: friendCanHelp.length, friendName: bName }))}</span></div></div>${bestCard}<div class="compare-help-panel__actions"><button type="button" data-compare-help-filter="aidable">${escapeHtml(t("compare.helpAll", { count: aidable.length }))}</button><button type="button" data-compare-help-filter="i-help">${escapeHtml(t("compare.helpMine", { count: iCanHelp.length }))}</button><button type="button" data-compare-help-filter="friend-helps">${escapeHtml(t("compare.helpFriend", { name: bName, count: friendCanHelp.length }))}</button></div></section>`;
 }
 
@@ -100,8 +112,15 @@ function renderCompareSummary(result, aName, bName) {
   const s = result.summary;
   const safeA = escapeHtml(aName);
   const safeB = escapeHtml(bName);
-  const ownerLine = (name, count, other) => t("compare.ownerLine", { name: `<strong>${name}</strong>`, count: `<strong>${count}</strong>`, other: `<strong>${other}</strong>`, s: count !== 1 ? "s" : "", nt: count !== 1 ? "nt" : "" });
-  const pct = (v) => s.insufficientData ? "—" : `${v}%`;
+  const ownerLine = (name, count, other) =>
+    t("compare.ownerLine", {
+      name: `<strong>${name}</strong>`,
+      count: `<strong>${count}</strong>`,
+      other: `<strong>${other}</strong>`,
+      s: count !== 1 ? "s" : "",
+      nt: count !== 1 ? "nt" : ""
+    });
+  const pct = (v) => (s.insufficientData ? "—" : `${v}%`);
   const warning = s.insufficientData
     ? `<p class="compare-insufficient-warning">${t("compare.insufficientData")}</p>`
     : "";
@@ -150,7 +169,11 @@ function renderCompareSummary(result, aName, bName) {
   els.compareSummary.querySelectorAll("[data-compare-help-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       state.compareHelpFilter = button.dataset.compareHelpFilter || "all";
-      logCompareAnalytics("comparison_filter_used", { filter: "help", value: state.compareHelpFilter, source: "summary" });
+      logCompareAnalytics("comparison_filter_used", {
+        filter: "help",
+        value: state.compareHelpFilter,
+        source: "summary"
+      });
       renderCompare();
     });
   });
@@ -162,10 +185,11 @@ async function loadCompareCommunityContext(result, aName, bName) {
   const list = document.getElementById("compareCommunityList");
   if (!mount || !list || !result || !result.groups) return;
 
-  const pick = (arr, relation, n) => (arr || []).slice(0, n).map((r) => ({
-    variantId: r.variantId || r.id,
-    relation
-  }));
+  const pick = (arr, relation, n) =>
+    (arr || []).slice(0, n).map((r) => ({
+      variantId: r.variantId || r.id,
+      relation
+    }));
   const items = [
     ...pick(result.groups.bothMissing, "bothMissing", 3),
     ...pick(result.groups.onlyUserA, "onlyA", 2),
@@ -193,10 +217,13 @@ async function loadCompareCommunityContext(result, aName, bName) {
       return;
     }
     const variantLabel = (variantId) => {
-      const item = typeof getAllItems === "function"
-        ? getAllItems().find((candidate) => String(candidate.id) === String(variantId))
-        : null;
-      return item ? [item.spriteName, item.variantName || item.variant].filter(Boolean).join(" · ") : String(variantId || "?");
+      const item =
+        typeof getAllItems === "function"
+          ? getAllItems().find((candidate) => String(candidate.id) === String(variantId))
+          : null;
+      return item
+        ? [item.spriteName, item.variantName || item.variant].filter(Boolean).join(" · ")
+        : String(variantId || "?");
     };
     const personalLine = (ins) => {
       const name = variantLabel(ins.variantId);
@@ -207,22 +234,29 @@ async function loadCompareCommunityContext(result, aName, bName) {
     };
     const communityLine = (ins) => {
       if (ins.relation !== "bothMissing" && ins.priorityRateAmongMissing != null) {
-        return t("compare.communityPriority", { rate: formatUiPercent(ins.priorityRateAmongMissing, { maximumFractionDigits: 0 }) });
+        return t("compare.communityPriority", {
+          rate: formatUiPercent(ins.priorityRateAmongMissing, { maximumFractionDigits: 0 })
+        });
       }
       if (ins.ownershipRate != null) {
-        return t("compare.communityOwnership", { rate: formatUiPercent(ins.ownershipRate, { maximumFractionDigits: 1 }) });
+        return t("compare.communityOwnership", {
+          rate: formatUiPercent(ins.ownershipRate, { maximumFractionDigits: 1 })
+        });
       }
       return ins.communityLine ? t(ins.communityLine) : "";
     };
-    list.innerHTML = insights.map((ins) => `
+    list.innerHTML = insights
+      .map(
+        (ins) => `
       <div class="compare-community__item">
         ${personalLine(ins) ? `<p class="compare-community__personal">${escapeHtml(personalLine(ins))}</p>` : ""}
         ${communityLine(ins) ? `<p class="compare-community__stat">${escapeHtml(communityLine(ins))}</p>` : ""}
       </div>
-    `).join("");
+    `
+      )
+      .join("");
     mount.hidden = false;
   } catch (_e) {
     mount.hidden = true;
   }
 }
-

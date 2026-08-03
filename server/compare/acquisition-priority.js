@@ -20,12 +20,18 @@ function getAcquisitionRarityScore(rarity) {
 
 function getAcquisitionAvailabilityScore(availability) {
   switch (availability) {
-    case "available_now": return 15;
-    case "upcoming": return 12;
-    case "unknown": return 6;
-    case "not_observed": return 4;
-    case "ended": return 0;
-    default: return 5;
+    case "available_now":
+      return 15;
+    case "upcoming":
+      return 12;
+    case "unknown":
+      return 6;
+    case "not_observed":
+      return 4;
+    case "ended":
+      return 0;
+    default:
+      return 5;
   }
 }
 
@@ -82,11 +88,15 @@ function buildAcquisitionPriorityDisplay(item) {
   if (item.ownerCount === 0) {
     reasons.push("personne dans la squad ne possède cette variante");
   } else if (item.missingCount > 0) {
-    reasons.push(`${item.missingCount} membre${item.missingCount > 1 ? 's' : ''} de la squad ${item.missingCount > 1 ? 'la recherchent' : 'la recherche'}`);
+    reasons.push(
+      `${item.missingCount} membre${item.missingCount > 1 ? "s" : ""} de la squad ${item.missingCount > 1 ? "la recherchent" : "la recherche"}`
+    );
   }
 
   if (item.priorityCount > 0) {
-    reasons.push(`${item.priorityCount} membre${item.priorityCount > 1 ? 's l\'ont marquée prioritaire' : ' l\'a marquée prioritaire'}`);
+    reasons.push(
+      `${item.priorityCount} membre${item.priorityCount > 1 ? "s l'ont marquée prioritaire" : " l'a marquée prioritaire"}`
+    );
   }
 
   if (item.availability === "available_now") {
@@ -106,9 +116,9 @@ function buildAcquisitionPriorityDisplay(item) {
   let impactSentence = "";
   if (item.impactType === "collective") {
     const delta = item.collectiveCoverageDelta;
-    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} ferait passer la couverture collective de ${item.collectiveCoverageBefore}% à ${item.collectiveCoverageAfter}% (gain de ${delta >= 0 ? '+' : ''}${delta} point${delta === 1 || delta === -1 ? '' : 's'}).`;
+    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} ferait passer la couverture collective de ${item.collectiveCoverageBefore}% à ${item.collectiveCoverageAfter}% (gain de ${delta >= 0 ? "+" : ""}${delta} point${delta === 1 || delta === -1 ? "" : "s"}).`;
   } else if (item.impactType === "individual") {
-    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} n'augmenterait pas la couverture collective (déjà possédée par ${item.ownerCount} membre${item.ownerCount > 1 ? 's' : ''}).`;
+    impactSentence = ` Obtenir ${item.spriteName} ${item.variantName} n'augmenterait pas la couverture collective (déjà possédée par ${item.ownerCount} membre${item.ownerCount > 1 ? "s" : ""}).`;
   }
 
   if (reasons.length === 0) {
@@ -120,7 +130,7 @@ function buildAcquisitionPriorityDisplay(item) {
 function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
   const results = [];
   const totalVariants = matrix.length;
-  const coveredVariants = totalVariants ? matrix.filter(r => r.ownerCount > 0).length : 0;
+  const coveredVariants = totalVariants ? matrix.filter((r) => r.ownerCount > 0).length : 0;
 
   for (const row of matrix) {
     if (row.ownerCount >= row.memberCount) continue;
@@ -138,7 +148,10 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
     const deadlineScore = getDeadlineScore(row.endDate, availability);
     const objectiveScore = activeGoalVariantIds.has(row.variantId) ? 10 : 0;
 
-    const score = Math.min(100, impactScore + priorityScore + availabilityScore + rarityScore + deadlineScore + objectiveScore);
+    const score = Math.min(
+      100,
+      impactScore + priorityScore + availabilityScore + rarityScore + deadlineScore + objectiveScore
+    );
     const scoreDetails = {
       collectiveImpact: impactScore,
       personalPriority: priorityScore,
@@ -150,9 +163,10 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
 
     const impactType = row.ownerCount === 0 ? "collective" : "individual";
     const collectiveCoverageBefore = totalVariants ? Math.round((coveredVariants / totalVariants) * 10000) / 100 : 0;
-    const collectiveCoverageAfter = impactType === "collective" && totalVariants
-      ? Math.round(((coveredVariants + 1) / totalVariants) * 10000) / 100
-      : collectiveCoverageBefore;
+    const collectiveCoverageAfter =
+      impactType === "collective" && totalVariants
+        ? Math.round(((coveredVariants + 1) / totalVariants) * 10000) / 100
+        : collectiveCoverageBefore;
     const collectiveCoverageGain = impactType === "collective" ? 1 : 0;
     const collectiveCoverageDelta = Math.round((collectiveCoverageAfter - collectiveCoverageBefore) * 100) / 100;
 
@@ -190,7 +204,12 @@ function getSquadAcquisitionPriority(matrix, activeGoalVariantIds = new Set()) {
     results.push(item);
   }
 
-  results.sort((a, b) => b.score - a.score || getAcquisitionRarityScore(b.rarity) - getAcquisitionRarityScore(a.rarity) || String(a.spriteName).localeCompare(String(b.spriteName)));
+  results.sort(
+    (a, b) =>
+      b.score - a.score ||
+      getAcquisitionRarityScore(b.rarity) - getAcquisitionRarityScore(a.rarity) ||
+      String(a.spriteName).localeCompare(String(b.spriteName))
+  );
   return results.slice(0, 50);
 }
 
@@ -238,7 +257,14 @@ function computeSquadMemberStats(matrix) {
   return stats;
 }
 
-function isVariantAssignableForAcquisition(row, variant, excludedSeasonIds, activeGoalVariantCounts, memberGoalVariantSet, maxGoalAssignments) {
+function isVariantAssignableForAcquisition(
+  row,
+  variant,
+  excludedSeasonIds,
+  activeGoalVariantCounts,
+  memberGoalVariantSet,
+  maxGoalAssignments
+) {
   const availability = classifyRecommendationAvailability(row.availabilityStatus);
   if (availability === "ended" || availability === "not_observed") {
     const recurrence = row.availability?.recurrence?.status || "unknown";
@@ -255,5 +281,15 @@ function isVariantAssignableForAcquisition(row, variant, excludedSeasonIds, acti
   return true;
 }
 
-
-module.exports = { getAcquisitionRarityScore, getAcquisitionAvailabilityScore, getDeadlineScore, classifyEventUrgency, getAcquisitionPriorityLevel, buildAcquisitionPriorityDisplay, getSquadAcquisitionPriority, computeSquadMemberStats, isVariantAssignableForAcquisition, RARITY_ACQUISITION_SCORES };
+module.exports = {
+  getAcquisitionRarityScore,
+  getAcquisitionAvailabilityScore,
+  getDeadlineScore,
+  classifyEventUrgency,
+  getAcquisitionPriorityLevel,
+  buildAcquisitionPriorityDisplay,
+  getSquadAcquisitionPriority,
+  computeSquadMemberStats,
+  isVariantAssignableForAcquisition,
+  RARITY_ACQUISITION_SCORES
+};

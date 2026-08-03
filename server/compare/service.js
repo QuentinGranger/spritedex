@@ -1,7 +1,12 @@
 "use strict";
 
 const { analytics, pool, comparisonSessions, getCollectionAccessReason, getVisibility } = require("./shared");
-const { getCachedCompareResult, getServerCompareCatalogItemsCached, setCachedCompareResult, applyServerCompareFilters } = require("./cache");
+const {
+  getCachedCompareResult,
+  getServerCompareCatalogItemsCached,
+  setCachedCompareResult,
+  applyServerCompareFilters
+} = require("./cache");
 const { loadServerCompareCollection } = require("./catalog");
 const { compareCollectionsServer } = require("./complementarity");
 const { applyCollectionVisibilityFilters } = require("./visibility");
@@ -42,12 +47,24 @@ async function buildCompareResult(reqUser, targetUser, source, queryParams = {})
     ]);
     catalogueForVersion = catalogue;
 
-    const userA = { id: reqUser, displayName: reqUserRow.display_name || reqUserRow.username || reqUser, collection: collectionA };
-    const userB = { id: targetUser.id, displayName: targetUser.display_name || targetUser.username || targetUser.id, collection: collectionB };
+    const userA = {
+      id: reqUser,
+      displayName: reqUserRow.display_name || reqUserRow.username || reqUser,
+      collection: collectionA
+    };
+    const userB = {
+      id: targetUser.id,
+      displayName: targetUser.display_name || targetUser.username || targetUser.id,
+      collection: collectionB
+    };
 
     result = compareCollectionsServer(userA, userB, catalogue);
     setCachedCompareResult(reqUser, targetUser.id, result);
-    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId: reqUser, userBId: targetUser.id, source: sessionSource } });
+    analytics.logCompareAnalyticsEvent(pool, {
+      userId: reqUser,
+      event: "comparison_created",
+      details: { userAId: reqUser, userBId: targetUser.id, source: sessionSource }
+    });
   } else {
     catalogueForVersion = await getServerCompareCatalogItemsCached();
   }
@@ -60,7 +77,11 @@ async function buildCompareResult(reqUser, targetUser, source, queryParams = {})
   result = await applyCollectionVisibilityFilters(result, reqUser, userMap);
   result = applyServerCompareFilters(result, queryParams);
   result.accessReason = accessReason;
-  analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId: reqUser, userBId: targetUser.id, source: sessionSource } });
+  analytics.logCompareAnalyticsEvent(pool, {
+    userId: reqUser,
+    event: "comparison_viewed",
+    details: { userAId: reqUser, userBId: targetUser.id, source: sessionSource }
+  });
 
   // Étapes 27–29 — count unique comparison sessions (not every page reload).
   try {
@@ -86,6 +107,5 @@ async function buildCompareResult(reqUser, targetUser, source, queryParams = {})
 
   return result;
 }
-
 
 module.exports = { buildCompareResult };

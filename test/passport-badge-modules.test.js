@@ -29,10 +29,17 @@ assert.ok(facade.split("\n").length <= 75, "server/passport-badges.js must remai
 
 const badges = require("../server/passport-badges");
 for (const name of [
-  "resolveBadgeCopy", "evaluateBadgeCondition", "ensurePassportBadgeTables",
-  "unlockBadgesForUser", "awardBadgeByCode", "maybeAwardSquadFounder",
-  "evaluateEarlyCollectorQualified", "evaluateAllRaritiesOwned",
-  "awardEventCompletedBadges", "evaluateAndAwardComplementaryBadge", "listUserBadges"
+  "resolveBadgeCopy",
+  "evaluateBadgeCondition",
+  "ensurePassportBadgeTables",
+  "unlockBadgesForUser",
+  "awardBadgeByCode",
+  "maybeAwardSquadFounder",
+  "evaluateEarlyCollectorQualified",
+  "evaluateAllRaritiesOwned",
+  "awardEventCompletedBadges",
+  "evaluateAndAwardComplementaryBadge",
+  "listUserBadges"
 ]) {
   assert.strictEqual(typeof badges[name], "function", `${name} must remain public`);
 }

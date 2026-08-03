@@ -1,7 +1,7 @@
 function readEngineFilters() {
   const bar = document.getElementById("squadEngineFilterBar");
   if (!bar) return;
-  bar.querySelectorAll("[data-engine-filter]").forEach(el => {
+  bar.querySelectorAll("[data-engine-filter]").forEach((el) => {
     const key = el.dataset.engineFilter;
     if (el.tagName === "INPUT" && el.type === "checkbox") {
       engineFilters[key] = el.checked;
@@ -61,9 +61,14 @@ async function loadEngineCombinations(size) {
   if (!state.activeSquad || !resultEl) return;
   resultEl.innerHTML = `<p class="engine-empty">${t("engine.calculating")}</p>`;
   try {
-    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/completion/combinations?size=${encodeURIComponent(size)}`, { headers: authHeaders() });
+    const res = await fetch(
+      `${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/completion/combinations?size=${encodeURIComponent(size)}`,
+      { headers: authHeaders() }
+    );
     const data = await res.json().catch(() => ({}));
-    resultEl.innerHTML = res.ok ? renderEngineCombinationResult(data) : `<p class="engine-empty">${escapeHtml(data.error || t("engine.calcFailed"))}</p>`;
+    resultEl.innerHTML = res.ok
+      ? renderEngineCombinationResult(data)
+      : `<p class="engine-empty">${escapeHtml(data.error || t("engine.calcFailed"))}</p>`;
   } catch (e) {
     console.error("[loadEngineCombinations]", e);
     resultEl.innerHTML = `<p class="engine-empty">${t("common.networkError")}</p>`;
@@ -75,9 +80,14 @@ async function loadEngineMinimumTeam(target) {
   if (!state.activeSquad || !resultEl) return;
   resultEl.innerHTML = `<p class="engine-empty">${t("engine.calculating")}</p>`;
   try {
-    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/minimum-team?targetType=coverage&target=${encodeURIComponent(target)}`, { headers: authHeaders() });
+    const res = await fetch(
+      `${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/minimum-team?targetType=coverage&target=${encodeURIComponent(target)}`,
+      { headers: authHeaders() }
+    );
     const data = await res.json().catch(() => ({}));
-    resultEl.innerHTML = res.ok ? renderEngineMinimumTeamResult(data) : `<p class="engine-empty">${escapeHtml(data.error || t("engine.noTeamForTarget"))}</p>`;
+    resultEl.innerHTML = res.ok
+      ? renderEngineMinimumTeamResult(data)
+      : `<p class="engine-empty">${escapeHtml(data.error || t("engine.noTeamForTarget"))}</p>`;
   } catch (e) {
     console.error("[loadEngineMinimumTeam]", e);
     resultEl.innerHTML = `<p class="engine-empty">${t("common.networkError")}</p>`;
@@ -102,7 +112,7 @@ function setupSquadEngine() {
   if (els.squadEngineCloseBtn) {
     els.squadEngineCloseBtn.addEventListener("click", hideSquadEngine);
   }
-  document.querySelectorAll(".squad-engine__tab").forEach(btn => {
+  document.querySelectorAll(".squad-engine__tab").forEach((btn) => {
     btn.addEventListener("click", () => switchSquadEngineTab(btn.dataset.engineTab));
   });
   const missingPanel = document.getElementById("squadEnginePanel-missing");
@@ -175,7 +185,7 @@ function setupSquadEngine() {
       const stat = e.target.closest(".engine-stat");
       if (!stat) return;
       const isActive = stat.classList.contains("active");
-      document.querySelectorAll(".engine-stat").forEach(s => s.classList.remove("active"));
+      document.querySelectorAll(".engine-stat").forEach((s) => s.classList.remove("active"));
       if (!isActive) stat.classList.add("active");
     });
   }

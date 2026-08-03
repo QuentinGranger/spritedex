@@ -7,8 +7,8 @@ const COMPARE_ANALYTICS_EVENTS_SET = analytics.COMPARE_ANALYTICS_EVENTS;
 const ANALYTICS_ADMIN_IDS = new Set(
   String(process.env.ANALYTICS_ADMIN_USER_IDS || "")
     .split(",")
-    .map(id => id.trim())
-    .filter(id => /^\d+$/.test(id))
+    .map((id) => id.trim())
+    .filter((id) => /^\d+$/.test(id))
 );
 
 function isAnalyticsAdmin(userId) {
@@ -57,9 +57,7 @@ app.post("/api/analytics/product", security.analyticsLimiter, requireNotSuspende
       return res.status(400).json({ error: "Événement inconnu" });
     }
     const cleanDetails = sanitizeAnalyticsDetails(details);
-    const cleanSquadId = Number.isSafeInteger(Number(squadId)) && Number(squadId) > 0
-      ? Number(squadId)
-      : null;
+    const cleanSquadId = Number.isSafeInteger(Number(squadId)) && Number(squadId) > 0 ? Number(squadId) : null;
     analytics.logProductAnalyticsEvent(pool, {
       userId: reqUser,
       squadId: cleanSquadId,
@@ -100,6 +98,5 @@ app.get("/api/analytics/product", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
-
 
 module.exports = { isAnalyticsAdmin, sanitizeAnalyticsDetails, COMPARE_ANALYTICS_EVENTS_SET };

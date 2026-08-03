@@ -1,4 +1,3 @@
-
 .notif-item--unread {
   background: linear-gradient(105deg, rgba(0, 225, 255, 0.09), rgba(141, 124, 255, 0.055));
   border-color: rgba(0, 225, 255, 0.18);
@@ -46,8 +45,7 @@ body.light .notif-item--unread {
   gap: 20px;
   padding: 22px 24px;
   border: 1px solid var(--line-glow);
-  background:
-    linear-gradient(135deg, var(--surface-strong), var(--surface));
+  background: linear-gradient(135deg, var(--surface-strong), var(--surface));
   border-radius: 22px;
   box-shadow: var(--shadow);
   margin-bottom: 18px;

@@ -1,10 +1,10 @@
 "use strict";
 
 async function ensureNewsPublicationSchema(pool) {
-    // Imported news remains visible by default. Drafts created in the
-    // backoffice are intentionally excluded from the public feed until an
-    // operator explicitly publishes them.
-    await pool.query(`
+  // Imported news remains visible by default. Drafts created in the
+  // backoffice are intentionally excluded from the public feed until an
+  // operator explicitly publishes them.
+  await pool.query(`
       ALTER TABLE sprite_news
         ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'published',
         ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ,

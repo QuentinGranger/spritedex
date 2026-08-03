@@ -15,16 +15,18 @@ function setupMissingEvents() {
       renderMissing();
     });
   }
-  if (missingSort) missingSort.addEventListener("change", (event) => {
-    state.missingSort = event.target.value;
-    renderMissing();
-  });
-  if (missingFilterChips) missingFilterChips.addEventListener("click", (event) => {
-    const chip = event.target.closest("[data-missing-filter]");
-    if (!chip) return;
-    state.missingFilter = chip.dataset.missingFilter || "all";
-    renderMissing();
-  });
+  if (missingSort)
+    missingSort.addEventListener("change", (event) => {
+      state.missingSort = event.target.value;
+      renderMissing();
+    });
+  if (missingFilterChips)
+    missingFilterChips.addEventListener("click", (event) => {
+      const chip = event.target.closest("[data-missing-filter]");
+      if (!chip) return;
+      state.missingFilter = chip.dataset.missingFilter || "all";
+      renderMissing();
+    });
   if (clearMissingFilters) clearMissingFilters.addEventListener("click", () => resetMissingControls());
 
   els.missingList.addEventListener("click", (event) => {
@@ -59,10 +61,10 @@ function setupMissingEvents() {
     const btn = event.target.closest("[data-status]");
     if (btn) {
       const patch = { status: btn.dataset.status };
-      if (btn.dataset.status === "owned" && !getEntry(btn.dataset.id).obtainedAt) patch.obtainedAt = new Date().toISOString();
+      if (btn.dataset.status === "owned" && !getEntry(btn.dataset.id).obtainedAt)
+        patch.obtainedAt = new Date().toISOString();
       setEntry(btn.dataset.id, patch);
       toast(statusLabel(btn.dataset.status));
     }
   });
-
 }

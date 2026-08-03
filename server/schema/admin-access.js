@@ -1,10 +1,10 @@
 "use strict";
 
 async function ensureAdminAccessSchema(pool) {
-    // Backoffice actions are deliberately separate from the product/security
-    // logs. They contain no session secrets and make every administrative
-    // mutation attributable to the protected terminal session.
-    await pool.query(`
+  // Backoffice actions are deliberately separate from the product/security
+  // logs. They contain no session secrets and make every administrative
+  // mutation attributable to the protected terminal session.
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS admin_audit_log (
         id BIGSERIAL PRIMARY KEY,
         actor VARCHAR(80) NOT NULL DEFAULT 'terminal',

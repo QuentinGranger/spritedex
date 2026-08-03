@@ -13,10 +13,9 @@ const squadCompletion = require("./notification-squad-completion");
 const ACTIVE_FRIEND_STATUSES = ["pending", "accepted", "blocked"];
 
 async function memberAcceptsFriendRequests(reqUser, memberId) {
-  const result = await pool.query(
-    "SELECT friend_invites_from FROM users WHERE id = $1 AND deleted_at IS NULL",
-    [memberId]
-  );
+  const result = await pool.query("SELECT friend_invites_from FROM users WHERE id = $1 AND deleted_at IS NULL", [
+    memberId
+  ]);
   if (!result.rows.length) return false;
   const setting = result.rows[0].friend_invites_from || "everyone";
   if (setting === "nobody") return false;
@@ -32,14 +31,13 @@ async function getMemberFriendshipStatus(reqUser, memberId) {
     return { friendshipStatus: "blocked", canReceiveFriendRequest: false, friendRequestDirection: null };
   }
   const relationship = await getRelationship(reqUser, memberId);
-  const friendshipStatus = relationship && ACTIVE_FRIEND_STATUSES.includes(relationship.status)
-    ? relationship.status
-    : "none";
+  const friendshipStatus =
+    relationship && ACTIVE_FRIEND_STATUSES.includes(relationship.status) ? relationship.status : "none";
   let friendRequestDirection = null;
   if (relationship && relationship.status === "pending") {
     friendRequestDirection = String(relationship.requester_id) === String(reqUser) ? "sent" : "received";
   }
-  const canReceiveFriendRequest = friendshipStatus === "none" && await memberAcceptsFriendRequests(reqUser, memberId);
+  const canReceiveFriendRequest = friendshipStatus === "none" && (await memberAcceptsFriendRequests(reqUser, memberId));
   return { friendshipStatus, canReceiveFriendRequest, friendRequestDirection };
 }
 
@@ -56,7 +54,7 @@ async function getVisibleSquadMemberIds(squadId, reqUser) {
   );
   const visible = [];
   for (const row of result.rows) {
-    if (String(row.id) === String(reqUser) || await canViewCollection(reqUser, row.id)) {
+    if (String(row.id) === String(reqUser) || (await canViewCollection(reqUser, row.id))) {
       visible.push(row.id);
     }
   }
@@ -77,8 +75,11 @@ async function getSquadActiveMembers(squadId, reqUser) {
   );
   const members = [];
   for (const member of result.rows) {
-    if (reqUser && await isBlocked(reqUser, member.id)) continue;
-    const { friendshipStatus, canReceiveFriendRequest, friendRequestDirection } = await getMemberFriendshipStatus(reqUser, member.id);
+    if (reqUser && (await isBlocked(reqUser, member.id))) continue;
+    const { friendshipStatus, canReceiveFriendRequest, friendRequestDirection } = await getMemberFriendshipStatus(
+      reqUser,
+      member.id
+    );
     members.push({
       userId: member.id,
       username: member.username,
@@ -115,7 +116,7 @@ async function getSquadPreview(squad, reqUser) {
       [reqUser, squad.id]
     )
   ]);
-  const friendsInSquad = friendsResult.rows.map(row => ({
+  const friendsInSquad = friendsResult.rows.map((row) => ({
     id: row.id,
     username: row.username,
     displayName: row.displayName,
@@ -137,15 +138,12 @@ async function getSquadPreview(squad, reqUser) {
   };
 }
 
-async function refreshSquadStats(squadId, {
-  contributingUserId = null,
-  newVariantIds = []
-} = {}) {
+async function refreshSquadStats(squadId, { contributingUserId = null, newVariantIds = [] } = {}) {
   await squadCompletion.ensureSquadCompletionTables();
   const previous = await squadCompletion.readPreviousStats(squadId);
 
   const members = await getSquadActiveMembers(squadId, null);
-  const memberIds = members.map(m => m.userId);
+  const memberIds = members.map((m) => m.userId);
   const [completion, recommendationsData] = await Promise.all([
     compare.getSquadCollectiveCompletionSummary(memberIds),
     compare.getSquadRecommendations(memberIds)
@@ -157,18 +155,20 @@ async function refreshSquadStats(squadId, {
   // completion notification flow below applies per-recipient visibility checks
   // before exposing a rate, count or variant.
 
-  const immediateRecs = (recommendationsData.immediate || []);
-  const recPayload = JSON.stringify(immediateRecs.map(r => ({
-    variantId: r.variantId,
-    spriteId: r.spriteId,
-    spriteName: r.spriteName,
-    variantName: r.variantName,
-    img: r.img,
-    availability: r.availability,
-    availabilityStatus: r.availabilityStatus,
-    ownedByCount: r.ownedByCount,
-    wantedByCount: r.wantedByCount
-  })));
+  const immediateRecs = recommendationsData.immediate || [];
+  const recPayload = JSON.stringify(
+    immediateRecs.map((r) => ({
+      variantId: r.variantId,
+      spriteId: r.spriteId,
+      spriteName: r.spriteName,
+      variantName: r.variantName,
+      img: r.img,
+      availability: r.availability,
+      availabilityStatus: r.availabilityStatus,
+      ownedByCount: r.ownedByCount,
+      wantedByCount: r.wantedByCount
+    }))
+  );
   await pool.query(
     `INSERT INTO squad_stats
        (squad_id, collective_completion_rate, covered_count, total_variants, recommendations, computed_at)
@@ -179,26 +179,22 @@ async function refreshSquadStats(squadId, {
                    total_variants = EXCLUDED.total_variants,
                    recommendations = EXCLUDED.recommendations,
                    computed_at = EXCLUDED.computed_at`,
-    [
-      squadId,
-      completion.collectiveCompletionRate,
-      completion.ownedCount,
-      completion.totalVariants,
-      recPayload
-    ]
+    [squadId, completion.collectiveCompletionRate, completion.ownedCount, completion.totalVariants, recPayload]
   );
 
   // Étapes 22–23 — emit only when collective coverage actually increased.
   if (contributingUserId && newVariantIds.length) {
-    await squadCompletion.emitIfCoverageIncreased(squadId, {
-      contributingUserId,
-      newVariantIds,
-      previousRate: previous.previousRate,
-      previousCoveredCount: previous.previousCoveredCount,
-      newRate: completion.collectiveCompletionRate,
-      newCoveredCount: completion.ownedCount,
-      totalVariants: completion.totalVariants
-    }).catch(err => console.error("[refreshSquadStats] completion emit failed", err));
+    await squadCompletion
+      .emitIfCoverageIncreased(squadId, {
+        contributingUserId,
+        newVariantIds,
+        previousRate: previous.previousRate,
+        previousCoveredCount: previous.previousCoveredCount,
+        newRate: completion.collectiveCompletionRate,
+        newCoveredCount: completion.ownedCount,
+        totalVariants: completion.totalVariants
+      })
+      .catch((err) => console.error("[refreshSquadStats] completion emit failed", err));
   }
 
   return completion.collectiveCompletionRate;
@@ -211,10 +207,9 @@ const LARGE_SQUAD_REFRESH_DELAY_MS = 2000;
 async function scheduleSquadStatsRefresh(squadId) {
   if (pendingSquadStatsRefreshes.has(squadId)) return;
 
-  const countRes = await pool.query(
-    "SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'",
-    [squadId]
-  );
+  const countRes = await pool.query("SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'", [
+    squadId
+  ]);
   const memberCount = parseInt(countRes.rows[0].count);
 
   const runRefresh = async () => {
@@ -237,24 +232,23 @@ async function scheduleSquadStatsRefresh(squadId) {
 
 async function notifySquadOfJoin(squadId, joinerId, squadCode, squadName) {
   try {
-    const joinerRes = await pool.query(
-      "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
-      [joinerId]
-    );
+    const joinerRes = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [joinerId]);
     const joinerName = joinerRes.rows[0]?.username || null;
     const members = await pool.query(
       "SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active' AND user_id <> $2",
       [squadId, joinerId]
     );
     for (const row of members.rows) {
-      pushService.createNotification(pool, {
-        recipientId: row.user_id,
-        actorId: joinerId,
-        type: "squad_member_joined",
-        entityId: squadId,
-        context: { squadId, squadCode, squadName, joinerName, actorName: joinerName },
-        url: `/squad/${squadCode}`
-      }).catch(err => console.error("[notifySquadOfJoin] notification failed", err));
+      pushService
+        .createNotification(pool, {
+          recipientId: row.user_id,
+          actorId: joinerId,
+          type: "squad_member_joined",
+          entityId: squadId,
+          context: { squadId, squadCode, squadName, joinerName, actorName: joinerName },
+          url: `/squad/${squadCode}`
+        })
+        .catch((err) => console.error("[notifySquadOfJoin] notification failed", err));
     }
   } catch (err) {
     console.error("[notifySquadOfJoin]", err);
@@ -263,14 +257,12 @@ async function notifySquadOfJoin(squadId, joinerId, squadCode, squadName) {
 
 async function buildInvitationContext(invitation, reqUser) {
   const [squadResult, inviterResult] = await Promise.all([
-    pool.query(
-      "SELECT id, code, name, join_open, logo_url, created_at FROM squads WHERE id = $1",
-      [invitation.squad_id]
-    ),
-    pool.query(
-      "SELECT id, username, display_name, avatar_url FROM users WHERE id = $1 AND deleted_at IS NULL",
-      [invitation.inviter_id]
-    )
+    pool.query("SELECT id, code, name, join_open, logo_url, created_at FROM squads WHERE id = $1", [
+      invitation.squad_id
+    ]),
+    pool.query("SELECT id, username, display_name, avatar_url FROM users WHERE id = $1 AND deleted_at IS NULL", [
+      invitation.inviter_id
+    ])
   ]);
   const squad = squadResult.rows[0];
   const inviter = inviterResult.rows[0];
@@ -293,12 +285,12 @@ async function buildInvitationContext(invitation, reqUser) {
          AND (u.suspended_until IS NULL OR u.suspended_until < NOW())`,
       [reqUser, invitation.squad_id]
     ),
-    pool.query(
-      "SELECT 1 FROM squad_members WHERE squad_id = $1 AND user_id = $2 AND status = 'active'",
-      [invitation.squad_id, reqUser]
-    )
+    pool.query("SELECT 1 FROM squad_members WHERE squad_id = $1 AND user_id = $2 AND status = 'active'", [
+      invitation.squad_id,
+      reqUser
+    ])
   ]);
-  const friendsInSquad = friendsResult.rows.map(row => ({
+  const friendsInSquad = friendsResult.rows.map((row) => ({
     id: row.id,
     username: row.username,
     displayName: row.displayName,
@@ -383,10 +375,9 @@ async function acceptInvitation(invitationId, reqUser) {
     }
     invitation = invResult.rows[0];
     if (invitation.expires_at && new Date(invitation.expires_at) <= new Date()) {
-      await client.query(
-        "UPDATE squad_invitations SET status = 'expired', responded_at = NOW() WHERE id = $1",
-        [invitationId]
-      );
+      await client.query("UPDATE squad_invitations SET status = 'expired', responded_at = NOW() WHERE id = $1", [
+        invitationId
+      ]);
       await client.query("COMMIT");
       committed = true;
       const err = new Error("Invitation expirée");
@@ -398,10 +389,9 @@ async function acceptInvitation(invitationId, reqUser) {
       [invitation.squad_id, reqUser]
     );
     if (alreadyMember.rows.length) {
-      await client.query(
-        "UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1",
-        [invitationId]
-      );
+      await client.query("UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1", [
+        invitationId
+      ]);
       await client.query("COMMIT");
       committed = true;
       return { ok: true, squadCode: invitation.code };
@@ -409,10 +399,7 @@ async function acceptInvitation(invitationId, reqUser) {
 
     // Lock the parent row before counting.  Direct joins take the same lock,
     // so a COUNT/INSERT sequence cannot allow an eleventh active member.
-    const squadLock = await client.query(
-      "SELECT id FROM squads WHERE id = $1 FOR UPDATE",
-      [invitation.squad_id]
-    );
+    const squadLock = await client.query("SELECT id FROM squads WHERE id = $1 FOR UPDATE", [invitation.squad_id]);
     if (!squadLock.rows.length) {
       const err = new Error("Escouade introuvable");
       err.status = 404;
@@ -434,10 +421,9 @@ async function acceptInvitation(invitationId, reqUser) {
        DO UPDATE SET status = 'active', left_at = NULL, role = 'member'`,
       [invitation.squad_id, reqUser]
     );
-    await client.query(
-      "UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1",
-      [invitationId]
-    );
+    await client.query("UPDATE squad_invitations SET status = 'accepted', responded_at = NOW() WHERE id = $1", [
+      invitationId
+    ]);
     await client.query("COMMIT");
     committed = true;
   } catch (err) {
@@ -448,10 +434,9 @@ async function acceptInvitation(invitationId, reqUser) {
   }
   invalidateSquadAnalysisCache(invitation.squad_id);
 
-  const statsRes = await pool.query(
-    "SELECT collective_completion_rate FROM squad_stats WHERE squad_id = $1",
-    [invitation.squad_id]
-  );
+  const statsRes = await pool.query("SELECT collective_completion_rate FROM squad_stats WHERE squad_id = $1", [
+    invitation.squad_id
+  ]);
   const beforeRate = statsRes.rows.length ? parseFloat(statsRes.rows[0].collective_completion_rate) : 0;
   const afterRate = await refreshSquadStats(invitation.squad_id);
   const completionRateDelta = Math.round((afterRate - beforeRate) * 100) / 100;
@@ -485,7 +470,12 @@ async function acceptInvitation(invitationId, reqUser) {
     console.error("[invitations] passport activity failed", err);
   }
 
-  analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: invitation.squad_id, event: "friend_joined_squad", details: { invitationId, completionRateDelta, beforeRate, afterRate } });
+  analytics.logProductAnalyticsEvent(pool, {
+    userId: reqUser,
+    squadId: invitation.squad_id,
+    event: "friend_joined_squad",
+    details: { invitationId, completionRateDelta, beforeRate, afterRate }
+  });
 
   try {
     const {
@@ -505,12 +495,10 @@ async function acceptInvitation(invitationId, reqUser) {
         inviterId: invitation.inviter_id || null,
         memberRole: "member",
         memberCountAfterJoin: impact.memberCountAfterJoin,
-        collectiveCompletionBefore: impact.collectiveCompletionBefore != null
-          ? impact.collectiveCompletionBefore
-          : beforeRate,
-        collectiveCompletionAfter: impact.collectiveCompletionAfter != null
-          ? impact.collectiveCompletionAfter
-          : afterRate,
+        collectiveCompletionBefore:
+          impact.collectiveCompletionBefore != null ? impact.collectiveCompletionBefore : beforeRate,
+        collectiveCompletionAfter:
+          impact.collectiveCompletionAfter != null ? impact.collectiveCompletionAfter : afterRate,
         newVariantsAddedToSquad: impact.newVariantsAddedToSquad,
         sharedVariantsAdded: impact.sharedVariantsAdded,
         joinSource: "friend_invitation",
@@ -520,7 +508,9 @@ async function acceptInvitation(invitationId, reqUser) {
       }),
       deduplicationKey: `${GRAPH_EVENT_TYPES.SQUAD_JOINED}:${invitation.squad_id}:${reqUser}:invite:${invitationId}`
     });
-  } catch (_) { /* optional */ }
+  } catch (_) {
+    /* optional */
+  }
 
   return { ok: true, squadCode: invitation.code };
 }
@@ -535,10 +525,9 @@ async function declineInvitation(invitationId, reqUser) {
     err.status = 404;
     throw err;
   }
-  await pool.query(
-    "UPDATE squad_invitations SET status = 'declined', responded_at = NOW() WHERE id = $1",
-    [invitationId]
-  );
+  await pool.query("UPDATE squad_invitations SET status = 'declined', responded_at = NOW() WHERE id = $1", [
+    invitationId
+  ]);
   return { ok: true };
 }
 

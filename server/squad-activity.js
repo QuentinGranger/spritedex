@@ -14,25 +14,29 @@ const PUBLIC_SQUAD_PROFILE = new Set(["public", "squad", "squad_only"]);
 
 function buildSquadPushPayload(lang, params = {}) {
   const locale = resolveNotificationLanguage(lang, null);
-  const title = notifI18n.tNotif("notifications.squad_activity.title", {}, locale)
-    || (locale === "en" ? "SPRITE-INDEX — Squad" : locale === "nl" ? "SPRITE-INDEX — Team" : "SPRITE-INDEX — Escouade");
+  const title =
+    notifI18n.tNotif("notifications.squad_activity.title", {}, locale) ||
+    (locale === "en" ? "SPRITE-INDEX — Squad" : locale === "nl" ? "SPRITE-INDEX — Team" : "SPRITE-INDEX — Escouade");
   const template = params.activityTemplate || "default";
   const bodyKey = `notifications.squad_activity.${template}.body`;
   const localized = {
     ...params,
     template,
     activityTemplate: template,
-    actionLabel: locale === "en"
-      ? (params.actionLabelEn || params.actionLabel)
-      : locale === "nl"
-        ? (params.actionLabelNl || params.actionLabelEn || params.actionLabel)
-        : (params.actionLabelFr || params.actionLabel),
-    spriteName: locale === "en" || locale === "nl"
-      ? (params.spriteNameEn || params.spriteName)
-      : (params.spriteNameFr || params.spriteName),
-    friendName: params.friendName
-      || notifI18n.tNotif("notifications.fallback.player", {}, locale)
-      || (locale === "en" ? "A player" : locale === "nl" ? "Een speler" : "Un joueur")
+    actionLabel:
+      locale === "en"
+        ? params.actionLabelEn || params.actionLabel
+        : locale === "nl"
+          ? params.actionLabelNl || params.actionLabelEn || params.actionLabel
+          : params.actionLabelFr || params.actionLabel,
+    spriteName:
+      locale === "en" || locale === "nl"
+        ? params.spriteNameEn || params.spriteName
+        : params.spriteNameFr || params.spriteName,
+    friendName:
+      params.friendName ||
+      notifI18n.tNotif("notifications.fallback.player", {}, locale) ||
+      (locale === "en" ? "A player" : locale === "nl" ? "Een speler" : "Un joueur")
   };
   const interpolateParams = notifI18n.buildInterpolateParams("squad_activity", localized, locale);
   const body = notifI18n.tNotif(bodyKey, interpolateParams, locale) || "";
@@ -45,10 +49,7 @@ function buildSquadPushPayload(lang, params = {}) {
 }
 
 async function preferredLanguageForUser(userId) {
-  const res = await pool.query(
-    "SELECT preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL",
-    [userId]
-  );
+  const res = await pool.query("SELECT preferred_language FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
   return resolveNotificationLanguage(res.rows[0]?.preferred_language, null);
 }
 
@@ -73,14 +74,17 @@ async function notifySelectedSquadMembers(squadId, recipientIds, messageParams) 
     [squadId, ids]
   );
 
-  await Promise.all(recipients.rows.map(async ({ user_id: recipientId, preferred_language: preferredLanguage }) => {
-    const payload = buildSquadPushPayload(preferredLanguage, {
-      ...messageParams,
-      squadId
-    });
-    return pushService.sendNotificationToUser(pool, recipientId, payload)
-      .catch(err => console.error("[squad-activity] selected push failed:", err));
-  }));
+  await Promise.all(
+    recipients.rows.map(async ({ user_id: recipientId, preferred_language: preferredLanguage }) => {
+      const payload = buildSquadPushPayload(preferredLanguage, {
+        ...messageParams,
+        squadId
+      });
+      return pushService
+        .sendNotificationToUser(pool, recipientId, payload)
+        .catch((err) => console.error("[squad-activity] selected push failed:", err));
+    })
+  );
 }
 
 async function notifySquadMembersLocalized(squadId, excludeUserId, messageParams) {
@@ -96,14 +100,17 @@ async function notifySquadMembersLocalized(squadId, excludeUserId, messageParams
        AND u.push_pref_squad_activity = TRUE`,
     [squadId, excludeUserId || 0]
   );
-  await Promise.all(result.rows.map(({ user_id: recipientId, preferred_language: preferredLanguage }) => {
-    const payload = buildSquadPushPayload(preferredLanguage, {
-      ...messageParams,
-      squadId
-    });
-    return pushService.sendNotificationToUser(pool, recipientId, payload)
-      .catch(err => console.error("[squad-activity] push failed:", err));
-  }));
+  await Promise.all(
+    result.rows.map(({ user_id: recipientId, preferred_language: preferredLanguage }) => {
+      const payload = buildSquadPushPayload(preferredLanguage, {
+        ...messageParams,
+        squadId
+      });
+      return pushService
+        .sendNotificationToUser(pool, recipientId, payload)
+        .catch((err) => console.error("[squad-activity] push failed:", err));
+    })
+  );
 }
 
 async function logSquadEvent({
@@ -134,7 +141,7 @@ async function logSquadEvent({
       const send = Array.isArray(recipientIds)
         ? notifySelectedSquadMembers(squadId, recipientIds, params)
         : notifySquadMembersLocalized(squadId, userId, params);
-      send.catch(err => console.error("[squad-activity] push failed:", err));
+      send.catch((err) => console.error("[squad-activity] push failed:", err));
     }
   } catch (err) {
     console.error("[logSquadEvent]", err);
@@ -149,10 +156,7 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
     );
     if (!squads.rows.length) return [];
 
-    const userResult = await pool.query(
-      "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
-      [userId]
-    );
+    const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
     const username = userResult.rows[0]?.username || null;
 
     const spriteResult = await pool.query("SELECT name, official_name FROM sprites WHERE id = $1", [spriteId]);
@@ -167,7 +171,7 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
          WHERE squad_id = $1 AND status = 'active' AND user_id <> $2`,
         [squadId, userId]
       );
-      const otherIds = membersRes.rows.map(r => r.user_id);
+      const otherIds = membersRes.rows.map((r) => r.user_id);
       const visibleRecipientIds = [];
       for (const otherId of otherIds) {
         // Squad membership is never an implicit permission to inspect a
@@ -204,17 +208,14 @@ async function logSquadCollectionEvent(userId, variantId, spriteId, action) {
       });
     }
 
-    return squads.rows.map(r => r.squad_id);
+    return squads.rows.map((r) => r.squad_id);
   } catch (err) {
     console.error("[logSquadCollectionEvent]", err);
   }
 }
 
 async function logSquadMemberJoined(squadId, userId) {
-  const userResult = await pool.query(
-    "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
-    [userId]
-  );
+  const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
   const username = userResult.rows[0]?.username || null;
   await logSquadEvent({
     squadId,
@@ -283,10 +284,9 @@ async function logSquadCompletionMilestone(squadId, newRate) {
   try {
     if (newRate === null || newRate === undefined || isNaN(newRate)) return;
     const thresholds = [100, 90, 80, 75, 50, 25];
-    const prevRes = await pool.query(
-      "SELECT collective_completion_rate FROM squad_stats WHERE squad_id = $1",
-      [squadId]
-    );
+    const prevRes = await pool.query("SELECT collective_completion_rate FROM squad_stats WHERE squad_id = $1", [
+      squadId
+    ]);
     const prevRate = prevRes.rows.length ? parseFloat(prevRes.rows[0].collective_completion_rate) : 0;
 
     for (const threshold of thresholds) {
@@ -313,10 +313,7 @@ async function logSquadCompletionMilestone(squadId, newRate) {
 }
 
 async function logSquadGoalCreated(squadId, userId, goalName) {
-  const userResult = await pool.query(
-    "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
-    [userId]
-  );
+  const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
   const username = userResult.rows[0]?.username || null;
   await logSquadEvent({
     squadId,
@@ -334,10 +331,7 @@ async function logSquadGoalCreated(squadId, userId, goalName) {
 }
 
 async function logSquadGoalCompleted(squadId, userId, goalName, variantId) {
-  const userResult = await pool.query(
-    "SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL",
-    [userId]
-  );
+  const userResult = await pool.query("SELECT username FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
   const username = userResult.rows[0]?.username || null;
   const members = await pool.query(
     `SELECT sm.user_id

@@ -55,7 +55,9 @@ async function openSquadInviteDialog(friendId, friendName) {
   if (els.squadInviteDialogConfirm) els.squadInviteDialogConfirm.disabled = true;
   els.squadInviteDialog.showModal();
   try {
-    const res = await fetch(`${API_BASE}/squads/invitable?friendId=${encodeURIComponent(friendId)}`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/squads/invitable?friendId=${encodeURIComponent(friendId)}`, {
+      headers: authHeaders()
+    });
     if (!res.ok) throw new Error("failed to load squads");
     const data = await res.json();
     renderSquadInviteOptions(data.squads || []);
@@ -74,13 +76,17 @@ function renderSquadInviteOptions(squads) {
     if (els.squadInviteDialogConfirm) els.squadInviteDialogConfirm.disabled = true;
     return;
   }
-  const html = squads.map((s, i) => `
+  const html = squads
+    .map(
+      (s, i) => `
     <label class="squad-invite-option">
       <input type="radio" name="squadInviteChoice" value="${escapeHtml(s.code)}" ${i === 0 ? "checked" : ""}>
       <span class="squad-invite-option__name">${escapeHtml(s.name)}</span>
       <span class="squad-invite-option__meta">${escapeHtml(s.code)}</span>
     </label>
-  `).join("");
+  `
+    )
+    .join("");
   els.squadInviteDialogOptions.innerHTML = html;
   if (els.squadInviteDialogConfirm) els.squadInviteDialogConfirm.disabled = false;
 }

@@ -32,7 +32,7 @@ async function run() {
   process.exit(failed > 0 ? 1 : 0);
 }
 
-run().catch(err => {
+run().catch((err) => {
   console.error("\nTest runner crashed:", err.message);
   process.exit(1);
 });

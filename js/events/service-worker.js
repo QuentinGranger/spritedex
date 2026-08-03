@@ -7,7 +7,8 @@ function setupServiceWorker() {
     // "sw.js" would otherwise resolve to /u/sw.js and silently leave that
     // session on an old cache. updateViaCache:none pairs with the server's
     // no-cache worker response, so every app return can discover a deploy.
-    navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" })
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/", updateViaCache: "none" })
       .then((registration) => {
         const checkForUpdate = () => registration.update().catch(() => {});
         window.addEventListener("focus", checkForUpdate, { passive: true });
@@ -17,5 +18,4 @@ function setupServiceWorker() {
       })
       .catch(() => {});
   }
-
 }

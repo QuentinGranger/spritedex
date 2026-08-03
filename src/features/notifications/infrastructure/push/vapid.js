@@ -65,6 +65,7 @@ function createVapidKeysFile(filePath, keys) {
     `.${path.basename(filePath)}.${process.pid}.${crypto.randomBytes(16).toString("hex")}.tmp`
   );
   let fd;
+  let cleanupError = null;
   try {
     fd = fs.openSync(temporaryPath, "wx", 0o600);
     fs.writeFileSync(fd, `${JSON.stringify(keys, null, 2)}\n`, "utf8");
@@ -79,9 +80,10 @@ function createVapidKeysFile(filePath, keys) {
     try {
       fs.unlinkSync(temporaryPath);
     } catch (err) {
-      if (err.code !== "ENOENT") throw err;
+      if (err.code !== "ENOENT") cleanupError = err;
     }
   }
+  if (cleanupError) throw cleanupError;
 }
 
 function loadOrCreateVapidKeys(filePath = VAPID_FILE) {

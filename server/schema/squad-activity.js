@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureSquadActivitySchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS squad_activity (
         id SERIAL PRIMARY KEY,
         squad_id INTEGER REFERENCES squads(id) ON DELETE CASCADE,
@@ -15,15 +15,14 @@ async function ensureSquadActivitySchema(pool) {
       CREATE INDEX IF NOT EXISTS idx_squad_activity_squad ON squad_activity (squad_id, created_at DESC);
     `);
 
-    // Migrate pre-existing squad_activity tables to the unified schema.
-    await pool.query(`
+  // Migrate pre-existing squad_activity tables to the unified schema.
+  await pool.query(`
       ALTER TABLE squad_activity
         ADD COLUMN IF NOT EXISTS type VARCHAR(30) NOT NULL DEFAULT 'collection_update',
         ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}',
         ALTER COLUMN sprite_id DROP NOT NULL;
       CREATE INDEX IF NOT EXISTS idx_squad_activity_type ON squad_activity (squad_id, type, created_at DESC);
     `);
-
 }
 
 module.exports = { ensureSquadActivitySchema };

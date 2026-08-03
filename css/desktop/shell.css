@@ -36,10 +36,10 @@
     width: calc(var(--desktop-rail-width) + 18px);
     border: 1px solid var(--line);
     border-radius: 24px;
-    background:
-      linear-gradient(180deg, rgba(15, 25, 60, 0.9), rgba(8, 13, 34, 0.78)),
-      var(--surface);
-    box-shadow: 0 18px 70px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    background: linear-gradient(180deg, rgba(15, 25, 60, 0.9), rgba(8, 13, 34, 0.78)), var(--surface);
+    box-shadow:
+      0 18px 70px rgba(0, 0, 0, 0.32),
+      inset 0 1px 0 rgba(255, 255, 255, 0.035);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     pointer-events: none;
@@ -141,7 +141,9 @@
     transform: none;
     border-color: rgba(0, 225, 255, 0.26);
     background: linear-gradient(90deg, rgba(0, 225, 255, 0.18), rgba(141, 124, 255, 0.15));
-    box-shadow: inset 3px 0 0 var(--accent-2), 0 0 18px rgba(0, 225, 255, 0.08);
+    box-shadow:
+      inset 3px 0 0 var(--accent-2),
+      0 0 18px rgba(0, 225, 255, 0.08);
   }
 
   main {
@@ -153,8 +155,14 @@
   }
 
   @keyframes desktop-view-enter {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* A desktop swipe view becomes a two-column work area: card on the left,
@@ -173,11 +181,28 @@
     min-height: 650px;
   }
 
-  #view-swipe .deck-toolbar { grid-area: toolbar; margin: 0; }
-  #view-swipe .swipe-session { grid-area: session; margin: 0; }
-  #view-swipe .swipe-session-summary { grid-area: session; margin: 0; }
-  #view-swipe .swipe-shortcut-guide { grid-area: session; align-self: end; margin: 0; transform: translateY(calc(100% + 10px)); }
-  #view-swipe .deck-zone { grid-area: deck; min-height: 560px; }
+  #view-swipe .deck-toolbar {
+    grid-area: toolbar;
+    margin: 0;
+  }
+  #view-swipe .swipe-session {
+    grid-area: session;
+    margin: 0;
+  }
+  #view-swipe .swipe-session-summary {
+    grid-area: session;
+    margin: 0;
+  }
+  #view-swipe .swipe-shortcut-guide {
+    grid-area: session;
+    align-self: end;
+    margin: 0;
+    transform: translateY(calc(100% + 10px));
+  }
+  #view-swipe .deck-zone {
+    grid-area: deck;
+    min-height: 560px;
+  }
   #view-swipe .swipe-actions {
     grid-area: actions;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -185,7 +210,11 @@
     align-content: center;
     gap: 14px;
   }
-  #view-swipe .hint { grid-area: hint; margin: 0; text-align: center; }
+  #view-swipe .hint {
+    grid-area: hint;
+    margin: 0;
+    text-align: center;
+  }
 
   .sprite-card {
     width: min(440px, 100%);
@@ -217,8 +246,14 @@
     background: var(--surface);
   }
 
-  .checklist-toolbar .search-box { grid-column: 1; grid-row: 1; }
-  .checklist-toolbar .sort-bar { grid-column: 2; grid-row: 1; }
+  .checklist-toolbar .search-box {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .checklist-toolbar .sort-bar {
+    grid-column: 2;
+    grid-row: 1;
+  }
   .checklist-toolbar .filter-chips-bar {
     grid-column: 1 / -1;
     flex-wrap: wrap;
@@ -244,16 +279,24 @@
     gap: 20px;
   }
 
-  .stats-page > .stats-hero { grid-column: 1; margin: 0; min-height: 172px; }
+  .stats-page > .stats-hero {
+    grid-column: 1;
+    margin: 0;
+    min-height: 172px;
+  }
   .stats-page > .stats-kpis {
     grid-column: 2;
     margin: 0;
     height: 100%;
     align-content: stretch;
   }
-  .stats-page > .stats-module { margin: 0; }
+  .stats-page > .stats-module {
+    margin: 0;
+  }
   .stats-page > .stats-insights,
-  .stats-page > #communityStats { grid-column: 1 / -1; }
+  .stats-page > #communityStats {
+    grid-column: 1 / -1;
+  }
 
   .stats-kpi {
     display: grid;
@@ -333,4 +376,3 @@
     grid-template-columns: minmax(0, 1.35fr) minmax(370px, 0.8fr);
   }
 }
-

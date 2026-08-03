@@ -1,7 +1,5 @@
 "use strict";
 
-
-
 const { EARLY_COLLECTOR_BEFORE } = require("./content");
 
 const BADGE_SEED = [

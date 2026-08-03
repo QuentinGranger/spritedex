@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "seuils tendance + compare/squad context + reco hooks (Étapes 81–85)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     const {
       evaluateTrendEligibility,
       TREND_DISPLAY_REQUIREMENTS,
@@ -45,9 +45,7 @@ module.exports = {
     assert.strictEqual(allowed.ok, true);
 
     await ensureTrendTables(pool);
-    const variantRes = await pool.query(
-      `SELECT v.id FROM sprite_variants v ORDER BY v.id LIMIT 1`
-    );
+    const variantRes = await pool.query(`SELECT v.id FROM sprite_variants v ORDER BY v.id LIMIT 1`);
     const variantId = variantRes.rows[0].id;
     const localDay = (d) => {
       const y = d.getFullYear();
@@ -174,9 +172,7 @@ module.exports = {
       assert.strictEqual(ctx.peerGroup.ranking, null);
       assert.ok(ctx.peerGroup.sizeBand.id === "4_6");
 
-      const apiSquad = await fetch(
-        `${API}/sprite-graph/squads/${encodeURIComponent(squadRow.rows[0].code)}/community`
-      );
+      const apiSquad = await fetch(`${API}/sprite-graph/squads/${encodeURIComponent(squadRow.rows[0].code)}/community`);
       if (apiSquad.ok) {
         const body = await apiSquad.json();
         assert.strictEqual(body.peerGroup.competitive, false);
@@ -187,9 +183,7 @@ module.exports = {
     const readiness = getGraphRecommendationReadiness();
     assert.strictEqual(readiness.autoGenerate, false);
     assert.ok(readiness.surfaces.length >= 6);
-    assert.ok(
-      readiness.surfaces.every((s) => s.status === "reserved" && s.autoGenerate === false)
-    );
+    assert.ok(readiness.surfaces.every((s) => s.status === "reserved" && s.autoGenerate === false));
     const resolved = await resolveGraphRecommendations(pool, null, {
       surface: FUTURE_GRAPH_RECOMMENDATION_SURFACES.PRIORITY_SUGGESTIONS
     });

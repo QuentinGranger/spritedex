@@ -13,25 +13,47 @@ function isVariantReleasedAndActiveServer(item) {
 
 async function getServerCompareCatalogItems() {
   const [spritesRes, variantsRes] = await Promise.all([
-    pool.query(`SELECT id, slug, name, rarity, color, variants, season_id, event_id, acquisition, availability, data_status, is_released, available, added_date FROM sprites`),
-    pool.query(`SELECT id, sprite_id, variant_type, name, rarity, release_status, data_status, acquisition, availability, first_observed_at, image_path, suggested_image_path FROM sprite_variants`)
+    pool.query(
+      `SELECT id, slug, name, rarity, color, variants, season_id, event_id, acquisition, availability, data_status, is_released, available, added_date FROM sprites`
+    ),
+    pool.query(
+      `SELECT id, sprite_id, variant_type, name, rarity, release_status, data_status, acquisition, availability, first_observed_at, image_path, suggested_image_path FROM sprite_variants`
+    )
   ]);
   // Match /api/sprites exactly: legacy rows may duplicate the same sprite
   // under different ids. All totals, badges and squad calculations must use
   // the same canonical catalogue as the client.
   const canonicalSprites = dedupeSpritesBySlug(spritesRes.rows);
-  const canonicalBySlug = new Map(canonicalSprites.map((sprite) => [sprite.slug || String(sprite.id).replace(/^sprite_/, "").replace(/_/g, "-"), sprite]));
-  const spriteMap = new Map(spritesRes.rows.map((sprite) => {
-    const slug = sprite.slug || String(sprite.id).replace(/^sprite_/, "").replace(/_/g, "-");
-    return [sprite.id, canonicalBySlug.get(slug) || sprite];
-  }));
+  const canonicalBySlug = new Map(
+    canonicalSprites.map((sprite) => [
+      sprite.slug ||
+        String(sprite.id)
+          .replace(/^sprite_/, "")
+          .replace(/_/g, "-"),
+      sprite
+    ])
+  );
+  const spriteMap = new Map(
+    spritesRes.rows.map((sprite) => {
+      const slug =
+        sprite.slug ||
+        String(sprite.id)
+          .replace(/^sprite_/, "")
+          .replace(/_/g, "-");
+      return [sprite.id, canonicalBySlug.get(slug) || sprite];
+    })
+  );
   const items = [];
   const knownVariantKeys = new Set();
   for (const v of variantsRes.rows) {
     const sprite = spriteMap.get(v.sprite_id);
     if (!sprite) continue;
-    const variantAcquisition = buildAcquisitionMethod(v.acquisition && Object.keys(v.acquisition || {}).length ? v.acquisition : sprite.acquisition);
-    const variantAvailability = buildAvailability(v.availability && Object.keys(v.availability || {}).length ? v.availability : sprite.availability);
+    const variantAcquisition = buildAcquisitionMethod(
+      v.acquisition && Object.keys(v.acquisition || {}).length ? v.acquisition : sprite.acquisition
+    );
+    const variantAvailability = buildAvailability(
+      v.availability && Object.keys(v.availability || {}).length ? v.availability : sprite.availability
+    );
     const variantRecurrence = buildRecurrence(variantAvailability.recurrence);
     knownVariantKeys.add(`${sprite.id}::${v.variant_type}`);
     items.push({
@@ -66,9 +88,7 @@ async function getServerCompareCatalogItems() {
   // this fallback, progress endpoints could report 0/0 while the app showed
   // the complete catalogue.
   for (const sprite of canonicalSprites) {
-    const variantTypes = Array.isArray(sprite.variants) && sprite.variants.length
-      ? sprite.variants
-      : ["Base"];
+    const variantTypes = Array.isArray(sprite.variants) && sprite.variants.length ? sprite.variants : ["Base"];
     const availability = buildAvailability(sprite.availability);
     const recurrence = buildRecurrence(availability.recurrence);
     for (const rawType of variantTypes) {
@@ -106,6 +126,8 @@ async function getServerCompareCatalogItems() {
 }
 
 async function loadServerCompareCollection(userId) {
+  // Lazy require avoids a circular dependency with ./cache (which imports catalog).
+  const { pruneCollectionCache, collectionCache, COMPARE_CACHE_TTL_MS } = require("./cache");
   pruneCollectionCache();
   const uid = String(userId);
   const cached = collectionCache.get(uid);
@@ -137,6 +159,5 @@ async function loadServerCompareCollection(userId) {
   });
   return collection;
 }
-
 
 module.exports = { isVariantReleasedAndActiveServer, getServerCompareCatalogItems, loadServerCompareCollection };

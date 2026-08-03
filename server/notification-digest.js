@@ -26,19 +26,11 @@ async function ensureDigestQueueTable(pool) {
 }
 
 async function getUserTimeZone(pool, userId) {
-  const res = await pool.query(
-    "SELECT timezone FROM users WHERE id = $1 AND deleted_at IS NULL",
-    [userId]
-  );
+  const res = await pool.query("SELECT timezone FROM users WHERE id = $1 AND deleted_at IS NULL", [userId]);
   return normalizeTimeZone(res.rows[0]?.timezone);
 }
 
-async function enqueueDigestItem(pool, {
-  recipientId,
-  type,
-  payload = {},
-  flushAt = null
-}) {
+async function enqueueDigestItem(pool, { recipientId, type, payload = {}, flushAt = null }) {
   if (!recipientId || !type) return null;
   await ensureDigestQueueTable(pool);
   const timeZone = await getUserTimeZone(pool, recipientId);
@@ -103,12 +95,7 @@ async function flushDueDigestItems(pool, { limit = 50 } = {}) {
  * Create now, or enqueue for the daily digest, according to frequency.
  * Returns { mode: 'immediate'|'daily_digest'|'disabled'|'skipped', id? }.
  */
-async function deliverOrEnqueue(pool, {
-  recipientId,
-  type,
-  frequency,
-  createArgs
-}) {
+async function deliverOrEnqueue(pool, { recipientId, type, frequency, createArgs }) {
   const freq = catalog.normalizeFrequency(frequency, type);
   if (freq === catalog.NOTIFICATION_FREQUENCIES.DISABLED) {
     return { mode: "disabled" };

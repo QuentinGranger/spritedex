@@ -26,13 +26,9 @@ function resolveCompletionBand(rate) {
  * Étape 83–84 — squad community context vs anonymous peer group.
  * No competitive ranking — only gentle peer averages.
  */
-async function getSquadCommunityContext(db = pool, squadId, {
-  metricDate = null
-} = {}) {
+async function getSquadCommunityContext(db = pool, squadId, { metricDate = null } = {}) {
   await ensureSquadDailyStatsTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const id = Number(squadId);
   if (!Number.isFinite(id)) return null;
 
@@ -60,9 +56,7 @@ async function getSquadCommunityContext(db = pool, squadId, {
     memberCount = m.rows[0]?.n || 0;
   }
 
-  const completion = row.collective_completion_rate != null
-    ? Number(row.collective_completion_rate)
-    : null;
+  const completion = row.collective_completion_rate != null ? Number(row.collective_completion_rate) : null;
   const sizeBand = resolveSquadSizeBand(memberCount);
   const completionBand = resolveCompletionBand(completion);
 
@@ -86,18 +80,16 @@ async function getSquadCommunityContext(db = pool, squadId, {
   );
 
   const peerCount = peers.rows[0]?.n || 0;
-  const avgProgress = peers.rows[0]?.avg_progress_7d != null
-    ? round2(peers.rows[0].avg_progress_7d)
-    : null;
+  const avgProgress = peers.rows[0]?.avg_progress_7d != null ? round2(peers.rows[0].avg_progress_7d) : null;
 
-  const coverageLabel = completion != null
-    ? `${row.name || "La squad"} couvre ${round2(completion)} % du catalogue.`
-    : null;
-  const peerLabel = (peerCount >= 3 && avgProgress != null)
-    ? `Les squads comparables (${sizeBand.label.toLowerCase()}) progressent en moyenne de ${avgProgress} point${Math.abs(avgProgress) === 1 ? "" : "s"} par semaine.`
-    : peerCount > 0
-      ? `Groupe de comparaison : ${sizeBand.label} (données encore limitées).`
-      : null;
+  const coverageLabel =
+    completion != null ? `${row.name || "La squad"} couvre ${round2(completion)} % du catalogue.` : null;
+  const peerLabel =
+    peerCount >= 3 && avgProgress != null
+      ? `Les squads comparables (${sizeBand.label.toLowerCase()}) progressent en moyenne de ${avgProgress} point${Math.abs(avgProgress) === 1 ? "" : "s"} par semaine.`
+      : peerCount > 0
+        ? `Groupe de comparaison : ${sizeBand.label} (données encore limitées).`
+        : null;
 
   return {
     squadId: id,

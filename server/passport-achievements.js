@@ -6,9 +6,7 @@ const compare = require("./compare");
 const { computeCatalogueVersion } = require("./squad-analysis-cache");
 const { computePassportProgress, passportReliability } = require("./passport-math");
 
-const PASSPORT_EXPLICIT_STATUSES = new Set([
-  "owned", "missing", "priority", "spotted", "unavailable", "unknown"
-]);
+const PASSPORT_EXPLICIT_STATUSES = new Set(["owned", "missing", "priority", "spotted", "unavailable", "unknown"]);
 
 const ACHIEVEMENT_DEFS = [
   {
@@ -103,10 +101,7 @@ async function syncEventCollectionVersions(catalogue) {
 
   const eventIds = [...byEvent.keys()];
   // Only version events that exist in the events table (FK).
-  const existing = await pool.query(
-    "SELECT id, name, end_date FROM events WHERE id = ANY($1::text[])",
-    [eventIds]
-  );
+  const existing = await pool.query("SELECT id, name, end_date FROM events WHERE id = ANY($1::text[])", [eventIds]);
   const eventMeta = new Map(existing.rows.map((r) => [String(r.id), r]));
 
   for (const [eventId, idSet] of byEvent.entries()) {
@@ -125,10 +120,9 @@ async function syncEventCollectionVersions(catalogue) {
     if (row && !row.ended_at && sameVariantSet(currentIds, required)) continue;
 
     if (row && !row.ended_at) {
-      await pool.query(
-        "UPDATE event_collection_versions SET ended_at = NOW() WHERE id = $1 AND ended_at IS NULL",
-        [row.id]
-      );
+      await pool.query("UPDATE event_collection_versions SET ended_at = NOW() WHERE id = $1 AND ended_at IS NULL", [
+        row.id
+      ]);
     }
     const nextVersion = row ? Number(row.version) + 1 : 1;
     await pool.query(
@@ -235,10 +229,7 @@ async function unlockAchievements(userId, ctx) {
 }
 
 async function updateCollectionPeak(userId, progress, catalogueVersion) {
-  const existing = await pool.query(
-    "SELECT * FROM user_collection_peaks WHERE user_id = $1",
-    [userId]
-  );
+  const existing = await pool.query("SELECT * FROM user_collection_peaks WHERE user_id = $1", [userId]);
   const prev = existing.rows[0] ? Number(existing.rows[0].peak_completion_rate) : -1;
   // Étape 16 — never lower the historical record; only raise it.
   if (existing.rows[0] && progress.completionRatePrecise <= prev + 1e-9) {
@@ -359,9 +350,7 @@ async function getEventProgressSections(userId, ownedIds) {
       daysRemaining = Math.ceil((new Date(endDate).getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
       if (!Number.isFinite(daysRemaining)) daysRemaining = null;
     }
-    const progressRate = required.length
-      ? Math.round((ownedCount / required.length) * 1000) / 10
-      : 0;
+    const progressRate = required.length ? Math.round((ownedCount / required.length) * 1000) / 10 : 0;
     inProgress.push({
       eventId: row.event_id,
       eventName: row.event_name || row.event_id,
@@ -441,10 +430,7 @@ async function buildPassportEvalContext(userId, db = pool, { notify = true } = {
        WHERE user_id = $1 AND status = 'active'`,
       [userId]
     ),
-    db.query(
-      `SELECT COUNT(*)::int AS count FROM squads WHERE created_by = $1`,
-      [userId]
-    )
+    db.query(`SELECT COUNT(*)::int AS count FROM squads WHERE created_by = $1`, [userId])
   ]);
 
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
@@ -458,10 +444,9 @@ async function buildPassportEvalContext(userId, db = pool, { notify = true } = {
     await badges.recordCatalogueReview(userId, catalogueVersion, ctxBase.reliability.rate, db);
   }
 
-  const completions = await db.query(
-    "SELECT COUNT(*)::int AS count FROM user_event_completions WHERE user_id = $1",
-    [userId]
-  );
+  const completions = await db.query("SELECT COUNT(*)::int AS count FROM user_event_completions WHERE user_id = $1", [
+    userId
+  ]);
 
   const earlyDef = (await badges.listBadgeDefinitions(db)).find((d) => d.code === "early_collector");
   const allRarities = badges.evaluateAllRaritiesOwned(catalogue, ctxBase.ownedIds);
@@ -528,11 +513,17 @@ async function refreshPassportProgress(userId, triggerEvent = "collection.update
   if (!triggerEvent || String(triggerEvent).startsWith("collection.")) {
     const founder = await badges.maybeAwardSquadFounder(userId);
     if (founder && notify) {
-      await badgeEngine.notifyBadgeUnlocks(userId, [{
-        badgeCode: "squad_founder",
-        code: "squad_founder",
-        label: "Fondateur de squad"
-      }], { batch: false });
+      await badgeEngine.notifyBadgeUnlocks(
+        userId,
+        [
+          {
+            badgeCode: "squad_founder",
+            code: "squad_founder",
+            label: "Fondateur de squad"
+          }
+        ],
+        { batch: false }
+      );
     }
   }
 
@@ -544,37 +535,40 @@ async function refreshPassportProgress(userId, triggerEvent = "collection.update
       comparisonCount: 0,
       distinctCollectorsCompared: 0
     }));
-    await snapshots.maybeCreatePassportStatSnapshot(userId, {
-      catalogueVersion: built.catalogueVersion,
-      ownedSpriteCount: built.ctx.discoveredSpriteCount || 0,
-      ownedVariantCount: built.progress.ownedVariantCount || 0,
-      releasedVariantCount: built.progress.releasedVariantCount || 0,
-      completionRate: built.progress.completionRatePrecise || 0,
-      collectionCoverageRate: built.ctx.reliabilityRate || 0,
-      completedEventCount: built.ctx.eventsCompletedCount || 0,
-      comparisonCount: comparisonStats.comparisonCount || 0
-    }, {
-      unlockedCodes: (evalResult.unlocked || []).map((u) => u.badgeCode || u.code),
-      // Only write paths set collectionChanged: true (daily snapshot gate).
-      collectionChanged: options.collectionChanged === true
-    });
+    await snapshots.maybeCreatePassportStatSnapshot(
+      userId,
+      {
+        catalogueVersion: built.catalogueVersion,
+        ownedSpriteCount: built.ctx.discoveredSpriteCount || 0,
+        ownedVariantCount: built.progress.ownedVariantCount || 0,
+        releasedVariantCount: built.progress.releasedVariantCount || 0,
+        completionRate: built.progress.completionRatePrecise || 0,
+        collectionCoverageRate: built.ctx.reliabilityRate || 0,
+        completedEventCount: built.ctx.eventsCompletedCount || 0,
+        comparisonCount: comparisonStats.comparisonCount || 0
+      },
+      {
+        unlockedCodes: (evalResult.unlocked || []).map((u) => u.badgeCode || u.code),
+        // Only write paths set collectionChanged: true (daily snapshot gate).
+        collectionChanged: options.collectionChanged === true
+      }
+    );
 
     // Étape 72 — materialised summary for fast passport reads.
     const summaryMod = require("./passport-summary");
     const peakRate = peak
       ? Number(peak.peak_completion_rate) || built.progress.completionRatePrecise || 0
       : built.progress.completionRatePrecise || 0;
-    const releasedSpriteCount = new Set(
-      (built.catalogue || []).map((item) => String(item.spriteId))
-    ).size;
+    const releasedSpriteCount = new Set((built.catalogue || []).map((item) => String(item.spriteId))).size;
     let lastCollectionUpdateAt = null;
     try {
-      const lastUp = await pool.query(
-        "SELECT MAX(updated_at) AS last_updated FROM sprite_entries WHERE user_id = $1",
-        [userId]
-      );
+      const lastUp = await pool.query("SELECT MAX(updated_at) AS last_updated FROM sprite_entries WHERE user_id = $1", [
+        userId
+      ]);
       lastCollectionUpdateAt = lastUp.rows[0]?.last_updated || null;
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     const rarityStats = require("./passport-math").computeOwnedRarityStats(
       built.catalogue || [],
       built.ownedIds || new Set()
@@ -591,9 +585,7 @@ async function refreshPassportProgress(userId, triggerEvent = "collection.update
       completedEventCount: built.ctx.eventsCompletedCount || 0,
       comparisonCount: comparisonStats.comparisonCount || 0,
       distinctComparedUsers: comparisonStats.distinctCollectorsCompared || 0,
-      highestOfficialRarity: rarityStats.highestOfficialRarity
-        ? rarityStats.highestOfficialRarity.key
-        : null,
+      highestOfficialRarity: rarityStats.highestOfficialRarity ? rarityStats.highestOfficialRarity.key : null,
       lastCollectionUpdateAt
     });
   } catch (err) {

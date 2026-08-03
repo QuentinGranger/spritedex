@@ -7,10 +7,12 @@ module.exports = async function runFriendshipLifecycle(ctx) {
   const bob = await register(`FrBob${rnd()}`);
   try {
     await test("user search finds bob by username with public fields", async () => {
-      const res = await fetch(`${API}/users/search?username=${encodeURIComponent(bob.username)}`, { headers: auth(alice.token) });
+      const res = await fetch(`${API}/users/search?username=${encodeURIComponent(bob.username)}`, {
+        headers: auth(alice.token)
+      });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
-      const found = data.users.find(u => u.id === bob.id);
+      const found = data.users.find((u) => u.id === bob.id);
       assert.ok(found, "bob not found");
       assert.strictEqual(found.username, bob.username);
       assert.strictEqual(found.displayName, bob.displayName);
@@ -36,7 +38,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       const res = await fetch(`${API}/friends/pending`, { headers: auth(bob.token) });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
-      const found = data.pending.find(p => p.id === alice.id);
+      const found = data.pending.find((p) => p.id === alice.id);
       assert.ok(found, "pending not found");
       assert.strictEqual(found.username, alice.username);
       assert.strictEqual(found.displayName, alice.displayName);
@@ -61,7 +63,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       if (!join.ok) assert.fail(`squad join failed: ${await join.text()}`);
 
       const pending = await (await fetch(`${API}/friends/pending`, { headers: auth(bob.token) })).json();
-      const found = pending.pending.find(p => p.id === alice.id);
+      const found = pending.pending.find((p) => p.id === alice.id);
       assert.ok(found, "pending not found");
       assert.ok(found.commonSquad, "common squad missing");
       assert.strictEqual(found.commonSquad.code, squad.code);
@@ -72,7 +74,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       const res = await fetch(`${API}/friends/sent`, { headers: auth(alice.token) });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
-      const sent = data.sent.find(s => s.id === bob.id);
+      const sent = data.sent.find((s) => s.id === bob.id);
       assert.ok(sent, "sent invitation not found");
       assert.strictEqual(sent.username, bob.username);
       assert.strictEqual(sent.displayName, bob.displayName);
@@ -85,14 +87,14 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       const receivedRes = await fetch(`${API}/friends/requests/received`, { headers: auth(bob.token) });
       assert.strictEqual(receivedRes.status, 200);
       const received = await receivedRes.json();
-      const req = received.requests.find(r => r.user && r.user.id === alice.id);
+      const req = received.requests.find((r) => r.user && r.user.id === alice.id);
       assert.ok(req, "alice's request not in bob's received list");
       assert.ok(req.requestId, "received requestId missing");
 
       const sentRes = await fetch(`${API}/friends/requests/sent`, { headers: auth(alice.token) });
       assert.strictEqual(sentRes.status, 200);
       const sent = await sentRes.json();
-      const s = sent.requests.find(r => r.user && r.user.id === bob.id);
+      const s = sent.requests.find((r) => r.user && r.user.id === bob.id);
       assert.ok(s, "bob not in alice's sent list");
       assert.ok(s.requestId, "sent requestId missing");
     });
@@ -106,7 +108,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
         assert.strictEqual(res.status, 200);
         res = await fetch(`${API}/friends/sent`, { headers: auth(alice.token) });
         const data = await res.json();
-        assert.ok(!data.sent.some(s => s.id === carol.id), "cancelled invitation still in sent list");
+        assert.ok(!data.sent.some((s) => s.id === carol.id), "cancelled invitation still in sent list");
       } finally {
         await cleanup(carol);
       }
@@ -138,8 +140,8 @@ module.exports = async function runFriendshipLifecycle(ctx) {
     await test("both users see each other as friends with public fields", async () => {
       const a = await (await fetch(`${API}/friends`, { headers: auth(alice.token) })).json();
       const b = await (await fetch(`${API}/friends`, { headers: auth(bob.token) })).json();
-      const aliceSeesBob = a.friends.find(f => f.id === bob.id);
-      const bobSeesAlice = b.friends.find(f => f.id === alice.id);
+      const aliceSeesBob = a.friends.find((f) => f.id === bob.id);
+      const bobSeesAlice = b.friends.find((f) => f.id === alice.id);
       assert.ok(aliceSeesBob, "alice doesn't see bob");
       assert.ok(bobSeesAlice, "bob doesn't see alice");
       assert.strictEqual(aliceSeesBob.username, bob.username);
@@ -160,7 +162,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       const listRes = await fetch(`${API}/friends`, { headers: auth(alice.token) });
       assert.strictEqual(listRes.status, 200);
       const list = await listRes.json();
-      const found = list.friends.find(f => f.id === bob.id);
+      const found = list.friends.find((f) => f.id === bob.id);
       assert.ok(found, "bob not in friend list");
       assert.strictEqual(found.lastActive, null, "private activity leaked from friend list");
     });
@@ -175,7 +177,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       if (res.status !== 200) assert.fail(`profile patch failed: ${await res.text()}`);
 
       const list = await (await fetch(`${API}/friends`, { headers: auth(alice.token) })).json();
-      const found = list.friends.find(f => f.id === bob.id);
+      const found = list.friends.find((f) => f.id === bob.id);
       assert.ok(found, "bob not in friend list");
       assert.strictEqual(found.completionRate, null, "completionRate should be hidden");
       assert.strictEqual(found.lastCollectionUpdate, null, "lastCollectionUpdate should be hidden");
@@ -194,7 +196,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       const res = await fetch(`${API}/friends?preview=true`, { headers: auth(alice.token) });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
-      const found = data.friends.find(f => f.id === bob.id);
+      const found = data.friends.find((f) => f.id === bob.id);
       assert.ok(found, "bob not found");
       assert.ok(found.preview, "preview missing");
       assert.ok("missingFromFriend" in found.preview);
@@ -207,7 +209,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       const res = await fetch(`${API}/friends`, { headers: auth(alice.token) });
       assert.strictEqual(res.status, 200);
       const data = await res.json();
-      const found = data.friends.find(f => f.id === bob.id);
+      const found = data.friends.find((f) => f.id === bob.id);
       assert.ok(found, "bob not found");
       assert.ok(!("preview" in found), "preview should not be included by default");
     });
@@ -241,7 +243,7 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       assert.strictEqual(res.status, 200, `expected 200, got ${res.status}`);
 
       const friends = await (await fetch(`${API}/friends`, { headers: auth(alice.token) })).json();
-      assert.ok(!friends.friends.some(f => f.id === bob.id), "alice still sees bob");
+      assert.ok(!friends.friends.some((f) => f.id === bob.id), "alice still sees bob");
 
       const compareRes = await fetch(`${API}/compare/${bob.id}`, { headers: auth(alice.token) });
       assert.strictEqual(compareRes.status, 403, `expected 403 after removal, got ${compareRes.status}`);
@@ -316,7 +318,10 @@ module.exports = async function runFriendshipLifecycle(ctx) {
         const listRes = await fetch(`${API}/users/blocked`, { headers: auth(fred.token) });
         assert.strictEqual(listRes.status, 200);
         const list = await listRes.json();
-        assert.ok(list.blocked.some(u => u.id === gina.id), "gina missing from blocked list");
+        assert.ok(
+          list.blocked.some((u) => u.id === gina.id),
+          "gina missing from blocked list"
+        );
 
         // Unblock via DELETE /api/users/:userId/block
         res = await fetch(`${API}/users/${gina.id}/block`, { method: "DELETE", headers: auth(fred.token) });
@@ -324,11 +329,11 @@ module.exports = async function runFriendshipLifecycle(ctx) {
 
         // Blocked list empty
         const listAfter = await (await fetch(`${API}/users/blocked`, { headers: auth(fred.token) })).json();
-        assert.ok(!listAfter.blocked.some(u => u.id === gina.id), "gina still in blocked list");
+        assert.ok(!listAfter.blocked.some((u) => u.id === gina.id), "gina still in blocked list");
 
         // Friendship not restored
         const friends = await (await fetch(`${API}/friends`, { headers: auth(fred.token) })).json();
-        assert.ok(!friends.friends.some(f => f.id === gina.id), "gina still in friends list");
+        assert.ok(!friends.friends.some((f) => f.id === gina.id), "gina still in friends list");
 
         // New invitation can be sent
         res = await fetch(`${API}/friends/${gina.id}/request`, { method: "POST", headers: auth(fred.token) });
@@ -362,7 +367,10 @@ module.exports = async function runFriendshipLifecycle(ctx) {
       });
       assert.strictEqual(res.status, 200);
       const friends = await (await fetch(`${API}/friends`, { headers: auth(bob.token) })).json();
-      assert.ok(friends.friends.some(f => f.id === alice.id), "bob doesn't see alice after accept");
+      assert.ok(
+        friends.friends.some((f) => f.id === alice.id),
+        "bob doesn't see alice after accept"
+      );
     });
 
     await test("bob cannot resend request to alice using addresseeId", async () => {

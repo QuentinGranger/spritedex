@@ -1,6 +1,47 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
-
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 
 app.get("/api/squads/invitable", async (req, res) => {
   const reqUser = await getRequestingUser(req);
@@ -109,14 +150,16 @@ app.post("/api/squads/:squadId/invitations", requireNotSuspended, async (req, re
       return res.status(403).json({ error: "Cet utilisateur n'accepte pas les invitations d'escouade" });
     }
     if (squadInvitesFrom === "mutual_squad_members" && !(await shareSquad(reqUser, friendId))) {
-      return res.status(403).json({ error: "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune" });
+      return res
+        .status(403)
+        .json({ error: "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune" });
     }
 
-    const alreadyMember = await pool.query(
-      "SELECT status FROM squad_members WHERE squad_id = $1 AND user_id = $2",
-      [squad.id, friendId]
-    );
-    if (alreadyMember.rows.length && alreadyMember.rows[0].status === 'active') {
+    const alreadyMember = await pool.query("SELECT status FROM squad_members WHERE squad_id = $1 AND user_id = $2", [
+      squad.id,
+      friendId
+    ]);
+    if (alreadyMember.rows.length && alreadyMember.rows[0].status === "active") {
       return res.status(409).json({ error: "Cet utilisateur est déjà membre de l'escouade" });
     }
 
@@ -149,9 +192,19 @@ app.post("/api/squads/:squadId/invitations", requireNotSuspended, async (req, re
     // JSON body limit in product_analytics. These are the only two product
     // meanings used below.
     const source = req.body?.source === "recommended" ? "recommended" : "squad_invite";
-    analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "friend_invited_to_squad", details: { friendId, source } });
+    analytics.logProductAnalyticsEvent(pool, {
+      userId: reqUser,
+      squadId: squad.id,
+      event: "friend_invited_to_squad",
+      details: { friendId, source }
+    });
     if (source === "recommended") {
-      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "recommended_friend_invited", details: { friendId } });
+      analytics.logProductAnalyticsEvent(pool, {
+        userId: reqUser,
+        squadId: squad.id,
+        event: "recommended_friend_invited",
+        details: { friendId }
+      });
     }
     res.json({ ok: true, invitationId: invitationResult.rows[0].id });
   } catch (err) {

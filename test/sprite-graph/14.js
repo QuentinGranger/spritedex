@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "comparaison diffs + complémentarité + popularité (Étapes 46–50)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const {
       ensureComparisonStatsTables,
@@ -86,10 +86,7 @@ module.exports = {
       },
       deduplicationKey: `cmp-stats-${rnd()}`
     });
-    const variantForA = await pool.query(
-      `SELECT id FROM sprite_variants WHERE sprite_id = $1 LIMIT 1`,
-      [spriteA]
-    );
+    const variantForA = await pool.query(`SELECT id FROM sprite_variants WHERE sprite_id = $1 LIMIT 1`, [spriteA]);
     await recordGraphEvent(pool, {
       eventType: "collection.priority_added",
       actorUserId: u1.id,

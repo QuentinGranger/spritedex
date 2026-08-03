@@ -8,7 +8,13 @@ const root = path.join(__dirname, "..");
 const directory = path.join(root, "server", "sprite-graph-squad-stats");
 const modules = ["community.js", "context.js", "daily.js", "eligibility.js", "schema.js", "shared.js"];
 
-assert.deepStrictEqual(fs.readdirSync(directory).filter(file => file.endsWith(".js")).sort(), modules);
+assert.deepStrictEqual(
+  fs
+    .readdirSync(directory)
+    .filter((file) => file.endsWith(".js"))
+    .sort(),
+  modules
+);
 for (const file of modules) {
   const source = fs.readFileSync(path.join(directory, file), "utf8");
   assert.ok(source.split("\n").length < 500, `${file} exceeds the 500-line module limit`);
@@ -16,7 +22,12 @@ for (const file of modules) {
 
 const facade = fs.readFileSync(path.join(root, "server", "sprite-graph-squad-stats.js"), "utf8");
 assert.ok(facade.split("\n").length < 60, "squad-stat facade should remain lightweight");
-for (const name of ["ensureSquadDailyStatsTables", "listEligibleSquadIds", "calculateSquadDailyStats", "getSquadCommunityContext"]) {
+for (const name of [
+  "ensureSquadDailyStatsTables",
+  "listEligibleSquadIds",
+  "calculateSquadDailyStats",
+  "getSquadCommunityContext"
+]) {
   assert.match(facade, new RegExp(`\\b${name}\\b`), `facade must export ${name}`);
 }
 

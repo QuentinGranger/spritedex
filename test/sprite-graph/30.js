@@ -3,29 +3,22 @@ const ctx = require("./shared");
 module.exports = {
   name: "confidentialité (Étape 96)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     await ensureCommunityStatsTables(pool);
     stopCommunityStatsDailyJob();
-    const {
-      anonymizeUserGraphData,
-      setCommunityStatsOptIn
-    } = require("../server/sprite-graph-governance");
+    const { anonymizeUserGraphData, setCommunityStatsOptIn } = require("../server/sprite-graph-governance");
     const {
       listEligibleSquadIds,
       ensureSquadDailyStatsTables,
       calculateSquadDailyStats,
       resolveSquadSizeBand
     } = require("../server/sprite-graph-squad-stats");
-    const {
-      getAdminAggregateExport
-    } = require("../server/sprite-graph-metrics");
+    const { getAdminAggregateExport } = require("../server/sprite-graph-metrics");
 
     const user = await register(`Priv96${rnd()}`);
     const blocked = await register(`Priv96b${rnd()}`);
-    const variantRes = await pool.query(
-      `SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`
-    );
+    const variantRes = await pool.query(`SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`);
     const variantId = variantRes.rows[0].id;
     const spriteId = variantRes.rows[0].sprite_id;
 
@@ -43,15 +36,19 @@ module.exports = {
        ON CONFLICT (user_id, variant_id) DO UPDATE SET status = 'owned'`,
       [user.id, variantId, spriteId]
     );
-    await recordGraphEvent(pool, {
-      eventType: "collection.sprite_added",
-      actorUserId: user.id,
-      variantId,
-      spriteId,
-      source: "api",
-      context: { note: "secret-note", email: "x@y.z", catalogueVersion: "keep96" },
-      deduplicationKey: `priv96-${user.id}-${rnd()}`
-    }, { skipGovernance: true });
+    await recordGraphEvent(
+      pool,
+      {
+        eventType: "collection.sprite_added",
+        actorUserId: user.id,
+        variantId,
+        spriteId,
+        source: "api",
+        context: { note: "secret-note", email: "x@y.z", catalogueVersion: "keep96" },
+        deduplicationKey: `priv96-${user.id}-${rnd()}`
+      },
+      { skipGovernance: true }
+    );
 
     // Événements privés — PII absente à l’écriture.
     const stored = await pool.query(

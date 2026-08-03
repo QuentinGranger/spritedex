@@ -1,5 +1,47 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 const friends = require("./logic-friends");
 const { getSquadComplementaryPairs } = friends;
 
@@ -9,7 +51,7 @@ async function getSquadBestPair(squad, reqUser) {
     pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
   ]);
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const memberIds = membersRes.rows.map(r => r.user_id);
+  const memberIds = membersRes.rows.map((r) => r.user_id);
 
   const usersRes = await pool.query(
     `SELECT id, username, display_name, avatar_url
@@ -18,8 +60,7 @@ async function getSquadBestPair(squad, reqUser) {
     [memberIds]
   );
 
-  const allowed = (await getViewerSafeSquadMembers(usersRes.rows, reqUser))
-    .filter(member => member.visible);
+  const allowed = (await getViewerSafeSquadMembers(usersRes.rows, reqUser)).filter((member) => member.visible);
   if (allowed.length < 2) return null;
 
   const collections = await Promise.all(allowed.map(loadViewerSafeCollection));
@@ -78,7 +119,7 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
     pool.query("SELECT user_id FROM squad_members WHERE squad_id = $1 AND status = 'active'", [squad.id])
   ]);
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const memberIds = membersRes.rows.map(r => r.user_id);
+  const memberIds = membersRes.rows.map((r) => r.user_id);
 
   const usersRes = await pool.query(
     `SELECT id, username, display_name, avatar_url
@@ -179,7 +220,7 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
       for (let j = i + 1; j < indices.length; j++) {
         const a = members[indices[i]].owned;
         const b = members[indices[j]].owned;
-        const inter = new Set([...a].filter(x => b.has(x))).size;
+        const inter = new Set([...a].filter((x) => b.has(x))).size;
         const pairUnionSize = new Set([...a, ...b]).size;
         const uniqueInPair = pairUnionSize - inter;
         const rate = pairUnionSize ? Math.round((uniqueInPair / pairUnionSize) * 10000) / 100 : 0;
@@ -190,7 +231,7 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
     const averageComplementarityRate = pairCount ? Math.round((pairCompSum / pairCount) * 100) / 100 : 0;
 
     teams.push({
-      members: indices.map(idx => ({
+      members: indices.map((idx) => ({
         userId: members[idx].id,
         username: members[idx].username,
         displayName: members[idx].displayName,
@@ -243,13 +284,16 @@ async function getSquadBestTeams(squad, reqUser, teamSize, mode = "global", filt
       teams.sort((a, b) => a.duplicatePossessionCount - b.duplicatePossessionCount || b.coverageRate - a.coverageRate);
       break;
     case "complementarity":
-      teams.sort((a, b) => b.averageComplementarityRate - a.averageComplementarityRate || b.coverageRate - a.coverageRate);
+      teams.sort(
+        (a, b) => b.averageComplementarityRate - a.averageComplementarityRate || b.coverageRate - a.coverageRate
+      );
       break;
     default:
-      teams.sort((a, b) =>
-        b.coverageRate - a.coverageRate ||
-        b.averageComplementarityRate - a.averageComplementarityRate ||
-        b.uniqueVariantCount - a.uniqueVariantCount
+      teams.sort(
+        (a, b) =>
+          b.coverageRate - a.coverageRate ||
+          b.averageComplementarityRate - a.averageComplementarityRate ||
+          b.uniqueVariantCount - a.uniqueVariantCount
       );
   }
 
@@ -264,7 +308,7 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, met
   ]);
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
   const total = catalogue.length;
-  const memberIds = membersRes.rows.map(r => r.user_id);
+  const memberIds = membersRes.rows.map((r) => r.user_id);
 
   const usersRes = await pool.query(
     `SELECT id, username, display_name, avatar_url
@@ -297,24 +341,24 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, met
 
   if (targetType === "coverage") {
     const targetPercent = Math.max(1, Math.min(100, parseFloat(options.target) || 80));
-    minRequiredCount = Math.ceil(total * targetPercent / 100);
-    targetVariantIds = catalogue.map(i => i.id);
+    minRequiredCount = Math.ceil((total * targetPercent) / 100);
+    targetVariantIds = catalogue.map((i) => i.id);
     targetLabel = `${targetPercent}% du catalogue`;
   } else if (targetType === "event") {
     if (!options.eventId) throw new Error("eventId requis");
-    targetVariantIds = catalogue.filter(i => i.eventId === options.eventId).map(i => i.id);
+    targetVariantIds = catalogue.filter((i) => i.eventId === options.eventId).map((i) => i.id);
     targetLabel = `toutes les variantes de l'événement ${options.eventId}`;
   } else if (targetType === "rarity") {
     const rarity = options.rarity || "mythic";
-    targetVariantIds = catalogue.filter(i => i.rarity === rarity).map(i => i.id);
+    targetVariantIds = catalogue.filter((i) => i.rarity === rarity).map((i) => i.id);
     targetLabel = `toutes les variantes ${rarity}`;
   } else if (targetType === "custom") {
     const ids = String(options.variantIds || "")
       .split(",")
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean);
-    const validSet = new Set(catalogue.map(i => i.id));
-    targetVariantIds = ids.filter(id => validSet.has(id));
+    const validSet = new Set(catalogue.map((i) => i.id));
+    targetVariantIds = ids.filter((id) => validSet.has(id));
     targetLabel = "liste personnalisée";
   } else {
     throw new Error("targetType invalide");
@@ -325,7 +369,10 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, met
   if (targetTotal === 0) return null;
   if (minRequiredCount === 0) minRequiredCount = targetTotal;
 
-  const useGreedy = method === "greedy" || (method === "auto" && members.length > 8) || (method === "exhaustive" && members.length > 10);
+  const useGreedy =
+    method === "greedy" ||
+    (method === "auto" && members.length > 8) ||
+    (method === "exhaustive" && members.length > 10);
 
   if (useGreedy) {
     const remaining = new Set(targetSet);
@@ -376,7 +423,7 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, met
       globalTotalVariantCount: total,
       globalCoverageRate: total ? Math.round((union.size / total) * 10000) / 100 : 0,
       duplicatePossessionCount: totalOwned - union.size,
-      members: selected.map(idx => ({
+      members: selected.map((idx) => ({
         userId: members[idx].id,
         username: members[idx].username,
         displayName: members[idx].displayName,
@@ -430,7 +477,7 @@ async function getSquadMinimumTeam(squad, reqUser, targetType, options = {}, met
           globalTotalVariantCount: total,
           globalCoverageRate: total ? Math.round((union.size / total) * 10000) / 100 : 0,
           duplicatePossessionCount: totalOwned - union.size,
-          members: indices.map(idx => ({
+          members: indices.map((idx) => ({
             userId: members[idx].id,
             username: members[idx].username,
             displayName: members[idx].displayName,

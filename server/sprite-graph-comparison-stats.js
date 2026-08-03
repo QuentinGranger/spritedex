@@ -156,10 +156,7 @@ async function loadLatestPairComplementarity(db, { metricDate }) {
   return result.rows.filter((r) => Number.isFinite(Number(r.complementarity_rate)));
 }
 
-async function calculateComparisonDailyStats(db = pool, {
-  metricDate = null,
-  catalogueVersion = null
-} = {}) {
+async function calculateComparisonDailyStats(db = pool, { metricDate = null, catalogueVersion = null } = {}) {
   await ensureComparisonStatsTables(db);
   try {
     await db.query(`
@@ -172,17 +169,16 @@ async function calculateComparisonDailyStats(db = pool, {
       ALTER TABLE sprite_popularity_scores
         ADD COLUMN IF NOT EXISTS catalogue_version VARCHAR(80);
     `);
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   let catVersion = catalogueVersion;
   if (!catVersion) {
     try {
-      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db))
-        .catalogueVersion;
+      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db)).catalogueVersion;
     } catch (_) {
       catVersion = null;
     }
@@ -205,9 +201,7 @@ async function calculateComparisonDailyStats(db = pool, {
   const latest = await loadLatestPairComplementarity(db, { metricDate: day });
   const valid = latest.filter((r) => Number.isFinite(Number(r.complementarity_rate)));
   const avgComplementarity = valid.length
-    ? Math.round(
-      (valid.reduce((s, r) => s + Number(r.complementarity_rate), 0) / valid.length) * 100
-    ) / 100
+    ? Math.round((valid.reduce((s, r) => s + Number(r.complementarity_rate), 0) / valid.length) * 100) / 100
     : null;
 
   await db.query(
@@ -254,9 +248,7 @@ async function calculateComparisonDailyStats(db = pool, {
   for (const band of COLLECTION_BANDS) {
     const bucket = bandBuckets[band.id];
     const avg = bucket.rates.length
-      ? Math.round(
-        (bucket.rates.reduce((s, n) => s + n, 0) / bucket.rates.length) * 100
-      ) / 100
+      ? Math.round((bucket.rates.reduce((s, n) => s + n, 0) / bucket.rates.length) * 100) / 100
       : null;
     await db.query(
       `INSERT INTO comparison_complementarity_by_band (
@@ -299,10 +291,7 @@ async function calculateComparisonDailyStats(db = pool, {
   }
   // Clear day then upsert known sprites only (FK-safe).
   await db.query(`DELETE FROM comparison_sprite_diff_stats WHERE metric_date = $1::date`, [day]);
-  const knownSprites = await db.query(
-    `SELECT id FROM sprites WHERE id = ANY($1::text[])`,
-    [[...appearance.keys()]]
-  );
+  const knownSprites = await db.query(`SELECT id FROM sprites WHERE id = ANY($1::text[])`, [[...appearance.keys()]]);
   const knownSet = new Set(knownSprites.rows.map((r) => String(r.id)));
   for (const [spriteId, counts] of appearance.entries()) {
     if (!knownSet.has(spriteId)) continue;
@@ -370,30 +359,27 @@ function normalizeSignalMap(map) {
  * Étape 50–52 — composite interest index (Tendance sprite-index).
  * Components are percentile scores 0–100, then weighted.
  */
-async function calculateSpritePopularityScores(db = pool, {
-  metricDate = null,
-  windowDays = 7,
-  weights = INTEREST_SCORE_WEIGHTS,
-  catalogueVersion = null
-} = {}) {
+async function calculateSpritePopularityScores(
+  db = pool,
+  { metricDate = null, windowDays = 7, weights = INTEREST_SCORE_WEIGHTS, catalogueVersion = null } = {}
+) {
   await ensureComparisonStatsTables(db);
   try {
     await db.query(
       `ALTER TABLE sprite_popularity_scores
          ADD COLUMN IF NOT EXISTS catalogue_version VARCHAR(80)`
     );
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const days = Math.max(1, Math.min(90, Number(windowDays) || 7));
 
   let catVersion = catalogueVersion;
   if (!catVersion) {
     try {
-      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db))
-        .catalogueVersion;
+      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db)).catalogueVersion;
     } catch (_) {
       catVersion = null;
     }
@@ -462,12 +448,7 @@ async function calculateSpritePopularityScores(db = pool, {
   const diffMap = toMap(diffs.rows);
   const notifMap = toMap(notifs.rows);
 
-  const sprites = new Set([
-    ...priorityMap.keys(),
-    ...addedMap.keys(),
-    ...diffMap.keys(),
-    ...notifMap.keys()
-  ]);
+  const sprites = new Set([...priorityMap.keys(), ...addedMap.keys(), ...diffMap.keys(), ...notifMap.keys()]);
 
   // Étape 51 — each component is a 0–100 percentile.
   const priorityScore = percentileScores(priorityMap);
@@ -477,10 +458,7 @@ async function calculateSpritePopularityScores(db = pool, {
 
   await db.query(`DELETE FROM sprite_popularity_scores WHERE metric_date = $1::date`, [day]);
 
-  const known = await db.query(
-    `SELECT id FROM sprites WHERE id = ANY($1::text[])`,
-    [[...sprites]]
-  );
+  const known = await db.query(`SELECT id FROM sprites WHERE id = ANY($1::text[])`, [[...sprites]]);
   const knownSet = new Set(known.rows.map((r) => String(r.id)));
 
   let upserted = 0;
@@ -497,23 +475,23 @@ async function calculateSpritePopularityScores(db = pool, {
       notificationScore: notificationScore.get(spriteId) || 0
     };
     // Étape 51 — weighted sum of 0–100 percentile components.
-    const interestScore = Math.round(
-      (
-        (components.priorityScore * weights.priority) +
-        (components.collectionScore * weights.collectionAdd) +
-        (components.comparisonScore * weights.comparisonDiff) +
-        (components.notificationScore * weights.notification)
-      ) * 100
-    ) / 100;
-    const sampleSize = components.priorityRaw
-      + components.collectionAddRaw
-      + components.comparisonDiffRaw
-      + components.notificationRaw;
+    const interestScore =
+      Math.round(
+        (components.priorityScore * weights.priority +
+          components.collectionScore * weights.collectionAdd +
+          components.comparisonScore * weights.comparisonDiff +
+          components.notificationScore * weights.notification) *
+          100
+      ) / 100;
+    const sampleSize =
+      components.priorityRaw + components.collectionAddRaw + components.comparisonDiffRaw + components.notificationRaw;
 
     const formulaVersion = require("./sprite-graph-formula").interestFormulaVersion();
     try {
       await require("./sprite-graph-formula").ensureFormulaVersionColumns(db);
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     await db.query(
       `INSERT INTO sprite_popularity_scores (
          metric_date, sprite_id, score, sample_size, components, weights,
@@ -552,15 +530,12 @@ async function calculateSpritePopularityScores(db = pool, {
   };
 }
 
-async function getMostComparedSprites(db = pool, {
-  metricDate = null,
-  limit = 20,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getMostComparedSprites(
+  db = pool,
+  { metricDate = null, limit = 20, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureComparisonStatsTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const result = await db.query(
     `SELECT sprite_id, difference_appearance_count, comparison_count, sample_size
      FROM comparison_sprite_diff_stats
@@ -595,18 +570,13 @@ async function getMostComparedSprites(db = pool, {
   };
 }
 
-async function getAverageComplementarity(db = pool, {
-  metricDate = null,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getAverageComplementarity(
+  db = pool,
+  { metricDate = null, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureComparisonStatsTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
-  const daily = await db.query(
-    `SELECT * FROM comparison_daily_stats WHERE metric_date = $1::date`,
-    [day]
-  );
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const daily = await db.query(`SELECT * FROM comparison_daily_stats WHERE metric_date = $1::date`, [day]);
   const bands = await db.query(
     `SELECT * FROM comparison_complementarity_by_band
      WHERE metric_date = $1::date ORDER BY collection_band`,
@@ -646,15 +616,12 @@ async function getAverageComplementarity(db = pool, {
   };
 }
 
-async function getTopPopularSprites(db = pool, {
-  metricDate = null,
-  limit = 20,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getTopPopularSprites(
+  db = pool,
+  { metricDate = null, limit = 20, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureComparisonStatsTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const result = await db.query(
     `SELECT sprite_id, score, sample_size, components, weights
      FROM sprite_popularity_scores

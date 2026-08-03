@@ -1,9 +1,16 @@
-.admin-nav__item.is-active::after { opacity: 1; }
-.admin-nav__item > * { position: relative; z-index: 1; }
+.admin-nav__item.is-active::after {
+  opacity: 1;
+}
+.admin-nav__item > * {
+  position: relative;
+  z-index: 1;
+}
 .admin-panel,
 .admin-kpi {
-  border-color: rgba(125, 171, 255, .2);
-  box-shadow: inset 0 1px 0 rgba(218, 236, 255, .06), 0 20px 48px rgba(0, 0, 0, .16);
+  border-color: rgba(125, 171, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(218, 236, 255, 0.06),
+    0 20px 48px rgba(0, 0, 0, 0.16);
 }
 .admin-panel {
   position: relative;
@@ -15,23 +22,35 @@
   right: 24px;
   left: 24px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(92, 218, 255, .28), transparent);
+  background: linear-gradient(90deg, transparent, rgba(92, 218, 255, 0.28), transparent);
   pointer-events: none;
 }
-.admin-panel--flush::before { right: 18px; left: 18px; }
+.admin-panel--flush::before {
+  right: 18px;
+  left: 18px;
+}
 .admin-kpi {
-  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .admin-kpi:hover {
-  border-color: rgba(90, 208, 255, .38);
-  box-shadow: inset 0 1px 0 rgba(218, 236, 255, .08), 0 26px 54px rgba(0, 0, 0, .22);
+  border-color: rgba(90, 208, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(218, 236, 255, 0.08),
+    0 26px 54px rgba(0, 0, 0, 0.22);
   transform: translateY(-2px);
 }
 .admin-button,
 .admin-row-button,
 .admin-pagination button,
 .admin-dialog__close {
-  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
 }
 .admin-button:hover:not(:disabled),
 .admin-row-button:hover:not(:disabled),
@@ -46,22 +65,30 @@
 .admin-search:focus-within,
 .admin-select:focus-visible {
   outline: 0;
-  border-color: rgba(85, 221, 255, .82);
-  box-shadow: 0 0 0 3px rgba(68, 217, 255, .15), 0 0 22px rgba(68, 217, 255, .1);
+  border-color: rgba(85, 221, 255, 0.82);
+  box-shadow:
+    0 0 0 3px rgba(68, 217, 255, 0.15),
+    0 0 22px rgba(68, 217, 255, 0.1);
 }
 .admin-tab.is-active {
-  animation: admin-tab-in .24s cubic-bezier(.22, 1, .36, 1) both;
+  animation: admin-tab-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .admin-dialog--reason {
   width: min(560px, calc(100% - 28px));
 }
 .admin-dialog--reason .admin-dialog__header {
-  background: linear-gradient(120deg, rgba(36, 93, 170, .2), rgba(50, 27, 114, .16));
+  background: linear-gradient(120deg, rgba(36, 93, 170, 0.2), rgba(50, 27, 114, 0.16));
 }
 
 @keyframes admin-tab-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1060px) {
@@ -72,15 +99,28 @@
   .admin-sidebar .admin-nav {
     scroll-snap-type: x proximity;
   }
-  .admin-sidebar .admin-nav__item { scroll-snap-align: start; }
+  .admin-sidebar .admin-nav__item {
+    scroll-snap-align: start;
+  }
 }
 
 @media (max-width: 780px) {
-  .admin-topbar__actions .admin-session { display: none; }
-  .admin-page-header__actions { width: 100%; }
-  .admin-page-header__actions .admin-button { flex: 0 0 auto; }
-  .admin-panel::before { right: 18px; left: 18px; }
-  .admin-kpi:hover { transform: none; }
+  .admin-topbar__actions .admin-session {
+    display: none;
+  }
+  .admin-page-header__actions {
+    width: 100%;
+  }
+  .admin-page-header__actions .admin-button {
+    flex: 0 0 auto;
+  }
+  .admin-panel::before {
+    right: 18px;
+    left: 18px;
+  }
+  .admin-kpi:hover {
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -89,7 +129,10 @@
   .admin-button,
   .admin-row-button,
   .admin-pagination button,
-  .admin-dialog__close { animation: none !important; transition: none !important; }
+  .admin-dialog__close {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ── Battle-station skin: Fortnite-inspired tactical HUD ─────────────── */
@@ -107,9 +150,9 @@ body.admin-page,
 body.admin-access-page {
   background-color: var(--admin-ink);
   background-image:
-    radial-gradient(circle at 74% -5%, rgba(59, 93, 255, .31), transparent 27rem),
-    radial-gradient(circle at 105% 47%, rgba(137, 71, 255, .18), transparent 31rem),
-    radial-gradient(circle at -8% 100%, rgba(31, 181, 255, .13), transparent 29rem),
+    radial-gradient(circle at 74% -5%, rgba(59, 93, 255, 0.31), transparent 27rem),
+    radial-gradient(circle at 105% 47%, rgba(137, 71, 255, 0.18), transparent 31rem),
+    radial-gradient(circle at -8% 100%, rgba(31, 181, 255, 0.13), transparent 29rem),
     linear-gradient(118deg, #030817 0%, #07122b 46%, #080b21 100%);
 }
 
@@ -120,26 +163,29 @@ body.admin-access-page::after {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: .28;
+  opacity: 0.28;
   background:
-    linear-gradient(130deg, transparent 0 48%, rgba(60, 217, 255, .1) 48.1% 48.25%, transparent 48.35% 100%),
-    radial-gradient(circle at 83% 20%, rgba(255,255,255,.62) 0 1px, transparent 1.6px),
-    radial-gradient(circle at 24% 68%, rgba(102,204,255,.6) 0 1px, transparent 1.7px);
-  background-size: auto, 172px 172px, 227px 227px;
+    linear-gradient(130deg, transparent 0 48%, rgba(60, 217, 255, 0.1) 48.1% 48.25%, transparent 48.35% 100%),
+    radial-gradient(circle at 83% 20%, rgba(255, 255, 255, 0.62) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 24% 68%, rgba(102, 204, 255, 0.6) 0 1px, transparent 1.7px);
+  background-size:
+    auto,
+    172px 172px,
+    227px 227px;
 }
 
 .admin-topbar {
   min-height: 88px;
-  border-bottom-color: rgba(80, 181, 255, .28);
-  background: linear-gradient(90deg, rgba(3, 8, 23, .96), rgba(7, 18, 48, .91) 55%, rgba(14, 9, 39, .94));
+  border-bottom-color: rgba(80, 181, 255, 0.28);
+  background: linear-gradient(90deg, rgba(3, 8, 23, 0.96), rgba(7, 18, 48, 0.91) 55%, rgba(14, 9, 39, 0.94));
 }
 .admin-topbar::before {
   content: "SPRITE-INDEX // OPERATIONS";
   position: absolute;
   right: max(24px, calc((100vw - 1320px) / 2));
   bottom: 5px;
-  color: rgba(116, 186, 255, .4);
+  color: rgba(116, 186, 255, 0.4);
   font: 700 9px/1 var(--admin-heading);
-  letter-spacing: .2em;
+  letter-spacing: 0.2em;
   pointer-events: none;
 }

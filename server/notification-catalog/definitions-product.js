@@ -1,7 +1,25 @@
 "use strict";
 
 const { NOTIFICATION_TYPES, NOTIFICATION_CATEGORIES } = require("./constants");
-const { str, num, pct, pluralFr, pluralEn, variantLabel, formatEndDate, buildPriorityVariantActionUrl, buildWantedEventActionUrl, buildSquadEngineActionUrl, buildFriendCompareActionUrl, formatThresholdRemaining, formatEventEndingWhen, FALLBACK_NAME, FALLBACK_SPRITE, FALLBACK_SQUAD, FALLBACK_EVENT } = require("./locale");
+const {
+  str,
+  num,
+  pct,
+  pluralFr,
+  pluralEn,
+  variantLabel,
+  formatEndDate,
+  buildPriorityVariantActionUrl,
+  buildWantedEventActionUrl,
+  buildSquadEngineActionUrl,
+  buildFriendCompareActionUrl,
+  formatThresholdRemaining,
+  formatEventEndingWhen,
+  FALLBACK_NAME,
+  FALLBACK_SPRITE,
+  FALLBACK_SQUAD,
+  FALLBACK_EVENT
+} = require("./locale");
 
 module.exports = {
   [NOTIFICATION_TYPES.FRIEND_REQUEST_RECEIVED]: {
@@ -17,8 +35,7 @@ module.exports = {
     },
     url: () => "/friends",
     data(ctx) {
-      const friendId = ctx.friendId != null ? String(ctx.friendId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
       return friendId ? { friendId, actionUrl: "/friends" } : { actionUrl: "/friends" };
     },
     actions(_ctx, lang) {
@@ -40,8 +57,7 @@ module.exports = {
     },
     url: () => "/friends",
     data(ctx) {
-      const friendId = ctx.friendId != null ? String(ctx.friendId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
       return friendId ? { friendId } : {};
     }
   },
@@ -62,8 +78,7 @@ module.exports = {
       return id ? `/collection/${encodeURIComponent(id)}` : "/friends";
     },
     data(ctx) {
-      const ownerId = ctx.ownerId != null ? String(ctx.ownerId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const ownerId = ctx.ownerId != null ? String(ctx.ownerId) : ctx.actorId != null ? String(ctx.actorId) : null;
       const actionUrl = ownerId ? `/collection/${encodeURIComponent(ownerId)}` : "/friends";
       return { ...(ownerId ? { ownerId, friendId: ownerId } : {}), actionUrl };
     },
@@ -87,7 +102,12 @@ module.exports = {
       const squad = str(ctx.squadName, "the squad");
       return { title: "New member", body: `${name} joined the squad ${squad}.` };
     },
-    url: (ctx) => ctx.squadCode ? `/squad/${encodeURIComponent(ctx.squadCode)}` : (ctx.squadId ? `/?squad=${encodeURIComponent(ctx.squadId)}` : "/"),
+    url: (ctx) =>
+      ctx.squadCode
+        ? `/squad/${encodeURIComponent(ctx.squadCode)}`
+        : ctx.squadId
+          ? `/?squad=${encodeURIComponent(ctx.squadId)}`
+          : "/",
     data(ctx) {
       return {
         ...(ctx.squadId != null ? { squadId: String(ctx.squadId) } : {}),
@@ -197,7 +217,12 @@ module.exports = {
       return {
         primary: {
           id: "checklist",
-          label: lang === "en" ? "Update my collection" : lang === "nl" ? "Mijn collectie bijwerken" : "Mettre à jour ma collection",
+          label:
+            lang === "en"
+              ? "Update my collection"
+              : lang === "nl"
+                ? "Mijn collectie bijwerken"
+                : "Mettre à jour ma collection",
           url: "/?view=checklist"
         }
       };
@@ -237,10 +262,15 @@ module.exports = {
   [NOTIFICATION_TYPES.SQUAD_ACTIVITY]: {
     category: NOTIFICATION_CATEGORIES.SOCIAL,
     channels: ["push"],
-    fr() { return { title: "SPRITE-INDEX — Escouade", body: "" }; },
-    en() { return { title: "SPRITE-INDEX — Squad", body: "" }; },
+    fr() {
+      return { title: "SPRITE-INDEX — Escouade", body: "" };
+    },
+    en() {
+      return { title: "SPRITE-INDEX — Squad", body: "" };
+    },
     url: (ctx) => ctx.url || (ctx.squadId ? `/?squad=${encodeURIComponent(ctx.squadId)}` : "/"),
-    data(ctx) { return { ...(ctx.squadId != null ? { squadId: String(ctx.squadId) } : {}) }; }
-  },
-
+    data(ctx) {
+      return { ...(ctx.squadId != null ? { squadId: String(ctx.squadId) } : {}) };
+    }
+  }
 };

@@ -17,10 +17,7 @@ const notifPrefs = require("./notification-preferences");
 const { isBlocked } = require("./auth");
 const { DOMAIN_EVENTS, onDomainEvent } = require("./event-bus");
 const { claimNotification, claimDedupeKey } = require("./event-idempotency");
-const {
-  evaluateFriendshipAcceptedConditions,
-  buildFriendRequestAcceptedDedupeKey
-} = require("./notification-gates");
+const { evaluateFriendshipAcceptedConditions, buildFriendRequestAcceptedDedupeKey } = require("./notification-gates");
 
 const TYPES = catalog.NOTIFICATION_TYPES;
 const CATEGORIES = catalog.NOTIFICATION_CATEGORIES;
@@ -60,10 +57,9 @@ async function checkFriendshipAcceptedConditions(event) {
   // Invitation existed + friendship is now active (accepted).
   let friendship = null;
   if (friendshipId) {
-    const byId = await pool.query(
-      `SELECT id, status, requester_id, addressee_id FROM friendships WHERE id = $1`,
-      [friendshipId]
-    );
+    const byId = await pool.query(`SELECT id, status, requester_id, addressee_id FROM friendships WHERE id = $1`, [
+      friendshipId
+    ]);
     friendship = byId.rows[0] || null;
   }
   if (!friendship) {
@@ -88,7 +84,10 @@ async function checkFriendshipAcceptedConditions(event) {
 
   // Recipient must accept social notifications (category + type, opt-out).
   const { categoryEnabled, typeEnabled } = await notifPrefs.resolveChannelPreferences(
-    pool, requesterId, TYPES.FRIEND_REQUEST_ACCEPTED, { category: CATEGORIES.SOCIAL }
+    pool,
+    requesterId,
+    TYPES.FRIEND_REQUEST_ACCEPTED,
+    { category: CATEGORIES.SOCIAL }
   );
 
   const gate = evaluateFriendshipAcceptedConditions({

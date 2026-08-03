@@ -55,9 +55,7 @@ function normalizeTrigger(triggerEvent) {
   if (!triggerEvent) return "collection.updated";
   if (typeof triggerEvent === "string") return triggerEvent;
   if (triggerEvent && typeof triggerEvent === "object") {
-    return String(
-      triggerEvent.eventType || triggerEvent.trigger || triggerEvent.type || "collection.updated"
-    );
+    return String(triggerEvent.eventType || triggerEvent.trigger || triggerEvent.type || "collection.updated");
   }
   return "collection.updated";
 }
@@ -66,12 +64,8 @@ function buildBadgeUnlockDedupeKey(userId, badgeCode, contextType = null, contex
   const user = String(userId);
   const code = String(badgeCode || "");
   if (!user || !code) return null;
-  const ctx = contextType || contextId
-    ? `${contextType || ""}:${contextId || ""}`
-    : "";
-  return ctx
-    ? `badge_unlock:${code}:${user}:${ctx}`
-    : `badge_unlock:${code}:${user}`;
+  const ctx = contextType || contextId ? `${contextType || ""}:${contextId || ""}` : "";
+  return ctx ? `badge_unlock:${code}:${user}:${ctx}` : `badge_unlock:${code}:${user}`;
 }
 
 function liveProgressForBadge(def, ctx) {
@@ -182,31 +176,35 @@ async function listBadgeProgress(userId, { ctx = null, db = pool } = {}) {
       const instances = unlocked.filter((u) => u.code === def.code);
       if (instances.length) {
         for (const inst of instances) {
-          progress.push(enrichBadgeProgressItem(def, {
-            badgeCode: def.code,
-            badgeId: inst.badgeId || def.id,
-            status: "unlocked",
-            label: inst.label,
-            progressValue: inst.progressValue,
-            targetValue: inst.targetValue,
-            progressRate: 100,
-            unlockedAt: inst.unlockedAt,
-            contextType: inst.contextType,
-            contextId: inst.contextId,
-            eventName: inst.eventName,
-            verificationStatus: inst.verificationStatus
-          }));
+          progress.push(
+            enrichBadgeProgressItem(def, {
+              badgeCode: def.code,
+              badgeId: inst.badgeId || def.id,
+              status: "unlocked",
+              label: inst.label,
+              progressValue: inst.progressValue,
+              targetValue: inst.targetValue,
+              progressRate: 100,
+              unlockedAt: inst.unlockedAt,
+              contextType: inst.contextType,
+              contextId: inst.contextId,
+              eventName: inst.eventName,
+              verificationStatus: inst.verificationStatus
+            })
+          );
         }
       } else {
-        progress.push(enrichBadgeProgressItem(def, {
-          badgeCode: def.code,
-          badgeId: def.id,
-          status: "locked",
-          label: def.label,
-          progressValue: 0,
-          targetValue: null,
-          progressRate: 0
-        }));
+        progress.push(
+          enrichBadgeProgressItem(def, {
+            badgeCode: def.code,
+            badgeId: def.id,
+            status: "locked",
+            label: def.label,
+            progressValue: 0,
+            targetValue: null,
+            progressRate: 0
+          })
+        );
       }
       continue;
     }
@@ -215,33 +213,37 @@ async function listBadgeProgress(userId, { ctx = null, db = pool } = {}) {
     const unlockedRow = unlockedByCode.get(def.code);
     const live = liveProgressForBadge(def, evalCtx);
     if (unlockedRow) {
-      progress.push(enrichBadgeProgressItem(def, {
-        badgeCode: def.code,
-        badgeId: unlockedRow.badgeId || def.id,
-        status: "unlocked",
-        label: unlockedRow.label || def.label,
-        progressValue: unlockedRow.progressValue != null ? unlockedRow.progressValue : live.progressValue,
-        targetValue: unlockedRow.targetValue != null ? unlockedRow.targetValue : live.targetValue,
-        progressRate: 100,
-        unlockedAt: unlockedRow.unlockedAt,
-        verificationStatus: unlockedRow.verificationStatus,
-        isHistoricalProgression: unlockedRow.isHistoricalProgression,
-        threshold: unlockedRow.threshold,
-        releasedVariantCountAtUnlock: unlockedRow.releasedVariantCountAtUnlock,
-        remaining: 0
-      }));
+      progress.push(
+        enrichBadgeProgressItem(def, {
+          badgeCode: def.code,
+          badgeId: unlockedRow.badgeId || def.id,
+          status: "unlocked",
+          label: unlockedRow.label || def.label,
+          progressValue: unlockedRow.progressValue != null ? unlockedRow.progressValue : live.progressValue,
+          targetValue: unlockedRow.targetValue != null ? unlockedRow.targetValue : live.targetValue,
+          progressRate: 100,
+          unlockedAt: unlockedRow.unlockedAt,
+          verificationStatus: unlockedRow.verificationStatus,
+          isHistoricalProgression: unlockedRow.isHistoricalProgression,
+          threshold: unlockedRow.threshold,
+          releasedVariantCountAtUnlock: unlockedRow.releasedVariantCountAtUnlock,
+          remaining: 0
+        })
+      );
     } else {
-      progress.push(enrichBadgeProgressItem(def, {
-        badgeCode: def.code,
-        badgeId: def.id,
-        status: "locked",
-        label: def.label,
-        progressValue: live.progressValue,
-        targetValue: live.targetValue,
-        progressRate: live.progressRate,
-        remaining: live.remaining != null ? live.remaining : null,
-        threshold: live.threshold != null ? live.threshold : null
-      }));
+      progress.push(
+        enrichBadgeProgressItem(def, {
+          badgeCode: def.code,
+          badgeId: def.id,
+          status: "locked",
+          label: def.label,
+          progressValue: live.progressValue,
+          targetValue: live.targetValue,
+          progressRate: live.progressRate,
+          remaining: live.remaining != null ? live.remaining : null,
+          threshold: live.threshold != null ? live.threshold : null
+        })
+      );
     }
   }
   return progress;
@@ -249,30 +251,22 @@ async function listBadgeProgress(userId, { ctx = null, db = pool } = {}) {
 
 async function notifyBadgeUnlocks(userId, unlockedRows, { batch = true, db = pool } = {}) {
   if (!unlockedRows || !unlockedRows.length) return null;
-  const labels = unlockedRows
-    .map((r) => r.label || r.badgeCode || r.code)
-    .filter(Boolean);
-  const codes = unlockedRows
-    .map((r) => r.badgeCode || r.code)
-    .filter(Boolean);
+  const labels = unlockedRows.map((r) => r.label || r.badgeCode || r.code).filter(Boolean);
+  const codes = unlockedRows.map((r) => r.badgeCode || r.code).filter(Boolean);
   if (!labels.length) return null;
 
-  const dedupeKey = batch && unlockedRows.length > 1
-    ? `badge_notif_batch:${userId}:${codes.slice().sort().join(",")}`
-    : buildBadgeUnlockDedupeKey(
-      userId,
-      codes[0],
-      unlockedRows[0].contextType || unlockedRows[0].context_type,
-      unlockedRows[0].contextId || unlockedRows[0].context_id
-    );
+  const dedupeKey =
+    batch && unlockedRows.length > 1
+      ? `badge_notif_batch:${userId}:${codes.slice().sort().join(",")}`
+      : buildBadgeUnlockDedupeKey(
+          userId,
+          codes[0],
+          unlockedRows[0].contextType || unlockedRows[0].context_type,
+          unlockedRows[0].contextId || unlockedRows[0].context_id
+        );
 
   if (dedupeKey) {
-    const claimed = await eventIdempotency.claimDedupeKey(
-      db,
-      dedupeKey,
-      "badge_unlocked",
-      userId
-    );
+    const claimed = await eventIdempotency.claimDedupeKey(db, dedupeKey, "badge_unlocked", userId);
     if (!claimed) return null;
   }
 
@@ -297,21 +291,20 @@ async function notifyBadgeUnlocks(userId, unlockedRows, { batch = true, db = poo
 }
 
 function rowsToUnlockView(rows, defsByCode = {}) {
-  return (rows || []).map((row) => {
-    const code = row.badge_code || row.code || defsByCode[row.badge_id]?.code;
-    const label = row.label
-      || defsByCode[code]?.label
-      || defsByCode[row.badge_id]?.label
-      || code;
-    return {
-      code,
-      badgeCode: code,
-      label,
-      contextType: row.context_type || row.contextType || null,
-      contextId: row.context_id || row.contextId || null,
-      unlockedAt: row.unlocked_at || row.unlockedAt || null
-    };
-  }).filter((r) => r.badgeCode);
+  return (rows || [])
+    .map((row) => {
+      const code = row.badge_code || row.code || defsByCode[row.badge_id]?.code;
+      const label = row.label || defsByCode[code]?.label || defsByCode[row.badge_id]?.label || code;
+      return {
+        code,
+        badgeCode: code,
+        label,
+        contextType: row.context_type || row.contextType || null,
+        contextId: row.context_id || row.contextId || null,
+        unlockedAt: row.unlocked_at || row.unlockedAt || null
+      };
+    })
+    .filter((r) => r.badgeCode);
 }
 
 /**
@@ -329,9 +322,7 @@ async function evaluateUserBadges(userId, triggerEvent, options = {}) {
   const badges = require("./passport-badges");
   const achievements = require("./passport-achievements");
   const trigger = normalizeTrigger(triggerEvent);
-  const allowedCodes = options.badgeCodes
-    || BADGE_TRIGGERS[trigger]
-    || null;
+  const allowedCodes = options.badgeCodes || BADGE_TRIGGERS[trigger] || null;
 
   let ctx = options.ctx || null;
   let catalogueVersion = options.catalogueVersion || null;

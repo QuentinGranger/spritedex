@@ -16,7 +16,12 @@
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 160ms ease, color 160ms ease;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 160ms ease,
+    color 160ms ease;
 }
 
 .lang-menu__trigger:hover,
@@ -60,7 +65,7 @@
 }
 
 .lang-menu__code {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -84,7 +89,9 @@
 .lang-menu__chevron {
   flex-shrink: 0;
   opacity: 0.55;
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
 }
 
 .lang-menu__trigger[aria-expanded="true"] .lang-menu__chevron {
@@ -110,7 +117,9 @@
   background:
     radial-gradient(circle at 100% 0%, rgba(0, 225, 255, 0.12), transparent 42%),
     linear-gradient(160deg, rgba(22, 34, 74, 0.98), rgba(10, 14, 34, 0.99));
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 225, 255, 0.04) inset;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 225, 255, 0.04) inset;
   animation: lang-menu-in 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -119,14 +128,24 @@
 }
 
 @keyframes lang-menu-in {
-  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .lang-menu__panel,
-  .lang-switch-overlay__card { animation: none; }
-  .lang-menu__chevron { transition: none; }
+  .lang-switch-overlay__card {
+    animation: none;
+  }
+  .lang-menu__chevron {
+    transition: none;
+  }
 }
 
 .lang-menu__header {
@@ -138,7 +157,7 @@
 .lang-menu__eyebrow {
   margin: 0;
   color: #8bfbdf;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -166,7 +185,10 @@
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease, transform 140ms ease;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 140ms ease;
 }
 
 .lang-menu__option + .lang-menu__option {
@@ -293,7 +315,9 @@
 }
 
 @keyframes lang-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .lang-switch-overlay__title {
@@ -304,7 +328,7 @@
 
 .lang-switch-overlay__code {
   color: #8bfbdf;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -351,8 +375,12 @@ html.lang-menu-open .lang-menu--login {
   }
 
   @keyframes lang-backdrop-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   /* Fixed dropdown: JS clamps left/top/width; no 100vw (expands scroll on iOS). */

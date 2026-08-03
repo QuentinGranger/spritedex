@@ -1,17 +1,10 @@
 "use strict";
 
 // Étape 19 — journalise un changement de champ dans catalog_change_history.
-async function recordChange(client, {
-  entityType = "sprite",
-  entityId,
-  field,
-  previousValue,
-  newValue,
-  changedBy,
-  changedAt,
-  reason,
-  sourceId,
-}) {
+async function recordChange(
+  client,
+  { entityType = "sprite", entityId, field, previousValue, newValue, changedBy, changedAt, reason, sourceId }
+) {
   await client.query(
     `INSERT INTO catalog_change_history
        (entity_type, entity_id, field, previous_value, new_value, changed_by, changed_at, reason, source_id)
@@ -25,7 +18,7 @@ async function recordChange(client, {
       changedBy || null,
       changedAt || new Date().toISOString(),
       reason || null,
-      sourceId || null,
+      sourceId || null
     ]
   );
 }
@@ -49,7 +42,7 @@ async function diffAndRecord(client, { entityType, entityId, existed, fields, me
       changedBy: meta.changedBy,
       changedAt: meta.changedAt,
       reason: meta.reason,
-      sourceId: meta.sourceId,
+      sourceId: meta.sourceId
     });
     recorded++;
   }

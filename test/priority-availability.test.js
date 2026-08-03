@@ -186,14 +186,16 @@ async function run() {
       });
 
       // Untrusted confidence → no automatic alert.
-      await variantAvail.handleCatalogueVariantAvailable(makeEvent({
-        variantId,
-        variantName,
-        previousStatus: "upcoming",
-        newStatus: "available_now",
-        confidence: "estimated",
-        periodId: periodA
-      }));
+      await variantAvail.handleCatalogueVariantAvailable(
+        makeEvent({
+          variantId,
+          variantName,
+          previousStatus: "upcoming",
+          newStatus: "available_now",
+          confidence: "estimated",
+          periodId: periodA
+        })
+      );
       let notifs = await listNotifications(priorityUser);
       assert.ok(
         !notifs.notifications.some((n) => n.type === "priority_variant_available"),
@@ -201,14 +203,16 @@ async function run() {
       );
 
       // Invalid transition (already available) → no alert.
-      await variantAvail.handleCatalogueVariantAvailable(makeEvent({
-        variantId,
-        variantName,
-        previousStatus: "available_now",
-        newStatus: "available_now",
-        confidence: "official",
-        periodId: periodA
-      }));
+      await variantAvail.handleCatalogueVariantAvailable(
+        makeEvent({
+          variantId,
+          variantName,
+          previousStatus: "available_now",
+          newStatus: "available_now",
+          confidence: "official",
+          periodId: periodA
+        })
+      );
       notifs = await listNotifications(priorityUser);
       assert.ok(
         !notifs.notifications.some((n) => n.type === "priority_variant_available"),
@@ -216,14 +220,16 @@ async function run() {
       );
 
       // Trusted upcoming → available_now: only priority recipients.
-      await variantAvail.handleCatalogueVariantAvailable(makeEvent({
-        variantId,
-        variantName,
-        previousStatus: "upcoming",
-        newStatus: "available_now",
-        confidence: "official",
-        periodId: periodA
-      }));
+      await variantAvail.handleCatalogueVariantAvailable(
+        makeEvent({
+          variantId,
+          variantName,
+          previousStatus: "upcoming",
+          newStatus: "available_now",
+          confidence: "official",
+          periodId: periodA
+        })
+      );
 
       notifs = await listNotifications(priorityUser);
       const hits = notifs.notifications.filter((n) => n.type === "priority_variant_available");
@@ -245,14 +251,16 @@ async function run() {
       );
 
       // Same period again → still one notification (Étape 33 dedupe).
-      await variantAvail.handleCatalogueVariantAvailable(makeEvent({
-        variantId,
-        variantName,
-        previousStatus: "ended",
-        newStatus: "available_now",
-        confidence: "observed",
-        periodId: periodA
-      }));
+      await variantAvail.handleCatalogueVariantAvailable(
+        makeEvent({
+          variantId,
+          variantName,
+          previousStatus: "ended",
+          newStatus: "available_now",
+          confidence: "observed",
+          periodId: periodA
+        })
+      );
       notifs = await listNotifications(priorityUser);
       assert.strictEqual(
         notifs.notifications.filter((n) => n.type === "priority_variant_available").length,
@@ -261,14 +269,16 @@ async function run() {
       );
 
       // New return period → a fresh notification is allowed.
-      await variantAvail.handleCatalogueVariantAvailable(makeEvent({
-        variantId,
-        variantName,
-        previousStatus: "ended",
-        newStatus: "available_now",
-        confidence: "confirmed",
-        periodId: periodB
-      }));
+      await variantAvail.handleCatalogueVariantAvailable(
+        makeEvent({
+          variantId,
+          variantName,
+          previousStatus: "ended",
+          newStatus: "available_now",
+          confidence: "confirmed",
+          periodId: periodB
+        })
+      );
       notifs = await listNotifications(priorityUser);
       const all = notifs.notifications.filter((n) => n.type === "priority_variant_available");
       assert.strictEqual(all.length, 2, "new return period should trigger a new notification");

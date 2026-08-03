@@ -7,7 +7,9 @@ function setupDataEvents() {
     state.collection = createSafeRecord();
     localStorage.setItem(STORAGE_KEY, JSON.stringify({}));
     if (state.userId) {
-      try { await fetch(`${API_BASE}/collection/${state.userId}`, { method: "DELETE", headers: authHeadersOnly() }); } catch {}
+      try {
+        await fetch(`${API_BASE}/collection/${state.userId}`, { method: "DELETE", headers: authHeadersOnly() });
+      } catch {}
     }
     buildDeck();
     renderAll();
@@ -18,5 +20,4 @@ function setupDataEvents() {
     else copyMissingList();
   });
   els.themeToggle?.addEventListener("click", toggleTheme);
-
 }

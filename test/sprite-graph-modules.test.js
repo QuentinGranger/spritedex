@@ -3,7 +3,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const directory = path.join(__dirname, "sprite-graph");
-const files = fs.readdirSync(directory).filter((file) => /^\d+\.js$/.test(file)).sort();
+const files = fs
+  .readdirSync(directory)
+  .filter((file) => /^\d+\.js$/.test(file))
+  .sort();
 assert.strictEqual(files.length, 32, "un module doit exister pour chacun des 32 scénarios Sprite Graph");
 
 for (const file of files) {

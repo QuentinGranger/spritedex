@@ -42,7 +42,10 @@ module.exports = async function runInviteLinks(ctx) {
       assert.strictEqual(data.status, "pending");
 
       const pending = await (await fetch(`${API}/friends/pending`, { headers: auth(grace.token) })).json();
-      assert.ok(pending.pending.some(p => p.id === henry.id), "grace does not see henry's request");
+      assert.ok(
+        pending.pending.some((p) => p.id === henry.id),
+        "grace does not see henry's request"
+      );
     });
 
     await test("owner cannot redeem their own link", async () => {

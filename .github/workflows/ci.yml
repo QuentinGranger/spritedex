@@ -38,6 +38,9 @@ jobs:
       BASE_URL: http://127.0.0.1:3000
       MOBILE_SWIPE_BASE_URL: http://127.0.0.1:3000
       VISUAL_REQUIRE_BASELINE: "1"
+      # Test-only password hash. It is valid solely against the ephemeral CI
+      # database and lets the accessibility suite exercise the backoffice.
+      ADMIN_ACCESS_PASSWORD_HASH: "scrypt$16384$8$1$-aPXS_p1vcZYqvpS1HXBQg$hTfP_GI_qW9R3mbUYYm5i1JfVg4qYO6G9p0h8zh8WhPKs2TuxYRQ8xs44-f6vtyAJClnvh9fPcfe51jMBuyo3g"
 
     steps:
       - name: Checkout

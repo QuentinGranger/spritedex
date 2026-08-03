@@ -25,14 +25,18 @@ async function register(username, displayName) {
   const body = { email, password: "password123", username, ageConfirmed: true, cguAccepted: true };
   if (displayName) body.displayName = displayName;
   const res = await fetch(`${API}/auth/register`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
   });
   const data = await res.json();
   assert.ok(res.ok, `register failed: ${JSON.stringify(data)}`);
   return { id: data.id, token: data.token, email, username, displayName: data.displayName };
 }
 
-function auth(token) { return { "Content-Type": "application/json", Authorization: `Bearer ${token}` }; }
+function auth(token) {
+  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+}
 
 async function cleanup(user) {
   if (user) await fetch(`${API}/profile/${user.id}`, { method: "DELETE", headers: auth(user.token) });
@@ -45,7 +49,11 @@ async function createSquad(token, name) {
 }
 
 async function joinSquad(token, code) {
-  const res = await fetch(`${API}/squads/join`, { method: "POST", headers: auth(token), body: JSON.stringify({ code }) });
+  const res = await fetch(`${API}/squads/join`, {
+    method: "POST",
+    headers: auth(token),
+    body: JSON.stringify({ code })
+  });
   if (!res.ok) assert.fail(`join squad failed: ${await res.text()}`);
   return res.json();
 }
@@ -61,7 +69,11 @@ async function acceptFriendRequest(token, friendId) {
 }
 
 async function inviteToSquad(token, squadId, inviteeId) {
-  const res = await fetch(`${API}/squads/${squadId}/invitations`, { method: "POST", headers: auth(token), body: JSON.stringify({ inviteeId }) });
+  const res = await fetch(`${API}/squads/${squadId}/invitations`, {
+    method: "POST",
+    headers: auth(token),
+    body: JSON.stringify({ inviteeId })
+  });
   return { status: res.status, data: await res.json().catch(() => ({})) };
 }
 
@@ -95,12 +107,20 @@ async function getSquadHistory(token, squadCode) {
 }
 
 async function setPrivacy(token, userId, collectionVisibility) {
-  const res = await fetch(`${API}/profile/${userId}`, { method: "PATCH", headers: auth(token), body: JSON.stringify({ collectionVisibility }) });
+  const res = await fetch(`${API}/profile/${userId}`, {
+    method: "PATCH",
+    headers: auth(token),
+    body: JSON.stringify({ collectionVisibility })
+  });
   if (!res.ok) assert.fail(`set collection visibility failed: ${await res.text()}`);
 }
 
 async function setEntry(token, userId, variantId, status) {
-  const res = await fetch(`${API}/collection/${userId}/${encodeURIComponent(variantId)}`, { method: "PUT", headers: auth(token), body: JSON.stringify({ status }) });
+  const res = await fetch(`${API}/collection/${userId}/${encodeURIComponent(variantId)}`, {
+    method: "PUT",
+    headers: auth(token),
+    body: JSON.stringify({ status })
+  });
   if (!res.ok) assert.fail(`setEntry ${variantId} failed: ${await res.text()}`);
 }
 
@@ -130,18 +150,21 @@ async function getVariantSamples(token) {
   if (!res.ok) assert.fail(`get sprites failed: ${await res.text()}`);
   const { sprites } = await res.json();
   const excludedRelease = new Set(["unreleased", "upcoming", "coming_soon", "soon", "unknown"]);
-  let activeId = null, secondActiveId = null, unreleasedId = null;
+  let activeId = null,
+    secondActiveId = null,
+    unreleasedId = null;
   const activeIds = [];
-  for (const sprite of sprites) for (const variant of Object.values(sprite.variantDetails || {})) {
-    const release = (variant.releaseStatus || "").toLowerCase();
-    const available = variant.available !== false;
-    if (available && !excludedRelease.has(release)) {
-      if (!activeIds.includes(variant.id)) activeIds.push(variant.id);
-      if (!activeId) activeId = variant.id;
-      else if (!secondActiveId && variant.id !== activeId) secondActiveId = variant.id;
+  for (const sprite of sprites)
+    for (const variant of Object.values(sprite.variantDetails || {})) {
+      const release = (variant.releaseStatus || "").toLowerCase();
+      const available = variant.available !== false;
+      if (available && !excludedRelease.has(release)) {
+        if (!activeIds.includes(variant.id)) activeIds.push(variant.id);
+        if (!activeId) activeId = variant.id;
+        else if (!secondActiveId && variant.id !== activeId) secondActiveId = variant.id;
+      }
+      if (!unreleasedId && (!available || excludedRelease.has(release))) unreleasedId = variant.id;
     }
-    if (!unreleasedId && (!available || excludedRelease.has(release))) unreleasedId = variant.id;
-  }
   assert.ok(activeId, "need at least one active variant");
   return { activeId, secondActiveId, unreleasedId, activeIds };
 }
@@ -150,9 +173,39 @@ async function friendshipStatus(token, otherId) {
   const res = await fetch(`${API}/friends`, { headers: auth(token) });
   if (!res.ok) assert.fail(`list friends failed: ${await res.text()}`);
   const data = await res.json();
-  return data.friends.find(f => String(f.id) === String(otherId)) ? "accepted" : "none";
+  return data.friends.find((f) => String(f.id) === String(otherId)) ? "accepted" : "none";
 }
 
-function results() { return { passed, failed }; }
+function results() {
+  return { passed, failed };
+}
 
-module.exports = { assert, BASE, API, test, rnd, register, auth, cleanup, createSquad, joinSquad, sendFriendRequest, acceptFriendRequest, inviteToSquad, acceptSquadInvitation, getSquad, getSquadRecommendations, getSquadCompletion, getSquadHistory, setPrivacy, setEntry, resetCollection, blockUser, unblockUser, leaveSquad, getVariantSamples, friendshipStatus, results };
+module.exports = {
+  assert,
+  BASE,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  createSquad,
+  joinSquad,
+  sendFriendRequest,
+  acceptFriendRequest,
+  inviteToSquad,
+  acceptSquadInvitation,
+  getSquad,
+  getSquadRecommendations,
+  getSquadCompletion,
+  getSquadHistory,
+  setPrivacy,
+  setEntry,
+  resetCollection,
+  blockUser,
+  unblockUser,
+  leaveSquad,
+  getVariantSamples,
+  friendshipStatus,
+  results
+};

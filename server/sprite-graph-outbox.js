@@ -141,9 +141,9 @@ async function bumpEventTypeAggregate(db, eventRow) {
       GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC,
       metricKey,
       windowKey,
-      JSON.stringify(gated.ok
-        ? { count, eventType, uniqueUserCount: uniqueUsers }
-        : { insufficient: true, message: gated.message }),
+      JSON.stringify(
+        gated.ok ? { count, eventType, uniqueUserCount: uniqueUsers } : { insufficient: true, message: gated.message }
+      ),
       uniqueUsers
     ]
   );
@@ -255,11 +255,10 @@ async function processGraphEventOutbox(db = pool, { limit = DEFAULT_BATCH } = {}
   return summary;
 }
 
-async function getGraphAggregate(db, {
-  level = GRAPH_DATA_LEVELS.AGGREGATED_INTERNAL,
-  metricKey,
-  windowKey = "all"
-} = {}) {
+async function getGraphAggregate(
+  db,
+  { level = GRAPH_DATA_LEVELS.AGGREGATED_INTERNAL, metricKey, windowKey = "all" } = {}
+) {
   if (!metricKey) return null;
   const id = aggregateId(level, metricKey, windowKey);
   const result = await db.query(
@@ -306,9 +305,7 @@ function startGraphOutboxWorker(db = pool) {
   const intervalMs = Number.isFinite(pollMs) ? pollMs : DEFAULT_POLL_MS;
 
   const tick = () => {
-    processGraphEventOutbox(db).catch((err) =>
-      console.error("[sprite-graph-outbox] tick failed:", err.message)
-    );
+    processGraphEventOutbox(db).catch((err) => console.error("[sprite-graph-outbox] tick failed:", err.message));
   };
   tick();
 

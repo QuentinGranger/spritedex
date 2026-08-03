@@ -48,10 +48,7 @@ async function ensureSquadCompletionTables(poolRef = pool) {
 }
 
 async function getSquadRow(squadId) {
-  const res = await pool.query(
-    "SELECT id, code, name FROM squads WHERE id = $1",
-    [squadId]
-  );
+  const res = await pool.query("SELECT id, code, name FROM squads WHERE id = $1", [squadId]);
   return res.rows[0] || null;
 }
 
@@ -82,9 +79,7 @@ async function readPreviousStats(squadId) {
   }
   const row = res.rows[0];
   return {
-    previousRate: row.collective_completion_rate != null
-      ? parseFloat(row.collective_completion_rate)
-      : null,
+    previousRate: row.collective_completion_rate != null ? parseFloat(row.collective_completion_rate) : null,
     previousCoveredCount: row.covered_count != null ? Number(row.covered_count) : null,
     previousTotal: row.total_variants != null ? Number(row.total_variants) : null
   };
@@ -92,9 +87,7 @@ async function readPreviousStats(squadId) {
 
 function normalizeUserIds(value) {
   const raw = Array.isArray(value) ? value : [value];
-  return [...new Set(raw
-    .filter(id => id !== null && id !== undefined && id !== "")
-    .map(id => String(id)))];
+  return [...new Set(raw.filter((id) => id !== null && id !== undefined && id !== "").map((id) => String(id)))];
 }
 
 async function getActiveSquadMembers(squadId, poolRef = pool) {
@@ -113,8 +106,8 @@ async function getActiveSquadMembers(squadId, poolRef = pool) {
 // used by that aggregate, not merely the latest contributor's collection.
 async function canReceiveSquadCompletion(squadId, recipientId, contributingUserIds = [], members = null) {
   if (!squadId || recipientId == null) return false;
-  const activeMembers = members || await getActiveSquadMembers(squadId);
-  const memberIds = activeMembers.map(row => String(row.user_id));
+  const activeMembers = members || (await getActiveSquadMembers(squadId));
+  const memberIds = activeMembers.map((row) => String(row.user_id));
   const recipientKey = String(recipientId);
   if (!memberIds.includes(recipientKey)) return false;
 
@@ -140,9 +133,9 @@ async function findEligibleRecipients(squadId, contributingUserId) {
     if (row.notifications_muted === true) continue;
     if (row.push_pref_squad_activity === false) continue;
 
-    const { categoryEnabled, typeEnabled } = await notifPrefs.resolveChannelPreferences(
-      pool, recipientId, TYPE, { category: CATEGORY }
-    );
+    const { categoryEnabled, typeEnabled } = await notifPrefs.resolveChannelPreferences(pool, recipientId, TYPE, {
+      category: CATEGORY
+    });
     if (categoryEnabled === false || typeEnabled === false) continue;
 
     if (!(await canReceiveSquadCompletion(squadId, recipientId, contributorIds, memberRows))) {
@@ -162,7 +155,7 @@ function scheduleFlush(squadId, recipientId, flushAt) {
   const delay = Math.max(0, new Date(flushAt).getTime() - Date.now());
   const timer = setTimeout(() => {
     flushTimers.delete(key);
-    flushSquadBatch(squadId, recipientId).catch(err =>
+    flushSquadBatch(squadId, recipientId).catch((err) =>
       console.error("[notification-squad-completion] flush failed:", err.message)
     );
   }, delay);
@@ -268,10 +261,7 @@ async function applySquadLeaveNotificationCleanup(poolRef, squadId, userId) {
   let revokedDestinations = 0;
   for (const row of remaining.rows) {
     const next = revokeSquadPrivateDestination(row.data || {});
-    await db.query(
-      `UPDATE notifications SET data = $1::jsonb WHERE id = $2`,
-      [JSON.stringify(next), row.id]
-    );
+    await db.query(`UPDATE notifications SET data = $1::jsonb WHERE id = $2`, [JSON.stringify(next), row.id]);
     revokedDestinations++;
   }
 
@@ -328,8 +318,7 @@ async function hideInaccessibleSquadCompletionNotifications(poolRef, recipientId
 
   if (!hiddenIds.length) return { hidden: 0, cancelledJobs: 0 };
 
-  const cancelledJobs = await blocks.cancelPendingJobsForNotifications(db, hiddenIds)
-    .catch(() => 0);
+  const cancelledJobs = await blocks.cancelPendingJobsForNotifications(db, hiddenIds).catch(() => 0);
   const technicalData = JSON.stringify({
     accessRevoked: true,
     accessRevokedReason: "collection_private",
@@ -359,9 +348,7 @@ async function enqueueSquadProgress(squadId, recipientId, item, { immediate = fa
        WHERE squad_id = $1 AND recipient_id = $2`,
       [squadId, recipientId]
     );
-    let items = existing.rows.length && Array.isArray(existing.rows[0].items)
-      ? [...existing.rows[0].items]
-      : [];
+    let items = existing.rows.length && Array.isArray(existing.rows[0].items) ? [...existing.rows[0].items] : [];
     items.push(item);
     await pool.query(
       `INSERT INTO notification_squad_batches (squad_id, recipient_id, items, flush_at)
@@ -434,9 +421,9 @@ async function flushSquadBatch(squadId, recipientId) {
   // Re-check mute, preferences and collection visibility at flush time. A
   // batch can contain more than one contributor, so every source must remain
   // visible to the recipient before its shared aggregate is exposed.
-  const contributingUserIds = normalizeUserIds(items.map(item => item?.contributingUserId));
+  const contributingUserIds = normalizeUserIds(items.map((item) => item?.contributingUserId));
   const still = await findEligibleRecipients(squadId, contributingUserIds);
-  const me = still.find(r => String(r.recipientId) === String(recipientId));
+  const me = still.find((r) => String(r.recipientId) === String(recipientId));
   if (!me) return;
 
   const squad = await getSquadRow(squadId);
@@ -467,9 +454,7 @@ async function flushSquadBatch(squadId, recipientId) {
   const totalVariants = latest.totalVariants;
   const contributingUserId = latest.contributingUserId;
   const actorName = latest.actorName || (await username(contributingUserId));
-  const variantName = latest.variantName || (allVariantIds[0]
-    ? await lookupVariantName(allVariantIds[0])
-    : null);
+  const variantName = latest.variantName || (allVariantIds[0] ? await lookupVariantName(allVariantIds[0]) : null);
 
   const isContributor = contributingUserIds.includes(String(recipientId));
 
@@ -491,7 +476,7 @@ async function flushSquadBatch(squadId, recipientId) {
     delta: Math.round((Number(newRate) - Number(previousRate)) * 100) / 100,
     milestone,
     count: allVariantIds.length,
-    kind: milestone != null ? "milestone" : (allVariantIds.length > 1 ? "batch" : "progress")
+    kind: milestone != null ? "milestone" : allVariantIds.length > 1 ? "batch" : "progress"
   };
   const destination = catalog.buildSquadEngineActionUrl(contextBase);
   // Étape 55 — group rapid coverage gains under squad_progress:{squadId}.
@@ -525,7 +510,7 @@ async function flushDueSquadBatches() {
      LIMIT 100`
   );
   for (const row of due.rows) {
-    await flushSquadBatch(row.squad_id, row.recipient_id).catch(err =>
+    await flushSquadBatch(row.squad_id, row.recipient_id).catch((err) =>
       console.error("[notification-squad-completion] due flush failed:", err.message)
     );
   }
@@ -562,9 +547,7 @@ async function handleSquadCompletionChanged(event) {
   const immediate = isSquadImmediatePush({ milestone });
 
   const actorName = ctx.actorName || (await username(contributingUserId));
-  const variantName = ctx.variantName || (newVariantIds[0]
-    ? await lookupVariantName(newVariantIds[0])
-    : null);
+  const variantName = ctx.variantName || (newVariantIds[0] ? await lookupVariantName(newVariantIds[0]) : null);
 
   const recipients = await findEligibleRecipients(squadId, contributingUserId);
   const item = {
@@ -599,15 +582,18 @@ async function handleSquadCompletionChanged(event) {
  * Étape 22 — called after squad_stats has been refreshed with the new coverage.
  * Emits squad.completion_changed only when covered count actually increased.
  */
-async function emitIfCoverageIncreased(squadId, {
-  contributingUserId,
-  newVariantIds = [],
-  previousRate,
-  previousCoveredCount,
-  newRate,
-  newCoveredCount,
-  totalVariants
-} = {}) {
+async function emitIfCoverageIncreased(
+  squadId,
+  {
+    contributingUserId,
+    newVariantIds = [],
+    previousRate,
+    previousCoveredCount,
+    newRate,
+    newCoveredCount,
+    totalVariants
+  } = {}
+) {
   if (!squadId) return false;
   if (previousCoveredCount == null || previousRate == null) return false;
 

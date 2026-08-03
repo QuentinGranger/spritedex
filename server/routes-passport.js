@@ -1,11 +1,7 @@
 "use strict";
 
 // Étape 71 — dedicated passport API surface.
-const {
-  canViewPassportSection,
-  getRequestingUser,
-  requireNotSuspended
-} = require("./auth");
+const { canViewPassportSection, getRequestingUser, requireNotSuspended } = require("./auth");
 const { app } = require("./core");
 const { pool } = require("./db");
 const passportService = require("./passport");
@@ -56,9 +52,7 @@ async function patchPassportSettings(userId, body) {
 
   let featuredBadgeId = current.featured_badge_id || null;
   if (Object.prototype.hasOwnProperty.call(body, "featuredBadgeId")) {
-    featuredBadgeId = body.featuredBadgeId == null || body.featuredBadgeId === ""
-      ? null
-      : String(body.featuredBadgeId);
+    featuredBadgeId = body.featuredBadgeId == null || body.featuredBadgeId === "" ? null : String(body.featuredBadgeId);
     if (featuredBadgeId) {
       const uuidOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(featuredBadgeId);
       if (!uuidOk) return { status: 400, error: "Badge épinglé invalide" };
@@ -86,7 +80,7 @@ async function patchPassportSettings(userId, body) {
       : current.primary_squad_id,
     featuredBadgeId: Object.prototype.hasOwnProperty.call(body, "featuredBadgeId")
       ? featuredBadgeId
-      : (current.featured_badge_id || null),
+      : current.featured_badge_id || null,
     passportVisibility: body.passportVisibility ?? current.passport_visibility,
     statisticsVisibility: body.statisticsVisibility ?? current.statistics_visibility,
     badgesVisibility: body.badgesVisibility ?? current.badges_visibility,
@@ -133,13 +127,15 @@ async function patchPassportSettings(userId, body) {
 
   if (visibilityChanged) {
     // Étape 73 — visibility change triggers recalc (summary stamp / gated fields).
-    summaryMod.schedulePassportRecalc(userId, {
-      mode: "queue",
-      reason: "visibility_changed",
-      triggerEvent: "collection.updated",
-      notify: false,
-      collectionChanged: false
-    }).catch(() => {});
+    summaryMod
+      .schedulePassportRecalc(userId, {
+        mode: "queue",
+        reason: "visibility_changed",
+        triggerEvent: "collection.updated",
+        notify: false,
+        collectionChanged: false
+      })
+      .catch(() => {});
   }
 
   // Étape 87 — privacy / primary squad product events.
@@ -160,8 +156,8 @@ async function patchPassportSettings(userId, body) {
     });
   }
   if (
-    Object.prototype.hasOwnProperty.call(body, "primarySquadId")
-    && String(values.primarySquadId || "") !== String(current.primary_squad_id || "")
+    Object.prototype.hasOwnProperty.call(body, "primarySquadId") &&
+    String(values.primarySquadId || "") !== String(current.primary_squad_id || "")
   ) {
     analytics.logProductAnalyticsEvent(pool, {
       userId,
@@ -191,9 +187,12 @@ function buildShareCardFromPassport(p, options = {}) {
   const cat = p.catalogue || {};
   const squad = p.primarySquad && !p.primarySquad.private ? p.primarySquad : null;
   const featured = p.featuredBadge;
-  const completedEventCount = p.eventsCompleted != null
-    ? p.eventsCompleted
-    : (p.events && p.events.completedCount != null ? p.events.completedCount : null);
+  const completedEventCount =
+    p.eventsCompleted != null
+      ? p.eventsCompleted
+      : p.events && p.events.completedCount != null
+        ? p.events.completedCount
+        : null;
 
   const showSquad = options.showSquad !== false && !!squad;
   const showBadges = options.showBadges !== false && !!featured;
@@ -204,13 +203,13 @@ function buildShareCardFromPassport(p, options = {}) {
   return {
     username: p.user.username,
     displayName: p.user.displayName || p.user.username,
-    avatarUrl: options.includeAvatar === false ? "" : (p.user.avatarUrl || ""),
-    completionRateDisplay: showCompletion && c.completionRateDisplay != null
-      ? c.completionRateDisplay
-      : null,
+    avatarUrl: options.includeAvatar === false ? "" : p.user.avatarUrl || "",
+    completionRateDisplay: showCompletion && c.completionRateDisplay != null ? c.completionRateDisplay : null,
     ownedVariantCount: showCompletion && c.ownedVariantCount != null ? c.ownedVariantCount : null,
     releasedVariantCount: showCompletion
-      ? (c.releasedVariantCount != null ? c.releasedVariantCount : (cat.releasedVariantCount || null))
+      ? c.releasedVariantCount != null
+        ? c.releasedVariantCount
+        : cat.releasedVariantCount || null
       : null,
     completedEventCount: showEvents ? completedEventCount : null,
     featuredBadgeLabel: showBadges && featured ? featured.label : null,
@@ -238,11 +237,13 @@ app.get("/api/passport/me", async (req, res) => {
     if (result.status !== 200) return res.status(result.status).json({ error: result.error });
     logPassportOpened(reqUser, reqUser, "passport_me");
     if (String(req.query.format || "").toLowerCase() === "normalized") {
-      return res.json(normalizePassportResponse(result.passport, {
-        relationship: result.passport.relationship,
-        actions: result.passport.actions,
-        publicUrl: result.passport.publicUrl
-      }));
+      return res.json(
+        normalizePassportResponse(result.passport, {
+          relationship: result.passport.relationship,
+          actions: result.passport.actions,
+          publicUrl: result.passport.publicUrl
+        })
+      );
     }
     res.json(result.passport);
   } catch (err) {
@@ -262,11 +263,13 @@ app.get("/api/users/:userId/passport", async (req, res) => {
     if (result.status !== 200) return res.status(result.status).json({ error: result.error });
     logPassportOpened(reqUser, userId, "users_passport");
     if (String(req.query.format || "").toLowerCase() === "normalized") {
-      return res.json(normalizePassportResponse(result.passport, {
-        relationship: result.passport.relationship,
-        actions: result.passport.actions,
-        publicUrl: result.passport.publicUrl
-      }));
+      return res.json(
+        normalizePassportResponse(result.passport, {
+          relationship: result.passport.relationship,
+          actions: result.passport.actions,
+          publicUrl: result.passport.publicUrl
+        })
+      );
     }
     res.json(result.passport);
   } catch (err) {
@@ -283,7 +286,13 @@ app.patch("/api/passport/settings", requireNotSuspended, async (req, res) => {
   if (!body || Object.keys(body).some((key) => !PASSPORT_SETTING_KEYS.has(key))) {
     return res.status(400).json({ error: "Réglages invalides" });
   }
-  const visibilityKeys = ["passportVisibility", "statisticsVisibility", "badgesVisibility", "activityVisibility", "comparisonsVisibility"];
+  const visibilityKeys = [
+    "passportVisibility",
+    "statisticsVisibility",
+    "badgesVisibility",
+    "activityVisibility",
+    "comparisonsVisibility"
+  ];
   if (visibilityKeys.some((key) => key in body && !PASSPORT_VISIBILITY_VALUES.has(body[key]))) {
     return res.status(400).json({ error: "Visibilité invalide" });
   }
@@ -347,9 +356,7 @@ app.patch("/api/passport/primary-squad", requireNotSuspended, async (req, res) =
   const body = req.body && typeof req.body === "object" ? req.body : {};
   try {
     const result = await patchPassportSettings(reqUser, {
-      primarySquadId: Object.prototype.hasOwnProperty.call(body, "primarySquadId")
-        ? body.primarySquadId
-        : body.squadId
+      primarySquadId: Object.prototype.hasOwnProperty.call(body, "primarySquadId") ? body.primarySquadId : body.squadId
     });
     if (result.status !== 200) return res.status(result.status).json({ error: result.error });
     res.json({
@@ -422,10 +429,7 @@ app.get("/api/users/:userId/passport/activity", async (req, res) => {
 
     if (!isSelf) {
       const { areFriends, shareActiveSquad } = require("./auth");
-      const [friendOk, squadOk] = await Promise.all([
-        areFriends(reqUser, userId),
-        shareActiveSquad(reqUser, userId)
-      ]);
+      const [friendOk, squadOk] = await Promise.all([areFriends(reqUser, userId), shareActiveSquad(reqUser, userId)]);
       items = items.filter((item) => {
         const vis = String(item.visibility || "friends");
         if (vis === "public") return true;
@@ -451,9 +455,7 @@ app.post("/api/passport/share-card", requireNotSuspended, async (req, res) => {
   try {
     const result = await passportService.getCollectorPassport(reqUser, reqUser);
     if (result.status !== 200) return res.status(result.status).json({ error: result.error });
-    const format = ["1080x1080", "1080x1920", "1200x630"].includes(body.format)
-      ? body.format
-      : "1080x1080";
+    const format = ["1080x1080", "1080x1920", "1200x630"].includes(body.format) ? body.format : "1080x1080";
     const card = buildShareCardFromPassport(result.passport, {
       showSquad: body.showSquad !== false,
       showBadges: body.showBadges !== false,

@@ -6,7 +6,7 @@ const RARITY_COLORS = {
   rare: "rgba(36, 167, 255, 0.42)",
   epic: "rgba(196, 67, 255, 0.42)",
   legendary: "rgba(255, 165, 0, 0.42)",
-  mythic: "rgba(255, 215, 0, 0.42)",
+  mythic: "rgba(255, 215, 0, 0.42)"
 };
 
 function defaultColor(rarity) {
@@ -36,7 +36,14 @@ function normalizeAvailabilityStatus(status, startDate, endDate) {
     if (start && start > now) return "upcoming";
     return "unknown";
   }
-  if (s === "unavailable" || s === "inactive" || s === "discontinued" || s === "expired" || s === "removed" || s === "over") {
+  if (
+    s === "unavailable" ||
+    s === "inactive" ||
+    s === "discontinued" ||
+    s === "expired" ||
+    s === "removed" ||
+    s === "over"
+  ) {
     if (end && end < now) return "ended";
     return "not_observed";
   }
@@ -51,7 +58,7 @@ function normalizeAvailability(availability) {
   const a = availability || {};
   return {
     ...a,
-    status: normalizeAvailabilityStatus(a.status, a.startDate, a.endDate),
+    status: normalizeAvailabilityStatus(a.status, a.startDate, a.endDate)
   };
 }
 
@@ -62,7 +69,8 @@ function normalizeRecurrenceStatus(status) {
   if (RECURRENCE_STATUSES.has(s)) return s;
   if (s.includes("recurring") || s.includes("confirmed_return") || s === "yes") return "confirmed_recurring";
   if (s.includes("possible") || s.includes("maybe") || s.includes("return")) return "possible_return";
-  if (s.includes("never") || s.includes("not_confirmed") || s.includes("no_return") || s.includes("exclusive")) return "not_confirmed";
+  if (s.includes("never") || s.includes("not_confirmed") || s.includes("no_return") || s.includes("exclusive"))
+    return "not_confirmed";
   return "unknown";
 }
 
@@ -71,15 +79,15 @@ function buildRecurrence(recurrence) {
     const status = normalizeRecurrenceStatus(recurrence.status);
     return {
       status,
-      officiallyConfirmed: recurrence.officiallyConfirmed ?? (status === "confirmed_recurring"),
-      evidence: recurrence.evidence || null,
+      officiallyConfirmed: recurrence.officiallyConfirmed ?? status === "confirmed_recurring",
+      evidence: recurrence.evidence || null
     };
   }
   const status = normalizeRecurrenceStatus(recurrence);
   return {
     status,
     officiallyConfirmed: status === "confirmed_recurring",
-    evidence: null,
+    evidence: null
   };
 }
 
@@ -88,13 +96,13 @@ function buildDates(dates, firstObservedAt, lastVerifiedAt, officiallyAnnouncedA
     return {
       firstObservedAt: dates.firstObservedAt || firstObservedAt || null,
       officiallyAnnouncedAt: dates.officiallyAnnouncedAt || officiallyAnnouncedAt || null,
-      lastVerifiedAt: dates.lastVerifiedAt || lastVerifiedAt || null,
+      lastVerifiedAt: dates.lastVerifiedAt || lastVerifiedAt || null
     };
   }
   return {
     firstObservedAt: firstObservedAt || null,
     officiallyAnnouncedAt: officiallyAnnouncedAt || null,
-    lastVerifiedAt: lastVerifiedAt || null,
+    lastVerifiedAt: lastVerifiedAt || null
   };
 }
 
@@ -133,12 +141,20 @@ function computeMissingFields(sprite) {
   if (!d.lastVerifiedAt) missing.push("dates.lastVerifiedAt");
   if (!d.officiallyAnnouncedAt) missing.push("dates.officiallyAnnouncedAt");
   if (!Array.isArray(sprite.sources) || sprite.sources.length === 0) missing.push("sources");
-  if (!Array.isArray(sprite.availabilityPeriods) || sprite.availabilityPeriods.length === 0) missing.push("availabilityPeriods");
+  if (!Array.isArray(sprite.availabilityPeriods) || sprite.availabilityPeriods.length === 0)
+    missing.push("availabilityPeriods");
 
   return missing;
 }
 
 module.exports = {
-  defaultColor, titleCaseVariant, normalizeAvailabilityStatus, normalizeAvailability,
-  normalizeRecurrenceStatus, buildRecurrence, buildDates, normalizeDataStatus, computeMissingFields
+  defaultColor,
+  titleCaseVariant,
+  normalizeAvailabilityStatus,
+  normalizeAvailability,
+  normalizeRecurrenceStatus,
+  buildRecurrence,
+  buildDates,
+  normalizeDataStatus,
+  computeMissingFields
 };

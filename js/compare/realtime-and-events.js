@@ -11,7 +11,7 @@ function connectCompareWs() {
   }
 
   compareWs.onopen = () => {
-    compareWs.send(JSON.stringify({ type: "auth", token: localStorage.getItem(TOKEN_KEY) }));
+    compareWs.send(JSON.stringify(wsAuthMessage()));
     if (state.compareTarget?.userId) {
       sendCompareSubscribe(state.compareTarget.userId);
     }
@@ -79,11 +79,11 @@ function updateCompareFromMessage(msg) {
 }
 
 function showCompareUpdateToast(msg, change) {
-  const catalog = getCompareCatalogItems().find(i => i.variantId === change.variantId);
+  const catalog = getCompareCatalogItems().find((i) => i.variantId === change.variantId);
   const spriteName = catalog?.spriteName || change.spriteId || t("compare.aSprite");
   const variantName = catalog?.variantName || "";
   const displayName = state.compareTarget?.username || t("compare.yourFriend");
-  const action = (change.status === "owned") ? t("compare.actionObtained") : t("compare.actionUpdated");
+  const action = change.status === "owned" ? t("compare.actionObtained") : t("compare.actionUpdated");
   const label = variantName && variantName !== "Base" ? `${spriteName} (${variantName})` : spriteName;
   toast(t("compare.actionToast", { name: displayName, action, label }));
 }

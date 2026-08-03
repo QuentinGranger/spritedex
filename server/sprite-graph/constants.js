@@ -55,26 +55,14 @@ const GRAPH_INTERACTION_EVENT_TYPES = Object.freeze({
   NOTIFICATION_CONVERTED: FUTURE_GRAPH_EVENT_TYPES.NOTIFICATION_CONVERTED
 });
 const GRAPH_INTERACTION_EVENT_TYPE_SET = new Set(Object.values(GRAPH_INTERACTION_EVENT_TYPES));
-const GRAPH_RECORDABLE_EVENT_TYPE_SET = new Set([
-  ...GRAPH_EVENT_TYPE_SET,
-  ...GRAPH_INTERACTION_EVENT_TYPE_SET
-]);
+const GRAPH_RECORDABLE_EVENT_TYPE_SET = new Set([...GRAPH_EVENT_TYPE_SET, ...GRAPH_INTERACTION_EVENT_TYPE_SET]);
 
 /** Étape 26 — goal scope for completion analytics. */
 const GOAL_SCOPES = Object.freeze(["personal", "friends", "squad"]);
 const GOAL_SCOPE_SET = new Set(GOAL_SCOPES);
 
 /** Étape 9 — canonical interaction sources. */
-const GRAPH_SOURCES = Object.freeze([
-  "web",
-  "ios",
-  "android",
-  "api",
-  "import",
-  "admin",
-  "system",
-  "migration"
-]);
+const GRAPH_SOURCES = Object.freeze(["web", "ios", "android", "api", "import", "admin", "system", "migration"]);
 
 const GRAPH_SOURCE_SET = new Set(GRAPH_SOURCES);
 
@@ -99,13 +87,7 @@ const GRAPH_EVENT_VERSIONS = Object.freeze({
 });
 
 /** Étape 21 — how a friend invitation was initiated. */
-const FRIEND_INVITATION_METHODS = Object.freeze([
-  "username",
-  "invite_link",
-  "qr_code",
-  "squad_member",
-  "passport"
-]);
+const FRIEND_INVITATION_METHODS = Object.freeze(["username", "invite_link", "qr_code", "squad_member", "passport"]);
 
 const FRIEND_INVITATION_METHOD_SET = new Set(FRIEND_INVITATION_METHODS);
 
@@ -144,5 +126,29 @@ const GRAPH_EVENT_SPECIFIC_FIELDS = Object.freeze([
   "notificationId"
 ]);
 
-
-module.exports = { GRAPH_EVENT_TYPES, FUTURE_GRAPH_EVENT_TYPES, GRAPH_EVENT_TYPE_SET, GRAPH_INTERACTION_EVENT_TYPES, GRAPH_INTERACTION_EVENT_TYPE_SET, GRAPH_RECORDABLE_EVENT_TYPE_SET, GRAPH_SOURCES, GRAPH_SOURCE_SET, GRAPH_EVENT_VERSIONS, GRAPH_EVENT_COMMON_FIELDS, GRAPH_EVENT_SPECIFIC_FIELDS, GOAL_SCOPES, GOAL_SCOPE_SET, FRIEND_INVITATION_METHODS, FRIEND_INVITATION_METHOD_SET, FRIEND_INVITATION_PUBLIC_METRIC_KEYS, GRAPH_DATA_LEVELS, GRAPH_DATA_LEVEL_SET, PUBLIC_ANONYMIZATION_MIN_USERS, INSUFFICIENT_COMMUNITY_DATA_MESSAGE, GRAPH_CONTEXT_PII_KEYS, sanitizeGraphContext, classifyGraphDataLevel, applyPublicAnonymizationGate };
+module.exports = {
+  GRAPH_EVENT_TYPES,
+  FUTURE_GRAPH_EVENT_TYPES,
+  GRAPH_EVENT_TYPE_SET,
+  GRAPH_INTERACTION_EVENT_TYPES,
+  GRAPH_INTERACTION_EVENT_TYPE_SET,
+  GRAPH_RECORDABLE_EVENT_TYPE_SET,
+  GRAPH_SOURCES,
+  GRAPH_SOURCE_SET,
+  GRAPH_EVENT_VERSIONS,
+  GRAPH_EVENT_COMMON_FIELDS,
+  GRAPH_EVENT_SPECIFIC_FIELDS,
+  GOAL_SCOPES,
+  GOAL_SCOPE_SET,
+  FRIEND_INVITATION_METHODS,
+  FRIEND_INVITATION_METHOD_SET,
+  FRIEND_INVITATION_PUBLIC_METRIC_KEYS,
+  GRAPH_DATA_LEVELS,
+  GRAPH_DATA_LEVEL_SET,
+  PUBLIC_ANONYMIZATION_MIN_USERS,
+  INSUFFICIENT_COMMUNITY_DATA_MESSAGE,
+  GRAPH_CONTEXT_PII_KEYS,
+  sanitizeGraphContext,
+  classifyGraphDataLevel,
+  applyPublicAnonymizationGate
+};

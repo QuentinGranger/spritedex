@@ -66,32 +66,25 @@ function buildEventDeadlineGroupKey(eventId, recipientId) {
  * Build the durable group summary attached to a notification.
  * `events` should be chronologically meaningful source events for the group.
  */
-function buildGroupSummary({
-  groupKey,
-  events = [],
-  principalElements = [],
-  destination = null
-} = {}) {
+function buildGroupSummary({ groupKey, events = [], principalElements = [], destination = null } = {}) {
   if (!groupKey) return null;
   const ordered = (Array.isArray(events) ? events : [])
     .filter(Boolean)
     .slice()
     .sort((a, b) => eventTime(a) - eventTime(b));
-  const principals = (Array.isArray(principalElements) ? principalElements : [])
-    .filter(Boolean)
-    .map((el) => {
-      if (typeof el === "string" || typeof el === "number") {
-        return { id: String(el) };
-      }
-      const out = {};
-      if (el.id != null) out.id = String(el.id);
-      if (el.variantId != null) out.variantId = String(el.variantId);
-      if (el.variantName) out.variantName = String(el.variantName);
-      if (el.priorityLevel) out.priorityLevel = String(el.priorityLevel);
-      if (el.milestone != null) out.milestone = Number(el.milestone);
-      if (el.actorName) out.actorName = String(el.actorName);
-      return out;
-    });
+  const principals = (Array.isArray(principalElements) ? principalElements : []).filter(Boolean).map((el) => {
+    if (typeof el === "string" || typeof el === "number") {
+      return { id: String(el) };
+    }
+    const out = {};
+    if (el.id != null) out.id = String(el.id);
+    if (el.variantId != null) out.variantId = String(el.variantId);
+    if (el.variantName) out.variantName = String(el.variantName);
+    if (el.priorityLevel) out.priorityLevel = String(el.priorityLevel);
+    if (el.milestone != null) out.milestone = Number(el.milestone);
+    if (el.actorName) out.actorName = String(el.actorName);
+    return out;
+  });
 
   return {
     groupKey: String(groupKey),
@@ -112,12 +105,7 @@ function attachGroup(context, group) {
   };
 }
 
-function buildFriendAcquisitionsGroup({
-  actorId,
-  recipientId,
-  variants = [],
-  destination = null
-} = {}) {
+function buildFriendAcquisitionsGroup({ actorId, recipientId, variants = [], destination = null } = {}) {
   const groupKey = buildFriendAcquisitionsGroupKey(actorId, recipientId);
   if (!groupKey) return null;
   const list = Array.isArray(variants) ? variants : [];
@@ -135,11 +123,7 @@ function buildFriendAcquisitionsGroup({
   return buildGroupSummary({ groupKey, events, principalElements, destination });
 }
 
-function buildSquadProgressGroup({
-  squadId,
-  items = [],
-  destination = null
-} = {}) {
+function buildSquadProgressGroup({ squadId, items = [], destination = null } = {}) {
   const groupKey = buildSquadProgressGroupKey(squadId);
   if (!groupKey) return null;
   const list = Array.isArray(items) ? items : [];
@@ -159,9 +143,7 @@ function buildSquadProgressGroup({
       seen.add(id);
       principalElements.push({
         variantId: id,
-        ...(it.variantName && String(it.newVariantIds?.[0]) === id
-          ? { variantName: it.variantName }
-          : {}),
+        ...(it.variantName && String(it.newVariantIds?.[0]) === id ? { variantName: it.variantName } : {}),
         ...(it.actorName ? { actorName: it.actorName } : {})
       });
     }
@@ -188,11 +170,13 @@ function buildEventDeadlineGroup({
 } = {}) {
   const groupKey = buildEventDeadlineGroupKey(eventId, recipientId);
   if (!groupKey) return null;
-  const events = [{
-    id: domainEventId || (threshold ? `${eventId}:${threshold}` : eventId),
-    at: endingAt || new Date().toISOString(),
-    threshold
-  }];
+  const events = [
+    {
+      id: domainEventId || (threshold ? `${eventId}:${threshold}` : eventId),
+      at: endingAt || new Date().toISOString(),
+      threshold
+    }
+  ];
   const principalElements = (Array.isArray(variantIds) ? variantIds : []).map((id) => ({
     variantId: String(id)
   }));

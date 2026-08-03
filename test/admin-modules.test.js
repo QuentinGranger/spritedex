@@ -20,5 +20,9 @@ for (const script of scripts) {
   assert.match(source, /^\(\(\) => \{/, `${script} must isolate its local declarations`);
 }
 
-assert.match(fs.readFileSync(path.join(root, "js", "admin.js"), "utf8"), /split into focused scripts/, "the legacy entry file must point to the split modules");
+assert.match(
+  fs.readFileSync(path.join(root, "js", "admin.js"), "utf8"),
+  /split into focused scripts/,
+  "the legacy entry file must point to the split modules"
+);
 console.log("admin modules: ok");

@@ -21,10 +21,18 @@ const COMPARE_RULES = {
   unknown: ["new", "unknown", "unsure"]
 };
 
-function compareIsOwned(status) { return COMPARE_RULES.owned.includes(status); }
-function compareIsMissing(status) { return COMPARE_RULES.missing.includes(status); }
-function compareIsUnknown(status) { return !status || COMPARE_RULES.unknown.includes(status); }
-function compareIsRecommend(status) { return COMPARE_RULES.recommend.includes(status); }
+function compareIsOwned(status) {
+  return COMPARE_RULES.owned.includes(status);
+}
+function compareIsMissing(status) {
+  return COMPARE_RULES.missing.includes(status);
+}
+function compareIsUnknown(status) {
+  return !status || COMPARE_RULES.unknown.includes(status);
+}
+function compareIsRecommend(status) {
+  return COMPARE_RULES.recommend.includes(status);
+}
 
 function compareIsPriority(entry) {
   if (!entry) return false;
@@ -63,7 +71,12 @@ function getCompareCatalogItems() {
         const available = variant.available !== undefined ? variant.available : sprite.available;
         const availabilityStatus = variant.availability?.status || sprite.availability?.status || "";
         const acquisitionMethod = variant.acquisition?.type || sprite.acquisitionMethod?.type || "";
-        const releaseDate = variant.availability?.startDate || sprite.availability?.startDate || variant.firstObservedAt || sprite.addedDate || null;
+        const releaseDate =
+          variant.availability?.startDate ||
+          sprite.availability?.startDate ||
+          variant.firstObservedAt ||
+          sprite.addedDate ||
+          null;
         items.push({
           id: stableVariantId,
           spriteId: sprite.id,
@@ -190,12 +203,19 @@ function computeComplementarityScore(baseRate, records, options = {}) {
     }
 
     if (rec.eventId && onlyOne) {
-      const isActiveEvent = activeEventIds ? activeEventIds.has(rec.eventId) : isItemAvailable(rec) && (rec.availabilityStatus || "").toLowerCase() === "event";
+      const isActiveEvent = activeEventIds
+        ? activeEventIds.has(rec.eventId)
+        : isItemAvailable(rec) && (rec.availabilityStatus || "").toLowerCase() === "event";
       if (isActiveEvent) activeEvents++;
     }
   }
 
-  const bonus = (commonPriorities * 0.5) + (availableComplements * 0.3) + (objectiveMatches * 0.7) + (soughtRarities * 0.4) + (activeEvents * 0.5);
+  const bonus =
+    commonPriorities * 0.5 +
+    availableComplements * 0.3 +
+    objectiveMatches * 0.7 +
+    soughtRarities * 0.4 +
+    activeEvents * 0.5;
   return Math.min(100, Math.round((baseRate + bonus) * 100) / 100);
 }
 
@@ -207,7 +227,10 @@ function countExplicitCollectionEntries(collection) {
     if (!entry || typeof entry !== "object") continue;
     if (!COMPARE_RULES.unknown.includes(entry.status)) {
       count++;
-    } else if ((entry.note && String(entry.note).trim()) || (entry.priority && entry.priority !== "none" && entry.priority !== "ignored")) {
+    } else if (
+      (entry.note && String(entry.note).trim()) ||
+      (entry.priority && entry.priority !== "none" && entry.priority !== "ignored")
+    ) {
       count++;
     }
   }

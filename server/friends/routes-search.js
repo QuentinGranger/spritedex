@@ -12,7 +12,8 @@ const { getActiveFriendship, canReceiveFriendRequestFrom } = require("./helpers"
 // omitted entirely (they cannot be discovered).
 // Requires at least 3 characters, is rate limited, caps results, and prefers an
 // exact normalized-username match before returning similar usernames.
-app.get("/api/users/search",
+app.get(
+  "/api/users/search",
   security.rateLimit({
     windowMs: 60 * 1000,
     max: 60,
@@ -48,9 +49,7 @@ app.get("/api/users/search",
 
         const active = await getActiveFriendship(reqUser, u.id);
         const friendshipStatus = active ? active.status : "none";
-        const canReceiveFriendRequest = active
-          ? false
-          : await canReceiveFriendRequestFrom(reqUser, u.id);
+        const canReceiveFriendRequest = active ? false : await canReceiveFriendRequestFrom(reqUser, u.id);
 
         rows.push({
           id: u.id,

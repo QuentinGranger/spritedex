@@ -1,7 +1,74 @@
 "use strict";
 
 // Compatibility facade. Implementation is split by comparison responsibility.
-const modules = [require("./compare/engine"), require("./compare/users"), require("./compare/catalog"), require("./compare/matrix"), require("./compare/acquisition-priority"), require("./compare/acquisition-assignments"), require("./compare/squad-analysis"), require("./compare/complementarity"), require("./compare/cache"), require("./compare/visibility"), require("./compare/service"), require("./compare/share-helpers"), require("./compare/routes-comparisons"), require("./compare/routes-share"), require("./compare/routes-quick"), require("./compare/routes-analytics")];
+const modules = [
+  require("./compare/engine"),
+  require("./compare/users"),
+  require("./compare/catalog"),
+  require("./compare/matrix"),
+  require("./compare/acquisition-priority"),
+  require("./compare/acquisition-assignments"),
+  require("./compare/squad-analysis"),
+  require("./compare/complementarity"),
+  require("./compare/cache"),
+  require("./compare/visibility"),
+  require("./compare/service"),
+  require("./compare/share-helpers"),
+  require("./compare/routes-comparisons"),
+  require("./compare/routes-share"),
+  require("./compare/routes-quick"),
+  require("./compare/routes-analytics")
+];
 const api = Object.assign({}, ...modules);
 
-module.exports = Object.fromEntries(["COMPARE_ANALYTICS_EVENTS_SET","COMPARE_CACHE_TTL_MS","COMPARE_SERVER_RULES","MAX_COMPARE_RESULT_CACHE","applyCollectionVisibilityFilters","applyServerCompareFilters","buildSquadCollectionMatrix","classifyEventUrgency","compareCatalogCache","compareCollectionsServer","compareResultCache","compareServerClassify","compareServerDefaultEntry","compareServerIsExplicitEntry","compareServerIsMissing","compareServerIsOwned","compareServerIsPriority","compareServerIsRecommend","compareServerIsUnknown","computeComplementarityScore","computeDurationExpiry","countServerExplicitCollectionEntries","formatSquadMemberRecommendation","getCachedCompareResult","getCompareCacheKey","getServerCompareCatalogItems","getServerCompareCatalogItemsCached","getSquadAcquisitionAssignments","getSquadAcquisitionPriority","getSquadAverageOwnership","getSquadCollectiveCompletion","getSquadCollectiveCompletionSummary","getSquadCollectivePlan","getSquadHelpScores","getSquadLevel1Analysis","getSquadMemberRecommendations","getSquadMissingVariants","getSquadMostComplementaryMember","getSquadRecommendations","getSquadSharedVariants","getSquadUniqueOwners","invalidateCompareCacheForUser","isVariantReleasedAndActiveServer","loadCollectionForShare","loadServerCompareCollection","pruneCompareResultCache","setCachedCompareResult"].map((name) => [name, api[name]]));
+module.exports = Object.fromEntries(
+  [
+    "COMPARE_ANALYTICS_EVENTS_SET",
+    "COMPARE_CACHE_TTL_MS",
+    "COMPARE_SERVER_RULES",
+    "MAX_COMPARE_RESULT_CACHE",
+    "applyCollectionVisibilityFilters",
+    "applyServerCompareFilters",
+    "buildSquadCollectionMatrix",
+    "classifyEventUrgency",
+    "compareCatalogCache",
+    "compareCollectionsServer",
+    "compareResultCache",
+    "compareServerClassify",
+    "compareServerDefaultEntry",
+    "compareServerIsExplicitEntry",
+    "compareServerIsMissing",
+    "compareServerIsOwned",
+    "compareServerIsPriority",
+    "compareServerIsRecommend",
+    "compareServerIsUnknown",
+    "computeComplementarityScore",
+    "computeDurationExpiry",
+    "countServerExplicitCollectionEntries",
+    "formatSquadMemberRecommendation",
+    "getCachedCompareResult",
+    "getCompareCacheKey",
+    "getServerCompareCatalogItems",
+    "getServerCompareCatalogItemsCached",
+    "getSquadAcquisitionAssignments",
+    "getSquadAcquisitionPriority",
+    "getSquadAverageOwnership",
+    "getSquadCollectiveCompletion",
+    "getSquadCollectiveCompletionSummary",
+    "getSquadCollectivePlan",
+    "getSquadHelpScores",
+    "getSquadLevel1Analysis",
+    "getSquadMemberRecommendations",
+    "getSquadMissingVariants",
+    "getSquadMostComplementaryMember",
+    "getSquadRecommendations",
+    "getSquadSharedVariants",
+    "getSquadUniqueOwners",
+    "invalidateCompareCacheForUser",
+    "isVariantReleasedAndActiveServer",
+    "loadCollectionForShare",
+    "loadServerCompareCollection",
+    "pruneCompareResultCache",
+    "setCachedCompareResult"
+  ].map((name) => [name, api[name]])
+);

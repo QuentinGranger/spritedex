@@ -33,15 +33,18 @@ function notFound(message) {
   return new AdminHttpError(404, message);
 }
 
-async function writeAdminAudit(db = pool, {
-  actor = "unknown",
-  action,
-  targetType,
-  targetId = null,
-  justification = null,
-  details = {},
-  requireJustification = true
-} = {}) {
+async function writeAdminAudit(
+  db = pool,
+  {
+    actor = "unknown",
+    action,
+    targetType,
+    targetId = null,
+    justification = null,
+    details = {},
+    requireJustification = true
+  } = {}
+) {
   if (!action || !targetType) {
     throw new AdminHttpError(500, "Entrée d’audit administrative incomplète");
   }
@@ -68,9 +71,7 @@ async function withAdminAudit(work, auditFieldsOrFn) {
   try {
     await client.query("BEGIN");
     const result = await work(client);
-    const auditFields = typeof auditFieldsOrFn === "function"
-      ? auditFieldsOrFn(result)
-      : auditFieldsOrFn;
+    const auditFields = typeof auditFieldsOrFn === "function" ? auditFieldsOrFn(result) : auditFieldsOrFn;
     await writeAdminAudit(client, auditFields);
     await client.query("COMMIT");
     return result;

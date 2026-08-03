@@ -16,7 +16,7 @@ function showLoginScreen() {
 }
 
 function goToStep(stepId) {
-  document.querySelectorAll(".onboarding-step").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".onboarding-step").forEach((s) => s.classList.remove("active"));
   document.getElementById(stepId).classList.add("active");
   document.getElementById("loginHint").textContent = "";
   if (stepId !== "onboardingStepVerifyEmail") {
@@ -67,13 +67,20 @@ function enterEmailVerificationGate(user = {}) {
   if (user.id) {
     state.userId = user.id;
     state.username = user.username || state.username;
-    localStorage.setItem(USER_KEY, JSON.stringify({
-      id: user.id,
-      username: user.username || "",
-      created_at: user.created_at || null
-    }));
+    localStorage.setItem(
+      USER_KEY,
+      JSON.stringify({
+        id: user.id,
+        username: user.username || "",
+        created_at: user.created_at || null
+      })
+    );
   }
-  if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
+  if (usesCookieAuth()) {
+    localStorage.removeItem(TOKEN_KEY);
+  } else if (user.token) {
+    localStorage.setItem(TOKEN_KEY, user.token);
+  }
   localStorage.setItem("sprite-index_email_verified", "false");
   localStorage.setItem(PENDING_VERIFY_KEY, "1");
   if (user.email) localStorage.setItem(PENDING_VERIFY_EMAIL_KEY, String(user.email).trim());
@@ -114,7 +121,9 @@ function setupLogin() {
 
   function setOAuthInProgress(inProgress) {
     oauthInProgress = inProgress;
-    oauthButtons.forEach((button) => { button.disabled = inProgress; });
+    oauthButtons.forEach((button) => {
+      button.disabled = inProgress;
+    });
   }
 
   function stopEmailVerificationPolling() {
@@ -169,7 +178,9 @@ function setupLogin() {
     stopEmailVerificationPolling();
     try {
       await fetch(`${API_BASE}/auth/logout`, { method: "POST", headers: authHeadersOnly() });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     clearAuthSessionLocal();
     pendingUser = null;
     pendingAfterVerify = null;
@@ -188,8 +199,7 @@ function setupLogin() {
   async function finishLogin(user) {
     state.userId = user.id;
     state.username = user.username;
-    if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
-    localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
+    storeAuthSession(user);
     if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
     if (user.privacy) localStorage.setItem("sprite-index_privacy", user.privacy);
     if (user.emailVerified !== true) {
@@ -226,9 +236,7 @@ function setupLogin() {
     localStorage.setItem("sprite-index_email_verified", "true");
     localStorage.removeItem(PENDING_VERIFY_KEY);
     localStorage.removeItem(PENDING_VERIFY_EMAIL_KEY);
-    const nextMode = pendingAfterVerify
-      || sessionStorage.getItem("sprite-index_after_verify")
-      || "app";
+    const nextMode = pendingAfterVerify || sessionStorage.getItem("sprite-index_after_verify") || "app";
     pendingAfterVerify = null;
     sessionStorage.removeItem("sprite-index_after_verify");
     if (nextMode === "profile" && (pendingUser || user)) {
@@ -238,12 +246,15 @@ function setupLogin() {
       goToStep("onboardingStepProfile");
       return;
     }
-    await finishLogin(user || pendingUser || {
-      id: state.userId,
-      username: state.username,
-      token: localStorage.getItem(TOKEN_KEY),
-      emailVerified: true
-    });
+    await finishLogin(
+      user ||
+        pendingUser || {
+          id: state.userId,
+          username: state.username,
+          token: localStorage.getItem(TOKEN_KEY),
+          emailVerified: true
+        }
+    );
     pendingUser = null;
   }
 
@@ -264,7 +275,7 @@ function setupLogin() {
         privacy: user.privacy,
         email: user.email || localStorage.getItem(PENDING_VERIFY_EMAIL_KEY) || "",
         emailVerified: !!(user.email_verified || user.emailVerified),
-        token: localStorage.getItem(TOKEN_KEY)
+        token: usesCookieAuth() ? undefined : localStorage.getItem(TOKEN_KEY)
       }
     };
   }
@@ -367,7 +378,15 @@ function setupLogin() {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ email, password, username, cguAccepted: true, cguVersion, ageConfirmed: true, cookieConsent })
+        body: JSON.stringify({
+          email,
+          password,
+          username,
+          cguAccepted: true,
+          cguVersion,
+          ageConfirmed: true,
+          cookieConsent
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t("login.registerFailed"));
@@ -379,7 +398,8 @@ function setupLogin() {
         startResendCooldown(12_000);
         return;
       }
-      if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
+      if (data.token && !usesCookieAuth()) localStorage.setItem(TOKEN_KEY, data.token);
+      storeAuthSession(data);
       document.getElementById("profileUsername").value = username;
       goToStep("onboardingStepProfile");
     } catch (e) {
@@ -390,9 +410,13 @@ function setupLogin() {
   };
 
   loginEmailBtn.addEventListener("click", doEmailLogin);
-  loginPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") doEmailLogin(); });
+  loginPassword.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doEmailLogin();
+  });
   registerEmailBtn.addEventListener("click", doEmailRegister);
-  registerPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") doEmailRegister(); });
+  registerPassword.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") doEmailRegister();
+  });
 
   document.getElementById("verifyEmailResendBtn")?.addEventListener("click", async () => {
     if (Date.now() < verifyResendUntil) return;
@@ -410,10 +434,7 @@ function setupLogin() {
       setVerifyStatus(t("login.verifyResent"), "ok");
       startResendCooldown();
     } catch (e) {
-      setVerifyStatus(
-        e.message === "Failed to fetch" ? t("login.serverUnreachable") : t(e.message),
-        "warn"
-      );
+      setVerifyStatus(e.message === "Failed to fetch" ? t("login.serverUnreachable") : t(e.message), "warn");
       btn.disabled = false;
       btn.textContent = previous;
     }
@@ -428,7 +449,9 @@ function setupLogin() {
     stopEmailVerificationPolling();
     try {
       await fetch(`${API_BASE}/auth/logout`, { method: "POST", headers: authHeadersOnly() });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     clearAuthSessionLocal();
     pendingUser = null;
     pendingAfterVerify = null;
@@ -481,7 +504,11 @@ function setupLogin() {
     state.username = "Local";
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { state.collection = sanitizeCollection(JSON.parse(saved)); } catch { state.collection = createSafeRecord(); }
+      try {
+        state.collection = sanitizeCollection(JSON.parse(saved));
+      } catch {
+        state.collection = createSafeRecord();
+      }
     }
     showApp();
     setupEvents();
@@ -499,7 +526,7 @@ function setupLogin() {
   avatarPicker.addEventListener("click", (e) => {
     const item = e.target.closest(".avatar-picker__item");
     if (!item) return;
-    avatarPicker.querySelectorAll(".avatar-picker__item").forEach(i => i.classList.remove("selected"));
+    avatarPicker.querySelectorAll(".avatar-picker__item").forEach((i) => i.classList.remove("selected"));
     item.classList.add("selected");
     selectedAvatar = item.dataset.avatar || "";
   });
@@ -510,8 +537,10 @@ function setupLogin() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return 0;
       const coll = JSON.parse(raw);
-      return Object.keys(coll).filter(k => !k.startsWith("fav_")).length;
-    } catch { return 0; }
+      return Object.keys(coll).filter((k) => !k.startsWith("fav_")).length;
+    } catch {
+      return 0;
+    }
   }
 
   // Profile submit
@@ -587,7 +616,7 @@ function setupLogin() {
     globalThis.crypto.getRandomValues(bytes);
     const verifier = toBase64Url(bytes);
     const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-    const challenge = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    const challenge = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
     return { verifier, challenge };
   }
 
@@ -621,5 +650,4 @@ function setupLogin() {
   document.getElementById("authDiscord").addEventListener("click", () => startOAuth("discord"));
   document.getElementById("authGoogleLogin").addEventListener("click", () => startOAuth("google"));
   document.getElementById("authDiscordLogin").addEventListener("click", () => startOAuth("discord"));
-
 }

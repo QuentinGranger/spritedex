@@ -4,7 +4,9 @@ function openDetail(itemId) {
   const entry = getEntry(item.id);
   state.activeDetailId = item.id;
   const imageUrl = safeImageUrl(item.img);
-  els.dialogAvatar.innerHTML = imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="avatar-img" />` : `<span class="avatar-placeholder">?</span>`;
+  els.dialogAvatar.innerHTML = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(item.spriteName)}" class="avatar-img" />`
+    : `<span class="avatar-placeholder">?</span>`;
   els.dialogAvatar.style.setProperty("--card-color", safeCssColor(item.color));
   // Étape 79 — label official rarity separately from community ownership.
   els.dialogRarity.textContent = item.rarity
@@ -15,7 +17,7 @@ function openDetail(itemId) {
   els.dialogEffect.textContent = `${item.effect} ${item.variant !== "Base" ? t("swipe.variantBonus", { bonus: item.variantBonus }) : ""}`;
   els.dialogNote.value = entry.note ?? "";
 
-  document.querySelectorAll("#dialogPriorityBar .prio-chip").forEach(chip => {
+  document.querySelectorAll("#dialogPriorityBar .prio-chip").forEach((chip) => {
     chip.classList.toggle("active", chip.dataset.prio === (entry.priority || "none"));
   });
 
@@ -32,19 +34,19 @@ function saveDialogNote() {
 }
 
 function openSpriteDetail(spriteId) {
-  const sprite = SPRITES.find(s => s.id === spriteId);
+  const sprite = SPRITES.find((s) => s.id === spriteId);
   if (!sprite) return;
 
   // Keep the detailed sprite view on the same released/active scope as the
   // header, checklist, stats and passport.
   const rawVariants = getSpriteCollectionItems(sprite.id).map((item) => item.variantType);
-  const variants = rawVariants.map(v => ({
+  const variants = rawVariants.map((v) => ({
     id: variantId(sprite.id, v),
     name: v,
     entry: getEntry(variantId(sprite.id, v)),
     img: getSpriteImg(sprite.id, v)
   }));
-  const owned = variants.filter(v => v.entry.status === "owned").length;
+  const owned = variants.filter((v) => v.entry.status === "owned").length;
   const total = variants.length;
   const pct = collectionPercent(owned, total);
   const baseImg = safeImageUrl(getSpriteImg(sprite.id, "Base"));
@@ -73,22 +75,30 @@ function openSpriteDetail(spriteId) {
       <strong>${escapeHtml(t("dialog.effect"))}</strong> ${escapeHtml(sprite.effect)}
     </div>
 
-    ${sprite.season ? `
+    ${
+      sprite.season
+        ? `
     <div class="sd-season">
       <strong>${escapeHtml(t("dialog.season"))}</strong>
       <span class="sd-season__name">${escapeHtml(sprite.season.name || `Chapitre ${sprite.season.chapter} — Saison ${sprite.season.season}`)}</span>
       ${sprite.season.startDate ? `<span class="sd-season__dates">${new Date(sprite.season.startDate).toLocaleDateString(uiLocale())}${sprite.season.endDate ? ` → ${new Date(sprite.season.endDate).toLocaleDateString(uiLocale())}` : ""}</span>` : ""}
     </div>
-    ` : ""}
+    `
+        : ""
+    }
 
-    ${sprite.event ? `
+    ${
+      sprite.event
+        ? `
     <div class="sd-event">
       <strong>${escapeHtml(t("dialog.event"))}</strong>
       <span class="sd-event__name">${escapeHtml(sprite.event.name || sprite.event.id)}</span>
       ${sprite.event.type ? `<span class="sd-event__type">${escapeHtml(sprite.event.type)}</span>` : ""}
       ${sprite.event.startDate ? `<span class="sd-event__dates">${new Date(sprite.event.startDate).toLocaleDateString(uiLocale())}${sprite.event.endDate ? ` → ${new Date(sprite.event.endDate).toLocaleDateString(uiLocale())}` : ""}</span>` : ""}
     </div>
-    ` : ""}
+    `
+        : ""
+    }
 
     ${(() => {
       // Étape 20 — Disponibilité formulée honnêtement (statut + source).
@@ -96,9 +106,10 @@ function openSpriteDetail(spriteId) {
       const a = sprite.availability || {};
       const conf = confidenceClass(a.confidence);
       const phrase = availabilityPhrase(a);
-      const endLine = typeof formatEndDateLine === "function"
-        ? formatEndDateLine(a)
-        : `Date de fin : ${formatDateFr(a.endDate) || "inconnue"}`;
+      const endLine =
+        typeof formatEndDateLine === "function"
+          ? formatEndDateLine(a)
+          : `Date de fin : ${formatDateFr(a.endDate) || "inconnue"}`;
       return `
       <div class="sd-availability sd-conf--${conf}">
         <strong>${escapeHtml(t("dialog.availability"))}</strong>
@@ -113,7 +124,9 @@ function openSpriteDetail(spriteId) {
       const acq = sprite.acquisitionMethod || {};
       const conf = confidenceClass(acq.confidence);
       const phrase = acquisitionPhrase(acq);
-      const loc = acq.location ? `<span class="sd-acquisition__loc">${escapeHtml(t("dialog.location", { loc: acq.location }))}</span>` : "";
+      const loc = acq.location
+        ? `<span class="sd-acquisition__loc">${escapeHtml(t("dialog.location", { loc: acq.location }))}</span>`
+        : "";
       return `
       <div class="sd-acquisition sd-conf--${conf}">
         <strong>${escapeHtml(t("dialog.acquisition"))}</strong>
@@ -137,7 +150,9 @@ function openSpriteDetail(spriteId) {
 
     ${(() => {
       const status = sprite.dataStatus;
-      const safeStatus = ["incomplete", "needs_review", "unverified", "disputed", "archived"].includes(status) ? status : "unknown";
+      const safeStatus = ["incomplete", "needs_review", "unverified", "disputed", "archived"].includes(status)
+        ? status
+        : "unknown";
       if (status === "complete") return "";
       const labelKeyMap = {
         incomplete: "dialog.dataIncomplete",
@@ -186,13 +201,17 @@ function openSpriteDetail(spriteId) {
         </div>
         `;
       }
-      const items = sources.map((src, i) => {
-        const reliability = sourceReliabilityLabel(src);
-        const confClass = confidenceClass(src.reliability || src.type);
-        const sourceUrl = safeExternalUrl(src.url);
-        const link = sourceUrl ? ` <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer" class="sd-sources__link">${escapeHtml(src.title || src.id)}</a>` : ` <span class="sd-sources__name">${escapeHtml(src.title || src.id)}</span>`;
-        return `<span class="sd-sources__item sd-conf--${confClass}">${link} — ${escapeHtml(reliability)}</span>`;
-      }).join("");
+      const items = sources
+        .map((src, i) => {
+          const reliability = sourceReliabilityLabel(src);
+          const confClass = confidenceClass(src.reliability || src.type);
+          const sourceUrl = safeExternalUrl(src.url);
+          const link = sourceUrl
+            ? ` <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer" class="sd-sources__link">${escapeHtml(src.title || src.id)}</a>`
+            : ` <span class="sd-sources__name">${escapeHtml(src.title || src.id)}</span>`;
+          return `<span class="sd-sources__item sd-conf--${confClass}">${link} — ${escapeHtml(reliability)}</span>`;
+        })
+        .join("");
       return `
       <div class="sd-sources">
         <strong>${escapeHtml(t("dialog.sources"))}</strong>
@@ -213,19 +232,21 @@ function openSpriteDetail(spriteId) {
 
     <div class="sd-variants">
       <h3 class="sd-section-title">${escapeHtml(t("dialog.variantsSection"))}</h3>
-      ${variants.map(v => {
-        const prio = v.entry.priority || "none";
-        const masteryLevel = masteryLevelFor(v.entry);
-        const prioBadge = prio !== "none" && prio !== "ignored"
-          ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(prio)}">${priorityLabel(prio)}</span>`
-          : "";
-        const dateLocale = uiLocale();
-        const dateObt = v.entry.obtainedAt
-          ? `<span class="sd-variant__date">${new Date(v.entry.obtainedAt).toLocaleDateString(dateLocale)}</span>`
-          : "";
-        const masteryNivLabel = masteryLevel === 5 ? "♛ Master" : t("dialog.masteryNiv", { level: masteryLevel });
-        const masteryGroupAria = t("dialog.chooseMastery");
-        return `
+      ${variants
+        .map((v) => {
+          const prio = v.entry.priority || "none";
+          const masteryLevel = masteryLevelFor(v.entry);
+          const prioBadge =
+            prio !== "none" && prio !== "ignored"
+              ? `<span class="farm-item__prio" style="--prio-color:${priorityColor(prio)}">${priorityLabel(prio)}</span>`
+              : "";
+          const dateLocale = uiLocale();
+          const dateObt = v.entry.obtainedAt
+            ? `<span class="sd-variant__date">${new Date(v.entry.obtainedAt).toLocaleDateString(dateLocale)}</span>`
+            : "";
+          const masteryNivLabel = masteryLevel === 5 ? "♛ Master" : t("dialog.masteryNiv", { level: masteryLevel });
+          const masteryGroupAria = t("dialog.chooseMastery");
+          return `
           <div class="sd-variant ${v.entry.status === "owned" ? "sd-variant--owned" : ""} ${masteryLevel === 5 ? "sd-variant--master" : ""}">
             <div class="sd-variant__thumb">${v.img ? `<img src="${escapeHtml(safeImageUrl(v.img))}" class="sd-variant__img" />` : `<span>?</span>`}</div>
             <div class="sd-variant__info">
@@ -235,20 +256,28 @@ function openSpriteDetail(spriteId) {
                 ${dateObt}
               </div>
             </div>
-            ${masteryLevel > 0 ? `
+            ${
+              masteryLevel > 0
+                ? `
               <div class="sd-variant__mastery ${masteryLevel === 5 ? "sd-variant__mastery--master" : ""}" aria-label="${escapeHtml(masteryLabel(masteryLevel))}">
                 <span class="sd-variant__mastery-label">${escapeHtml(masteryNivLabel)}</span>
                 <div class="sd-variant__mastery-levels" role="group" aria-label="${escapeHtml(masteryGroupAria)}">
                   ${Array.from({ length: 5 }, (_, index) => {
                     const level = index + 1;
                     const isMaster = level === 5;
-                    const levelAria = isMaster ? t("dialog.masteryMasterAria") : t("dialog.masteryLevelAria", { level });
-                    const levelTitle = isMaster ? t("dialog.masteryMasterAria") : t("dialog.masteryLevelAria", { level });
+                    const levelAria = isMaster
+                      ? t("dialog.masteryMasterAria")
+                      : t("dialog.masteryLevelAria", { level });
+                    const levelTitle = isMaster
+                      ? t("dialog.masteryMasterAria")
+                      : t("dialog.masteryLevelAria", { level });
                     return `<button type="button" class="sd-mastery-btn ${level <= masteryLevel ? "is-active" : ""} ${isMaster ? "is-master" : ""}" data-id="${escapeHtml(String(v.id || ""))}" data-detail-mastery-level="${level}" title="${escapeHtml(levelTitle)}" aria-label="${escapeHtml(levelAria)}" aria-pressed="${level === masteryLevel}">${isMaster ? "♛" : level}</button>`;
                   }).join("")}
                 </div>
               </div>
-            ` : ""}
+            `
+                : ""
+            }
             <div class="sd-variant__actions">
               <select class="sd-status-select" data-id="${escapeHtml(String(v.id || ""))}">
                 <option value="new" ${v.entry.status === "new" ? "selected" : ""}>${escapeHtml(t("dialog.selectStatusNew"))}</option>
@@ -274,29 +303,42 @@ function openSpriteDetail(spriteId) {
             </div>
           </div>
         `;
-      }).join("")}
+        })
+        .join("")}
     </div>
 
     <div class="sd-notes">
       <h3 class="sd-section-title">${escapeHtml(t("dialog.notesSection"))}</h3>
-      ${variants.filter(v => v.entry.note).map(v => `
+      ${
+        variants
+          .filter((v) => v.entry.note)
+          .map(
+            (v) => `
         <div class="sd-note">
           <strong>${escapeHtml(v.name)} :</strong> ${escapeHtml(v.entry.note)}
         </div>
-      `).join("") || `<p class="sd-empty">${escapeHtml(t("dialog.noNotes"))}</p>`}
+      `
+          )
+          .join("") || `<p class="sd-empty">${escapeHtml(t("dialog.noNotes"))}</p>`
+      }
     </div>
 
     <div class="sd-dates">
       <h3 class="sd-section-title">${escapeHtml(t("dialog.datesSection"))}</h3>
-      ${variants.filter(v => v.entry.obtainedAt).map(v => {
-        const dateLocale = uiLocale();
-        return `
+      ${
+        variants
+          .filter((v) => v.entry.obtainedAt)
+          .map((v) => {
+            const dateLocale = uiLocale();
+            return `
         <div class="sd-date-row">
           <span>${escapeHtml(v.name)}</span>
           <span>${new Date(v.entry.obtainedAt).toLocaleDateString(dateLocale)}</span>
         </div>
         `;
-      }).join("") || `<p class="sd-empty">${escapeHtml(t("dialog.noDates"))}</p>`}
+          })
+          .join("") || `<p class="sd-empty">${escapeHtml(t("dialog.noDates"))}</p>`
+      }
     </div>
   `;
 

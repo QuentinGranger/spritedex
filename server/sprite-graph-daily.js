@@ -5,10 +5,7 @@
 // comparison → squad snapshots → anonymization gate → publish.
 
 const { pool } = require("./db");
-const {
-  resolveCatalogueContext,
-  ensureCatalogueVersionColumns
-} = require("./sprite-graph-catalogue");
+const { resolveCatalogueContext, ensureCatalogueVersionColumns } = require("./sprite-graph-catalogue");
 const {
   listEligibleCommunityUserIds,
   calculateCommunityVariantStats,
@@ -19,20 +16,14 @@ const {
   calculateSpritePopularityScores,
   ensureComparisonStatsTables
 } = require("./sprite-graph-comparison-stats");
-const {
-  calculateVariantInterestDaily,
-  ensureTrendTables
-} = require("./sprite-graph-trends");
+const { calculateVariantInterestDaily, ensureTrendTables } = require("./sprite-graph-trends");
 const {
   calculateSquadDailyStats,
   calculateCommunitySquadProgress,
   ensureSquadDailyStatsTables,
   listEligibleSquadIds
 } = require("./sprite-graph-squad-stats");
-const {
-  PUBLIC_ANONYMIZATION_MIN_USERS,
-  applyPublicAnonymizationGate
-} = require("./sprite-graph-privacy");
+const { PUBLIC_ANONYMIZATION_MIN_USERS, applyPublicAnonymizationGate } = require("./sprite-graph-privacy");
 
 let dailyJobStarted = false;
 let dailyJobInterval = null;
@@ -63,22 +54,16 @@ async function ensureDailyPipelineTables(db = pool) {
 /**
  * Étape 60.7–60.8 — anonymization thresholds + publish summary row.
  */
-async function publishPublicAggregates(db = pool, {
-  metricDate = null,
-  catalogueVersion = null,
-  eligibleUserCount = 0,
-  eligibleSquadCount = 0,
-  steps = {}
-} = {}) {
+async function publishPublicAggregates(
+  db = pool,
+  { metricDate = null, catalogueVersion = null, eligibleUserCount = 0, eligibleSquadCount = 0, steps = {} } = {}
+) {
   await ensureDailyPipelineTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
-  const variants = await db.query(
-    `SELECT sample_size FROM community_variant_stats WHERE metric_date = $1::date`,
-    [day]
-  );
+  const variants = await db.query(`SELECT sample_size FROM community_variant_stats WHERE metric_date = $1::date`, [
+    day
+  ]);
   let publishedVariants = 0;
   let gatedVariants = 0;
   for (const row of variants.rows) {
@@ -90,10 +75,9 @@ async function publishPublicAggregates(db = pool, {
     else gatedVariants += 1;
   }
 
-  const interest = await db.query(
-    `SELECT sample_size FROM sprite_popularity_scores WHERE metric_date = $1::date`,
-    [day]
-  );
+  const interest = await db.query(`SELECT sample_size FROM sprite_popularity_scores WHERE metric_date = $1::date`, [
+    day
+  ]);
   let publishedInterest = 0;
   let gatedInterest = 0;
   for (const row of interest.rows) {
@@ -157,15 +141,10 @@ async function publishPublicAggregates(db = pool, {
 /**
  * Étape 60 — full daily treatment (ordered).
  */
-async function runSpriteGraphDailyPipeline(db = pool, {
-  metricDate = null,
-  windowDays = 7
-} = {}) {
+async function runSpriteGraphDailyPipeline(db = pool, { metricDate = null, windowDays = 7 } = {}) {
   await ensureDailyPipelineTables(db);
   const startedAt = new Date();
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   const cat = await resolveCatalogueContext(db);
   const catalogueVersion = cat.catalogueVersion;
@@ -242,7 +221,9 @@ async function runSpriteGraphDailyPipeline(db = pool, {
       ok: true,
       details: { metricDate: day, catalogueVersion, eligibleUsers: eligibleUserIds.length }
     });
-  } catch (_) { /* ops best-effort */ }
+  } catch (_) {
+    /* ops best-effort */
+  }
 
   return {
     metricDate: day,
@@ -269,9 +250,7 @@ function startSpriteGraphDailyJob(db = pool) {
   const intervalMs = Number.isFinite(pollMs) ? pollMs : 60 * 60 * 1000;
 
   const tick = () => {
-    runSpriteGraphDailyPipeline(db).catch((err) =>
-      console.error("[sprite-graph-daily] pipeline failed:", err.message)
-    );
+    runSpriteGraphDailyPipeline(db).catch((err) => console.error("[sprite-graph-daily] pipeline failed:", err.message));
   };
 
   if (intervalMs <= 0) {

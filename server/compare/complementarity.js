@@ -1,6 +1,12 @@
 "use strict";
 
-const { compareServerClassify, compareServerDefaultEntry, compareServerIsPriority, countServerExplicitCollectionEntries } = require("./engine");
+const crypto = require("crypto");
+const {
+  compareServerClassify,
+  compareServerDefaultEntry,
+  compareServerIsPriority,
+  countServerExplicitCollectionEntries
+} = require("./engine");
 const { isVariantReleasedAndActiveServer } = require("./catalog");
 
 const DEFAULT_COMPLEMENTARITY_RARITY_WEIGHTS = {
@@ -55,12 +61,19 @@ function computeComplementarityScore(baseRate, records, options = {}) {
     }
 
     if (rec.eventId && onlyOne) {
-      const isActiveEvent = activeEventIds ? activeEventIds.has(rec.eventId) : isServerItemAvailable(rec) && (rec.availabilityStatus || "").toLowerCase() === "event";
+      const isActiveEvent = activeEventIds
+        ? activeEventIds.has(rec.eventId)
+        : isServerItemAvailable(rec) && (rec.availabilityStatus || "").toLowerCase() === "event";
       if (isActiveEvent) activeEvents++;
     }
   }
 
-  const bonus = (commonPriorities * 0.5) + (availableComplements * 0.3) + (objectiveMatches * 0.7) + (soughtRarities * 0.4) + (activeEvents * 0.5);
+  const bonus =
+    commonPriorities * 0.5 +
+    availableComplements * 0.3 +
+    objectiveMatches * 0.7 +
+    soughtRarities * 0.4 +
+    activeEvents * 0.5;
   return Math.min(100, Math.round((baseRate + bonus) * 100) / 100);
 }
 
@@ -107,11 +120,14 @@ function compareCollectionsServer(userA, userB, catalogue) {
   const bOwnedCount = bothOwnedCount + onlyUserBCount;
   const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
 
-  const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+  const toRate = (n, d) => (d ? Math.round((n / d) * 10000) / 100 : 0);
   const aEnteredCount = countServerExplicitCollectionEntries(userA.collection);
   const bEnteredCount = countServerExplicitCollectionEntries(userB.collection);
   const insufficientData = aEnteredCount === 0 || bEnteredCount === 0;
-  const comparisonId = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `comparison_${crypto.randomBytes(16).toString("hex")}`;
+  const comparisonId =
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `comparison_${crypto.randomBytes(16).toString("hex")}`;
   const complementarityRate = toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount);
   const complementarityScore = computeComplementarityScore(complementarityRate, records);
 
@@ -146,5 +162,9 @@ function compareCollectionsServer(userA, userB, catalogue) {
   };
 }
 
-
-module.exports = { isServerItemAvailable, computeComplementarityScore, compareCollectionsServer, DEFAULT_COMPLEMENTARITY_RARITY_WEIGHTS };
+module.exports = {
+  isServerItemAvailable,
+  computeComplementarityScore,
+  compareCollectionsServer,
+  DEFAULT_COMPLEMENTARITY_RARITY_WEIGHTS
+};

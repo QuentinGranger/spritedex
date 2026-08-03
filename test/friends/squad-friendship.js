@@ -9,13 +9,21 @@ module.exports = async function runSquadFriendship(ctx) {
     const sdave = await register(`FrSquadDave${rnd()}`);
     try {
       // Alice and Bob become friends.
-      let res = await fetch(`${API}/friends/requests`, { method: "POST", headers: auth(salice.token), body: JSON.stringify({ addresseeId: sbob.id }) });
+      let res = await fetch(`${API}/friends/requests`, {
+        method: "POST",
+        headers: auth(salice.token),
+        body: JSON.stringify({ addresseeId: sbob.id })
+      });
       const { requestId } = await okJson(res, "friend request");
       res = await fetch(`${API}/friends/requests/${requestId}/accept`, { method: "POST", headers: auth(sbob.token) });
       await okJson(res, "accept request");
 
       // Alice creates an open squad.
-      res = await fetch(`${API}/squads`, { method: "POST", headers: auth(salice.token), body: JSON.stringify({ name: "Test Squad" }) });
+      res = await fetch(`${API}/squads`, {
+        method: "POST",
+        headers: auth(salice.token),
+        body: JSON.stringify({ name: "Test Squad" })
+      });
       const { code } = await okJson(res, "create squad");
 
       // Alice can invite Bob because they are friends.
@@ -33,14 +41,17 @@ module.exports = async function runSquadFriendship(ctx) {
       assert.strictEqual(squadInvite.actions.join, true);
 
       // Bob accepts the invitation.
-      res = await fetch(`${API}/squad-invitations/${squadInvite.invitationId}/accept`, { method: "POST", headers: auth(sbob.token) });
+      res = await fetch(`${API}/squad-invitations/${squadInvite.invitationId}/accept`, {
+        method: "POST",
+        headers: auth(sbob.token)
+      });
       await okJson(res, "accept squad invitation");
 
       // Squad details now include friendship status fields for members.
       res = await fetch(`${API}/squads/${code}`, { headers: auth(sbob.token) });
       const squadData = await okJson(res, "squad details");
-      const aliceMember = squadData.members.find(m => m.userId === salice.id);
-      const bobMember = squadData.members.find(m => m.userId === sbob.id);
+      const aliceMember = squadData.members.find((m) => m.userId === salice.id);
+      const bobMember = squadData.members.find((m) => m.userId === sbob.id);
       assert.ok(aliceMember, "alice missing from squad members");
       assert.ok(bobMember, "bob missing from squad members");
       assert.strictEqual(aliceMember.friendshipStatus, "accepted");
@@ -49,16 +60,20 @@ module.exports = async function runSquadFriendship(ctx) {
       assert.strictEqual(bobMember.canReceiveFriendRequest, false);
 
       // Non-friend Dave joins via code; it must not create a friendship.
-      res = await fetch(`${API}/squads/join`, { method: "POST", headers: auth(sdave.token), body: JSON.stringify({ code }) });
+      res = await fetch(`${API}/squads/join`, {
+        method: "POST",
+        headers: auth(sdave.token),
+        body: JSON.stringify({ code })
+      });
       await okJson(res, "join squad");
       res = await fetch(`${API}/friends`, { headers: auth(salice.token) });
       const friends = await okJson(res, "friend list");
-      assert.ok(!friends.friends.some(f => f.id === sdave.id), "joining squad created a friendship");
+      assert.ok(!friends.friends.some((f) => f.id === sdave.id), "joining squad created a friendship");
 
       // Dave sees Alice as a non-friend he can add.
       res = await fetch(`${API}/squads/${code}`, { headers: auth(sdave.token) });
       const daveView = await okJson(res, "squad details from dave");
-      const aliceFromDave = daveView.members.find(m => m.userId === salice.id);
+      const aliceFromDave = daveView.members.find((m) => m.userId === salice.id);
       assert.ok(aliceFromDave, "alice missing from dave's view");
       assert.strictEqual(aliceFromDave.friendshipStatus, "none");
       assert.strictEqual(aliceFromDave.canReceiveFriendRequest, true);

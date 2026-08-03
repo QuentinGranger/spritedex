@@ -9,10 +9,8 @@ function parseCompareShareOptions(value) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { ok: false, error: "Options de partage invalides" };
   }
-  const allowed = new Set([
-    "duration", "collectionVisible", "showNotes", "showPriorities", "allowVisitorCompare"
-  ]);
-  if (Object.keys(body).some(key => !allowed.has(key))) {
+  const allowed = new Set(["duration", "collectionVisible", "showNotes", "showPriorities", "allowVisitorCompare"]);
+  if (Object.keys(body).some((key) => !allowed.has(key))) {
     return { ok: false, error: "Option de partage invalide" };
   }
   const duration = body.duration === undefined ? "24h" : body.duration;
@@ -55,13 +53,12 @@ async function loadCollectionForShare(userId, options) {
   for (const row of result.rows) {
     collection[row.variant_id] = {
       status: row.status || "new",
-      note: options.show_notes ? (row.note || "") : "",
-      priority: options.show_priorities ? (row.priority || "none") : "none",
+      note: options.show_notes ? row.note || "" : "",
+      priority: options.show_priorities ? row.priority || "none" : "none",
       obtainedAt: row.obtained_at || null
     };
   }
   return collection;
 }
-
 
 module.exports = { parseCompareShareOptions, computeDurationExpiry, loadCollectionForShare, COMPARE_SHARE_DURATIONS };

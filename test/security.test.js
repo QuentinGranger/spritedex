@@ -41,7 +41,13 @@ async function registerUser() {
   const res = await fetch(`${API}/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password: "password123", username: `Sec${rnd()}`, ageConfirmed: true, cguAccepted: true })
+    body: JSON.stringify({
+      email,
+      password: "password123",
+      username: `Sec${rnd()}`,
+      ageConfirmed: true,
+      cguAccepted: true
+    })
   });
   const data = await res.json();
   assert.ok(res.ok, `register failed: ${JSON.stringify(data)}`);
@@ -101,7 +107,13 @@ async function run() {
     const res = await fetch(`${API}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: userA.email, password: "password123", username: userA.username, ageConfirmed: true, cguAccepted: true })
+      body: JSON.stringify({
+        email: userA.email,
+        password: "password123",
+        username: userA.username,
+        ageConfirmed: true,
+        cguAccepted: true
+      })
     });
     assert.strictEqual(res.status, 409);
     const data = await res.json();
@@ -117,13 +129,17 @@ async function run() {
     assert.strictEqual(res.status, 200);
     const data = await res.json();
     assert.ok(data.ok);
-    assert.ok(!/n'?est pas inscrit|not registered|unknown email/i.test(data.message || ""), `message leaks info: ${data.message}`);
+    assert.ok(
+      !/n'?est pas inscrit|not registered|unknown email/i.test(data.message || ""),
+      `message leaks info: ${data.message}`
+    );
   });
 
   // ── Authorization / IDOR ──
   await test("user can write to their OWN collection (200)", async () => {
     const res = await fetch(`${API}/collection/${userA.id}/water::Gold`, {
-      method: "PUT", headers: authHeaders(userA.token),
+      method: "PUT",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ status: "owned" })
     });
     assert.strictEqual(res.status, 200);
@@ -131,7 +147,8 @@ async function run() {
 
   await test("prototype-control collection keys are rejected", async () => {
     const entryRes = await fetch(`${API}/collection/${userA.id}/__proto__`, {
-      method: "PUT", headers: authHeaders(userA.token),
+      method: "PUT",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ status: "owned" })
     });
     assert.strictEqual(entryRes.status, 400);
@@ -139,7 +156,8 @@ async function run() {
     // Build raw JSON so __proto__ remains an own parsed key rather than being
     // interpreted by JavaScript's object-literal syntax first.
     const syncRes = await fetch(`${API}/collection/${userA.id}/sync`, {
-      method: "POST", headers: authHeaders(userA.token),
+      method: "POST",
+      headers: authHeaders(userA.token),
       body: '{"collection":{"__proto__":{"status":"owned"}}}'
     });
     assert.strictEqual(syncRes.status, 400);
@@ -147,7 +165,8 @@ async function run() {
 
   await test("user CANNOT write to another user's collection (403)", async () => {
     const res = await fetch(`${API}/collection/${userB.id}/water::Gold`, {
-      method: "PUT", headers: authHeaders(userA.token),
+      method: "PUT",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ status: "owned" })
     });
     assert.strictEqual(res.status, 403);
@@ -155,7 +174,8 @@ async function run() {
 
   await test("legacy /import route now enforces ownership (403)", async () => {
     const res = await fetch(`${API}/collection/${userB.id}/import`, {
-      method: "POST", headers: authHeaders(userA.token),
+      method: "POST",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ collection: { "water::Gold": { status: "owned" } } })
     });
     assert.strictEqual(res.status, 403);
@@ -174,7 +194,8 @@ async function run() {
   // ── Input validation ──
   await test("invalid status enum is rejected (400)", async () => {
     const res = await fetch(`${API}/collection/${userA.id}/water::Gold`, {
-      method: "PUT", headers: authHeaders(userA.token),
+      method: "PUT",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ status: "hacked" })
     });
     assert.strictEqual(res.status, 400);
@@ -182,7 +203,8 @@ async function run() {
 
   await test("note longer than 500 chars is rejected (400)", async () => {
     const res = await fetch(`${API}/collection/${userA.id}/water::Gold`, {
-      method: "PUT", headers: authHeaders(userA.token),
+      method: "PUT",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ note: "a".repeat(600) })
     });
     assert.strictEqual(res.status, 400);
@@ -190,8 +212,13 @@ async function run() {
 
   await test("XSS/invalid username is rejected on register (400, or 429 if rate-limited)", async () => {
     const res = await fetch(`${API}/auth/register`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: `x_${rnd()}@example.com`, password: "password123", username: "<script>alert(1)</script>" })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: `x_${rnd()}@example.com`,
+        password: "password123",
+        username: "<script>alert(1)</script>"
+      })
     });
     // 400 = validation rejected it; 429 = register rate limit already reached
     // (also a safe outcome — the malicious payload was never processed).
@@ -200,7 +227,9 @@ async function run() {
 
   await test("malformed JSON body returns clean 400", async () => {
     const res = await fetch(`${API}/auth/login`, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: "{bad"
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{bad"
     });
     assert.strictEqual(res.status, 400);
   });
@@ -209,7 +238,8 @@ async function run() {
   let squadCode;
   await test("owner can create a squad (200)", async () => {
     const res = await fetch(`${API}/squads`, {
-      method: "POST", headers: authHeaders(userA.token),
+      method: "POST",
+      headers: authHeaders(userA.token),
       body: JSON.stringify({ name: "Sec Test Squad" })
     });
     assert.strictEqual(res.status, 200);
@@ -228,7 +258,8 @@ async function run() {
 
   await test("invalid invite code is rejected (404)", async () => {
     const res = await fetch(`${API}/squads/join`, {
-      method: "POST", headers: authHeaders(userB.token),
+      method: "POST",
+      headers: authHeaders(userB.token),
       body: JSON.stringify({ code: "SPRITE-XXXXXXXX" })
     });
     assert.strictEqual(res.status, 404);
@@ -243,7 +274,9 @@ async function run() {
   let shareToken;
   await test("owner can generate an opaque share token (64 hex chars)", async () => {
     const res = await fetch(`${API}/profile/${userA.id}/share-link`, {
-      method: "POST", headers: authHeaders(userA.token), body: JSON.stringify({})
+      method: "POST",
+      headers: authHeaders(userA.token),
+      body: JSON.stringify({})
     });
     assert.strictEqual(res.status, 200);
     shareToken = (await res.json()).token;
@@ -262,7 +295,9 @@ async function run() {
 
   await test("another user cannot manage someone else's share link (403)", async () => {
     const res = await fetch(`${API}/profile/${userA.id}/share-link`, {
-      method: "POST", headers: authHeaders(userB.token), body: JSON.stringify({})
+      method: "POST",
+      headers: authHeaders(userB.token),
+      body: JSON.stringify({})
     });
     assert.strictEqual(res.status, 403);
   });
@@ -283,7 +318,10 @@ async function run() {
   });
 
   await test("revoked share token no longer resolves (404)", async () => {
-    const del = await fetch(`${API}/profile/${userA.id}/share-link`, { method: "DELETE", headers: authHeaders(userA.token) });
+    const del = await fetch(`${API}/profile/${userA.id}/share-link`, {
+      method: "DELETE",
+      headers: authHeaders(userA.token)
+    });
     assert.strictEqual(del.status, 200);
     const res = await fetch(`${API}/shared/${shareToken}`);
     assert.strictEqual(res.status, 404);
@@ -481,8 +519,10 @@ async function run() {
 
     await test("notification destinations respect live permissions (Étape 68)", async () => {
       const actionUrl = notifOwner._actionUrl;
-      assert.ok(actionUrl && String(actionUrl).includes(`/compare/${notifOther.id}`),
-        `expected compare action, got ${actionUrl}`);
+      assert.ok(
+        actionUrl && String(actionUrl).includes(`/compare/${notifOther.id}`),
+        `expected compare action, got ${actionUrl}`
+      );
 
       // Destination works while friendship + visibility allow it.
       await fetch(`${API}/profile/${notifOther.id}`, {
@@ -564,8 +604,10 @@ async function run() {
       assert.ok(mine, "owner should list their device");
       assert.strictEqual(mine.endpoint, endpoint);
       assert.ok(!("auth_secret" in mine), "auth_secret exposed in list");
-      assert.ok(!("public_key" in mine) && !("p256dh" in mine) && !("auth" in mine) && !("token" in mine),
-        "push key material exposed in list");
+      assert.ok(
+        !("public_key" in mine) && !("p256dh" in mine) && !("auth" in mine) && !("token" in mine),
+        "push key material exposed in list"
+      );
 
       // Other user cannot deactivate this subscription.
       res = await fetch(`${API}/push-subscriptions/${subscriptionId}`, {
@@ -591,8 +633,10 @@ async function run() {
       assert.ok(!("privateKey" in data), "VAPID privateKey must not be exposed");
       assert.ok(!("private_key" in data), "VAPID private_key must not be exposed");
       const body = JSON.stringify(data);
-      assert.ok(!/BEGIN (EC )?PRIVATE KEY|VAPID_PRIVATE|RESEND_API_KEY|FCM_SERVER_KEY|APNS_KEY/i.test(body),
-        "provider secret material leaked from vapid-key");
+      assert.ok(
+        !/BEGIN (EC )?PRIVATE KEY|VAPID_PRIVATE|RESEND_API_KEY|FCM_SERVER_KEY|APNS_KEY/i.test(body),
+        "provider secret material leaked from vapid-key"
+      );
 
       // Common secret paths must stay unreachable.
       for (const path of ["/.env", "/.env.local", "/vapid.json", "/server/vapid-keys.json"]) {
@@ -605,8 +649,10 @@ async function run() {
       });
       if (prefs.ok) {
         const prefBody = await prefs.text();
-        assert.ok(!/VAPID_PRIVATE|RESEND_API_KEY|FCM_SERVER_KEY|APNS_KEY|privateKey/i.test(prefBody),
-          "secrets leaked via notification-preferences");
+        assert.ok(
+          !/VAPID_PRIVATE|RESEND_API_KEY|FCM_SERVER_KEY|APNS_KEY|privateKey/i.test(prefBody),
+          "secrets leaked via notification-preferences"
+        );
       }
     });
   } finally {

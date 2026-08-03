@@ -8,20 +8,41 @@ const { renderIndexPage } = require("../scripts/index-page");
 const root = path.join(__dirname, "..");
 const directory = path.join(root, "js", "events");
 const modules = [
-  "views.js", "social-tabs.js", "view-swipe.js", "mobile-more.js",
-  "navigation-events.js", "swipe-events.js", "checklist-events.js",
-  "detail-events.js", "data-events.js", "missing-events.js", "squad-events.js",
-  "service-worker.js", "bootstrap.js"
+  "views.js",
+  "social-tabs.js",
+  "view-swipe.js",
+  "mobile-more.js",
+  "navigation-events.js",
+  "swipe-events.js",
+  "checklist-events.js",
+  "detail-events.js",
+  "data-events.js",
+  "missing-events.js",
+  "squad-events.js",
+  "service-worker.js",
+  "bootstrap.js"
 ];
 
-assert.deepStrictEqual(fs.readdirSync(directory).filter(file => file.endsWith(".js")).sort(), modules.slice().sort());
+assert.deepStrictEqual(
+  fs
+    .readdirSync(directory)
+    .filter((file) => file.endsWith(".js"))
+    .sort(),
+  modules.slice().sort()
+);
 for (const file of modules) {
   const source = fs.readFileSync(path.join(directory, file), "utf8");
   assert.ok(source.split("\n").length < 500, `${file} exceeds the 500-line module limit`);
 }
 
 const bootstrap = fs.readFileSync(path.join(directory, "bootstrap.js"), "utf8");
-for (const setup of ["setupMobileMoreEvents", "setupChecklistEvents", "setupDetailEvents", "setupSquadEvents", "setupServiceWorker"]) {
+for (const setup of [
+  "setupMobileMoreEvents",
+  "setupChecklistEvents",
+  "setupDetailEvents",
+  "setupSquadEvents",
+  "setupServiceWorker"
+]) {
   assert.match(bootstrap, new RegExp(`\\b${setup}\\(`), `bootstrap must call ${setup}`);
 }
 const html = renderIndexPage(root);

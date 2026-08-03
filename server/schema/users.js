@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureUserProfileSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_salt TEXT;
@@ -54,7 +54,7 @@ async function ensureUserProfileSchema(pool) {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_normalized ON users (username_normalized);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (LOWER(email));
     `);
-    await pool.query(`
+  await pool.query(`
       UPDATE users
       SET profile_visibility = CASE privacy
             WHEN 'private' THEN 'private'
@@ -80,7 +80,7 @@ async function ensureUserProfileSchema(pool) {
           notes_visibility = COALESCE(notes_visibility, 'private')
       WHERE privacy IS NOT NULL
     `);
-    await pool.query(`
+  await pool.query(`
       UPDATE users
       SET visibility = COALESCE(visibility, '{}') || jsonb_build_object(
             'profile', profile_visibility,

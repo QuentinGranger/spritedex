@@ -142,14 +142,7 @@ function dateOnly(iso) {
   return String(iso).slice(0, 10);
 }
 
-async function emitEnding({
-  eventId,
-  eventName,
-  variantId,
-  endDate,
-  confidence,
-  threshold
-}) {
+async function emitEnding({ eventId, eventName, variantId, endDate, confidence, threshold }) {
   await ending.handleCatalogueEventEndingSoon({
     eventId: `catalogue.event_ending_soon:${eventId}:${threshold}:${dateOnly(endDate)}:${rnd()}`,
     entityType: "event",
@@ -205,12 +198,15 @@ async function run() {
       await setEntry(user, variantId, "priority", "urgent");
 
       // Unconfirmed end date → scheduler / handler must not affirm.
-      const untrusted = await scheduler.processEventEndingAlert({
-        id: eventId,
-        name: "Étape 67 Event",
-        endDate: endIn3d,
-        confidence: "estimated"
-      }, new Date());
+      const untrusted = await scheduler.processEventEndingAlert(
+        {
+          id: eventId,
+          name: "Étape 67 Event",
+          endDate: endIn3d,
+          confidence: "estimated"
+        },
+        new Date()
+      );
       assert.strictEqual(untrusted.emitted, false);
       assert.strictEqual(untrusted.skippedReason, "end_date_untrusted");
 
@@ -241,10 +237,7 @@ async function run() {
       const hits = notifs.notifications.filter((n) => n.type === "wanted_event_ending_soon");
       assert.strictEqual(hits.length, 1, "trusted 3d threshold should notify once");
       assert.strictEqual(String(hits[0].entity_id || hits[0].entity?.id), eventId);
-      assert.ok(
-        Number(hits[0].data?.remainingCount) >= 1,
-        "payload should list remaining priorities"
-      );
+      assert.ok(Number(hits[0].data?.remainingCount) >= 1, "payload should list remaining priorities");
       assert.ok(hits[0].data?.timeZone || hits[0].data?.timezone, "timezone should be attached");
 
       // Priority already obtained → excluded from recipients / cancel path.
@@ -295,8 +288,9 @@ async function run() {
       });
       notifs = await listNotifications(user);
       assert.ok(
-        notifs.notifications.some((n) => n.type === "wanted_event_ending_soon"
-          && String(n.entity_id || n.entity?.id) === eventId2),
+        notifs.notifications.some(
+          (n) => n.type === "wanted_event_ending_soon" && String(n.entity_id || n.entity?.id) === eventId2
+        ),
         "second event should notify"
       );
 
@@ -323,19 +317,23 @@ async function run() {
       await scheduler.cancelStaleWantedEventNotifications();
       notifs = await listNotifications(user);
       assert.ok(
-        !notifs.notifications.some((n) => n.type === "wanted_event_ending_soon"
-          && String(n.entity_id || n.entity?.id) === eventId2),
+        !notifs.notifications.some(
+          (n) => n.type === "wanted_event_ending_soon" && String(n.entity_id || n.entity?.id) === eventId2
+        ),
         "prolonged event must cancel the scheduled ending alert"
       );
 
       // Scheduler classifies thresholds for trusted rows (smoke).
       const in24h = daysFromNow(0.5);
-      const classified = await scheduler.processEventEndingAlert({
-        id: eventId,
-        name: "Étape 67 Event",
-        endDate: in24h,
-        confidence: "official"
-      }, new Date());
+      const classified = await scheduler.processEventEndingAlert(
+        {
+          id: eventId,
+          name: "Étape 67 Event",
+          endDate: in24h,
+          confidence: "official"
+        },
+        new Date()
+      );
       assert.strictEqual(classified.thresholdId, "24h");
       assert.strictEqual(classified.emitted, true);
     } finally {

@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const initSource = fs.readFileSync("js/init.js", "utf8");
-const linkHandlers = initSource.slice(0, initSource.indexOf("// If opened with a \"?share=<token>\""));
+const linkHandlers = initSource.slice(0, initSource.indexOf('// If opened with a "?share=<token>"'));
 
 function createContext(search) {
   const values = new Map();
@@ -28,24 +28,44 @@ function createContext(search) {
       }
     },
     sessionStorage: {
-      setItem(key, value) { values.set(key, String(value)); },
-      getItem(key) { return values.get(key) || null; },
-      removeItem(key) { values.delete(key); }
+      setItem(key, value) {
+        values.set(key, String(value));
+      },
+      getItem(key) {
+        return values.get(key) || null;
+      },
+      removeItem(key) {
+        values.delete(key);
+      }
     },
     state: { userId: null, activeSquad: null },
     API_BASE: "/api",
     authHeaders: () => ({ Authorization: "Bearer test" }),
     document: {
-      querySelector() { return { click() { calls.tabs += 1; } }; },
-      getElementById(id) { return elements[id] || null; }
+      querySelector() {
+        return {
+          click() {
+            calls.tabs += 1;
+          }
+        };
+      },
+      getElementById(id) {
+        return elements[id] || null;
+      }
     },
     setSocialTab() {},
     setCompareMode() {},
     els: { squadCodeInput: { value: "" } },
-    joinSquad() { calls.join += 1; },
-    toast(message) { calls.toasts.push(message); },
+    joinSquad() {
+      calls.join += 1;
+    },
+    toast(message) {
+      calls.toasts.push(message);
+    },
     toastError() {},
-    t(key, params) { return params?.name ? `${key}:${params.name}` : key; },
+    t(key, params) {
+      return params?.name ? `${key}:${params.name}` : key;
+    },
     fetch(url) {
       calls.fetch.push(url);
       return Promise.resolve({ ok: true, status: 201, json: async () => ({}) });
@@ -73,7 +93,11 @@ async function run() {
     context.handleInviteLink();
     await flush();
     assert.strictEqual(calls.fetch[0], "/api/friends/invite-links/friend-token/use");
-    assert.strictEqual(values.get("sprite-index_pending_friend_invite"), undefined, "successful redemption must clear the pending token");
+    assert.strictEqual(
+      values.get("sprite-index_pending_friend_invite"),
+      undefined,
+      "successful redemption must clear the pending token"
+    );
   }
 
   {
@@ -87,7 +111,11 @@ async function run() {
     context.handleJoinLink();
     assert.strictEqual(context.els.squadCodeInput.value, "BRAVO");
     assert.strictEqual(calls.join, 1, "the pending squad join must resume after login");
-    assert.strictEqual(values.get("sprite-index_pending_squad_join"), undefined, "a resumed squad join must clear its pending code");
+    assert.strictEqual(
+      values.get("sprite-index_pending_squad_join"),
+      undefined,
+      "a resumed squad join must clear its pending code"
+    );
   }
 
   {
@@ -98,7 +126,11 @@ async function run() {
       json: async () => ({ owner: { displayName: "Quentin" } })
     });
     await context.setupPendingInvitationOnboarding();
-    assert.strictEqual(elements.loginInviteNotice.hidden, false, "the invite context must be visible before account creation");
+    assert.strictEqual(
+      elements.loginInviteNotice.hidden,
+      false,
+      "the invite context must be visible before account creation"
+    );
     assert.strictEqual(elements.loginInviteTitle.textContent, "login.friendInviteTitle:Quentin");
   }
 

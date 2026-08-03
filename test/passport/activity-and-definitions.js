@@ -1,6 +1,44 @@
 "use strict";
 
-const { assert, passportReliability, buildBadges, computePassportProgress, computeOwnedRarityStats, sameVariantSet, OFFICIAL_RARITY_SCORE, specialVariantScore, resolveCompareSource, isCountableCompareResult, recordComparisonSession, getComparisonStatsForUser, ensureComparisonSessionsTable, ensurePassportActivityTable, recordOwnedVariants, listRecentActivity, writeActivity, ALLOWED_ACTIVITY_TYPES, ACTIVITY_FEED_LIMIT, ensurePassportBadgeTables, evaluateBadgeCondition, listBadgeDefinitions, listUserBadges, VERIFICATION_STATUSES, meetsCompletionThreshold, evaluateAndAwardComplementaryBadge, pool, BASE, API, test, rnd, register, auth, cleanup, getPassport, setEntry, getActiveVariants } = require("./shared");
+const {
+  assert,
+  passportReliability,
+  buildBadges,
+  computePassportProgress,
+  computeOwnedRarityStats,
+  sameVariantSet,
+  OFFICIAL_RARITY_SCORE,
+  specialVariantScore,
+  resolveCompareSource,
+  isCountableCompareResult,
+  recordComparisonSession,
+  getComparisonStatsForUser,
+  ensureComparisonSessionsTable,
+  ensurePassportActivityTable,
+  recordOwnedVariants,
+  listRecentActivity,
+  writeActivity,
+  ALLOWED_ACTIVITY_TYPES,
+  ACTIVITY_FEED_LIMIT,
+  ensurePassportBadgeTables,
+  evaluateBadgeCondition,
+  listBadgeDefinitions,
+  listUserBadges,
+  VERIFICATION_STATUSES,
+  meetsCompletionThreshold,
+  evaluateAndAwardComplementaryBadge,
+  pool,
+  BASE,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  getPassport,
+  setEntry,
+  getActiveVariants
+} = require("./shared");
 
 async function run() {
   await test("activité : types autorisés + regroupement 10 min (Étapes 31–34)", async () => {
@@ -62,14 +100,19 @@ async function run() {
     assert.ok(meetsCompletionThreshold(75, 75));
     assert.ok(meetsCompletionThreshold(75.001, 75));
     assert.ok(!meetsCompletionThreshold(74.9, 75));
-    assert.ok(!evaluateBadgeCondition(
-      { type: "completion_rate", min: 75 },
-      { completionRatePrecise: 74.999, completionRateDisplay: 75 }
-    ), "display rounding must not unlock");
-    assert.ok(evaluateBadgeCondition(
-      { type: "completion_rate", min: 75 },
-      { completionRatePrecise: 75, completionRateDisplay: 75 }
-    ));
+    assert.ok(
+      !evaluateBadgeCondition(
+        { type: "completion_rate", min: 75 },
+        { completionRatePrecise: 74.999, completionRateDisplay: 75 }
+      ),
+      "display rounding must not unlock"
+    );
+    assert.ok(
+      evaluateBadgeCondition(
+        { type: "completion_rate", min: 75 },
+        { completionRatePrecise: 75, completionRateDisplay: 75 }
+      )
+    );
   });
 
   await test("badges : complémentarité refuse les faux comptes (Étape 45)", async () => {
@@ -83,7 +126,6 @@ async function run() {
     });
     assert.strictEqual(insufficient.skippedReason, "insufficient_data");
   });
-
 }
 
 module.exports = { run };

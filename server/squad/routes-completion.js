@@ -1,7 +1,53 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
+const friends = require("./logic-friends");
+const teams = require("./logic-teams");
 const simulations = require("./logic-simulations");
 const completion = require("./logic-completion");
+const { getSquadComplementaryPairs } = friends;
+const { getSquadBestTeams } = teams;
 const { simulateSquadChanges } = simulations;
 const { buildSquadCompletionMembers } = completion;
 const { getSquadCompletionScope } = completion;
@@ -65,15 +111,17 @@ app.get("/api/squads/:squadId/completion/missing", async (req, res) => {
       const members = await buildSquadCompletionMembers(squad, reqUser);
       const matrix = await compare.buildSquadCollectionMatrix(members);
       const result = compare.getSquadMissingVariants(matrix, squad.name);
-      const missingFromEntireSquad = matrix.filter(r => r.ownerCount === 0 && r.unknownCount === 0).map(r => ({
-        variantId: r.variantId,
-        spriteId: r.spriteId,
-        spriteName: r.spriteName,
-        variantName: r.variantName,
-        rarity: r.rarity,
-        availabilityStatus: r.availabilityStatus,
-        eventId: r.eventId
-      }));
+      const missingFromEntireSquad = matrix
+        .filter((r) => r.ownerCount === 0 && r.unknownCount === 0)
+        .map((r) => ({
+          variantId: r.variantId,
+          spriteId: r.spriteId,
+          spriteName: r.spriteName,
+          variantName: r.variantName,
+          rarity: r.rarity,
+          availabilityStatus: r.availabilityStatus,
+          eventId: r.eventId
+        }));
 
       return {
         squadCode: squad.code,
@@ -132,15 +180,24 @@ app.get("/api/squads/:squadId/completion/recommendations", async (req, res) => {
 
     const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "recommendations", async () => {
       const members = await buildSquadCompletionMembers(squad, reqUser);
-      const memberIds = members.map(m => m.userId);
+      const memberIds = members.map((m) => m.userId);
 
       const [goalsResult, memberGoalsResult, lastActiveResult] = await Promise.all([
-        pool.query("SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL", [squad.id]),
-        pool.query("SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id", [memberIds]),
-        pool.query("SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id", [memberIds])
+        pool.query(
+          "SELECT variant_id, user_id FROM collection_goals WHERE squad_id = $1 AND status = 'active' AND variant_id IS NOT NULL",
+          [squad.id]
+        ),
+        pool.query(
+          "SELECT user_id, COUNT(*) AS cnt FROM collection_goals WHERE user_id = ANY($1) AND status = 'active' GROUP BY user_id",
+          [memberIds]
+        ),
+        pool.query(
+          "SELECT user_id, MAX(updated_at) AS last_active FROM sprite_entries WHERE user_id = ANY($1) GROUP BY user_id",
+          [memberIds]
+        )
       ]);
 
-      const activeGoalVariantIds = new Set(goalsResult.rows.map(r => r.variant_id).filter(Boolean));
+      const activeGoalVariantIds = new Set(goalsResult.rows.map((r) => r.variant_id).filter(Boolean));
       const activeGoalVariantCounts = new Map();
       const memberGoalVariantSet = new Set();
       for (const r of goalsResult.rows) {
@@ -150,18 +207,29 @@ app.get("/api/squads/:squadId/completion/recommendations", async (req, res) => {
         activeGoalVariantCounts.set(r.variant_id, (activeGoalVariantCounts.get(r.variant_id) || 0) + 1);
       }
 
-      const activeGoalCounts = new Map(memberGoalsResult.rows.map(r => [String(r.user_id), parseInt(r.cnt, 10)]));
-      const lastActiveByUser = new Map(lastActiveResult.rows.map(r => [String(r.user_id), r.last_active]));
-      const excludedSeasonIds = new Set(String(req.query.excludeSeason || "").split(",").map(s => s.trim()).filter(Boolean));
+      const activeGoalCounts = new Map(memberGoalsResult.rows.map((r) => [String(r.user_id), parseInt(r.cnt, 10)]));
+      const lastActiveByUser = new Map(lastActiveResult.rows.map((r) => [String(r.user_id), r.last_active]));
+      const excludedSeasonIds = new Set(
+        String(req.query.excludeSeason || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      );
 
       const matrix = await compare.buildSquadCollectionMatrix(members);
       const priorities = compare.getSquadAcquisitionPriority(matrix, activeGoalVariantIds);
-      const assignments = await compare.getSquadAcquisitionAssignments(matrix, priorities, activeGoalCounts, lastActiveByUser, {
-        excludedSeasonIds,
-        activeGoalVariantCounts,
-        memberGoalVariantSet,
-        maxGoalAssignments: 2
-      });
+      const assignments = await compare.getSquadAcquisitionAssignments(
+        matrix,
+        priorities,
+        activeGoalCounts,
+        lastActiveByUser,
+        {
+          excludedSeasonIds,
+          activeGoalVariantCounts,
+          memberGoalVariantSet,
+          maxGoalAssignments: 2
+        }
+      );
 
       return {
         squadCode: squad.code,
@@ -255,7 +323,9 @@ app.get("/api/squads/:squadId/completion/report", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const report = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "report", async () => getSquadVersionedCompletionReport(squad, reqUser));
+    const report = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "report", async () =>
+      getSquadVersionedCompletionReport(squad, reqUser)
+    );
     res.json(report);
   } catch (err) {
     console.error("[/api/squads/:squadId/completion/report]", err);

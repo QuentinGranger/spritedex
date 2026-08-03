@@ -10,7 +10,10 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
 assert.strictEqual(manifest.format, "sprite-index-i18n-message-manifest/v1");
 assert.strictEqual(manifest.locale, "en");
-assert.ok(Array.isArray(manifest.fragments) && manifest.fragments.length > 1, "English messages must be split into fragments");
+assert.ok(
+  Array.isArray(manifest.fragments) && manifest.fragments.length > 1,
+  "English messages must be split into fragments"
+);
 
 const messages = {};
 for (const relativePath of manifest.fragments) {

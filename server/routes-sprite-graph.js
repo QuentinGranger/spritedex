@@ -13,29 +13,25 @@ const {
   COMMUNITY_SOURCE_DISCLAIMER
 } = require("./sprite-graph-public");
 const { getSquadCommunityContext } = require("./sprite-graph-squad-stats");
-const {
-  getGraphRecommendationReadiness,
-  resolveGraphRecommendations
-} = require("./sprite-graph-recommendations");
-const {
-  evaluateSimpleGraphRules,
-  getGraphScoringPolicy
-} = require("./sprite-graph-rules");
-const {
-  isPublicMetricDisabled,
-  isSpriteGraphAdmin
-} = require("./sprite-graph-metrics");
+const { getGraphRecommendationReadiness, resolveGraphRecommendations } = require("./sprite-graph-recommendations");
+const { evaluateSimpleGraphRules, getGraphScoringPolicy } = require("./sprite-graph-rules");
+const { isPublicMetricDisabled, isSpriteGraphAdmin } = require("./sprite-graph-metrics");
 const { getRequestingUser, requireNotSuspended } = require("./auth");
 const { INSUFFICIENT_COMMUNITY_DATA_MESSAGE } = require("./sprite-graph-privacy");
-const {
-  GRAPH_INTERACTION_EVENT_TYPE_SET,
-  recordGraphEvent
-} = require("./sprite-graph");
+const { GRAPH_INTERACTION_EVENT_TYPE_SET, recordGraphEvent } = require("./sprite-graph");
 
 const GRAPH_INTERACTION_SURFACES = new Set(["compare", "squad_engine", "notification", "passport"]);
 const GRAPH_INTERACTION_FILTERS = new Set([
-  "status", "sort", "season", "event", "rarity", "sprite",
-  "variant_type", "availability", "acquisition", "reset"
+  "status",
+  "sort",
+  "season",
+  "event",
+  "rarity",
+  "sprite",
+  "variant_type",
+  "availability",
+  "acquisition",
+  "reset"
 ]);
 
 function cleanInteractionText(value, max = 80) {
@@ -115,7 +111,9 @@ async function resolveLevel(req) {
     try {
       const userId = await getRequestingUser(req);
       if (isSpriteGraphAdmin(userId)) return GRAPH_DATA_LEVELS.AGGREGATED_INTERNAL;
-    } catch (_) { /* fall through */ }
+    } catch (_) {
+      /* fall through */
+    }
   }
   return GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC;
 }
@@ -191,10 +189,7 @@ app.get("/api/sprite-graph/sprites/:spriteId/community", async (req, res) => {
        ORDER BY name ASC`,
       [spriteId]
     );
-    const sprite = await pool.query(
-      `SELECT id, name, rarity FROM sprites WHERE id = $1`,
-      [spriteId]
-    );
+    const sprite = await pool.query(`SELECT id, name, rarity FROM sprites WHERE id = $1`, [spriteId]);
     if (!sprite.rows.length) return res.status(404).json({ error: "Sprite introuvable" });
 
     const items = [];
@@ -210,9 +205,7 @@ app.get("/api/sprite-graph/sprites/:spriteId/community", async (req, res) => {
       spriteId,
       spriteName: sprite.rows[0].name,
       officialRarity: sprite.rows[0].rarity,
-      officialRarityLabel: sprite.rows[0].rarity
-        ? `Rareté officielle : ${sprite.rows[0].rarity}`
-        : null,
+      officialRarityLabel: sprite.rows[0].rarity ? `Rareté officielle : ${sprite.rows[0].rarity}` : null,
       asOf: metricDate || new Date().toISOString().slice(0, 10),
       variants: items,
       disclaimer: COMMUNITY_SOURCE_DISCLAIMER
@@ -277,10 +270,7 @@ app.get("/api/sprite-graph/squads/:squadId/community", async (req, res) => {
     if (!raw) return res.status(400).json({ error: "squadId invalide" });
     let squadId = Number(raw);
     if (!Number.isFinite(squadId)) {
-      const found = await pool.query(
-        "SELECT id FROM squads WHERE code = $1",
-        [raw.toUpperCase()]
-      );
+      const found = await pool.query("SELECT id FROM squads WHERE code = $1", [raw.toUpperCase()]);
       if (!found.rows.length) return res.status(404).json({ error: "Squad introuvable" });
       squadId = found.rows[0].id;
     }

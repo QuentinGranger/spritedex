@@ -43,7 +43,11 @@ app.post("/api/push/register", security.pushRegistrationLimiter, requireNotSuspe
     });
     res.json({ ok: true, subscriptionId: row.id, platform: row.platform });
   } catch (err) {
-    if (["endpoint_or_token_required", "invalid_platform", "invalid_web_subscription", "invalid_native_token"].includes(err.code)) {
+    if (
+      ["endpoint_or_token_required", "invalid_platform", "invalid_web_subscription", "invalid_native_token"].includes(
+        err.code
+      )
+    ) {
       return res.status(400).json({ error: "Abonnement push invalide" });
     }
     console.error("[PUSH] register error", err);
@@ -79,7 +83,7 @@ app.get("/api/push/subscriptions", async (req, res) => {
   try {
     const rows = await pushSubscriptions.getActiveSubscriptionsForUser(pool, reqUser);
     res.json({
-      subscriptions: rows.map(r => ({
+      subscriptions: rows.map((r) => ({
         id: r.id,
         platform: r.platform,
         endpoint: r.endpoint,
@@ -121,7 +125,11 @@ app.post("/api/push-subscriptions", security.pushRegistrationLimiter, requireNot
       platform: row.platform
     });
   } catch (err) {
-    if (["endpoint_or_token_required", "invalid_platform", "invalid_web_subscription", "invalid_native_token"].includes(err.code)) {
+    if (
+      ["endpoint_or_token_required", "invalid_platform", "invalid_web_subscription", "invalid_native_token"].includes(
+        err.code
+      )
+    ) {
       return res.status(400).json({ error: "Abonnement push invalide" });
     }
     console.error("[PUSH] /api/push-subscriptions register error", err);
@@ -130,33 +138,38 @@ app.post("/api/push-subscriptions", security.pushRegistrationLimiter, requireNot
 });
 
 // DELETE /api/push-subscriptions/:subscriptionId
-app.delete("/api/push-subscriptions/:subscriptionId", security.pushRegistrationLimiter, requireNotSuspended, async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const subscriptionId = req.params.subscriptionId;
-  if (!subscriptionId || !UUID_RE.test(subscriptionId)) {
-    return res.status(400).json({ error: "subscriptionId invalide" });
-  }
-  try {
-    const outcome = await pushSubscriptions.deactivateSubscriptionForUser(
-      pool, reqUser, subscriptionId, { reason: "user_disabled" }
-    );
-    if (!outcome.deactivated) {
-      return res.status(404).json({ error: "Appareil introuvable" });
+app.delete(
+  "/api/push-subscriptions/:subscriptionId",
+  security.pushRegistrationLimiter,
+  requireNotSuspended,
+  async (req, res) => {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const subscriptionId = req.params.subscriptionId;
+    if (!subscriptionId || !UUID_RE.test(subscriptionId)) {
+      return res.status(400).json({ error: "subscriptionId invalide" });
     }
-    secLog.logSecurityEvent(pool, {
-      req,
-      userId: reqUser,
-      event: "push_token_unregistered",
-      status: "ok",
-      details: { subscriptionId: outcome.subscriptionId }
-    });
-    res.json({ ok: true, deactivated: true, subscriptionId: outcome.subscriptionId });
-  } catch (err) {
-    console.error("[PUSH] /api/push-subscriptions delete error", err);
-    res.status(500).json({ error: "Erreur serveur" });
+    try {
+      const outcome = await pushSubscriptions.deactivateSubscriptionForUser(pool, reqUser, subscriptionId, {
+        reason: "user_disabled"
+      });
+      if (!outcome.deactivated) {
+        return res.status(404).json({ error: "Appareil introuvable" });
+      }
+      secLog.logSecurityEvent(pool, {
+        req,
+        userId: reqUser,
+        event: "push_token_unregistered",
+        status: "ok",
+        details: { subscriptionId: outcome.subscriptionId }
+      });
+      res.json({ ok: true, deactivated: true, subscriptionId: outcome.subscriptionId });
+    } catch (err) {
+      console.error("[PUSH] /api/push-subscriptions delete error", err);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
   }
-});
+);
 
 // ── Push notifications : user preferences ──
 app.get("/api/push/preferences", async (req, res) => {
@@ -224,10 +237,7 @@ app.patch("/api/push/preferences", requireNotSuspended, async (req, res) => {
   if (fields.length === 0) return res.status(400).json({ error: "Aucune préférence à mettre à jour" });
   values.push(reqUser);
   try {
-    await pool.query(
-      `UPDATE users SET ${fields.join(", ")} WHERE id = $${idx}`,
-      values
-    );
+    await pool.query(`UPDATE users SET ${fields.join(", ")} WHERE id = $${idx}`, values);
     res.json({ ok: true });
   } catch (err) {
     console.error("[PUSH] preferences patch error", err);

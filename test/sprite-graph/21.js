@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "règles simples + pas de score social caché (Étapes 86–87)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     const {
       evaluateSimpleGraphRules,
       getGraphScoringPolicy,

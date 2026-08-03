@@ -3,10 +3,7 @@
 const path = require("path");
 const { APP_URL, app } = require("./core");
 const { rateLimit } = require("../security");
-const {
-  describeAuthz,
-  hasAllCapabilities
-} = require("./admin-authz");
+const { describeAuthz, hasAllCapabilities } = require("./admin-authz");
 const { isAdminMfaConfigured, consumeTotpCode } = require("./admin-totp");
 const {
   ADMIN_SESSION_COOKIE,
@@ -73,36 +70,42 @@ function requestMeta(req) {
 }
 
 function requireAdminPage(req, res, next) {
-  attachAdminSession(req, requestMeta(req)).then((session) => {
-    if (session) return next();
-    noStore(res);
-    return res.redirect(303, "/admin/access");
-  }).catch(next);
+  attachAdminSession(req, requestMeta(req))
+    .then((session) => {
+      if (session) return next();
+      noStore(res);
+      return res.redirect(303, "/admin/access");
+    })
+    .catch(next);
 }
 
 function requireAdminApi(req, res, next) {
-  attachAdminSession(req, requestMeta(req)).then((session) => {
-    if (session) return next();
-    noStore(res);
-    return res.status(401).json({ error: "Accès réservé" });
-  }).catch(next);
+  attachAdminSession(req, requestMeta(req))
+    .then((session) => {
+      if (session) return next();
+      noStore(res);
+      return res.status(401).json({ error: "Accès réservé" });
+    })
+    .catch(next);
 }
 
 function requireAdminCapability(...capabilities) {
   const required = capabilities.flat().filter(Boolean);
   return (req, res, next) => {
-    attachAdminSession(req, requestMeta(req)).then((session) => {
-      noStore(res);
-      if (!session) return res.status(401).json({ error: "Accès réservé" });
-      if (required.length && !hasAllCapabilities(session, required)) {
-        return res.status(403).json({
-          error: "Privilège insuffisant",
-          required,
-          role: session.role || null
-        });
-      }
-      return next();
-    }).catch(next);
+    attachAdminSession(req, requestMeta(req))
+      .then((session) => {
+        noStore(res);
+        if (!session) return res.status(401).json({ error: "Accès réservé" });
+        if (required.length && !hasAllCapabilities(session, required)) {
+          return res.status(403).json({
+            error: "Privilège insuffisant",
+            required,
+            role: session.role || null
+          });
+        }
+        return next();
+      })
+      .catch(next);
   };
 }
 
@@ -116,18 +119,18 @@ function readAdminMfaCode(req) {
 function requireAdminStepUp(req, res, next) {
   if (!isAdminMfaConfigured()) return next();
   const code = readAdminMfaCode(req);
-  consumeTotpCode(code, { purpose: "stepup" }).then((result) => {
-    noStore(res);
-    if (result.ok) return next();
-    const replay = result.reason === "replay";
-    return res.status(401).json({
-      error: replay
-        ? "Code MFA déjà utilisé — attendez le prochain"
-        : "Confirmation MFA requise",
-      code: replay ? "ADMIN_MFA_REPLAY" : "ADMIN_STEPUP_REQUIRED",
-      stepUpRequired: true
-    });
-  }).catch(next);
+  consumeTotpCode(code, { purpose: "stepup" })
+    .then((result) => {
+      noStore(res);
+      if (result.ok) return next();
+      const replay = result.reason === "replay";
+      return res.status(401).json({
+        error: replay ? "Code MFA déjà utilisé — attendez le prochain" : "Confirmation MFA requise",
+        code: replay ? "ADMIN_MFA_REPLAY" : "ADMIN_STEPUP_REQUIRED",
+        stepUpRequired: true
+      });
+    })
+    .catch(next);
 }
 
 function refreshAdminCookie(res, req) {
@@ -183,59 +186,128 @@ app.get("/api/admin/operators", requireAdminCapability("admins.manage"), async (
   }
 });
 
-app.post("/api/admin/operators", requireAdminCapability("admins.manage"), requireAdminStepUp, terminalConsumeLimiter, async (req, res) => {
-  noStore(res);
-  const reason = adminText(req.body?.reason);
-  try {
-    if (!reason) return res.status(400).json({ error: "Une justification est requise" });
-    const operator = await createAdminOperator({ username: req.body?.username, displayName: req.body?.displayName, password: req.body?.password, role: req.body?.role });
-    await writeAdminAudit(require("./db").pool, { actor: req.adminSession.actor, action: "admin_operator.created", targetType: "admin_operator", targetId: operator.id, justification: reason, details: { username: operator.username, role: operator.role } });
-    return res.status(201).json({ operator });
-  } catch (error) {
-    const status = error?.code === "23505" ? 409 : (error?.status || 400);
-    return res.status(status).json({ error: error?.code === "23505" ? "Cet identifiant administrateur existe déjà" : (error.message || "Création impossible") });
+app.post(
+  "/api/admin/operators",
+  requireAdminCapability("admins.manage"),
+  requireAdminStepUp,
+  terminalConsumeLimiter,
+  async (req, res) => {
+    noStore(res);
+    const reason = adminText(req.body?.reason);
+    try {
+      if (!reason) return res.status(400).json({ error: "Une justification est requise" });
+      const operator = await createAdminOperator({
+        username: req.body?.username,
+        displayName: req.body?.displayName,
+        password: req.body?.password,
+        role: req.body?.role
+      });
+      await writeAdminAudit(require("./db").pool, {
+        actor: req.adminSession.actor,
+        action: "admin_operator.created",
+        targetType: "admin_operator",
+        targetId: operator.id,
+        justification: reason,
+        details: { username: operator.username, role: operator.role }
+      });
+      return res.status(201).json({ operator });
+    } catch (error) {
+      const status = error?.code === "23505" ? 409 : error?.status || 400;
+      return res.status(status).json({
+        error:
+          error?.code === "23505"
+            ? "Cet identifiant administrateur existe déjà"
+            : error.message || "Création impossible"
+      });
+    }
   }
-});
+);
 
-app.post("/api/admin/operators/:operatorId/rotate-secret", requireAdminCapability("admins.manage"), requireAdminStepUp, terminalConsumeLimiter, async (req, res) => {
-  noStore(res);
-  const reason = adminText(req.body?.reason);
-  try {
-    if (!reason) return res.status(400).json({ error: "Une justification est requise" });
-    const operator = await rotateAdminOperatorSecret(req.params.operatorId, req.body?.password);
-    if (!operator) return res.status(404).json({ error: "Compte administrateur introuvable ou inactif" });
-    await require("./db").pool.query("DELETE FROM admin_access_sessions WHERE operator_id = $1", [operator.id]);
-    await writeAdminAudit(require("./db").pool, { actor: req.adminSession.actor, action: "admin_operator.secret_rotated", targetType: "admin_operator", targetId: operator.id, justification: reason, details: { username: operator.username, sessionsRevoked: true } });
-    return res.json({ operator, sessionsRevoked: true });
-  } catch (error) { return res.status(error?.status || 400).json({ error: error.message || "Rotation impossible" }); }
-});
+app.post(
+  "/api/admin/operators/:operatorId/rotate-secret",
+  requireAdminCapability("admins.manage"),
+  requireAdminStepUp,
+  terminalConsumeLimiter,
+  async (req, res) => {
+    noStore(res);
+    const reason = adminText(req.body?.reason);
+    try {
+      if (!reason) return res.status(400).json({ error: "Une justification est requise" });
+      const operator = await rotateAdminOperatorSecret(req.params.operatorId, req.body?.password);
+      if (!operator) return res.status(404).json({ error: "Compte administrateur introuvable ou inactif" });
+      await require("./db").pool.query("DELETE FROM admin_access_sessions WHERE operator_id = $1", [operator.id]);
+      await writeAdminAudit(require("./db").pool, {
+        actor: req.adminSession.actor,
+        action: "admin_operator.secret_rotated",
+        targetType: "admin_operator",
+        targetId: operator.id,
+        justification: reason,
+        details: { username: operator.username, sessionsRevoked: true }
+      });
+      return res.json({ operator, sessionsRevoked: true });
+    } catch (error) {
+      return res.status(error?.status || 400).json({ error: error.message || "Rotation impossible" });
+    }
+  }
+);
 
-app.patch("/api/admin/operators/:operatorId", requireAdminCapability("admins.manage"), terminalConsumeLimiter, async (req, res) => {
-  noStore(res);
-  const reason = adminText(req.body?.reason);
-  const active = req.body?.active;
-  if (typeof active !== "boolean" || !reason) return res.status(400).json({ error: "État et justification requis" });
-  if (req.adminSession.operatorId && req.adminSession.operatorId === req.params.operatorId && !active) return res.status(400).json({ error: "Tu ne peux pas désactiver ton propre compte" });
-  try {
-    const operator = await setAdminOperatorActive(req.params.operatorId, active);
-    if (!operator) return res.status(404).json({ error: "Compte administrateur introuvable" });
-    await writeAdminAudit(require("./db").pool, { actor: req.adminSession.actor, action: active ? "admin_operator.activated" : "admin_operator.deactivated", targetType: "admin_operator", targetId: operator.id, justification: reason, details: { username: operator.username } });
-    return res.json({ operator });
-  } catch (error) { return res.status(error?.status || 400).json({ error: error.message || "Mise à jour impossible" }); }
-});
+app.patch(
+  "/api/admin/operators/:operatorId",
+  requireAdminCapability("admins.manage"),
+  terminalConsumeLimiter,
+  async (req, res) => {
+    noStore(res);
+    const reason = adminText(req.body?.reason);
+    const active = req.body?.active;
+    if (typeof active !== "boolean" || !reason) return res.status(400).json({ error: "État et justification requis" });
+    if (req.adminSession.operatorId && req.adminSession.operatorId === req.params.operatorId && !active)
+      return res.status(400).json({ error: "Tu ne peux pas désactiver ton propre compte" });
+    try {
+      const operator = await setAdminOperatorActive(req.params.operatorId, active);
+      if (!operator) return res.status(404).json({ error: "Compte administrateur introuvable" });
+      await writeAdminAudit(require("./db").pool, {
+        actor: req.adminSession.actor,
+        action: active ? "admin_operator.activated" : "admin_operator.deactivated",
+        targetType: "admin_operator",
+        targetId: operator.id,
+        justification: reason,
+        details: { username: operator.username }
+      });
+      return res.json({ operator });
+    } catch (error) {
+      return res.status(error?.status || 400).json({ error: error.message || "Mise à jour impossible" });
+    }
+  }
+);
 
-app.post("/api/admin/security-alerts/:alertId/acknowledge", requireAdminCapability("admins.manage"), async (req, res) => {
-  noStore(res);
-  const id = String(req.params.alertId || "");
-  if (!/^[a-f0-9]{24}$/i.test(id)) return res.status(400).json({ error: "Alerte invalide" });
-  try {
-    const { pool } = require("./db");
-    const result = await pool.query("UPDATE admin_security_alerts SET acknowledged_at = NOW(), acknowledged_by = $2 WHERE id = $1 AND acknowledged_at IS NULL RETURNING id", [id, req.adminSession.actor]);
-    if (!result.rows.length) return res.status(404).json({ error: "Alerte introuvable ou déjà traitée" });
-    await writeAdminAudit(pool, { actor: req.adminSession.actor, action: "security_alert.acknowledged", targetType: "admin_security_alert", targetId: id, justification: "Alerte de sécurité examinée", details: {} });
-    return res.status(204).end();
-  } catch (error) { return res.status(500).json({ error: "Impossible de traiter l’alerte" }); }
-});
+app.post(
+  "/api/admin/security-alerts/:alertId/acknowledge",
+  requireAdminCapability("admins.manage"),
+  async (req, res) => {
+    noStore(res);
+    const id = String(req.params.alertId || "");
+    if (!/^[a-f0-9]{24}$/i.test(id)) return res.status(400).json({ error: "Alerte invalide" });
+    try {
+      const { pool } = require("./db");
+      const result = await pool.query(
+        "UPDATE admin_security_alerts SET acknowledged_at = NOW(), acknowledged_by = $2 WHERE id = $1 AND acknowledged_at IS NULL RETURNING id",
+        [id, req.adminSession.actor]
+      );
+      if (!result.rows.length) return res.status(404).json({ error: "Alerte introuvable ou déjà traitée" });
+      await writeAdminAudit(pool, {
+        actor: req.adminSession.actor,
+        action: "security_alert.acknowledged",
+        targetType: "admin_security_alert",
+        targetId: id,
+        justification: "Alerte de sécurité examinée",
+        details: {}
+      });
+      return res.status(204).end();
+    } catch (error) {
+      return res.status(500).json({ error: "Impossible de traiter l’alerte" });
+    }
+  }
+);
 
 // Validates the one-time fragment without consuming it, so the access page
 // can collect MFA before opening the durable session.
@@ -268,7 +340,11 @@ app.post("/api/admin/terminal/consume", terminalConsumeLimiter, async (req, res)
     res.cookie(ADMIN_SESSION_COOKIE, session.token, adminSessionCookieOptions(session));
     return res.status(204).end();
   } catch (error) {
-    if (error instanceof AdminAccessError || error?.code === "ADMIN_MFA_INVALID" || error?.code === "ADMIN_MFA_REPLAY") {
+    if (
+      error instanceof AdminAccessError ||
+      error?.code === "ADMIN_MFA_INVALID" ||
+      error?.code === "ADMIN_MFA_REPLAY"
+    ) {
       return res.status(error.status || 401).json({
         error: error.message || "Code MFA invalide",
         code: error.code || "ADMIN_MFA_INVALID",

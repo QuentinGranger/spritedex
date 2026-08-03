@@ -21,9 +21,14 @@ const {
 
 // Pure: which channels are permitted before push runtime constraints. Applies
 // the subject gates and per-channel toggles to the type's target channels.
-function resolvePermittedChannels({ typeChannels = [], channelPrefs = {}, categoryEnabled = true, typeEnabled = true } = {}) {
+function resolvePermittedChannels({
+  typeChannels = [],
+  channelPrefs = {},
+  categoryEnabled = true,
+  typeEnabled = true
+} = {}) {
   if (categoryEnabled === false || typeEnabled === false) return [];
-  return typeChannels.filter(ch => channelPrefs[ch] !== false);
+  return typeChannels.filter((ch) => channelPrefs[ch] !== false);
 }
 
 // Pure: quiet-hours test. start/end are integer hours in [0..23] in the user's
@@ -37,7 +42,7 @@ function isInQuietHours(start, end, date = new Date(), timeZone = DEFAULT_TIMEZO
   const tz = normalizeTimeZone(timeZone);
   const h = getLocalHour(date, tz);
   if (h == null) return false;
-  return s < e ? (h >= s && h < e) : (h >= s || h < e);
+  return s < e ? h >= s && h < e : h >= s || h < e;
 }
 
 /** Start of the user's local calendar day as a UTC Date. */
@@ -53,10 +58,7 @@ function startOfLocalDay(now = new Date(), timeZone = DEFAULT_TIMEZONE) {
  * Prefers notification_deliveries (channel=push); falls back to notifications
  * that recorded a successful pushSent flag.
  */
-async function countPushDeliveriesToday(pool, userId, {
-  timeZone = DEFAULT_TIMEZONE,
-  now = new Date()
-} = {}) {
+async function countPushDeliveriesToday(pool, userId, { timeZone = DEFAULT_TIMEZONE, now = new Date() } = {}) {
   const dayStart = startOfLocalDay(now, timeZone);
   if (!dayStart) return 0;
 
@@ -104,12 +106,12 @@ async function countPushDeliveriesToday(pool, userId, {
  *   0              → unlimited
  *   n > 0          → hard cap
  */
-async function isPushFrequencyExceeded(pool, userId, maxPerDay, {
-  timeZone = DEFAULT_TIMEZONE,
-  type = null,
-  context = {},
-  now = new Date()
-} = {}) {
+async function isPushFrequencyExceeded(
+  pool,
+  userId,
+  maxPerDay,
+  { timeZone = DEFAULT_TIMEZONE, type = null, context = {}, now = new Date() } = {}
+) {
   // Étape 53 — score / exempt types bypass the cap; others drop push only.
   if (catalog.isExemptFromPushDailyLimit(type, context)) return false;
   const limit = catalog.resolvePushDailyLimit(maxPerDay);
@@ -122,10 +124,7 @@ async function isPushFrequencyExceeded(pool, userId, maxPerDay, {
 // Quiet hours are NOT a hard deny here when deferral is possible (Étape 41) —
 // use resolveDeliveryChannels for that. This helper still reports quiet_hours
 // for callers that only need a boolean gate.
-async function evaluatePushConstraints(pool, userId, user = {}, now = new Date(), {
-  type = null,
-  context = {}
-} = {}) {
+async function evaluatePushConstraints(pool, userId, user = {}, now = new Date(), { type = null, context = {} } = {}) {
   // Consent: push requires explicit authorization (push_enabled).
   if (user.push_enabled === false) return { allowed: false, reason: "no_consent" };
   // Quiet hours — evaluated in the user's timezone (Étape 40).
@@ -134,12 +133,14 @@ async function evaluatePushConstraints(pool, userId, user = {}, now = new Date()
     return { allowed: false, reason: "quiet_hours" };
   }
   // Étape 52 — global daily push cap (ordinary notifications only).
-  if (await isPushFrequencyExceeded(pool, userId, user.push_max_per_day, {
-    timeZone,
-    type,
-    context,
-    now
-  })) {
+  if (
+    await isPushFrequencyExceeded(pool, userId, user.push_max_per_day, {
+      timeZone,
+      type,
+      context,
+      now
+    })
+  ) {
     return { allowed: false, reason: "frequency_limit" };
   }
   return { allowed: true, reason: null };
@@ -149,17 +150,14 @@ async function evaluatePushConstraints(pool, userId, user = {}, now = new Date()
 // plus the reasons push/email were dropped (for observability/debugging).
 // Étape 41 — non-urgent push during quiet hours is deferred (not dropped),
 // unless the quiet window ends after the event deadline.
-async function resolveDeliveryChannels(pool, userId, type, {
-  category,
-  user = {},
-  now = new Date(),
-  prefs,
-  context = {},
-  urgent = null,
-  deadline = null
-} = {}) {
+async function resolveDeliveryChannels(
+  pool,
+  userId,
+  type,
+  { category, user = {}, now = new Date(), prefs, context = {}, urgent = null, deadline = null } = {}
+) {
   const preferences = require("./notification-preferences");
-  const resolved = prefs || await preferences.resolveChannelPreferences(pool, userId, type, { category });
+  const resolved = prefs || (await preferences.resolveChannelPreferences(pool, userId, type, { category }));
   const { categoryEnabled, typeEnabled, channelPrefs, pushMode } = resolved;
 
   const permitted = resolvePermittedChannels({
@@ -185,12 +183,14 @@ async function resolveDeliveryChannels(pool, userId, type, {
       dropped.push = `push_mode_${mode}`;
     } else if (user.push_enabled === false) {
       dropped.push = "no_consent";
-    } else if (await isPushFrequencyExceeded(pool, userId, user.push_max_per_day, {
-      timeZone,
-      type,
-      context,
-      now
-    })) {
+    } else if (
+      await isPushFrequencyExceeded(pool, userId, user.push_max_per_day, {
+        timeZone,
+        type,
+        context,
+        now
+      })
+    ) {
       dropped.push = "frequency_limit";
     } else {
       const isUrgent = urgent != null ? !!urgent : isPushUrgent(type, context);

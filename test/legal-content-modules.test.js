@@ -26,7 +26,11 @@ for (const id of expectedDocuments) {
 
 const legal = require(path.join(root, "js", "legal-content"));
 assert.ok(legal.LEGAL_VALIDATION.valid, legal.LEGAL_VALIDATION.errors.join("; "));
-assert.deepStrictEqual(Object.keys(legal.LEGAL_DOCUMENTS), expectedDocuments, "French legal documents must retain their order");
+assert.deepStrictEqual(
+  Object.keys(legal.LEGAL_DOCUMENTS),
+  expectedDocuments,
+  "French legal documents must retain their order"
+);
 
 for (const lang of ["fr", "en", "nl"]) {
   for (const id of expectedDocuments) {

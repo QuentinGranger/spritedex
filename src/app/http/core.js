@@ -261,7 +261,7 @@ app.use(
     origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Auth-Mode"]
   })
 );
 // Localize JSON error responses before any API route is registered. The

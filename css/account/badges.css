@@ -2,35 +2,35 @@
 .collector-passport__badge-card,
 .account-badge-preview__item {
   --badge-main: #22d6ff;
-  --badge-soft: rgba(34, 214, 255, .22);
+  --badge-soft: rgba(34, 214, 255, 0.22);
   --badge-deep: #173a7b;
 }
 
 .collector-passport__badge-card[data-badge-category="social"],
 .account-badge-preview__item[data-badge-category="social"] {
   --badge-main: #5fe58d;
-  --badge-soft: rgba(95, 229, 141, .22);
+  --badge-soft: rgba(95, 229, 141, 0.22);
   --badge-deep: #15523c;
 }
 
 .collector-passport__badge-card[data-badge-category="squads"],
 .account-badge-preview__item[data-badge-category="squads"] {
   --badge-main: #f2b94d;
-  --badge-soft: rgba(242, 185, 77, .22);
+  --badge-soft: rgba(242, 185, 77, 0.22);
   --badge-deep: #704018;
 }
 
 .collector-passport__badge-card[data-badge-category="events"],
 .account-badge-preview__item[data-badge-category="events"] {
   --badge-main: #bd78ff;
-  --badge-soft: rgba(189, 120, 255, .24);
+  --badge-soft: rgba(189, 120, 255, 0.24);
   --badge-deep: #4f267c;
 }
 
 .collector-passport__badge-card[data-badge-category="historique"],
 .account-badge-preview__item[data-badge-category="historique"] {
   --badge-main: #ff7bb4;
-  --badge-soft: rgba(255, 123, 180, .22);
+  --badge-soft: rgba(255, 123, 180, 0.22);
   --badge-deep: #6e2349;
 }
 
@@ -42,9 +42,14 @@
   border-color: color-mix(in srgb, var(--badge-main) 34%, transparent);
   background:
     radial-gradient(ellipse 80% 55% at 50% -10%, var(--badge-soft), transparent 58%),
-    linear-gradient(180deg, rgba(18, 30, 64, .98), rgba(9, 13, 30, .98));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 26px rgba(0,0,0,.2);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    linear-gradient(180deg, rgba(18, 30, 64, 0.98), rgba(9, 13, 30, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 12px 26px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .collector-passport__badge-card::before {
@@ -54,7 +59,9 @@
 .collector-passport__badge-card:hover {
   transform: translateY(-4px);
   border-color: var(--badge-main);
-  box-shadow: 0 16px 32px rgba(0,0,0,.3), 0 0 24px var(--badge-soft);
+  box-shadow:
+    0 16px 32px rgba(0, 0, 0, 0.3),
+    0 0 24px var(--badge-soft);
 }
 
 .collector-passport__badge-medal {
@@ -93,7 +100,9 @@
   place-items: center;
   clip-path: polygon(50% 0, 93% 23%, 93% 77%, 50% 100%, 7% 77%, 7% 23%);
   background: linear-gradient(140deg, color-mix(in srgb, var(--badge-main) 68%, white), var(--badge-deep) 72%);
-  text-shadow: 0 2px 5px rgba(0,0,0,.42), 0 0 12px var(--badge-main);
+  text-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.42),
+    0 0 12px var(--badge-main);
 }
 
 .collector-passport__badge-icon--fallback::before {
@@ -101,7 +110,7 @@
   position: absolute;
   inset: 3px;
   clip-path: inherit;
-  border: 1px solid rgba(255,255,255,.5);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 /* Trophy art: show the PNG itself, no hex frame / nested layer. */
@@ -114,7 +123,7 @@
   border-radius: 0;
   background: transparent !important;
   object-fit: contain;
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .45));
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
 }
 
 .collector-passport__badge-icon--art::before,
@@ -136,8 +145,10 @@
 }
 
 .collector-passport__badge-body strong {
-  font: 800 1.02rem 'Rajdhani', sans-serif;
-  letter-spacing: .02em;
+  font:
+    800 1.02rem "Rajdhani",
+    sans-serif;
+  letter-spacing: 0.02em;
   line-height: 1.15;
 }
 
@@ -155,8 +166,8 @@
 
 .collector-passport__badge-desc {
   margin: 0;
-  color: rgba(223,232,255,.74);
-  font-size: .74rem;
+  color: rgba(223, 232, 255, 0.74);
+  font-size: 0.74rem;
   line-height: 1.42;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -169,8 +180,10 @@
 .collector-passport__badge-meta {
   margin: 0;
   color: rgba(210, 222, 255, 0.72);
-  font: 700 .7rem 'Rajdhani', sans-serif;
-  letter-spacing: .02em;
+  font:
+    700 0.7rem "Rajdhani",
+    sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .collector-passport__badge-progress {
@@ -183,8 +196,8 @@
   height: 8px;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.05);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .collector-passport__badge-progress-fill {
@@ -197,8 +210,10 @@
 
 .collector-passport__badge-progress-label {
   color: rgba(210, 222, 255, 0.8);
-  font: 700 .68rem 'Rajdhani', sans-serif;
-  letter-spacing: .02em;
+  font:
+    700 0.68rem "Rajdhani",
+    sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .collector-passport__badge-foot {
@@ -208,19 +223,19 @@
   gap: 8px;
   flex-wrap: wrap;
   padding-top: 8px;
-  border-top: 1px solid rgba(255,255,255,.07);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .collector-passport__badge-verify {
-  color: rgba(255,255,255,.42);
-  font-size: .6rem;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.6rem;
 }
 
 .collector-passport__badge-card--featured {
   border-color: #ffd66f;
   background:
-    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(255,205,93,.22), transparent 55%),
-    linear-gradient(180deg, rgba(54,39,19,.94), rgba(16,22,51,.97));
+    radial-gradient(ellipse 70% 50% at 50% -5%, rgba(255, 205, 93, 0.22), transparent 55%),
+    linear-gradient(180deg, rgba(54, 39, 19, 0.94), rgba(16, 22, 51, 0.97));
 }
 .collector-passport__badge-card--featured::after {
   content: "★";
@@ -228,13 +243,13 @@
   top: 12px;
   right: 14px;
   color: #ffd66f;
-  font-size: .9rem;
-  text-shadow: 0 0 11px rgba(255,205,93,.72);
+  font-size: 0.9rem;
+  text-shadow: 0 0 11px rgba(255, 205, 93, 0.72);
 }
 
 .collector-passport__badge-card--locked {
   --badge-main: #9aa6c4;
-  --badge-soft: rgba(154, 166, 196, .1);
+  --badge-soft: rgba(154, 166, 196, 0.1);
   --badge-deep: #343c4f;
   filter: none;
   opacity: 1;
@@ -246,19 +261,19 @@
 
 .collector-passport__badge-card--locked .collector-passport__badge-icon--art,
 .collector-passport__badge-card--locked .collector-passport__badge-icon[src] {
-  opacity: .55;
-  filter: grayscale(.35) brightness(.9);
+  opacity: 0.55;
+  filter: grayscale(0.35) brightness(0.9);
 }
 
 .collector-passport__badge-card--locked .collector-passport__badge-icon--fallback {
-  opacity: .7;
-  filter: grayscale(.2);
+  opacity: 0.7;
+  filter: grayscale(0.2);
 }
 
 .collector-passport__badge-card--locked:hover {
   transform: translateY(-3px);
-  border-color: rgba(181,194,225,.5);
-  box-shadow: 0 12px 26px rgba(0,0,0,.22);
+  border-color: rgba(181, 194, 225, 0.5);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
 }
 
 .collector-passport__badge-card--unlocked .collector-passport__badge-icon--art,
@@ -267,26 +282,28 @@
 }
 
 .account-overview-card--badges {
-  border-color: rgba(255, 194, 122, .2);
+  border-color: rgba(255, 194, 122, 0.2);
   background:
-    radial-gradient(circle at 100% 0, rgba(255, 193, 108, .13), transparent 40%),
-    linear-gradient(145deg, rgba(36, 35, 68, .84), rgba(10, 18, 45, .9));
+    radial-gradient(circle at 100% 0, rgba(255, 193, 108, 0.13), transparent 40%),
+    linear-gradient(145deg, rgba(36, 35, 68, 0.84), rgba(10, 18, 45, 0.9));
 }
 
 .account-overview-card--badges::before {
-  background: radial-gradient(circle at 0 100%, rgba(255, 166, 70, .1), transparent 38%);
+  background: radial-gradient(circle at 0 100%, rgba(255, 166, 70, 0.1), transparent 38%);
 }
 
-.account-overview-card--badges .account-overview-card__header { margin-bottom: 7px; }
+.account-overview-card--badges .account-overview-card__header {
+  margin-bottom: 7px;
+}
 .account-overview-card--badges .account-overview-card__header h3::before {
   border-radius: 50%;
-  border-color: rgba(255, 211, 126, .9);
-  background: rgba(255, 185, 70, .45);
-  box-shadow: 0 0 9px rgba(255, 190, 75, .45);
+  border-color: rgba(255, 211, 126, 0.9);
+  background: rgba(255, 185, 70, 0.45);
+  box-shadow: 0 0 9px rgba(255, 190, 75, 0.45);
 }
 
 .account-overview-card--badges .account-overview-card__link {
-  border-color: rgba(255, 209, 121, .28);
+  border-color: rgba(255, 209, 121, 0.28);
   color: #ffe6b1;
 }
 
@@ -310,23 +327,25 @@
   justify-items: center;
   gap: 2px;
   padding-right: 9px;
-  border-right: 1px solid rgba(255, 214, 137, .2);
+  border-right: 1px solid rgba(255, 214, 137, 0.2);
   text-align: center;
 }
 
 .account-badge-preview__summary strong {
   color: #ffe4a1;
-  font: 900 1.55rem/.95 'Rajdhani', sans-serif;
-  text-shadow: 0 0 12px rgba(255, 196, 77, .28);
+  font:
+    900 1.55rem/0.95 "Rajdhani",
+    sans-serif;
+  text-shadow: 0 0 12px rgba(255, 196, 77, 0.28);
 }
 
 .account-badge-preview__summary span {
-  color: rgba(235, 224, 197, .7);
-  font-size: .57rem;
+  color: rgba(235, 224, 197, 0.7);
+  font-size: 0.57rem;
   font-weight: 700;
   line-height: 1.05;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: 0.06em;
 }
 
 .account-badge-preview__tray {
@@ -353,8 +372,12 @@
   background: linear-gradient(140deg, color-mix(in srgb, var(--badge-main) 65%, white), var(--badge-deep) 74%);
   color: #fff;
   font-size: 1.23rem;
-  text-shadow: 0 2px 5px rgba(0,0,0,.45), 0 0 11px var(--badge-main);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--badge-main) 45%, transparent), 0 0 15px var(--badge-soft);
+  text-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.45),
+    0 0 11px var(--badge-main);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--badge-main) 45%, transparent),
+    0 0 15px var(--badge-soft);
 }
 
 .account-badge-preview__item > span::after {
@@ -362,7 +385,7 @@
   position: absolute;
   inset: 3px;
   clip-path: inherit;
-  border: 1px solid rgba(255,255,255,.48);
+  border: 1px solid rgba(255, 255, 255, 0.48);
 }
 
 .account-badge-preview__item:nth-child(2) > span,
@@ -374,8 +397,8 @@
 }
 
 .account-badge-preview__item small {
-  color: rgba(232,238,255,.78);
-  font-size: .6rem;
+  color: rgba(232, 238, 255, 0.78);
+  font-size: 0.6rem;
   line-height: 1.12;
 }
 
@@ -387,7 +410,7 @@
   padding: 2px;
   clip-path: none;
   background: transparent;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
 }
 
 .account-badge-preview__item > span:has(> img) {
@@ -406,20 +429,35 @@
   width: 31px;
   height: 42px;
   margin-top: 5px;
-  border-color: rgba(255, 213, 134, .36);
+  border-color: rgba(255, 213, 134, 0.36);
   border-radius: 50%;
   color: #ffe2a2;
-  background: rgba(255, 188, 70, .09);
-  font-size: .76rem;
+  background: rgba(255, 188, 70, 0.09);
+  font-size: 0.76rem;
 }
 
 @media (max-width: 390px) {
-  .account-badge-preview { grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
-  .account-badge-preview__summary { padding-right: 6px; }
-  .account-badge-preview__summary strong { font-size: 1.35rem; }
-  .account-badge-preview__item { flex-basis: 46px; width: 46px; }
-  .account-badge-preview__item > span { width: 43px; height: 50px; }
-  .account-badge-preview__tray { gap: 4px; }
+  .account-badge-preview {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .account-badge-preview__summary {
+    padding-right: 6px;
+  }
+  .account-badge-preview__summary strong {
+    font-size: 1.35rem;
+  }
+  .account-badge-preview__item {
+    flex-basis: 46px;
+    width: 46px;
+  }
+  .account-badge-preview__item > span {
+    width: 43px;
+    height: 50px;
+  }
+  .account-badge-preview__tray {
+    gap: 4px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -446,4 +484,3 @@
     gap: 16px;
   }
 }
-

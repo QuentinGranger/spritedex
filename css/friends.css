@@ -20,7 +20,9 @@
   cursor: pointer;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .social-tab.active {
@@ -32,7 +34,9 @@
   color: var(--text);
 }
 
-.social-panel { display: none; }
+.social-panel {
+  display: none;
+}
 
 /* ── Friends sub-tabs ── */
 .friends-tabs {
@@ -44,7 +48,9 @@
   margin-bottom: 0.75rem;
   scrollbar-width: none;
 }
-.friends-tabs::-webkit-scrollbar { display: none; }
+.friends-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .friends-tab {
   background: transparent;
@@ -59,7 +65,9 @@
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
 }
 
 .friends-tab.active {
@@ -67,9 +75,15 @@
   border-bottom-color: var(--accent-2);
 }
 
-.friends-panels { padding: 0.25rem 0; }
-.friends-panel { display: none; }
-.friends-panel.active { display: block; }
+.friends-panels {
+  padding: 0.25rem 0;
+}
+.friends-panel {
+  display: none;
+}
+.friends-panel.active {
+  display: block;
+}
 
 .friends-toolbar {
   display: flex;
@@ -120,7 +134,9 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 0.55rem;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .friend-item:hover {

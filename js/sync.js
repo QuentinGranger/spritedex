@@ -5,10 +5,10 @@ let syncInFlight = false;
 function getSyncQueue() {
   try {
     const parsed = JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
-    return Array.isArray(parsed)
-      ? parsed.filter((key) => isSafeRecordKey(key)).slice(-1000)
-      : [];
-  } catch { return []; }
+    return Array.isArray(parsed) ? parsed.filter((key) => isSafeRecordKey(key)).slice(-1000) : [];
+  } catch {
+    return [];
+  }
 }
 
 function saveSyncQueue(queue) {
@@ -216,7 +216,7 @@ async function loadFromServer() {
 
 async function migrateLocalToServer() {
   if (!state.userId) return;
-  const localEntries = Object.keys(state.collection).filter(k => !k.startsWith("fav_")).length;
+  const localEntries = Object.keys(state.collection).filter((k) => !k.startsWith("fav_")).length;
   if (localEntries === 0) return;
   try {
     await fetch(`${API_BASE}/collection/${state.userId}/sync`, {
@@ -235,11 +235,16 @@ let syncErrorState = false;
 
 function syncIcon(kind) {
   const icons = {
-    local: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg>',
-    offline: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l5.6 5.6M17.4 17.4L23 23"/><path d="M5 12.5a7 7 0 0 1 9.9-1"/><path d="M8.5 16a3.5 3.5 0 0 1 5 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>',
-    error: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-    pending: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
-    synced: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+    local:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg>',
+    offline:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 1l5.6 5.6M17.4 17.4L23 23"/><path d="M5 12.5a7 7 0 0 1 9.9-1"/><path d="M8.5 16a3.5 3.5 0 0 1 5 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>',
+    error:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    pending:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    synced:
+      '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
   };
   return icons[kind] || icons.local;
 }
@@ -292,7 +297,11 @@ function updateSyncStatus() {
     icon.innerHTML = syncIcon("synced");
     text.textContent = t("sync.synced");
     const lastSync = localStorage.getItem("sprite-index_last_sync");
-    detail.textContent = lastSync ? t("sync.lastSync", { time: new Date(lastSync).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" }) }) : t("sync.syncedDetail");
+    detail.textContent = lastSync
+      ? t("sync.lastSync", {
+          time: new Date(lastSync).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" })
+        })
+      : t("sync.syncedDetail");
   }
 }
 
@@ -329,7 +338,7 @@ function normalizeVariantName(name) {
   const n = (name || "").trim();
   const lower = n.toLowerCase();
   if (lower === "holo" || lower === "holofoil") return "Holofoil";
-  const known = ["Base", "Holofoil", "Galaxy", "Gold", "Gummy", "Gem", "Rift"].find(v => v.toLowerCase() === lower);
+  const known = ["Base", "Holofoil", "Galaxy", "Gold", "Gummy", "Gem", "Rift"].find((v) => v.toLowerCase() === lower);
   if (known) return known;
   return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
 }
@@ -377,7 +386,9 @@ function resolveLegacyKey(key, spriteMap) {
   let variant = "Base";
   let baseParts = parts;
   const last = parts[parts.length - 1];
-  const matched = ["Holofoil", "Holo", "Galaxy", "Gold", "Gummy", "Gem", "Rift", "Base"].find(v => v.toLowerCase() === last.toLowerCase());
+  const matched = ["Holofoil", "Holo", "Galaxy", "Gold", "Gummy", "Gem", "Rift", "Base"].find(
+    (v) => v.toLowerCase() === last.toLowerCase()
+  );
   if (matched) {
     variant = normalizeVariantName(matched);
     baseParts = parts.slice(0, -1);
@@ -398,9 +409,15 @@ function normalizeLocalCollection() {
   const unknown = createSafeRecord();
 
   for (const [key, entry] of Object.entries(state.collection || {})) {
-    if (key.startsWith("fav_")) { setSafeRecordValue(normalized, key, entry === true); continue; }
+    if (key.startsWith("fav_")) {
+      setSafeRecordValue(normalized, key, entry === true);
+      continue;
+    }
     const resolved = resolveLegacyKey(key, spriteMap);
-    if (!resolved) { setSafeRecordValue(unknown, key, entry); continue; }
+    if (!resolved) {
+      setSafeRecordValue(unknown, key, entry);
+      continue;
+    }
 
     if (normalized[resolved]) {
       const existing = normalized[resolved];

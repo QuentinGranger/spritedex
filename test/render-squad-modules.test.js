@@ -29,10 +29,21 @@ for (const file of modules) {
 }
 
 for (const name of [
-  "createSquad", "joinSquad", "leaveSquad", "loadSquad", "restoreSquad",
-  "renderSquad", "renderSquadMembers", "renderSquadTable", "renderSquadHunt",
-  "renderSquadDuel", "renderSquadHistory", "renderSquadRecommendations",
-  "renderSquadRecommendedFriends", "renderSquadComplementaryPairs", "buildSquadSummary"
+  "createSquad",
+  "joinSquad",
+  "leaveSquad",
+  "loadSquad",
+  "restoreSquad",
+  "renderSquad",
+  "renderSquadMembers",
+  "renderSquadTable",
+  "renderSquadHunt",
+  "renderSquadDuel",
+  "renderSquadHistory",
+  "renderSquadRecommendations",
+  "renderSquadRecommendedFriends",
+  "renderSquadComplementaryPairs",
+  "buildSquadSummary"
 ]) {
   assert.strictEqual(vm.runInContext(`typeof ${name}`, context), "function", `missing ${name}`);
 }
@@ -47,6 +58,9 @@ for (const file of modules) {
   assert.ok(index > previousIndex, `script order is invalid for ${file}`);
   previousIndex = index;
 }
-assert.ok(html.indexOf("js/render-squad.js") > previousIndex, "compatibility entry point must load after squad modules");
+assert.ok(
+  html.indexOf("js/render-squad.js") > previousIndex,
+  "compatibility entry point must load after squad modules"
+);
 
 console.log("render squad modules: ok");

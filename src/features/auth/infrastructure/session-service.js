@@ -3,6 +3,10 @@
 const { pool } = require("@/infrastructure/database/postgres-pool");
 const crypto = require("crypto");
 
+const SESSION_COOKIE = "sprite_index_session";
+const CSRF_COOKIE = "sprite_index_csrf";
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
 // ── Sessions : token generation ──
 function generateToken() {
   return crypto.randomBytes(32).toString("hex");
@@ -21,9 +25,119 @@ function hashSessionToken(token) {
   return digest ? `s_${digest}` : null;
 }
 
+function isSecureRequest(req) {
+  const publicUrl = process.env.APP_URL || process.env.OAUTH_REDIRECT_BASE || process.env.RENDER_EXTERNAL_URL || "";
+  if (process.env.NODE_ENV === "production" || /^https:/i.test(publicUrl)) return true;
+  if (
+    req &&
+    (req.secure ||
+      String(req.get("x-forwarded-proto") || "")
+        .split(",")[0]
+        .trim() === "https")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function sessionCookieOptions(req) {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+    path: "/",
+    maxAge: SESSION_TTL_MS
+  };
+}
+
+function csrfCookieOptions(req) {
+  return {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+    path: "/",
+    maxAge: SESSION_TTL_MS
+  };
+}
+
+function clearSessionCookieOptions(req) {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+    path: "/"
+  };
+}
+
+function clearCsrfCookieOptions(req) {
+  return {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+    path: "/"
+  };
+}
+
+function wantsCookieSession(req) {
+  const headerMode = String(req.get("x-auth-mode") || "")
+    .trim()
+    .toLowerCase();
+  if (headerMode === "cookie") return true;
+  if (headerMode === "bearer") return false;
+  const bodyMode = String(req.body?.authMode || "")
+    .trim()
+    .toLowerCase();
+  return bodyMode === "cookie";
+}
+
+function issueCsrfToken(req, res) {
+  const token = generateToken();
+  res.cookie(CSRF_COOKIE, token, csrfCookieOptions(req));
+  return token;
+}
+
+function attachSessionCookie(req, res, sessionToken) {
+  res.cookie(SESSION_COOKIE, sessionToken, sessionCookieOptions(req));
+  const csrf = issueCsrfToken(req, res);
+  return { authMode: "cookie", csrfToken: csrf };
+}
+
+function clearPlayerAuthCookies(req, res) {
+  res.clearCookie(SESSION_COOKIE, clearSessionCookieOptions(req));
+  res.clearCookie(CSRF_COOKIE, clearCsrfCookieOptions(req));
+}
+
+function readSessionCookie(req) {
+  const token = req?.cookies?.[SESSION_COOKIE];
+  return typeof token === "string" && /^[a-f0-9]{64}$/i.test(token) ? token : null;
+}
+
+function parseCookieHeader(cookieHeader, name) {
+  if (!cookieHeader || !name) return null;
+  const parts = String(cookieHeader).split(/;\s*/);
+  for (const part of parts) {
+    const idx = part.indexOf("=");
+    if (idx <= 0) continue;
+    const key = part.slice(0, idx).trim();
+    if (key !== name) continue;
+    const value = part.slice(idx + 1).trim();
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return null;
+}
+
+function readSessionTokenFromCookieHeader(cookieHeader) {
+  const token = parseCookieHeader(cookieHeader, SESSION_COOKIE);
+  return typeof token === "string" && /^[a-f0-9]{64}$/i.test(token) ? token : null;
+}
+
 async function createSession(userId) {
   const token = generateToken();
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await pool.query("INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)", [
     userId,
     hashSessionToken(token),
@@ -45,18 +159,58 @@ async function validateSession(token) {
   return result.rows.length ? result.rows[0].user_id : null;
 }
 
+/**
+ * Resolve identity from Bearer (native/tests) or HttpOnly session cookie (web).
+ * Stores `req.auth = { userId, method, token }` for CSRF gating.
+ */
+async function authenticateRequest(req) {
+  if (req.auth && req.auth.userId) return req.auth.userId;
+
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const userId = await validateSession(token);
+    if (userId) {
+      req.auth = { userId: String(userId), method: "bearer", token };
+      return String(userId);
+    }
+  }
+
+  const cookieToken = readSessionCookie(req);
+  if (cookieToken) {
+    const userId = await validateSession(cookieToken);
+    if (userId) {
+      req.auth = { userId: String(userId), method: "cookie", token: cookieToken };
+      return String(userId);
+    }
+  }
+
+  req.auth = null;
+  return null;
+}
+
 // ── Permissions : extract requesting user from a valid session token only ──
 // SECURITY: never trust a client-supplied user id (e.g. an "x-user-id" header
 // or a body field) as identity proof. Identity is derived exclusively from a
 // server-issued session token, otherwise anyone could impersonate any user.
 async function getRequestingUser(req) {
-  const authHeader = req.headers["authorization"];
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const userId = await validateSession(token);
-    if (userId) return String(userId);
+  return authenticateRequest(req);
+}
+
+function buildAuthSessionPayload(req, res, token, fields = {}) {
+  if (wantsCookieSession(req)) {
+    const cookieAuth = attachSessionCookie(req, res, token);
+    return {
+      ...fields,
+      authMode: cookieAuth.authMode,
+      csrfToken: cookieAuth.csrfToken
+    };
   }
-  return null;
+  return {
+    ...fields,
+    authMode: "bearer",
+    token
+  };
 }
 
 async function requireSameUser(req, res, paramUserId) {
@@ -346,7 +500,7 @@ async function accountRequiresEmailVerification(userId) {
 }
 
 const EMAIL_VERIFICATION_ALLOWLIST = [
-  /^\/api\/auth\/(login|register|logout|me|verify-email|resend-verification|forgot-password|reset-password)(?:\/|$|\?)/i,
+  /^\/api\/auth\/(login|register|logout|me|csrf|verify-email|resend-verification|forgot-password|reset-password|session\/upgrade)(?:\/|$|\?)/i,
   /^\/api\/auth\/oauth(?:\/|$|\?)/i,
   /^\/api\/auth\/callback(?:\/|$|\?)/i,
   /^\/api\/health(?:\/|$|\?)/i,
@@ -473,15 +627,22 @@ async function burnPasswordWork(password, iterations = PBKDF2_ITERATIONS) {
 // current UI (no button called it), so removing it does not affect any feature.
 
 module.exports = {
+  CSRF_COOKIE,
   DEFAULT_VISIBILITY,
   LEGACY_PBKDF2_ITERATIONS,
   PASSPORT_VISIBILITY_FIELDS,
   PBKDF2_ITERATIONS,
+  SESSION_COOKIE,
+  SESSION_TTL_MS,
   areFriends,
+  attachSessionCookie,
+  authenticateRequest,
+  buildAuthSessionPayload,
   burnPasswordWork,
   canViewCollection,
   canViewPassportSection,
   checkPrivacyAccess,
+  clearPlayerAuthCookies,
   createSession,
   generateToken,
   getCollectionAccessReason,
@@ -495,12 +656,18 @@ module.exports = {
   isBlocked,
   accountRequiresEmailVerification,
   isEmailVerificationEnforced,
+  issueCsrfToken,
+  parseCookieHeader,
+  readSessionCookie,
+  readSessionTokenFromCookieHeader,
   requireEmailVerified,
   requireNotSuspended,
   requireSameUser,
   requireSquadMember,
+  sessionCookieOptions,
   shareActiveSquad,
   shareSquad,
   validateSession,
-  verifyPassword
+  verifyPassword,
+  wantsCookieSession
 };

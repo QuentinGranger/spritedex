@@ -80,9 +80,15 @@
   font-weight: 800;
 }
 
-.team-score__val--good { color: #00ff87; }
-.team-score__val--full { color: var(--accent); }
-.team-score__val--nobody { color: #ff3a6e; }
+.team-score__val--good {
+  color: #00ff87;
+}
+.team-score__val--full {
+  color: var(--accent);
+}
+.team-score__val--nobody {
+  color: #ff3a6e;
+}
 
 .squad-summary__divider {
   height: 1px;
@@ -124,7 +130,7 @@
 .squad-stat__bar {
   height: 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--line);
   overflow: hidden;
 }
@@ -156,5 +162,6 @@
   text-align: center;
 }
 
-.squad-nobody strong { color: #ff3a6e; }
-
+.squad-nobody strong {
+  color: #ff3a6e;
+}

@@ -34,7 +34,10 @@ for (const file of ["effects.js", "entry.js", "import.js", "maintenance.js", "re
   assert.ok(fs.existsSync(path.join(collectionsDir, file)), `missing collection feature module: ${file}`);
 }
 
-const domainFile = fs.readFileSync(path.join(root, "src", "domain", "collections", "value-objects", "mastery-level.js"), "utf8");
+const domainFile = fs.readFileSync(
+  path.join(root, "src", "domain", "collections", "value-objects", "mastery-level.js"),
+  "utf8"
+);
 assert.ok(!domainFile.includes("require("), "domain value objects must remain framework-independent");
 
 console.log("architecture foundations: ok");

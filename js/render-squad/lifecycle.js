@@ -2,7 +2,10 @@
 
 // ── Squad : Create ──
 async function createSquad() {
-  if (!state.userId) { toast(t("squad.loginFirst")); return; }
+  if (!state.userId) {
+    toast(t("squad.loginFirst"));
+    return;
+  }
   const name = els.squadNameInput.value.trim() || t("squad.defaultName");
   try {
     const res = await fetch(`${API_BASE}/squads`, {
@@ -27,9 +30,15 @@ async function createSquad() {
 
 // ── Squad : Join ──
 async function joinSquad() {
-  if (!state.userId) { toast(t("squad.loginFirst")); return; }
+  if (!state.userId) {
+    toast(t("squad.loginFirst"));
+    return;
+  }
   const code = els.squadCodeInput.value.trim().toUpperCase();
-  if (!code) { toast(t("squad.enterCode")); return; }
+  if (!code) {
+    toast(t("squad.enterCode"));
+    return;
+  }
   try {
     const res = await fetch(`${API_BASE}/squads/join`, {
       method: "POST",
@@ -87,9 +96,9 @@ async function loadSquad(code) {
     state.squadJoinOpen = data.joinOpen !== false;
     state.squadMembers = Array.isArray(data.members)
       ? data.members.map((member) => ({
-        ...(member && typeof member === "object" ? member : {}),
-        collection: sanitizeCollection(member?.collection)
-      }))
+          ...(member && typeof member === "object" ? member : {}),
+          collection: sanitizeCollection(member?.collection)
+        }))
       : [];
 
     els.squadActiveName.textContent = data.name;
@@ -126,9 +135,8 @@ function connectSquadWs() {
   squadWs = new WebSocket(WS_URL);
 
   squadWs.onopen = () => {
-    // Authenticate the WS with the session token; the server derives the userId
-    // from it (never trusts a client-supplied id).
-    squadWs.send(JSON.stringify({ type: "auth", token: localStorage.getItem(TOKEN_KEY) }));
+    // Authenticate the WS with the session cookie (web) or bearer token (native).
+    squadWs.send(JSON.stringify(wsAuthMessage()));
   };
 
   squadWs.onmessage = (event) => {
@@ -185,4 +193,3 @@ function startSquadPolling() {
 function stopSquadPolling() {
   // keep WS alive across tabs, it's lightweight
 }
-

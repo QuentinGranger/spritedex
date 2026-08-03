@@ -1,10 +1,10 @@
 "use strict";
 
 async function normalizeSquadMemberSchema(pool) {
-    // ── Migration: normalize squad_members table ──
-    // Existing tables (pre-normalization) lack id/role/status/left_at. This block
-    // upgrades them idempotently without breaking current integer FKs on users/squads.
-    await pool.query(`
+  // ── Migration: normalize squad_members table ──
+  // Existing tables (pre-normalization) lack id/role/status/left_at. This block
+  // upgrades them idempotently without breaking current integer FKs on users/squads.
+  await pool.query(`
       DO $$
       BEGIN
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'squad_members')

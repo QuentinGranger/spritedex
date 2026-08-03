@@ -6,16 +6,27 @@ const pool = process.env.DATABASE_URL
   ? new Pool({
       ...databasePoolConfig(process.env.DATABASE_URL),
       connectionTimeoutMillis: 5000,
-      idleTimeoutMillis: 5000,
+      idleTimeoutMillis: 5000
     })
-  : new Pool({ database: "sprite-index", host: "localhost", port: 5432, connectionTimeoutMillis: 5000, idleTimeoutMillis: 5000 });
+  : new Pool({
+      database: "sprite-index",
+      host: "localhost",
+      port: 5432,
+      connectionTimeoutMillis: 5000,
+      idleTimeoutMillis: 5000
+    });
 
 (async () => {
   try {
     const sprites = await pool.query(`SELECT id, name, official_name FROM sprites ORDER BY name`);
-    console.log("sprites:", sprites.rows.map((r) => [r.id, r.name]));
+    console.log(
+      "sprites:",
+      sprites.rows.map((r) => [r.id, r.name])
+    );
 
-    const variants = await pool.query(`SELECT id, sprite_id, variant_type FROM sprite_variants ORDER BY sprite_id, variant_type`);
+    const variants = await pool.query(
+      `SELECT id, sprite_id, variant_type FROM sprite_variants ORDER BY sprite_id, variant_type`
+    );
     const variantGroups = {};
     for (const r of variants.rows) {
       const key = `${r.sprite_id}::${r.variant_type.toLowerCase()}`;

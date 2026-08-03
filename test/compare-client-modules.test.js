@@ -27,7 +27,14 @@ for (const file of modules) {
   vm.runInContext(source, context, { filename: file });
 }
 
-for (const name of ["compareCollections", "computeComplementarityScore", "renderCompare", "loadCompareTarget", "compareWithUser", "setupCompareEvents"]) {
+for (const name of [
+  "compareCollections",
+  "computeComplementarityScore",
+  "renderCompare",
+  "loadCompareTarget",
+  "compareWithUser",
+  "setupCompareEvents"
+]) {
   assert.strictEqual(vm.runInContext(`typeof ${name}`, context), "function", `missing ${name}`);
 }
 

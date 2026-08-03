@@ -17,9 +17,10 @@ function getEngineAllVariants() {
 function applyEngineFilters(variants) {
   const f = engineFilters;
   const hasCategory = f.missingAll || f.uniqueOwner || f.duplicates;
-  return variants.filter(v => {
+  return variants.filter((v) => {
     if (hasCategory) {
-      const categoryOk = (f.missingAll && v.isMissingAll) || (f.uniqueOwner && v.isUniqueOwner) || (f.duplicates && v.isDuplicate);
+      const categoryOk =
+        (f.missingAll && v.isMissingAll) || (f.uniqueOwner && v.isUniqueOwner) || (f.duplicates && v.isDuplicate);
       if (!categoryOk) return false;
     }
     if (f.availableNow && !v.isAvailableNow) return false;
@@ -35,10 +36,12 @@ function applyEngineFilters(variants) {
 function engineFilterControl() {
   const all = getEngineAllVariants();
   const defs = getEngineDefinitions();
-  const rarityOptions = distinctOptions(all, "rarity", r => r ? `${t("engine.rarity")} ${r}` : t("engine.rarityUnknown"));
-  const seasonOptions = distinctOptions(all, "seasonId", id => id ? (SEASONS[id]?.name || id) : t("engine.noSeason"));
-  const eventOptions = distinctOptions(all, "eventId", id => id ? (EVENTS[id]?.name || id) : t("engine.noEvent"));
-  const typeOptions = distinctOptions(all, "variantType", vt => vt || t("engine.typeUnknown"));
+  const rarityOptions = distinctOptions(all, "rarity", (r) =>
+    r ? `${t("engine.rarity")} ${r}` : t("engine.rarityUnknown")
+  );
+  const seasonOptions = distinctOptions(all, "seasonId", (id) => (id ? SEASONS[id]?.name || id : t("engine.noSeason")));
+  const eventOptions = distinctOptions(all, "eventId", (id) => (id ? EVENTS[id]?.name || id : t("engine.noEvent")));
+  const typeOptions = distinctOptions(all, "variantType", (vt) => vt || t("engine.typeUnknown"));
   return `
     <div class="engine-filter-bar" id="squadEngineFilterBar">
       <div class="engine-filter-group">
@@ -63,10 +66,16 @@ function distinctOptions(arr, key, labelFn) {
   const map = new Map();
   for (const item of arr) {
     const raw = item[key];
-    const value = (raw === null || raw === undefined || raw === "") ? "_none" : String(raw);
+    const value = raw === null || raw === undefined || raw === "" ? "_none" : String(raw);
     if (!map.has(value)) map.set(value, labelFn(raw));
   }
-  return Array.from(map.entries()).sort((a, b) => String(a[1]).localeCompare(String(b[1]))).map(([value, label]) => `<option value="${escapeHtml(value)}" ${engineFilters[key] === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("");
+  return Array.from(map.entries())
+    .sort((a, b) => String(a[1]).localeCompare(String(b[1])))
+    .map(
+      ([value, label]) =>
+        `<option value="${escapeHtml(value)}" ${engineFilters[key] === value ? "selected" : ""}>${escapeHtml(label)}</option>`
+    )
+    .join("");
 }
 
 function renderEngineFilterResults(filtered) {
@@ -74,7 +83,13 @@ function renderEngineFilterResults(filtered) {
     <div class="engine-section">
       <h4 class="engine-section__title">${t("engine.filteredResults", { count: filtered.length })}</h4>
       <div class="engine-chip-list">
-        ${filtered.slice(0, 60).map(v => `<span class="engine-chip" title="${escapeHtml(v.variantId)}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`).join("")}
+        ${filtered
+          .slice(0, 60)
+          .map(
+            (v) =>
+              `<span class="engine-chip" title="${escapeHtml(v.variantId)}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`
+          )
+          .join("")}
         ${filtered.length > 60 ? `<span class="engine-chip">+${filtered.length - 60} ${t("engine.more")}</span>` : ""}
       </div>
     </div>
@@ -84,8 +99,8 @@ function renderEngineFilterResults(filtered) {
 function renderEngineMissing(r) {
   const m = (r.analysis && r.analysis.missing) || {};
   const variants = m.variants || [];
-  const confirmed = variants.filter(v => v.classification === "confirmed_missing");
-  const maybe = variants.filter(v => v.classification !== "confirmed_missing");
+  const confirmed = variants.filter((v) => v.classification === "confirmed_missing");
+  const maybe = variants.filter((v) => v.classification !== "confirmed_missing");
   const all = getEngineAllVariants();
   const filtered = applyEngineFilters(all);
   return `
@@ -118,10 +133,15 @@ function renderEngineMissing(r) {
     <div class="engine-section">
       <h4 class="engine-section__title">${t("engine.missingVariants", { count: variants.length })}</h4>
       <div class="engine-chip-list">
-        ${variants.slice(0, 60).map(v => `<span class="engine-chip" title="${escapeHtml(v.display || "")}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`).join("")}
+        ${variants
+          .slice(0, 60)
+          .map(
+            (v) =>
+              `<span class="engine-chip" title="${escapeHtml(v.display || "")}">${escapeHtml(v.spriteName || v.spriteId)} <small>· ${escapeHtml(v.variantName || v.variantId)}</small></span>`
+          )
+          .join("")}
         ${variants.length > 60 ? `<span class="engine-chip">+${variants.length - 60} ${t("engine.more")}</span>` : ""}
       </div>
     </div>
   `;
 }
-

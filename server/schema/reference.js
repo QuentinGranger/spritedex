@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureReferenceSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username VARCHAR(50) UNIQUE NOT NULL,
@@ -100,7 +100,7 @@ async function ensureReferenceSchema(pool) {
       CREATE INDEX IF NOT EXISTS idx_availability_periods_sprite ON availability_periods(sprite_id);
       CREATE INDEX IF NOT EXISTS idx_availability_periods_dates ON availability_periods(start_date, end_date);
     `);
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS sprite_sources (
         id VARCHAR(100) PRIMARY KEY,
         type VARCHAR(30),

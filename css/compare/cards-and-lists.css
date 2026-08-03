@@ -58,7 +58,9 @@
   user-select: none;
 }
 
-.compare-section__title::-webkit-details-marker { display: none; }
+.compare-section__title::-webkit-details-marker {
+  display: none;
+}
 
 .compare-section__count {
   font-size: 0.82rem;
@@ -205,4 +207,3 @@
     display: none;
   }
 }
-

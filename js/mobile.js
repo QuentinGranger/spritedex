@@ -45,7 +45,8 @@
     }
     // Match our custom scheme deep link. It carries only a short-lived OAuth
     // code; redemption additionally requires the verifier held in this app.
-    const isAuthLink = url.protocol.replace(":", "") === "sprite-index" &&
+    const isAuthLink =
+      url.protocol.replace(":", "") === "sprite-index" &&
       (url.host === "auth" || url.pathname.replace(/\//g, "") === "auth");
     if (!isAuthLink) return;
     const verifierKey = window.OAUTH_EXCHANGE_VERIFIER_KEY || "sprite-index_oauth_exchange_verifier";
@@ -55,7 +56,11 @@
     try {
       await applyAuthParams(url.searchParams);
       if (Browser && typeof Browser.close === "function") {
-        try { await Browser.close(); } catch (e) { /* browser may already be closed */ }
+        try {
+          await Browser.close();
+        } catch (e) {
+          /* browser may already be closed */
+        }
       }
     } catch (e) {
       console.error("Native OAuth deep-link handling failed:", e);

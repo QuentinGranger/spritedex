@@ -4,21 +4,14 @@
 // squad_id is INTEGER (live schema); the step doc's UUID is not used.
 
 const { pool } = require("../db");
-const {
-  COMMUNITY_ELIGIBILITY,
-  EXPLICIT_COLLECTION_STATUSES
-} = require("../sprite-graph-community");
+const { COMMUNITY_ELIGIBILITY, EXPLICIT_COLLECTION_STATUSES } = require("../sprite-graph-community");
 const { resolveCatalogueContext } = require("../sprite-graph-catalogue");
 
 /** Étape 57 — squad eligibility for community averages. */
 const SQUAD_COMMUNITY_ELIGIBILITY = Object.freeze({
   minActiveMembers: Number(process.env.GRAPH_SQUAD_MIN_MEMBERS || 2),
-  minCollectionFillRate: Number(
-    process.env.GRAPH_SQUAD_MIN_FILL || COMMUNITY_ELIGIBILITY.minCollectionFillRate || 0.6
-  ),
-  recentActivityDays: Number(
-    process.env.GRAPH_SQUAD_ACTIVE_DAYS || COMMUNITY_ELIGIBILITY.recentActivityDays || 90
-  ),
+  minCollectionFillRate: Number(process.env.GRAPH_SQUAD_MIN_FILL || COMMUNITY_ELIGIBILITY.minCollectionFillRate || 0.6),
+  recentActivityDays: Number(process.env.GRAPH_SQUAD_ACTIVE_DAYS || COMMUNITY_ELIGIBILITY.recentActivityDays || 90),
   requireAnalyticsConsent: process.env.GRAPH_SQUAD_REQUIRE_CONSENT !== "0"
 });
 
@@ -44,7 +37,7 @@ function toIsoDate(value) {
 function ratePercent(numerator, denominator) {
   const d = Number(denominator) || 0;
   if (d <= 0) return null;
-  return round2((Number(numerator) || 0) / d * 100);
+  return round2(((Number(numerator) || 0) / d) * 100);
 }
 
 /**
@@ -64,9 +57,7 @@ function decomposeCatalogueVsAcquisition({
   const afterWithAcquisitions = ratePercent(currentCovered, currentCatalogueCount);
 
   const catalogueExpansionImpact =
-    before != null && afterCatalogueOnly != null
-      ? round2(afterCatalogueOnly - before)
-      : null;
+    before != null && afterCatalogueOnly != null ? round2(afterCatalogueOnly - before) : null;
   const acquisitionProgress =
     afterWithAcquisitions != null && afterCatalogueOnly != null
       ? round2(afterWithAcquisitions - afterCatalogueOnly)

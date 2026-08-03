@@ -17,9 +17,7 @@ function openLegal(docIdOrAlias) {
   };
   const docId = aliasMap[docIdOrAlias] || docIdOrAlias;
   const lang = typeof appLocale === "function" ? appLocale() : "fr";
-  const doc = typeof getLegalDocument === "function"
-    ? getLegalDocument(docId, lang)
-    : LEGAL_DOCUMENTS[docId];
+  const doc = typeof getLegalDocument === "function" ? getLegalDocument(docId, lang) : LEGAL_DOCUMENTS[docId];
   if (!doc) return;
 
   const dialog = document.getElementById("legalDialog");
@@ -56,8 +54,11 @@ const CONSENT_DATE_KEY = "sprite-index_consent_date";
 const CONSENT_VALIDITY_MS = 6 * 30 * 24 * 60 * 60 * 1000; // 6 months approximate
 
 function getConsent() {
-  try { return JSON.parse(localStorage.getItem(CONSENT_KEY) || "null"); }
-  catch { return null; }
+  try {
+    return JSON.parse(localStorage.getItem(CONSENT_KEY) || "null");
+  } catch {
+    return null;
+  }
 }
 
 function isConsentExpired(consent) {
@@ -72,11 +73,10 @@ function saveConsent(choices) {
   localStorage.setItem(CONSENT_KEY, JSON.stringify(payload));
   localStorage.setItem(CONSENT_DATE_KEY, payload.consentedAt);
   // If the user is logged in, also persist the consent server-side.
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) {
+  if (hasAuthSession()) {
     fetch(`${API_BASE}/consent`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: authHeaders(),
       body: JSON.stringify({ cookieConsent: payload })
     }).catch(() => {});
   }
@@ -96,7 +96,10 @@ function hasConsented() {
 function showCookieBanner() {
   if (hasConsented()) return;
   const existing = document.getElementById("cookieBanner");
-  if (existing) { existing.style.display = ""; return; }
+  if (existing) {
+    existing.style.display = "";
+    return;
+  }
 
   const banner = document.createElement("div");
   banner.id = "cookieBanner";
@@ -165,8 +168,10 @@ const CGU_ACCEPTED_KEY = "sprite-index_cgu_accepted";
 const CGU_VERSION_KEY = "sprite-index_cgu_version";
 
 function hasAcceptedCgu(version) {
-  return localStorage.getItem(CGU_VERSION_KEY) === (version || LEGAL_VERSION) &&
-         localStorage.getItem(CGU_ACCEPTED_KEY) === "true";
+  return (
+    localStorage.getItem(CGU_VERSION_KEY) === (version || LEGAL_VERSION) &&
+    localStorage.getItem(CGU_ACCEPTED_KEY) === "true"
+  );
 }
 
 function acceptCgu(version) {
@@ -179,7 +184,7 @@ function updateRegisterButtonState() {
   const ageCheck = document.getElementById("registerAge");
   const registerBtn = document.getElementById("registerEmailBtn");
   if (registerBtn) {
-    const enabled = (cguCheck?.checked === true) && (ageCheck?.checked === true);
+    const enabled = cguCheck?.checked === true && ageCheck?.checked === true;
     registerBtn.disabled = !enabled;
     registerBtn.classList.toggle("login-btn--disabled", !enabled);
   }

@@ -46,10 +46,10 @@ app.get("/u/:username", async (req, res) => {
 <meta name="twitter:description" content="${description.replace(/"/g, "&quot;")}">
 <meta name="twitter:image" content="${image}">
 <script>window.__SPRITE_INDEX_PASSPORT_USER__=${JSON.stringify({
-  id: resolved.user.id,
-  username: resolved.user.username,
-  displayName: resolved.user.display_name || resolved.user.username
-})};</script>`;
+      id: resolved.user.id,
+      username: resolved.user.username,
+      displayName: resolved.user.display_name || resolved.user.username
+    })};</script>`;
     res.type("html").send(html.replace("</head>", `${meta}\n</head>`));
   } catch (err) {
     console.error("[/u/:username]", err);

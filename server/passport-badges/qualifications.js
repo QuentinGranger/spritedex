@@ -65,12 +65,10 @@ async function recordCatalogueReview(userId, catalogueVersion, coverageRate, db 
   return result.rows[0] || null;
 }
 
-async function evaluateArchivistQualified(userId, {
-  minCoverage = 90,
-  minVersions = 3,
-  maxGapDays = 30,
-  db = pool
-} = {}) {
+async function evaluateArchivistQualified(
+  userId,
+  { minCoverage = 90, minVersions = 3, maxGapDays = 30, db = pool } = {}
+) {
   const reviews = await db.query(
     `SELECT catalogue_version, reviewed_at, completion_coverage_rate
      FROM user_catalogue_reviews
@@ -125,5 +123,11 @@ async function evaluateEarlyCollectorQualified(userId, ruleConfig = {}, db = poo
   return owned.rows.length > 0;
 }
 
-
-module.exports = { findQualifyingFoundedSquad, userQualifiesAsSquadFounder, maybeAwardSquadFounder, recordCatalogueReview, evaluateArchivistQualified, evaluateEarlyCollectorQualified };
+module.exports = {
+  findQualifyingFoundedSquad,
+  userQualifiesAsSquadFounder,
+  maybeAwardSquadFounder,
+  recordCatalogueReview,
+  evaluateArchivistQualified,
+  evaluateEarlyCollectorQualified
+};

@@ -60,24 +60,27 @@ async function ensureDeliveryQueueTable(pool) {
 }
 
 function externalChannelsOnly(channels = []) {
-  return (channels || []).filter(c => c === "push" || c === "email");
+  return (channels || []).filter((c) => c === "push" || c === "email");
 }
 
 /**
  * Enqueue an external delivery job. Returns the job id, or null if nothing to send.
  * `notBefore` delays the send (quiet hours). `deadline` cancels the job if crossed.
  */
-async function enqueueDelivery(pool, {
-  notificationId,
-  recipientId,
-  channels = [],
-  notBefore = new Date(),
-  deadline = null,
-  title = null,
-  body = null,
-  url = null,
-  maxAttempts = DEFAULT_MAX_ATTEMPTS
-} = {}) {
+async function enqueueDelivery(
+  pool,
+  {
+    notificationId,
+    recipientId,
+    channels = [],
+    notBefore = new Date(),
+    deadline = null,
+    title = null,
+    body = null,
+    url = null,
+    maxAttempts = DEFAULT_MAX_ATTEMPTS
+  } = {}
+) {
   const external = externalChannelsOnly(channels);
   if (!notificationId || recipientId == null || !external.length) return null;
 
@@ -110,21 +113,25 @@ async function enqueueDelivery(pool, {
   // Étape 43 — mirror each channel as a queued delivery row.
   const deliveries = require("./notification-deliveries");
   for (const ch of external) {
-    await deliveries.ensureDelivery(pool, {
-      notificationId,
-      channel: ch,
-      status: "queued",
-      provider: ch === "push" ? "web_push" : "email",
-      scheduledAt: notBeforeIso
-    }).catch(() => {});
+    await deliveries
+      .ensureDelivery(pool, {
+        notificationId,
+        channel: ch,
+        status: "queued",
+        provider: ch === "push" ? "web_push" : "email",
+        scheduledAt: notBeforeIso
+      })
+      .catch(() => {});
   }
 
   // Mark the inbox row as queued while external channels are pending.
-  await pool.query(
-    `UPDATE notifications SET status = 'queued'
+  await pool
+    .query(
+      `UPDATE notifications SET status = 'queued'
      WHERE id = $1 AND status IN ('created', 'queued')`,
-    [notificationId]
-  ).catch(() => {});
+      [notificationId]
+    )
+    .catch(() => {});
 
   return res.rows[0]?.id || null;
 }
@@ -184,7 +191,7 @@ async function markJobRetryOrFail(pool, job, errorMessage) {
     return "failed";
   }
   // Exponential backoff: 30s, 60s, 120s, …
-  const delaySec = Math.min(30 * (2 ** Math.max(0, attempts - 1)), 30 * 60);
+  const delaySec = Math.min(30 * 2 ** Math.max(0, attempts - 1), 30 * 60);
   await pool.query(
     `UPDATE notification_delivery_queue
      SET status = $2, available_at = NOW() + ($3::int * INTERVAL '1 second'),
@@ -207,28 +214,32 @@ async function loadNotificationForJob(pool, job) {
 
 async function cancelJobAsObsolete(pool, pushService, job, notif, reason) {
   const data = notif.data && typeof notif.data === "object" ? notif.data : {};
-  await pool.query(
-    `UPDATE notifications SET data = $1::jsonb WHERE id = $2`,
-    [JSON.stringify({
-      ...data,
-      pushDeferred: false,
-      pushCancelled: true,
-      obsoleteReason: reason || "obsolete",
-      channelsDropped: {
-        ...(data.channelsDropped || {}),
-        push: reason || "obsolete"
-      }
-    }), notif.id]
-  ).catch(() => {});
+  await pool
+    .query(`UPDATE notifications SET data = $1::jsonb WHERE id = $2`, [
+      JSON.stringify({
+        ...data,
+        pushDeferred: false,
+        pushCancelled: true,
+        obsoleteReason: reason || "obsolete",
+        channelsDropped: {
+          ...(data.channelsDropped || {}),
+          push: reason || "obsolete"
+        }
+      }),
+      notif.id
+    ])
+    .catch(() => {});
 
   await pushService.cancelNotification(pool, notif.id).catch(() => {});
 
   const deliveries = require("./notification-deliveries");
   for (const ch of externalChannelsOnly(job.channels)) {
-    await deliveries.markDeliveryCancelled(pool, notif.id, ch, {
-      errorCode: reason || "obsolete",
-      errorMessage: `Delivery cancelled: ${reason || "obsolete"}`
-    }).catch(() => {});
+    await deliveries
+      .markDeliveryCancelled(pool, notif.id, ch, {
+        errorCode: reason || "obsolete",
+        errorMessage: `Delivery cancelled: ${reason || "obsolete"}`
+      })
+      .catch(() => {});
   }
   await markJobCancelled(pool, job.id, reason || "obsolete");
 }
@@ -254,24 +265,28 @@ async function processDeliveryQueue(pool, { limit = BATCH_SIZE } = {}) {
       // Étape 41 — never send after the event / availability deadline.
       if (job.deadline && new Date(job.deadline).getTime() <= Date.now()) {
         const data = notif.data || {};
-        await pool.query(
-          `UPDATE notifications SET data = $1::jsonb WHERE id = $2`,
-          [JSON.stringify({
-            ...data,
-            pushDeferred: false,
-            pushCancelled: true,
-            channelsDropped: {
-              ...(data.channelsDropped || {}),
-              push: "quiet_hours_past_deadline"
-            }
-          }), notif.id]
-        ).catch(() => {});
+        await pool
+          .query(`UPDATE notifications SET data = $1::jsonb WHERE id = $2`, [
+            JSON.stringify({
+              ...data,
+              pushDeferred: false,
+              pushCancelled: true,
+              channelsDropped: {
+                ...(data.channelsDropped || {}),
+                push: "quiet_hours_past_deadline"
+              }
+            }),
+            notif.id
+          ])
+          .catch(() => {});
         const deliveries = require("./notification-deliveries");
         for (const ch of externalChannelsOnly(job.channels)) {
-          await deliveries.markDeliveryCancelled(pool, notif.id, ch, {
-            errorCode: "past_deadline",
-            errorMessage: "Delivery cancelled: past event deadline"
-          }).catch(() => {});
+          await deliveries
+            .markDeliveryCancelled(pool, notif.id, ch, {
+              errorCode: "past_deadline",
+              errorMessage: "Delivery cancelled: past event deadline"
+            })
+            .catch(() => {});
         }
         await markJobCancelled(pool, job.id, "past_deadline");
         summary.cancelled++;
@@ -295,9 +310,7 @@ async function processDeliveryQueue(pool, { limit = BATCH_SIZE } = {}) {
       const presend = require("./notification-presend");
       const freshness = await presend.revalidateBeforeScheduledPush(pool, notif);
       if (!freshness.ok) {
-        await cancelJobAsObsolete(
-          pool, pushService, job, notif, freshness.reason || "obsolete"
-        );
+        await cancelJobAsObsolete(pool, pushService, job, notif, freshness.reason || "obsolete");
         summary.cancelled++;
         continue;
       }
@@ -321,15 +334,17 @@ async function processDeliveryQueue(pool, { limit = BATCH_SIZE } = {}) {
       // Reflect push send on the notification data blob.
       if (channels.includes("push")) {
         const data = notif.data || {};
-        await pool.query(
-          `UPDATE notifications SET data = $1::jsonb WHERE id = $2`,
-          [JSON.stringify({
-            ...data,
-            pushDeferred: false,
-            pushSent: true,
-            channels: Array.from(new Set([...(data.channels || []), "push"]))
-          }), notif.id]
-        ).catch(() => {});
+        await pool
+          .query(`UPDATE notifications SET data = $1::jsonb WHERE id = $2`, [
+            JSON.stringify({
+              ...data,
+              pushDeferred: false,
+              pushSent: true,
+              channels: Array.from(new Set([...(data.channels || []), "push"]))
+            }),
+            notif.id
+          ])
+          .catch(() => {});
       }
 
       await markJobDone(pool, job.id);
@@ -338,10 +353,11 @@ async function processDeliveryQueue(pool, { limit = BATCH_SIZE } = {}) {
       const outcome = await markJobRetryOrFail(pool, job, err.message);
       if (outcome === "failed") {
         summary.failed++;
-        await pool.query(
-          `UPDATE notifications SET status = 'failed' WHERE id = $1 AND status IN ('created', 'queued')`,
-          [job.notification_id]
-        ).catch(() => {});
+        await pool
+          .query(`UPDATE notifications SET status = 'failed' WHERE id = $1 AND status IN ('created', 'queued')`, [
+            job.notification_id
+          ])
+          .catch(() => {});
       } else {
         summary.retried++;
       }
@@ -355,9 +371,7 @@ function startDeliveryQueueWorker(pool) {
   workerStarted = true;
 
   const tick = () => {
-    processDeliveryQueue(pool).catch(err =>
-      console.error("[delivery-queue] process failed:", err.message)
-    );
+    processDeliveryQueue(pool).catch((err) => console.error("[delivery-queue] process failed:", err.message));
   };
   tick();
 

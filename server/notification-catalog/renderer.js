@@ -55,8 +55,7 @@ function buildTranslationPayload(type, context = {}) {
         translationKey,
         translationParams: pickTranslationParams({
           friendName: ctx.actorName || ctx.friendName || null,
-          friendId: ctx.friendId != null ? String(ctx.friendId)
-            : (ctx.actorId != null ? String(ctx.actorId) : null),
+          friendId: ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null,
           friendshipId: ctx.friendshipId != null ? String(ctx.friendshipId) : null,
           template: "default"
         })
@@ -65,24 +64,20 @@ function buildTranslationPayload(type, context = {}) {
     case NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT: {
       const count = num(ctx.count) || 1;
       const isBatch = count > 1;
-      const isPriority = ctx.priorityLevel === "strong"
-        || ctx.recipientCollectionStatus === "priority";
+      const isPriority = ctx.priorityLevel === "strong" || ctx.recipientCollectionStatus === "priority";
       return {
         translationKey,
         translationParams: pickTranslationParams({
           friendName: ctx.actorName || ctx.friendName || null,
-          friendId: ctx.friendId != null ? String(ctx.friendId)
-            : (ctx.actorId != null ? String(ctx.actorId) : null),
+          friendId: ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null,
           variantName: ctx.highlightName || ctx.variantName || null,
           variantId: ctx.variantId != null ? String(ctx.variantId) : null,
           spriteName: ctx.spriteName || null,
           count: isBatch ? count : undefined,
-          variantIds: isBatch && Array.isArray(ctx.variantIds)
-            ? ctx.variantIds.map(String)
-            : undefined,
+          variantIds: isBatch && Array.isArray(ctx.variantIds) ? ctx.variantIds.map(String) : undefined,
           priorityLevel: ctx.priorityLevel || null,
           recipientCollectionStatus: ctx.recipientCollectionStatus || null,
-          template: isBatch ? "batch" : (isPriority ? "priority" : "default")
+          template: isBatch ? "batch" : isPriority ? "priority" : "default"
         })
       };
     }
@@ -98,20 +93,16 @@ function buildTranslationPayload(type, context = {}) {
           squadId: ctx.squadId != null ? String(ctx.squadId) : null,
           squadCode: ctx.squadCode || null,
           friendName: ctx.actorName || null,
-          contributingUserId: ctx.contributingUserId != null
-            ? String(ctx.contributingUserId)
-            : null,
+          contributingUserId: ctx.contributingUserId != null ? String(ctx.contributingUserId) : null,
           variantName: ctx.variantName || null,
-          variantIds: Array.isArray(ctx.newVariantIds)
-            ? ctx.newVariantIds.map(String)
-            : undefined,
+          variantIds: Array.isArray(ctx.newVariantIds) ? ctx.newVariantIds.map(String) : undefined,
           count: count > 0 ? count : undefined,
           completionRate: ctx.newRate ?? ctx.completionRate ?? null,
           previousRate: ctx.previousRate ?? null,
           milestone: ctx.milestone ?? null,
           coveredCount: ctx.coveredCount ?? ctx.newCoveredCount ?? null,
           totalVariants: ctx.totalVariants ?? null,
-          template: isMilestone ? "milestone" : (isBatch ? "batch" : "default")
+          template: isMilestone ? "milestone" : isBatch ? "batch" : "default"
         })
       };
     }
@@ -127,9 +118,7 @@ function buildTranslationPayload(type, context = {}) {
           variantType: ctx.variantType || null,
           availableUntil: ctx.availableUntil || null,
           availableFrom: ctx.availableFrom || null,
-          availabilityPeriodId: ctx.availabilityPeriodId != null
-            ? String(ctx.availabilityPeriodId)
-            : null,
+          availabilityPeriodId: ctx.availabilityPeriodId != null ? String(ctx.availabilityPeriodId) : null,
           eventId: ctx.eventId != null ? String(ctx.eventId) : null,
           confidence: ctx.confidence || null,
           template: "default"
@@ -143,12 +132,17 @@ function buildTranslationPayload(type, context = {}) {
           eventName: ctx.eventName || null,
           eventId: ctx.eventId != null ? String(ctx.eventId) : null,
           endingAt: ctx.endingAt || ctx.endDate || null,
-          remainingCount: ctx.remainingCount != null
-            ? num(ctx.remainingCount)
-            : (ctx.wantedCount != null ? num(ctx.wantedCount) : null),
+          remainingCount:
+            ctx.remainingCount != null
+              ? num(ctx.remainingCount)
+              : ctx.wantedCount != null
+                ? num(ctx.wantedCount)
+                : null,
           variantIds: Array.isArray(ctx.remainingPriorityVariantIds)
             ? ctx.remainingPriorityVariantIds.map(String)
-            : (Array.isArray(ctx.variantIds) ? ctx.variantIds.map(String) : undefined),
+            : Array.isArray(ctx.variantIds)
+              ? ctx.variantIds.map(String)
+              : undefined,
           threshold: ctx.threshold || null,
           hasStrongPriority: ctx.hasStrongPriority === true ? true : undefined,
           template: "default"
@@ -171,9 +165,7 @@ function buildTranslationPayload(type, context = {}) {
  * Used to re-render title/body in another language or channel.
  */
 function contextFromTranslationParams(translationParams = {}, extras = {}) {
-  const p = translationParams && typeof translationParams === "object"
-    ? translationParams
-    : {};
+  const p = translationParams && typeof translationParams === "object" ? translationParams : {};
   return {
     ...extras,
     actorName: p.friendName || p.actorName || extras.actorName || null,
@@ -290,15 +282,10 @@ function renderNotification(type, context = {}, lang = DEFAULT_LANGUAGE) {
   const i18n = require("../notification-i18n");
   const translationParams = buildRenderTranslationParams(type, ctx, locale);
   const translated = i18n.renderTranslatedMessage(type, translationParams, locale);
-  const builder = typeof def[locale] === "function"
-    ? def[locale]
-    : (typeof def.en === "function" ? def.en : def.fr);
+  const builder = typeof def[locale] === "function" ? def[locale] : typeof def.en === "function" ? def.en : def.fr;
   const built = translated || builder(ctx);
 
-  const data = withGroupData(
-    typeof def.data === "function" ? def.data(ctx) : {},
-    ctx
-  );
+  const data = withGroupData(typeof def.data === "function" ? def.data(ctx) : {}, ctx);
   // Keep translation payload on the rendered data for persistence / API.
   const translation = buildTranslationPayload(type, ctx);
   if (translation) {
@@ -327,10 +314,14 @@ async function renderNotificationLocalized(pool, type, context = {}, lang = DEFA
   const i18n = require("../notification-i18n");
   const variantId = ctx.variantId || (Array.isArray(ctx.variantIds) ? ctx.variantIds[0] : null);
   if (pool && (variantId || ctx.spriteId)) {
-    const names = await i18n.lookupLocalizedCatalogNames(pool, {
-      variantId: variantId || null,
-      spriteId: ctx.spriteId || null
-    }, locale);
+    const names = await i18n.lookupLocalizedCatalogNames(
+      pool,
+      {
+        variantId: variantId || null,
+        spriteId: ctx.spriteId || null
+      },
+      locale
+    );
     if (names.variantName) {
       ctx.variantName = names.variantName;
       if (!ctx.highlightName) ctx.highlightName = names.variantName;
@@ -358,5 +349,20 @@ function getNotificationUrl(type, context = {}) {
   return def.url(context && typeof context === "object" ? context : {}) || null;
 }
 
-
-module.exports = { isKnownType, normalizeLang, pickLocaleCopy, pickTranslationParams, translationKeyForType, buildTranslationPayload, contextFromTranslationParams, renderFromTranslation, withGroupData, buildRenderTranslationParams, renderNotification, renderNotificationLocalized, renderAllLocales, getNotificationUrl, TRANSLATION_KEY_PREFIX };
+module.exports = {
+  isKnownType,
+  normalizeLang,
+  pickLocaleCopy,
+  pickTranslationParams,
+  translationKeyForType,
+  buildTranslationPayload,
+  contextFromTranslationParams,
+  renderFromTranslation,
+  withGroupData,
+  buildRenderTranslationParams,
+  renderNotification,
+  renderNotificationLocalized,
+  renderAllLocales,
+  getNotificationUrl,
+  TRANSLATION_KEY_PREFIX
+};

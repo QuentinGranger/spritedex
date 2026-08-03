@@ -15,11 +15,7 @@ function publicSquadId(squadId) {
  * Build the Étape 70 normalized response from a getCollectorPassport payload.
  * Omits gated-null sections cleanly; never invents private data.
  */
-function normalizePassportResponse(passport, {
-  relationship = null,
-  actions = null,
-  publicUrl = null
-} = {}) {
+function normalizePassportResponse(passport, { relationship = null, actions = null, publicUrl = null } = {}) {
   if (!passport || !passport.user) return null;
   const u = passport.user;
   const c = passport.collection || null;
@@ -29,43 +25,48 @@ function normalizePassportResponse(passport, {
   const squad = passport.primarySquad;
   const featured = passport.featuredBadge || (passport.identity && passport.identity.featuredBadge);
 
-  const primarySquad = squad && !squad.private
-    ? {
-        id: publicSquadId(squad.id),
-        numericId: squad.id,
-        name: squad.name,
-        role: squad.role === "Fondateur" ? "owner" : (squad.role || "member"),
-        memberCount: squad.memberCount != null ? squad.memberCount : undefined,
-        collectiveCompletionRate: squad.collectiveCompletionRate
-      }
-    : (squad && squad.private ? { private: true } : null);
+  const primarySquad =
+    squad && !squad.private
+      ? {
+          id: publicSquadId(squad.id),
+          numericId: squad.id,
+          name: squad.name,
+          role: squad.role === "Fondateur" ? "owner" : squad.role || "member",
+          memberCount: squad.memberCount != null ? squad.memberCount : undefined,
+          collectiveCompletionRate: squad.collectiveCompletionRate
+        }
+      : squad && squad.private
+        ? { private: true }
+        : null;
 
   const badges = Array.isArray(passport.badgeProgress)
     ? passport.badgeProgress
-      .filter((b) => b.status === "unlocked")
-      .map((b) => ({
-        code: b.badgeCode || b.code,
-        label: b.label,
-        category: b.uiCategory || b.category || null,
-        unlockedAt: b.unlockedAt || null,
-        verificationStatus: b.verificationStatus || null
-      }))
-    : (Array.isArray(passport.badges) ? passport.badges.map((b) => ({
-      code: b.code || b.id,
-      label: b.label,
-      unlockedAt: b.unlockedAt || null,
-      verificationStatus: b.verificationStatus || null
-    })) : []);
+        .filter((b) => b.status === "unlocked")
+        .map((b) => ({
+          code: b.badgeCode || b.code,
+          label: b.label,
+          category: b.uiCategory || b.category || null,
+          unlockedAt: b.unlockedAt || null,
+          verificationStatus: b.verificationStatus || null
+        }))
+    : Array.isArray(passport.badges)
+      ? passport.badges.map((b) => ({
+          code: b.code || b.id,
+          label: b.label,
+          unlockedAt: b.unlockedAt || null,
+          verificationStatus: b.verificationStatus || null
+        }))
+      : [];
 
   const recentActivity = Array.isArray(passport.recentActivity)
     ? passport.recentActivity
-      .filter((a) => a.activityType !== "account_created" && a.type !== "account_created")
-      .map((a) => ({
-        type: a.activityType || a.type,
-        visibility: a.visibility || null,
-        occurredAt: a.createdAt || a.occurredAt,
-        data: a.data || {}
-      }))
+        .filter((a) => a.activityType !== "account_created" && a.type !== "account_created")
+        .map((a) => ({
+          type: a.activityType || a.type,
+          visibility: a.visibility || null,
+          occurredAt: a.createdAt || a.occurredAt,
+          data: a.data || {}
+        }))
     : [];
 
   return {
@@ -99,21 +100,20 @@ function normalizePassportResponse(passport, {
             personalBestRate: peak ? peak.completionRate : null,
             personalBestRateDisplay: peak ? peak.completionRateDisplay : null,
             collectionCoverageRate: c.reliability ? c.reliability.rate : null,
-            completedEventCount: passport.eventsCompleted != null
-              ? passport.eventsCompleted
-              : (passport.events ? passport.events.completedCount : null),
+            completedEventCount:
+              passport.eventsCompleted != null
+                ? passport.eventsCompleted
+                : passport.events
+                  ? passport.events.completedCount
+                  : null,
             comparisonCount: social.comparisonCount != null ? social.comparisonCount : null,
-            distinctComparedUsers: social.distinctCollectorsCompared != null
-              ? social.distinctCollectorsCompared
-              : null,
+            distinctComparedUsers: social.distinctCollectorsCompared != null ? social.distinctCollectorsCompared : null,
             highestOfficialRarity: c.highestOfficialRarity ? c.highestOfficialRarity.key : null,
             rarestSpecialVariant: c.rarestSpecialVariant ? c.rarestSpecialVariant.key : null
           }
         : null,
       primarySquad,
-      featuredBadge: featured
-        ? { code: featured.code, label: featured.label, badgeId: featured.badgeId }
-        : null,
+      featuredBadge: featured ? { code: featured.code, label: featured.label, badgeId: featured.badgeId } : null,
       badges,
       badgeProgress: Array.isArray(passport.badgeProgress) ? passport.badgeProgress : [],
       events: passport.events || null,

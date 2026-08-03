@@ -96,7 +96,9 @@ function calendarDaysUntil(endDate, now = new Date(), timeZone = DEFAULT_TIMEZON
 function formatDateInTimeZone(value, lang = "fr", timeZone = DEFAULT_TIMEZONE) {
   const d = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(d.getTime())) return null;
-  const language = String(lang || "fr").toLowerCase().slice(0, 2);
+  const language = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
   const locale = language === "en" ? "en-GB" : language === "nl" ? "nl-NL" : "fr-FR";
   return d.toLocaleDateString(locale, {
     day: "numeric",
@@ -142,9 +144,10 @@ function zonedLocalToUtc(year, month, day, hour = 0, minute = 0, timeZone = DEFA
  * Default hour is 09:00 local; override with NOTIFICATION_DIGEST_HOUR.
  */
 function nextDailyDigestAt(now = new Date(), timeZone = DEFAULT_TIMEZONE, hour = null) {
-  const digestHour = hour == null
-    ? Math.max(0, Math.min(23, Number(process.env.NOTIFICATION_DIGEST_HOUR ?? 9) || 9))
-    : Math.max(0, Math.min(23, Number(hour) || 0));
+  const digestHour =
+    hour == null
+      ? Math.max(0, Math.min(23, Number(process.env.NOTIFICATION_DIGEST_HOUR ?? 9) || 9))
+      : Math.max(0, Math.min(23, Number(hour) || 0));
   const tz = normalizeTimeZone(timeZone);
   const d = now instanceof Date ? now : new Date(now);
   if (Number.isNaN(d.getTime())) return null;

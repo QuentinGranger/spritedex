@@ -2,7 +2,16 @@
 
 const security = require("../../security");
 const analytics = require("../../analytics");
-const { getRequestingUser, isBlocked, requireNotSuspended, requireSquadMember, areFriends, getRelationship, shareSquad, canViewCollection } = require("../auth");
+const {
+  getRequestingUser,
+  isBlocked,
+  requireNotSuspended,
+  requireSquadMember,
+  areFriends,
+  getRelationship,
+  shareSquad,
+  canViewCollection
+} = require("../auth");
 const { APP_URL, app } = require("../core");
 const compare = require("../compare");
 const { pool } = require("../db");
@@ -173,15 +182,11 @@ function generateSquadCode() {
 async function getSquadByIdOrCode(idOrCode) {
   const raw = String(idOrCode).trim();
   if (/^\d+$/.test(raw)) {
-    return await pool.query(
-      "SELECT id, code, name, created_by, join_open FROM squads WHERE id = $1",
-      [Number(raw)]
-    );
+    return await pool.query("SELECT id, code, name, created_by, join_open FROM squads WHERE id = $1", [Number(raw)]);
   }
-  return await pool.query(
-    "SELECT id, code, name, created_by, join_open FROM squads WHERE code = $1",
-    [raw.toUpperCase()]
-  );
+  return await pool.query("SELECT id, code, name, created_by, join_open FROM squads WHERE code = $1", [
+    raw.toUpperCase()
+  ]);
 }
 
 // Resolve the visibility of every member from the perspective of the current
@@ -189,21 +194,26 @@ async function getSquadByIdOrCode(idOrCode) {
 // never grants access to a private collection, and priority visibility is a
 // separate permission from collection visibility.
 async function getViewerSafeSquadMembers(memberRows, reqUser) {
-  return Promise.all(memberRows.map(async (row) => {
-    const userId = row.userId ?? row.user_id ?? row.id;
-    const isSelf = String(userId) === String(reqUser);
-    const visible = isSelf || await canViewCollection(reqUser, userId);
-    const prioritiesVisible = visible && (isSelf || await canViewCollection(reqUser, userId, {
-      visibilityKey: "priorities"
-    }));
-    return {
-      ...row,
-      userId,
-      username: row.username || String(userId),
-      visible,
-      prioritiesVisible
-    };
-  }));
+  return Promise.all(
+    memberRows.map(async (row) => {
+      const userId = row.userId ?? row.user_id ?? row.id;
+      const isSelf = String(userId) === String(reqUser);
+      const visible = isSelf || (await canViewCollection(reqUser, userId));
+      const prioritiesVisible =
+        visible &&
+        (isSelf ||
+          (await canViewCollection(reqUser, userId, {
+            visibilityKey: "priorities"
+          })));
+      return {
+        ...row,
+        userId,
+        username: row.username || String(userId),
+        visible,
+        prioritiesVisible
+      };
+    })
+  );
 }
 
 // Never mutate the global compare collection cache when redacting a field for
@@ -211,10 +221,9 @@ async function getViewerSafeSquadMembers(memberRows, reqUser) {
 // existing collection/compare privacy semantics; only the granular priority
 // level is removed when the owner has hidden it.
 function redactCollectionPriorities(collection) {
-  return Object.fromEntries(Object.entries(collection).map(([variantId, entry]) => [
-    variantId,
-    { ...entry, priority: "none" }
-  ]));
+  return Object.fromEntries(
+    Object.entries(collection).map(([variantId, entry]) => [variantId, { ...entry, priority: "none" }])
+  );
 }
 
 async function loadViewerSafeCollection(member) {
@@ -225,4 +234,46 @@ async function loadViewerSafeCollection(member) {
 
 // ── Squad : create ──
 
-module.exports = { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter };
+module.exports = {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+};

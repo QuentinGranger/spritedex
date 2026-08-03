@@ -9,24 +9,24 @@
 
   const KEY_RE = /^[a-z][a-z0-9]*(?:\.[a-z0-9_]+)+$/i;
 
-function isMessageKey(value) {
-  return KEY_RE.test(String(value || ""));
-}
+  function isMessageKey(value) {
+    return KEY_RE.test(String(value || ""));
+  }
 
-function interpolate(template, params) {
-  if (!params || typeof params !== "object") return template;
-  return String(template).replace(/\{(\w+)\}/g, (_, name) => (
-    params[name] == null ? `{${name}}` : String(params[name])
-  ));
-}
+  function interpolate(template, params) {
+    if (!params || typeof params !== "object") return template;
+    return String(template).replace(/\{(\w+)\}/g, (_, name) =>
+      params[name] == null ? `{${name}}` : String(params[name])
+    );
+  }
 
-function messageForKey(key, params) {
-  const dict = MESSAGES[locale] || MESSAGES.fr;
-  const fallback = MESSAGES.fr || {};
-  const raw = (dict && dict[key]) || fallback[key];
-  if (raw == null) return null;
-  return interpolate(raw, params);
-}
+  function messageForKey(key, params) {
+    const dict = MESSAGES[locale] || MESSAGES.fr;
+    const fallback = MESSAGES.fr || {};
+    const raw = (dict && dict[key]) || fallback[key];
+    if (raw == null) return null;
+    return interpolate(raw, params);
+  }
 
   function translate(value, params) {
     const source = String(value == null ? "" : value);

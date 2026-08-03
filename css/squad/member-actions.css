@@ -13,7 +13,7 @@
 
 .squad-chip__menu:hover {
   color: var(--accent);
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* ── Member actions dialog ── */
@@ -51,7 +51,7 @@
 }
 
 .member-action:hover {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .member-action--danger {
@@ -73,4 +73,3 @@
   flex: 1;
   text-align: left;
 }
-

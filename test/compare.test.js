@@ -131,11 +131,14 @@ async function run() {
     await setEntry(quentin.token, quentin.id, vBoth, "owned");
     await setEntry(lucy.token, lucy.id, vBoth, "owned");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
-    const record = data.records.find(r => r.variantId === vBoth);
+    const record = data.records.find((r) => r.variantId === vBoth);
     assert.ok(record, "variant not in result");
     assert.strictEqual(record.userA.status, "owned");
     assert.strictEqual(record.userB.status, "owned");
-    assert.ok(data.groups.bothOwned.some(r => r.variantId === vBoth), "not grouped as bothOwned");
+    assert.ok(
+      data.groups.bothOwned.some((r) => r.variantId === vBoth),
+      "not grouped as bothOwned"
+    );
   });
 
   await test("only Quentin owned => onlyUserA", async () => {
@@ -145,11 +148,14 @@ async function run() {
     // "new" (unknown) and would land in the unknown group, mirroring js/compare.js.
     await setEntry(lucy.token, lucy.id, vOnlyA, "missing");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
-    const record = data.records.find(r => r.variantId === vOnlyA);
+    const record = data.records.find((r) => r.variantId === vOnlyA);
     assert.ok(record, "variant not in result");
     assert.strictEqual(record.userA.status, "owned");
     assert.notStrictEqual(record.userB.status, "owned");
-    assert.ok(data.groups.onlyUserA.some(r => r.variantId === vOnlyA), "not grouped as onlyUserA");
+    assert.ok(
+      data.groups.onlyUserA.some((r) => r.variantId === vOnlyA),
+      "not grouped as onlyUserA"
+    );
   });
 
   await test("only Lucy owned => onlyUserB", async () => {
@@ -158,11 +164,14 @@ async function run() {
     // Quentin must be explicitly "missing" (absent defaults to unknown).
     await setEntry(quentin.token, quentin.id, vOnlyB, "missing");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
-    const record = data.records.find(r => r.variantId === vOnlyB);
+    const record = data.records.find((r) => r.variantId === vOnlyB);
     assert.ok(record, "variant not in result");
     assert.strictEqual(record.userB.status, "owned");
     assert.notStrictEqual(record.userA.status, "owned");
-    assert.ok(data.groups.onlyUserB.some(r => r.variantId === vOnlyB), "not grouped as onlyUserB");
+    assert.ok(
+      data.groups.onlyUserB.some((r) => r.variantId === vOnlyB),
+      "not grouped as onlyUserB"
+    );
   });
 
   await test("both missing => bothMissing", async () => {
@@ -170,9 +179,12 @@ async function run() {
     await setEntry(quentin.token, quentin.id, vBothMissing, "missing");
     await setEntry(lucy.token, lucy.id, vBothMissing, "missing");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
-    const record = data.records.find(r => r.variantId === vBothMissing);
+    const record = data.records.find((r) => r.variantId === vBothMissing);
     assert.ok(record, "variant not in result");
-    assert.ok(data.groups.bothMissing.some(r => r.variantId === vBothMissing), "not grouped as bothMissing");
+    assert.ok(
+      data.groups.bothMissing.some((r) => r.variantId === vBothMissing),
+      "not grouped as bothMissing"
+    );
   });
 
   await test("unknown status is not considered missing", async () => {
@@ -180,15 +192,21 @@ async function run() {
     await setEntry(quentin.token, quentin.id, vUnknown, "new");
     await setEntry(lucy.token, lucy.id, vUnknown, "new");
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
-    assert.ok(!data.groups.bothMissing.some(r => r.variantId === vUnknown), "unknown grouped as missing");
-    assert.ok(data.groups.unknown.some(r => r.variantId === vUnknown), "unknown not in unknown group");
+    assert.ok(!data.groups.bothMissing.some((r) => r.variantId === vUnknown), "unknown grouped as missing");
+    assert.ok(
+      data.groups.unknown.some((r) => r.variantId === vUnknown),
+      "unknown not in unknown group"
+    );
   });
 
   await test("unreleased variants are not counted in summary", async () => {
     const { data } = await compare(quentin.id, lucy.id, quentin.token);
     for (const rec of data.records) {
       const release = (rec.releaseStatus || "").toLowerCase();
-      assert.ok(!["unreleased", "upcoming", "coming_soon", "soon", "unknown"].includes(release), `unreleased variant in result: ${rec.variantId}`);
+      assert.ok(
+        !["unreleased", "upcoming", "coming_soon", "soon", "unknown"].includes(release),
+        `unreleased variant in result: ${rec.variantId}`
+      );
     }
   });
 
@@ -215,10 +233,10 @@ async function run() {
     assert.strictEqual(s.onlyUserACount, 1, "only A count");
     assert.strictEqual(s.onlyUserBCount, 1, "only B count");
     assert.strictEqual(s.bothMissingCount, 1, "both missing count");
-    assert.strictEqual(s.aPossessionRate, +(2 / total * 100).toFixed(2), "A possession rate");
-    assert.strictEqual(s.bPossessionRate, +(2 / total * 100).toFixed(2), "B possession rate");
-    assert.strictEqual(s.collectiveCompletionRate, +(3 / total * 100).toFixed(2), "collective completion rate");
-    assert.strictEqual(s.complementarityRate, +(2 / 3 * 100).toFixed(2), "complementarity rate");
+    assert.strictEqual(s.aPossessionRate, +((2 / total) * 100).toFixed(2), "A possession rate");
+    assert.strictEqual(s.bPossessionRate, +((2 / total) * 100).toFixed(2), "B possession rate");
+    assert.strictEqual(s.collectiveCompletionRate, +((3 / total) * 100).toFixed(2), "collective completion rate");
+    assert.strictEqual(s.complementarityRate, +((2 / 3) * 100).toFixed(2), "complementarity rate");
   });
 
   await test("empty collections are flagged as insufficient data", async () => {
@@ -242,17 +260,29 @@ async function run() {
 
     const unfiltered = await compare(quentin.id, lucy.id, quentin.token);
     assert.strictEqual(unfiltered.status, 200);
-    const record = unfiltered.data.records.find(r => r.variantId === vOnlyA);
+    const record = unfiltered.data.records.find((r) => r.variantId === vOnlyA);
     assert.ok(record, "priority fixture is missing from the comparison");
     assert.strictEqual(record.userB.priority, "none", "hidden priority value leaked");
-    assert.strictEqual(unfiltered.data.summary.complementarityScore, baseline.data.summary.complementarityScore, "hidden priority leaked through complementarity score");
-    assert.strictEqual(unfiltered.data.summary.bEnteredCount, baseline.data.summary.bEnteredCount, "hidden priority changed summary entry count");
-    assert.strictEqual(unfiltered.data.users.userB.enteredCount, baseline.data.users.userB.enteredCount, "hidden priority changed user entry count");
+    assert.strictEqual(
+      unfiltered.data.summary.complementarityScore,
+      baseline.data.summary.complementarityScore,
+      "hidden priority leaked through complementarity score"
+    );
+    assert.strictEqual(
+      unfiltered.data.summary.bEnteredCount,
+      baseline.data.summary.bEnteredCount,
+      "hidden priority changed summary entry count"
+    );
+    assert.strictEqual(
+      unfiltered.data.users.userB.enteredCount,
+      baseline.data.users.userB.enteredCount,
+      "hidden priority changed user entry count"
+    );
 
     const prioritiesOnly = await compare(quentin.id, lucy.id, quentin.token, { status: "priorities" });
     assert.strictEqual(prioritiesOnly.status, 200);
     assert.ok(
-      !prioritiesOnly.data.records.some(r => r.variantId === vOnlyA),
+      !prioritiesOnly.data.records.some((r) => r.variantId === vOnlyA),
       "hidden priority was discoverable through status=priorities"
     );
 
@@ -305,7 +335,10 @@ async function run() {
     const listData = await listRes.json();
     assert.ok(Array.isArray(listData.shares), "shares list missing");
 
-    const delRes = await fetch(`${API}/compare/share/${shareToken}`, { method: "DELETE", headers: authHeaders(quentin.token) });
+    const delRes = await fetch(`${API}/compare/share/${shareToken}`, {
+      method: "DELETE",
+      headers: authHeaders(quentin.token)
+    });
     assert.ok(delRes.ok, `revoke compare share failed: ${delRes.status}`);
 
     const expiredRes = await fetch(`${API}/compare/share/${shareToken}`, { headers: authHeaders(lucy.token) });
@@ -330,10 +363,16 @@ async function run() {
   await test("a friend can be compared when collection visibility is friends-only", async () => {
     await setPrivacy(lucy, "friends_only");
 
-    const request = await fetch(`${API}/friends/${lucy.id}/request`, { method: "POST", headers: authHeaders(quentin.token) });
+    const request = await fetch(`${API}/friends/${lucy.id}/request`, {
+      method: "POST",
+      headers: authHeaders(quentin.token)
+    });
     assert.ok(request.ok, `friend request failed: ${await request.text()}`);
 
-    const accept = await fetch(`${API}/friends/${quentin.id}/accept`, { method: "POST", headers: authHeaders(lucy.token) });
+    const accept = await fetch(`${API}/friends/${quentin.id}/accept`, {
+      method: "POST",
+      headers: authHeaders(lucy.token)
+    });
     assert.ok(accept.ok, `accept friend failed: ${await accept.text()}`);
 
     const { status } = await compare(quentin.id, lucy.id, quentin.token);
@@ -396,7 +435,10 @@ async function run() {
     const { status } = await compare(quentin.id, lucy.id, quentin.token);
     assert.strictEqual(status, 403, "block should prevent comparison");
 
-    const unblock = await fetch(`${API}/users/${quentin.id}/block`, { method: "DELETE", headers: authHeaders(lucy.token) });
+    const unblock = await fetch(`${API}/users/${quentin.id}/block`, {
+      method: "DELETE",
+      headers: authHeaders(lucy.token)
+    });
     assert.ok(unblock.ok, `unblock failed: ${await unblock.text()}`);
   });
 

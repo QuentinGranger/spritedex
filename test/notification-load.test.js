@@ -40,10 +40,7 @@ async function test(name, fn) {
 
 function assertUnderBudget(started, label) {
   const elapsed = Date.now() - started;
-  assert.ok(
-    elapsed <= BUDGET_MS,
-    `${label} took ${elapsed}ms (budget ${BUDGET_MS}ms)`
-  );
+  assert.ok(elapsed <= BUDGET_MS, `${label} took ${elapsed}ms (budget ${BUDGET_MS}ms)`);
   return elapsed;
 }
 
@@ -67,8 +64,8 @@ function memoryClaimPool() {
 async function run() {
   console.log("\nRunning SPRITE-INDEX notification load tests (Étape 69)\n");
   console.log(
-    `  scale: friends=${FRIENDS} squadItems=${SQUAD_ITEMS} variants=${VARIANTS}`
-    + ` eventUsers=${EVENT_USERS} acquisitions=${ACQUISITIONS} budget=${BUDGET_MS}ms\n`
+    `  scale: friends=${FRIENDS} squadItems=${SQUAD_ITEMS} variants=${VARIANTS}` +
+      ` eventUsers=${EVENT_USERS} acquisitions=${ACQUISITIONS} budget=${BUDGET_MS}ms\n`
   );
 
   await test("many-friends acquisition fan-out stays bounded (Étape 69)", async () => {
@@ -80,10 +77,7 @@ async function run() {
     // Simulate a dense friend graph: mix of priority / missing / owned / unknown.
     const friends = Array.from({ length: FRIENDS }, (_, i) => {
       const mod = i % 7;
-      const status = mod === 0 ? "priority"
-        : mod === 1 || mod === 2 ? "missing"
-          : mod === 3 ? "owned"
-            : "unknown";
+      const status = mod === 0 ? "priority" : mod === 1 || mod === 2 ? "missing" : mod === 3 ? "owned" : "unknown";
       return { friendId: 1000 + i, status };
     });
 
@@ -94,17 +88,12 @@ async function run() {
       eligible.push({ ...f, priorityLevel: level });
     }
     assert.ok(eligible.length > 0, "expected some eligible friends");
-    assert.ok(
-      eligible.length < friends.length,
-      "owned/unknown friends must be filtered out"
-    );
+    assert.ok(eligible.length < friends.length, "owned/unknown friends must be filtered out");
 
     const pool = memoryClaimPool();
     let created = 0;
     for (const f of eligible) {
-      const key = gates.buildFriendAcquiredDedupeKey(
-        actorId, f.friendId, variantId, collectionVersion
-      );
+      const key = gates.buildFriendAcquiredDedupeKey(actorId, f.friendId, variantId, collectionVersion);
       assert.ok(key, "dedupe key required");
       if (await claimDedupeKey(pool, key, catalog.NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT, f.friendId)) {
         created++;
@@ -185,12 +174,8 @@ async function run() {
       }
 
       for (const recipientId of priorityRecipients) {
-        const key = gates.buildPriorityVariantAvailableDedupeKey(
-          recipientId, variantId, periodId
-        );
-        if (await claimDedupeKey(
-          pool, key, catalog.NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE, recipientId
-        )) {
+        const key = gates.buildPriorityVariantAvailableDedupeKey(recipientId, variantId, periodId);
+        if (await claimDedupeKey(pool, key, catalog.NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE, recipientId)) {
           creates++;
         }
       }
@@ -223,14 +208,10 @@ async function run() {
       // Default 3d is allowed for everyone.
       assert.ok(gate.ok);
 
-      const dedupeKey = gates.buildWantedEventEndingDedupeKey(
-        recipientId, eventId, threshold
-      );
+      const dedupeKey = gates.buildWantedEventEndingDedupeKey(recipientId, eventId, threshold);
       assert.ok(dedupeKey);
 
-      if (!(await claimDedupeKey(
-        pool, dedupeKey, catalog.NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, recipientId
-      ))) {
+      if (!(await claimDedupeKey(pool, dedupeKey, catalog.NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, recipientId))) {
         continue;
       }
 
@@ -248,9 +229,7 @@ async function run() {
 
       // Re-tick must not notify again.
       assert.strictEqual(
-        await claimDedupeKey(
-          pool, dedupeKey, catalog.NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, recipientId
-        ),
+        await claimDedupeKey(pool, dedupeKey, catalog.NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, recipientId),
         false
       );
       notified++;
@@ -288,17 +267,20 @@ async function run() {
 
     const rendered = catalog.renderNotification(
       catalog.NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT,
-      grouping.attachGroup({
-        actorName: "LoadActor",
-        friendId: String(actorId),
-        variantId: variants[0].variantId,
-        variantName: variants[0].variantName,
-        highlightName: variants.find((v) => v.priorityLevel === "strong")?.variantName,
-        count: ACQUISITIONS,
-        variantIds: variants.map((v) => v.variantId),
-        priorityLevel: "strong",
-        recipientCollectionStatus: "priority"
-      }, group),
+      grouping.attachGroup(
+        {
+          actorName: "LoadActor",
+          friendId: String(actorId),
+          variantId: variants[0].variantId,
+          variantName: variants[0].variantName,
+          highlightName: variants.find((v) => v.priorityLevel === "strong")?.variantName,
+          count: ACQUISITIONS,
+          variantIds: variants.map((v) => v.variantId),
+          priorityLevel: "strong",
+          recipientCollectionStatus: "priority"
+        },
+        group
+      ),
       "fr"
     );
     assert.ok(String(rendered.body).includes(String(ACQUISITIONS)));
@@ -334,15 +316,22 @@ async function run() {
 
     let outcome = await deliveryQueue.markJobRetryOrFail(pool, job, "provider_503");
     assert.strictEqual(outcome, "retry");
-    assert.ok(updates.some((u) => /available_at/i.test(u.sql)), "retry must reschedule available_at");
+    assert.ok(
+      updates.some((u) => /available_at/i.test(u.sql)),
+      "retry must reschedule available_at"
+    );
 
     // Exhaust attempts → failed (no infinite loop under load).
     updates.length = 0;
-    outcome = await deliveryQueue.markJobRetryOrFail(pool, {
-      id: 78,
-      attempts: deliveryQueue.DEFAULT_MAX_ATTEMPTS,
-      max_attempts: deliveryQueue.DEFAULT_MAX_ATTEMPTS
-    }, "still_down");
+    outcome = await deliveryQueue.markJobRetryOrFail(
+      pool,
+      {
+        id: 78,
+        attempts: deliveryQueue.DEFAULT_MAX_ATTEMPTS,
+        max_attempts: deliveryQueue.DEFAULT_MAX_ATTEMPTS
+      },
+      "still_down"
+    );
     assert.strictEqual(outcome, "failed");
 
     // After a transient outage, a fresh delivery job can complete (recovery).
@@ -374,10 +363,7 @@ async function run() {
     });
     assert.strictEqual(deactivated.deactivated, true);
     assert.ok(
-      updates.some((u) =>
-        /notification_delivery_queue/i.test(u.sql)
-        && /subscription_invalid/i.test(u.sql)
-      ),
+      updates.some((u) => /notification_delivery_queue/i.test(u.sql) && /subscription_invalid/i.test(u.sql)),
       "dead token must cancel pending push jobs"
     );
 

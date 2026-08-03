@@ -1,7 +1,18 @@
 "use strict";
 
 async function register(ctx) {
-  const { assert, catalog, prefs, channels, bus, asyncTest, sampleContext, EXPECTED_CONTEXTUAL_IDS, EXPECTED_NOTIFICATION_TYPES, EXPECTED_DOMAIN_EVENTS } = ctx;
+  const {
+    assert,
+    catalog,
+    prefs,
+    channels,
+    bus,
+    asyncTest,
+    sampleContext,
+    EXPECTED_CONTEXTUAL_IDS,
+    EXPECTED_NOTIFICATION_TYPES,
+    EXPECTED_DOMAIN_EVENTS
+  } = ctx;
 
   await asyncTest("notification system readiness criteria (Étape 72)", async () => {
     const bus = require("../../server/event-bus");
@@ -20,31 +31,35 @@ async function register(ctx) {
     // 1) Five notifications can be generated
     assert.strictEqual(catalog.CONTEXTUAL_NOTIFICATION_TYPES.length, 5);
     for (const type of catalog.CONTEXTUAL_NOTIFICATION_TYPES) {
-      const rendered = catalog.renderNotification(type, {
-        actorName: "Lucy",
-        friendId: "7",
-        variantId: "v1",
-        variantName: "Alpha",
-        spriteId: "s1",
-        variantType: "Gold",
-        squadName: "Bravo",
-        squadCode: "BRAVO",
-        squadId: "12",
-        eventName: "Summer",
-        eventId: "event_summer",
-        endingAt: "2026-08-20T12:00:00Z",
-        remainingCount: 2,
-        remainingPriorityVariantIds: ["v1", "v2"],
-        threshold: "3d",
-        newRate: 42,
-        previousRate: 40,
-        count: 1,
-        kind: "progress",
-        recipientCollectionStatus: "missing",
-        priorityLevel: "normal",
-        timeZone: "UTC",
-        now: "2026-08-17T12:00:00Z"
-      }, "fr");
+      const rendered = catalog.renderNotification(
+        type,
+        {
+          actorName: "Lucy",
+          friendId: "7",
+          variantId: "v1",
+          variantName: "Alpha",
+          spriteId: "s1",
+          variantType: "Gold",
+          squadName: "Bravo",
+          squadCode: "BRAVO",
+          squadId: "12",
+          eventName: "Summer",
+          eventId: "event_summer",
+          endingAt: "2026-08-20T12:00:00Z",
+          remainingCount: 2,
+          remainingPriorityVariantIds: ["v1", "v2"],
+          threshold: "3d",
+          newRate: 42,
+          previousRate: 40,
+          count: 1,
+          kind: "progress",
+          recipientCollectionStatus: "missing",
+          priorityLevel: "normal",
+          timeZone: "UTC",
+          now: "2026-08-17T12:00:00Z"
+        },
+        "fr"
+      );
       assert.ok(rendered && rendered.title && rendered.body, `render failed for ${type}`);
       assert.ok(rendered.url && rendered.url !== "/", `${type} must not open home`);
     }
@@ -53,17 +68,18 @@ async function register(ctx) {
     assert.deepStrictEqual(bus.DOMAIN_EVENTS, EXPECTED_DOMAIN_EVENTS);
 
     // 3–4) Preferences + separate categories
-    assert.strictEqual(
-      prefs.evaluateDelivery({ pushEnabled: true, categoryEnabled: false, typeEnabled: true }),
-      false
-    );
+    assert.strictEqual(prefs.evaluateDelivery({ pushEnabled: true, categoryEnabled: false, typeEnabled: true }), false);
     assert.strictEqual(prefs.evaluateTypeActive({ typeEnabled: false }), false);
     const cats = catalog.NOTIFICATION_SETTINGS_SCREEN.groups.map((g) => g.category);
     assert.deepStrictEqual(cats, ["social", "collection", "alerts"]);
 
     // 5) Push requires consent
     const noConsent = await channels.evaluatePushConstraints(
-      { async query() { return { rows: [{ c: 0 }] }; } },
+      {
+        async query() {
+          return { rows: [{ c: 0 }] };
+        }
+      },
       1,
       { push_enabled: false, push_quiet_start: null, push_quiet_end: null, push_max_per_day: 8, timezone: "UTC" }
     );
@@ -135,10 +151,7 @@ async function register(ctx) {
       }),
       { ok: false, reason: "no_remaining_priority", cancel: true }
     );
-    assert.strictEqual(
-      presend.evaluateFriendshipStillRelevant({ friendshipAccepted: false }).cancel,
-      true
-    );
+    assert.strictEqual(presend.evaluateFriendshipStillRelevant({ friendshipAccepted: false }).cancel, true);
 
     // 13) Failed sends do not block core paths (queue + permanent token handling)
     assert.ok(deliveryQueue.QUEUE_STATUSES.FAILED);
@@ -182,18 +195,21 @@ async function register(ctx) {
       group: { destination: "/squad/BRAVO/engine" }
     });
     assert.strictEqual(revoked.accessRevoked, true);
-    const normalized = serialize.normalizeNotification({
-      id: 55,
-      type: "squad_completion_increased",
-      category: "collection",
-      title: "Squad progresse",
-      body: "…",
-      entity_type: "squad",
-      entity_id: "12",
-      created_at: "2026-07-26T10:00:00.000Z",
-      read_at: null,
-      data: revoked
-    }, null);
+    const normalized = serialize.normalizeNotification(
+      {
+        id: 55,
+        type: "squad_completion_increased",
+        category: "collection",
+        title: "Squad progresse",
+        body: "…",
+        entity_type: "squad",
+        entity_id: "12",
+        created_at: "2026-07-26T10:00:00.000Z",
+        read_at: null,
+        data: revoked
+      },
+      null
+    );
     assert.strictEqual(normalized.action, null, "revoked destinations must not expose action.url");
 
     const publicKey = pushService.getVapidPublicKey();

@@ -9,12 +9,7 @@ const SNAPSHOT_REASONS = Object.freeze({
   DAILY: "daily"
 });
 
-const MILESTONE_CODES = new Set([
-  "collection_25",
-  "collection_50",
-  "collection_75",
-  "collection_100"
-]);
+const MILESTONE_CODES = new Set(["collection_25", "collection_50", "collection_75", "collection_100"]);
 
 async function ensurePassportStatSnapshots(db = pool) {
   await db.query(`
@@ -96,11 +91,11 @@ async function createPassportStatSnapshot(userId, stats, { reason = SNAPSHOT_REA
  * Decide whether to snapshot after a passport refresh.
  * Creates at most one row, preferring catalogue_version > milestone > daily.
  */
-async function maybeCreatePassportStatSnapshot(userId, stats, {
-  unlockedCodes = [],
-  collectionChanged = false,
-  db = pool
-} = {}) {
+async function maybeCreatePassportStatSnapshot(
+  userId,
+  stats,
+  { unlockedCodes = [], collectionChanged = false, db = pool } = {}
+) {
   await ensurePassportStatSnapshots(db);
   const last = await getLatestSnapshot(userId, db);
   const catalogueVersion = String(stats.catalogueVersion || "");
@@ -120,11 +115,7 @@ async function maybeCreatePassportStatSnapshot(userId, stats, {
 
   if (!reasons.length) return null;
 
-  const priority = [
-    SNAPSHOT_REASONS.CATALOGUE_VERSION,
-    SNAPSHOT_REASONS.MILESTONE,
-    SNAPSHOT_REASONS.DAILY
-  ];
+  const priority = [SNAPSHOT_REASONS.CATALOGUE_VERSION, SNAPSHOT_REASONS.MILESTONE, SNAPSHOT_REASONS.DAILY];
   const reason = priority.find((r) => reasons.includes(r)) || SNAPSHOT_REASONS.DAILY;
   return createPassportStatSnapshot(userId, stats, { reason, db });
 }

@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "suppression-compte": legalDocument({
-    id: "suppression-compte",
-    title: "Supprimer mon compte",
-    short: "Procédure, conséquences et délais de suppression.",
-    content: `
+    "suppression-compte": legalDocument({
+      id: "suppression-compte",
+      title: "Supprimer mon compte",
+      short: "Procédure, conséquences et délais de suppression.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Demander la suppression</h2>
@@ -51,8 +51,7 @@
       <h2>6. Comptes de fournisseurs tiers</h2>
       <p>La suppression du compte [APP_NAME] ne supprime pas votre compte Google, Apple, Discord ou Epic Games. Vous devez gérer ces comptes directement auprès de leur fournisseur.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

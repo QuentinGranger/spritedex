@@ -11,30 +11,36 @@ function nowDaysUntil(endDate) {
 }
 
 function nowPriorityItems() {
-  const rarityImpact = { Mythique: 16, "Légendaire": 12, "Épique": 8, Rare: 5 };
+  const rarityImpact = { Mythique: 16, Légendaire: 12, Épique: 8, Rare: 5 };
   return getReleasedCollectionItems(getAllItems())
     .filter((item) => {
       const entry = getEntry(item.id);
-      return entry.status === "priority" || (entry.priority && entry.priority !== "none" && entry.priority !== "ignored");
+      return (
+        entry.status === "priority" || (entry.priority && entry.priority !== "none" && entry.priority !== "ignored")
+      );
     })
     .map((item) => {
       const entry = getEntry(item.id);
       const sprite = SPRITES.find((candidate) => candidate.id === item.spriteId);
       const event = sprite?.eventId ? EVENTS?.[sprite.eventId] : null;
       const days = nowDaysUntil(event?.endDate);
-      const priorityImpact = entry.priority === "urgent" ? 48
-        : entry.priority === "important" ? 38
-          : entry.priority === "medium" ? 30
-            : entry.priority === "low" ? 20
-              : entry.status === "priority" ? 28 : 14;
-      const timeImpact = days == null || days > 30 ? 0
-        : days <= 1 ? 38
-          : days <= 3 ? 30
-            : days <= 7 ? 22
-              : days <= 14 ? 12 : 5;
+      const priorityImpact =
+        entry.priority === "urgent"
+          ? 48
+          : entry.priority === "important"
+            ? 38
+            : entry.priority === "medium"
+              ? 30
+              : entry.priority === "low"
+                ? 20
+                : entry.status === "priority"
+                  ? 28
+                  : 14;
+      const timeImpact =
+        days == null || days > 30 ? 0 : days <= 1 ? 38 : days <= 3 ? 30 : days <= 7 ? 22 : days <= 14 ? 12 : 5;
       const availability = String(sprite?.availability?.status || sprite?.availabilityStatus || "").toLowerCase();
-      const availabilityImpact = availability === "unavailable" || sprite?.available === false ? -30
-        : availability === "available" ? 10 : 0;
+      const availabilityImpact =
+        availability === "unavailable" || sprite?.available === false ? -30 : availability === "available" ? 10 : 0;
       return {
         ...item,
         nowEvent: event || null,
@@ -42,12 +48,20 @@ function nowPriorityItems() {
         nowScore: priorityImpact + timeImpact + availabilityImpact + (rarityImpact[item.rarity] || 3)
       };
     })
-    .sort((a, b) => b.nowScore - a.nowScore || priorityOrder(getEntry(a.id).priority) - priorityOrder(getEntry(b.id).priority));
+    .sort(
+      (a, b) =>
+        b.nowScore - a.nowScore || priorityOrder(getEntry(a.id).priority) - priorityOrder(getEntry(b.id).priority)
+    );
 }
 
 function nowEndingEvent(priorityItems) {
   const now = Date.now();
-  const priorityEventIds = new Set(priorityItems.map((item) => item.nowEvent?.id).filter(Boolean).map(String));
+  const priorityEventIds = new Set(
+    priorityItems
+      .map((item) => item.nowEvent?.id)
+      .filter(Boolean)
+      .map(String)
+  );
   const candidates = Object.values(EVENTS || {})
     .filter((event) => event?.endDate && new Date(event.endDate).getTime() > now)
     .sort((a, b) => new Date(a.endDate) - new Date(b.endDate));
@@ -61,7 +75,8 @@ function nowBadgeProgress(items) {
   const owned = metrics.owned;
   const rate = total ? (owned / total) * 100 : 0;
   const threshold = [1, 25, 50, 75, 100].find((value) => rate < value);
-  if (!threshold) return { label: t("home.badgeComplete"), detail: t("home.badgeCompleteDetail"), target: 100, owned, total };
+  if (!threshold)
+    return { label: t("home.badgeComplete"), detail: t("home.badgeCompleteDetail"), target: 100, owned, total };
   const targetOwned = Math.ceil((total * threshold) / 100);
   return {
     label: t("home.badgeProgress", { threshold }),
@@ -81,10 +96,11 @@ function nowEventDetail(event) {
 }
 
 function nowRecommendationDetail() {
-  if (!state.userId || !localStorage.getItem(TOKEN_KEY)) {
+  if (!state.userId || !hasAuthSession()) {
     return { title: t("home.socialGuest"), detail: t("home.socialGuestDetail"), action: "social" };
   }
-  if (nowState.recommendationLoading) return { title: t("home.socialLoading"), detail: t("home.socialLoadingDetail"), action: "social" };
+  if (nowState.recommendationLoading)
+    return { title: t("home.socialLoading"), detail: t("home.socialLoadingDetail"), action: "social" };
   const friend = nowState.recommendation;
   if (!friend) return { title: t("home.socialEmpty"), detail: t("home.socialEmptyDetail"), action: "social" };
   const name = friend.displayName || friend.username || t("friends.defaultUser");
@@ -96,7 +112,9 @@ function nowRecommendationDetail() {
 }
 
 function nowCard({ tone, icon, label, title, detail, action, eventId }) {
-  const actionAttrs = action ? ` data-now-action="${escapeHtml(action)}"${eventId ? ` data-now-event="${escapeHtml(String(eventId))}"` : ""}` : "";
+  const actionAttrs = action
+    ? ` data-now-action="${escapeHtml(action)}"${eventId ? ` data-now-event="${escapeHtml(String(eventId))}"` : ""}`
+    : "";
   return `
     <article class="now-card now-card--${tone}">
       <span class="now-card__icon" aria-hidden="true">${icon}</span>
@@ -146,12 +164,19 @@ function nowPrimaryAction(priorities, event, recommendation, badge) {
   if (recommendation?.missingCount > 0) {
     const name = recommendation.displayName || recommendation.username || t("friends.defaultUser");
     candidates.push({
-      score: 34 + Math.min(26, Number(recommendation.missingCount || 0) * 2) + Math.min(24, Number(recommendation.priorityMatchCount || 0) * 6) + Math.min(12, Number(recommendation.availableMissingCount || 0)),
+      score:
+        34 +
+        Math.min(26, Number(recommendation.missingCount || 0) * 2) +
+        Math.min(24, Number(recommendation.priorityMatchCount || 0) * 6) +
+        Math.min(12, Number(recommendation.availableMissingCount || 0)),
       tone: "social",
       icon: "◎",
       kicker: t("home.aiKicker"),
       title: t("home.aiSocialTitle", { name }),
-      detail: t("home.socialMeta", { count: recommendation.missingCount, score: Math.round(Number(recommendation.score) || 0) }),
+      detail: t("home.socialMeta", {
+        count: recommendation.missingCount,
+        score: Math.round(Number(recommendation.score) || 0)
+      }),
       reason: t("home.aiSocialReason"),
       action: "social",
       actionLabel: t("home.aiSocialAction")
@@ -189,7 +214,9 @@ function nowPrimaryAction(priorities, event, recommendation, badge) {
 }
 
 function renderNowPrimary(primary, badge) {
-  const target = primary.action ? ` data-now-action="${escapeHtml(primary.action)}"${primary.eventId ? ` data-now-event="${escapeHtml(String(primary.eventId))}"` : ""}` : "";
+  const target = primary.action
+    ? ` data-now-action="${escapeHtml(primary.action)}"${primary.eventId ? ` data-now-event="${escapeHtml(String(primary.eventId))}"` : ""}`
+    : "";
   return `
     <div class="now-primary now-primary--${primary.tone}">
       <div class="now-primary__orb" aria-hidden="true">${primary.icon}</div>
@@ -222,13 +249,23 @@ function renderNow() {
     ? t("home.priorityCount", { count: priorities.length })
     : t("home.priorityEmpty");
   const priorityDetail = priorities.length
-    ? priorities.slice(0, 3).map((item) => `${item.spriteName} · ${item.variant}`).join(" · ")
+    ? priorities
+        .slice(0, 3)
+        .map((item) => `${item.spriteName} · ${item.variant}`)
+        .join(" · ")
     : t("home.priorityEmptyDetail");
 
   intro.textContent = t("home.intro", { owned: stats.owned, total: stats.total, percent: stats.percent });
   primarySlot.innerHTML = renderNowPrimary(primary, badge);
   grid.innerHTML = [
-    nowCard({ tone: "priority", icon: "★", label: t("home.priorityLabel"), title: priorityTitle, detail: priorityDetail, action: "priorities" }),
+    nowCard({
+      tone: "priority",
+      icon: "★",
+      label: t("home.priorityLabel"),
+      title: priorityTitle,
+      detail: priorityDetail,
+      action: "priorities"
+    }),
     nowCard({ tone: "event", icon: "◷", label: t("home.eventLabel"), ...nowEventDetail(event) }),
     nowCard({ tone: "social", icon: "◎", label: t("home.socialLabel"), ...recommendation })
   ].join("");
@@ -238,7 +275,8 @@ function renderNow() {
 
 async function loadNowRecommendation() {
   const userId = state.userId;
-  if (!userId || !localStorage.getItem(TOKEN_KEY) || nowState.recommendationLoading || nowState.recommendationUserId === userId) return;
+  if (!userId || !hasAuthSession() || nowState.recommendationLoading || nowState.recommendationUserId === userId)
+    return;
   nowState.recommendationLoading = true;
   renderNow();
   try {

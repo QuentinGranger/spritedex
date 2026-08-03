@@ -17,18 +17,28 @@ function compareEventLabel(eventId) {
 }
 
 function compareAvailabilityLabel(status) {
-  const map = { available: t("compare.availableNow"), unavailable: t("compare.unavailableStatus"), unknown: t("compare.unknownStatus") };
+  const map = {
+    available: t("compare.availableNow"),
+    unavailable: t("compare.unavailableStatus"),
+    unknown: t("compare.unknownStatus")
+  };
   return map[(status || "").toLowerCase()] || status || t("compare.unknownStatus");
 }
 
 function compareAcquisitionLabel(method) {
-  const map = { exploration: t("compare.acqExploration"), shop: t("compare.acqShop"), challenge: t("compare.acqChallenge"), event: t("compare.acqEvent"), unknown: t("compare.unknownStatus") };
+  const map = {
+    exploration: t("compare.acqExploration"),
+    shop: t("compare.acqShop"),
+    challenge: t("compare.acqChallenge"),
+    event: t("compare.acqEvent"),
+    unknown: t("compare.unknownStatus")
+  };
   return map[(method || "").toLowerCase()] || method || t("compare.unknownStatus");
 }
 
 function compareVariantTypeLabel(type) {
   const m = (typeof VARIANT_META !== "undefined" && VARIANT_META[type]) || null;
-  return m ? m.label : (type || "Base");
+  return m ? m.label : type || "Base";
 }
 
 function matchesCompareCatalogFilters(record, filters) {
@@ -62,15 +72,21 @@ function renderCompareCatalogFilters(records) {
     return `<div class="compare-catalog-filter"><label for="compareFilter-${key}">${escapeHtml(label)}</label><select id="compareFilter-${key}" class="compare-catalog-filter__select" data-filter-key="${key}"><option value="">${t("compare.selectAll")}</option>${options.map(([val, lbl]) => `<option value="${escapeHtml(val)}" ${val === current ? "selected" : ""}>${escapeHtml(lbl)}</option>`).join("")}</select></div>`;
   };
 
-  const seasonOpts = getCompareFilterOptions(records, "seasonId", r => compareSeasonLabel(r.seasonId));
-  const eventOpts = getCompareFilterOptions(records, "eventId", r => compareEventLabel(r.eventId));
-  const rarityOpts = getCompareFilterOptions(records, "rarity", r => r.rarity ? localizedRarity(r.rarity) : t("compare.unknownStatus"));
-  const spriteOpts = getCompareFilterOptions(records, "spriteId", r => r.spriteName);
-  const variantOpts = getCompareFilterOptions(records, "variantType", r => compareVariantTypeLabel(r.variantType));
-  const availOpts = getCompareFilterOptions(records, "availabilityStatus", r => compareAvailabilityLabel(r.availabilityStatus));
-  const acqOpts = getCompareFilterOptions(records, "acquisitionMethod", r => compareAcquisitionLabel(r.acquisitionMethod));
+  const seasonOpts = getCompareFilterOptions(records, "seasonId", (r) => compareSeasonLabel(r.seasonId));
+  const eventOpts = getCompareFilterOptions(records, "eventId", (r) => compareEventLabel(r.eventId));
+  const rarityOpts = getCompareFilterOptions(records, "rarity", (r) =>
+    r.rarity ? localizedRarity(r.rarity) : t("compare.unknownStatus")
+  );
+  const spriteOpts = getCompareFilterOptions(records, "spriteId", (r) => r.spriteName);
+  const variantOpts = getCompareFilterOptions(records, "variantType", (r) => compareVariantTypeLabel(r.variantType));
+  const availOpts = getCompareFilterOptions(records, "availabilityStatus", (r) =>
+    compareAvailabilityLabel(r.availabilityStatus)
+  );
+  const acqOpts = getCompareFilterOptions(records, "acquisitionMethod", (r) =>
+    compareAcquisitionLabel(r.acquisitionMethod)
+  );
 
-  const hasFilters = Object.keys(filters).some(k => filters[k]);
+  const hasFilters = Object.keys(filters).some((k) => filters[k]);
   return `
     <details class="compare-catalog-filters" open>
       <summary class="compare-catalog-filters__summary">${t("compare.catalogFilters")}</summary>
@@ -88,11 +104,15 @@ function renderCompareCatalogFilters(records) {
 }
 
 const COMPARE_RARITY_VALUE = {
-  "mythic": 0, "mythique": 0,
-  "legendary": 1, "légendaire": 1,
-  "epic": 2, "épique": 2,
-  "rare": 3,
-  "common": 4, "uncommon": 5
+  mythic: 0,
+  mythique: 0,
+  legendary: 1,
+  légendaire: 1,
+  epic: 2,
+  épique: 2,
+  rare: 3,
+  common: 4,
+  uncommon: 5
 };
 
 function compareRarityValue(rarity) {
@@ -122,8 +142,8 @@ function compareSortRecords(records, sort) {
       break;
     case "priority": {
       sorted.sort((a, b) => {
-        const pa = (compareIsPriority(a.userA) || compareIsPriority(a.userB)) ? 0 : 1;
-        const pb = (compareIsPriority(b.userA) || compareIsPriority(b.userB)) ? 0 : 1;
+        const pa = compareIsPriority(a.userA) || compareIsPriority(a.userB) ? 0 : 1;
+        const pb = compareIsPriority(b.userA) || compareIsPriority(b.userB) ? 0 : 1;
         if (pa !== pb) return pa - pb;
         const pva = Math.min(priorityOrder(a.userA.priority || "none"), priorityOrder(a.userB.priority || "none"));
         const pvb = Math.min(priorityOrder(b.userA.priority || "none"), priorityOrder(b.userB.priority || "none"));
@@ -133,7 +153,11 @@ function compareSortRecords(records, sort) {
     }
     case "availability": {
       const order = { available: 0, unknown: 1, unavailable: 2, "": 3 };
-      sorted.sort((a, b) => (order[(a.availabilityStatus || "").toLowerCase()] ?? 3) - (order[(b.availabilityStatus || "").toLowerCase()] ?? 3));
+      sorted.sort(
+        (a, b) =>
+          (order[(a.availabilityStatus || "").toLowerCase()] ?? 3) -
+          (order[(b.availabilityStatus || "").toLowerCase()] ?? 3)
+      );
       break;
     }
     case "release-date":
@@ -157,7 +181,7 @@ function getCompareFilterRecords(result, filter) {
     return [...result.groups.onlyUserA, ...result.groups.onlyUserB];
   }
   if (filter === "priorities") {
-    return result.records.filter(r => compareIsPriority(r.userA) || compareIsPriority(r.userB));
+    return result.records.filter((r) => compareIsPriority(r.userA) || compareIsPriority(r.userB));
   }
   return result.records;
 }
@@ -167,4 +191,3 @@ function recordMatchesCompareFocus(record, focusIds) {
   const keys = [record.variantId, record.id, ...(record.legacyKeys || [])].filter(Boolean).map(String);
   return focusIds.some((id) => keys.includes(String(id)));
 }
-

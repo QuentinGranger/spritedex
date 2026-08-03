@@ -46,7 +46,9 @@ function resolveOperatorLabel(raw = process.env.ADMIN_OPERATOR_LABEL || "termina
 }
 
 function normalizeAdminUsername(value) {
-  const username = String(value || "").trim().toLowerCase();
+  const username = String(value || "")
+    .trim()
+    .toLowerCase();
   return /^[a-z0-9][a-z0-9._-]{2,39}$/.test(username) ? username : null;
 }
 
@@ -56,9 +58,7 @@ function formatActor(label, publicId) {
 
 function clientMeta(meta = {}) {
   const ip = typeof meta.ip === "string" ? meta.ip.trim().slice(0, 64) || null : null;
-  const userAgent = typeof meta.userAgent === "string"
-    ? meta.userAgent.trim().slice(0, 500) || null
-    : null;
+  const userAgent = typeof meta.userAgent === "string" ? meta.userAgent.trim().slice(0, 500) || null : null;
   return { ip, userAgent };
 }
 
@@ -115,12 +115,11 @@ async function purgeExpiredAdminAccess({ force = false } = {}) {
   );
 }
 
-async function recordAdminAccessEvent(actor, action, {
-  targetType = "admin_session",
-  targetId = null,
-  justification = null,
-  details = {}
-} = {}) {
+async function recordAdminAccessEvent(
+  actor,
+  action,
+  { targetType = "admin_session", targetId = null, justification = null, details = {} } = {}
+) {
   try {
     const { writeAdminAudit } = require("./admin-audit");
     await writeAdminAudit(pool, {
@@ -148,14 +147,7 @@ function hashAdminPassword(password, salt = crypto.randomBytes(16)) {
     p: SCRYPT_P,
     maxmem: SCRYPT_MAX_MEMORY
   });
-  return [
-    "scrypt",
-    SCRYPT_N,
-    SCRYPT_R,
-    SCRYPT_P,
-    salt.toString("base64url"),
-    derived.toString("base64url")
-  ].join("$");
+  return ["scrypt", SCRYPT_N, SCRYPT_R, SCRYPT_P, salt.toString("base64url"), derived.toString("base64url")].join("$");
 }
 
 function verifyAdminPassword(password, encoded = process.env.ADMIN_ACCESS_PASSWORD_HASH || "") {
@@ -213,9 +205,12 @@ async function listAdminOperators() {
 
 async function createAdminOperator({ username, displayName, password, role = "owner" } = {}) {
   const normalized = normalizeAdminUsername(username);
-  const name = String(displayName || "").trim().slice(0, 80);
+  const name = String(displayName || "")
+    .trim()
+    .slice(0, 80);
   const normalizedRole = normalizeRole(role);
-  if (!normalized || !name || !normalizedRole) throw new AdminAccessError("Compte administrateur invalide", { status: 400, code: "ADMIN_OPERATOR_INVALID" });
+  if (!normalized || !name || !normalizedRole)
+    throw new AdminAccessError("Compte administrateur invalide", { status: 400, code: "ADMIN_OPERATOR_INVALID" });
   const id = crypto.randomBytes(12).toString("hex");
   const result = await pool.query(
     `INSERT INTO admin_operators (id, username, display_name, password_hash, role)
@@ -228,7 +223,8 @@ async function createAdminOperator({ username, displayName, password, role = "ow
 }
 
 async function rotateAdminOperatorSecret(operatorId, password) {
-  if (!/^[a-f0-9]{24}$/i.test(String(operatorId || ""))) throw new AdminAccessError("Compte administrateur invalide", { status: 400, code: "ADMIN_OPERATOR_INVALID" });
+  if (!/^[a-f0-9]{24}$/i.test(String(operatorId || "")))
+    throw new AdminAccessError("Compte administrateur invalide", { status: 400, code: "ADMIN_OPERATOR_INVALID" });
   const result = await pool.query(
     `UPDATE admin_operators
      SET password_hash = $2, secret_rotated_at = NOW(), updated_at = NOW()
@@ -241,7 +237,8 @@ async function rotateAdminOperatorSecret(operatorId, password) {
 }
 
 async function setAdminOperatorActive(operatorId, active) {
-  if (!/^[a-f0-9]{24}$/i.test(String(operatorId || ""))) throw new AdminAccessError("Compte administrateur invalide", { status: 400, code: "ADMIN_OPERATOR_INVALID" });
+  if (!/^[a-f0-9]{24}$/i.test(String(operatorId || "")))
+    throw new AdminAccessError("Compte administrateur invalide", { status: 400, code: "ADMIN_OPERATOR_INVALID" });
   const result = await pool.query(
     `UPDATE admin_operators SET active = $2, updated_at = NOW()
      WHERE id = $1
@@ -293,7 +290,16 @@ async function issueAdminTicket(meta = {}, operator = null) {
        token_hash, expires_at, created_ip, created_user_agent,
        operator_id, operator_label, role, auth_mode
      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [hashSecret(token), new Date(Date.now() + ADMIN_TICKET_TTL_MS), ip, userAgent, identity.id, identity.label, identity.role, identity.authMode]
+    [
+      hashSecret(token),
+      new Date(Date.now() + ADMIN_TICKET_TTL_MS),
+      ip,
+      userAgent,
+      identity.id,
+      identity.label,
+      identity.role,
+      identity.authMode
+    ]
   );
   return token;
 }
@@ -364,9 +370,7 @@ async function consumeAdminTicket(token, meta = {}, { totp = null } = {}) {
       if (!mfa.ok) {
         await client.query("ROLLBACK");
         throw new AdminAccessError(
-          mfa.reason === "replay"
-            ? "Code MFA déjà utilisé — attendez le prochain"
-            : "Code MFA invalide ou expiré",
+          mfa.reason === "replay" ? "Code MFA déjà utilisé — attendez le prochain" : "Code MFA invalide ou expiré",
           {
             status: 401,
             code: mfa.reason === "replay" ? "ADMIN_MFA_REPLAY" : "ADMIN_MFA_INVALID"
@@ -381,10 +385,7 @@ async function consumeAdminTicket(token, meta = {}, { totp = null } = {}) {
       });
     }
 
-    await client.query(
-      `DELETE FROM admin_access_tickets WHERE token_hash = $1`,
-      [hashSecret(token)]
-    );
+    await client.query(`DELETE FROM admin_access_tickets WHERE token_hash = $1`, [hashSecret(token)]);
 
     const sessionToken = crypto.randomBytes(32).toString("hex");
     const publicId = crypto.randomBytes(4).toString("hex");
@@ -399,12 +400,23 @@ async function consumeAdminTicket(token, meta = {}, { totp = null } = {}) {
          token_hash, public_id, actor_label, operator_id, auth_mode, role, expires_at, max_expires_at,
          created_ip, created_user_agent, last_ip, last_user_agent
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $9, $10)`,
-      [hashSecret(sessionToken), publicId, actorLabel, operator?.id || ticketRow.operator_id || null, authMode, role, expiresAt, maxExpiresAt, ip, userAgent]
+      [
+        hashSecret(sessionToken),
+        publicId,
+        actorLabel,
+        operator?.id || ticketRow.operator_id || null,
+        authMode,
+        role,
+        expiresAt,
+        maxExpiresAt,
+        ip,
+        userAgent
+      ]
     );
-    const unusualLogin = operator?.last_login_at && (
-      (ip && operator.last_login_ip && ip !== operator.last_login_ip) ||
-      (userAgent && operator.last_login_user_agent && userAgent !== operator.last_login_user_agent)
-    );
+    const unusualLogin =
+      operator?.last_login_at &&
+      ((ip && operator.last_login_ip && ip !== operator.last_login_ip) ||
+        (userAgent && operator.last_login_user_agent && userAgent !== operator.last_login_user_agent));
     if (operator) {
       await client.query(
         `UPDATE admin_operators
@@ -418,7 +430,15 @@ async function consumeAdminTicket(token, meta = {}, { totp = null } = {}) {
         await client.query(
           `INSERT INTO admin_security_alerts (id, operator_id, severity, kind, details)
            VALUES ($1, $2, 'warning', 'unusual_login', $3::jsonb)`,
-          [crypto.randomBytes(12).toString("hex"), operator.id, JSON.stringify({ ip, userAgent: userAgent?.slice(0, 180) || null, previousIp: operator.last_login_ip || null })]
+          [
+            crypto.randomBytes(12).toString("hex"),
+            operator.id,
+            JSON.stringify({
+              ip,
+              userAgent: userAgent?.slice(0, 180) || null,
+              previousIp: operator.last_login_ip || null
+            })
+          ]
         );
       }
     }
@@ -451,19 +471,27 @@ async function consumeAdminTicket(token, meta = {}, { totp = null } = {}) {
       await recordAdminAccessEvent(session.actor, "security.unusual_login", {
         targetType: "admin_operator",
         targetId: operator.id,
-        details: { ipChanged: !!(ip && operator.last_login_ip && ip !== operator.last_login_ip), userAgentChanged: !!(userAgent && operator.last_login_user_agent && userAgent !== operator.last_login_user_agent) }
+        details: {
+          ipChanged: !!(ip && operator.last_login_ip && ip !== operator.last_login_ip),
+          userAgentChanged: !!(
+            userAgent &&
+            operator.last_login_user_agent &&
+            userAgent !== operator.last_login_user_agent
+          )
+        }
       });
     }
     for (const row of evicted) {
-      await recordAdminAccessEvent(
-        formatActor(row.actor_label, row.public_id),
-        "session.closed",
-        { targetId: row.public_id, details: { reason: "concurrent_limit" } }
-      );
+      await recordAdminAccessEvent(formatActor(row.actor_label, row.public_id), "session.closed", {
+        targetId: row.public_id,
+        details: { reason: "concurrent_limit" }
+      });
     }
     return session;
   } catch (error) {
-    try { await client.query("ROLLBACK"); } catch (_) {}
+    try {
+      await client.query("ROLLBACK");
+    } catch (_) {}
     throw error;
   } finally {
     client.release();
@@ -563,11 +591,10 @@ async function revokeAdminSession(req, { reason = "logout" } = {}) {
   delete req.adminSession;
   if (!result.rows.length) return false;
   const row = result.rows[0];
-  await recordAdminAccessEvent(
-    previous?.actor || formatActor(row.actor_label, row.public_id),
-    "session.closed",
-    { targetId: row.public_id, details: { reason } }
-  );
+  await recordAdminAccessEvent(previous?.actor || formatActor(row.actor_label, row.public_id), "session.closed", {
+    targetId: row.public_id,
+    details: { reason }
+  });
   return true;
 }
 

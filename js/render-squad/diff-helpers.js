@@ -6,9 +6,10 @@ function computeSquadDiffs(items, players, filter, query) {
   for (const item of items) {
     if (query) {
       const q = query;
-      const match = item.spriteName.toLowerCase().includes(q)
-        || item.variant.toLowerCase().includes(q)
-        || item.rarity.toLowerCase().includes(q);
+      const match =
+        item.spriteName.toLowerCase().includes(q) ||
+        item.variant.toLowerCase().includes(q) ||
+        item.rarity.toLowerCase().includes(q);
       if (!match) continue;
     }
 
@@ -41,7 +42,7 @@ function computeSquadDiffs(items, players, filter, query) {
     const nobodyHasIt = ownedCount === 0;
     const myStatus = statuses[0];
     const meOwned = myStatus === "owned";
-    const othersOwned = statuses.slice(1).some(s => s === "owned");
+    const othersOwned = statuses.slice(1).some((s) => s === "owned");
 
     if (filter === "diff" && everyoneHasIt) continue;
     if (filter === "missing-me" && meOwned) continue;
@@ -73,13 +74,19 @@ function computeSquadDiffs(items, players, filter, query) {
 
 // ── Squad : Compact status icons (fast rendering) ──
 const SQUAD_ICONS = {
-  owned:       '<span class="sq-icon sq-icon--owned"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>',
-  missing:     '<span class="sq-icon sq-icon--missing"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>',
-  priority:    '<span class="sq-icon sq-icon--priority"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>',
-  unsure:      '<span class="sq-icon sq-icon--unsure"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg></span>',
-  unavailable: '<span class="sq-icon sq-icon--unavail"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>',
-  spotted:     '<span class="sq-icon sq-icon--spotted"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>',
-  new:         '<span class="sq-icon sq-icon--new"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>'
+  owned:
+    '<span class="sq-icon sq-icon--owned"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>',
+  missing:
+    '<span class="sq-icon sq-icon--missing"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>',
+  priority:
+    '<span class="sq-icon sq-icon--priority"><svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>',
+  unsure:
+    '<span class="sq-icon sq-icon--unsure"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg></span>',
+  unavailable:
+    '<span class="sq-icon sq-icon--unavail"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>',
+  spotted:
+    '<span class="sq-icon sq-icon--spotted"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>',
+  new: '<span class="sq-icon sq-icon--new"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>'
 };
 
 function squadIcon(status) {
@@ -124,4 +131,3 @@ function relationBadge(m) {
       return { label: t("squad.memberOnly"), class: "squad-chip__badge--member" };
   }
 }
-

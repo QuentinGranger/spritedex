@@ -38,8 +38,18 @@ function renderSquad() {
   const items = getReleasedCollectionItems(getAllItems());
   const me = state.username || t("squad.me");
   const players = [
-    { name: me, collection: state.collection, lastUpdated: new Date().toISOString(), entryCount: Object.keys(state.collection).length },
-    ...state.squadMembers.map(m => ({ name: m.username, collection: m.collection, lastUpdated: m.lastUpdated, entryCount: m.entryCount || 0 }))
+    {
+      name: me,
+      collection: state.collection,
+      lastUpdated: new Date().toISOString(),
+      entryCount: Object.keys(state.collection).length
+    },
+    ...state.squadMembers.map((m) => ({
+      name: m.username,
+      collection: m.collection,
+      lastUpdated: m.lastUpdated,
+      entryCount: m.entryCount || 0
+    }))
   ];
   const filter = state.squadFilter;
   const query = state.squadSearch.trim().toLowerCase();

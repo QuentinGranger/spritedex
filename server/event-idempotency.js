@@ -25,10 +25,14 @@ async function ensureProcessedEventsTable(pool) {
       ON notification_event_processing (processed_at);
   `);
   // Widen event_id if an older install created VARCHAR(120).
-  await pool.query(`
+  await pool
+    .query(
+      `
     ALTER TABLE notification_event_processing
       ALTER COLUMN event_id TYPE VARCHAR(200)
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
   // Étape 9 used a coarser per-event table; the per-recipient table supersedes it.
   await pool.query(`DROP TABLE IF EXISTS processed_domain_events`);
 }

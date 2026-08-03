@@ -24,10 +24,13 @@ async function resolveFriendInvitationOptions(reqUser, friendId, body = {}) {
   } else {
     invitationMethod = "username";
   }
-  const invitationSource = body.invitationSource
-    || body.source
-    || (invitationMethod === "squad_member" ? "squad_member"
-      : invitationMethod === "passport" ? "passport"
+  const invitationSource =
+    body.invitationSource ||
+    body.source ||
+    (invitationMethod === "squad_member"
+      ? "squad_member"
+      : invitationMethod === "passport"
+        ? "passport"
         : "username_search");
   return {
     invitationMethod,
@@ -58,47 +61,60 @@ app.post("/api/friends/:friendId/request", requireNotSuspended, async (req, res)
     url: "/friends"
   });
 
-  if (inviteOpts.invitationMethod === "squad_member" || await shareSquad(reqUser, friendId)) {
-    analytics.logProductAnalyticsEvent(pool, { userId: reqUser, event: "squad_member_friend_request_sent", details: { friendId } });
+  if (inviteOpts.invitationMethod === "squad_member" || (await shareSquad(reqUser, friendId))) {
+    analytics.logProductAnalyticsEvent(pool, {
+      userId: reqUser,
+      event: "squad_member_friend_request_sent",
+      details: { friendId }
+    });
   }
 
   res.json({ ok: true });
 });
 
 // ── Send a friend request by addresseeId (username or numeric id) ───────────
-app.post("/api/friends/requests", requireNotSuspended, security.validateBody(security.schemas.friendRequestSchema), async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+app.post(
+  "/api/friends/requests",
+  requireNotSuspended,
+  security.validateBody(security.schemas.friendRequestSchema),
+  async (req, res) => {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
 
-  const { addresseeId, invitationMethod, invitationSource, source } = req.validatedBody;
-  const resolved = await resolveAddressee(reqUser, addresseeId);
-  if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
-  const { friendId } = resolved;
+    const { addresseeId, invitationMethod, invitationSource, source } = req.validatedBody;
+    const resolved = await resolveAddressee(reqUser, addresseeId);
+    if (resolved.error) return res.status(resolved.error).json({ error: resolved.message });
+    const { friendId } = resolved;
 
-  const inviteOpts = await resolveFriendInvitationOptions(reqUser, friendId, {
-    invitationMethod,
-    invitationSource,
-    source
-  });
-  const outcome = await applyFriendAction(reqUser, friendId, "request", inviteOpts);
-  if (outcome.error) return res.status(outcome.error).json({ error: outcome.message });
+    const inviteOpts = await resolveFriendInvitationOptions(reqUser, friendId, {
+      invitationMethod,
+      invitationSource,
+      source
+    });
+    const outcome = await applyFriendAction(reqUser, friendId, "request", inviteOpts);
+    if (outcome.error) return res.status(outcome.error).json({ error: outcome.message });
 
-  const row = await getActiveFriendship(reqUser, friendId);
+    const row = await getActiveFriendship(reqUser, friendId);
 
-  await pushService.createNotification(pool, {
-    recipientId: friendId,
-    actorId: reqUser,
-    type: "friend_request_received",
-    context: { friendId: reqUser },
-    url: "/friends"
-  });
+    await pushService.createNotification(pool, {
+      recipientId: friendId,
+      actorId: reqUser,
+      type: "friend_request_received",
+      context: { friendId: reqUser },
+      url: "/friends"
+    });
 
-  if (inviteOpts.invitationMethod === "squad_member" || await shareSquad(reqUser, friendId)) {
-    analytics.logProductAnalyticsEvent(pool, { userId: reqUser, event: "squad_member_friend_request_sent", details: { friendId } });
+    if (inviteOpts.invitationMethod === "squad_member" || (await shareSquad(reqUser, friendId))) {
+      analytics.logProductAnalyticsEvent(pool, {
+        userId: reqUser,
+        event: "squad_member_friend_request_sent",
+        details: { friendId }
+      });
+    }
+
+    res.json({ requestId: row.id, status: row.status, createdAt: row.created_at });
   }
-
-  res.json({ requestId: row.id, status: row.status, createdAt: row.created_at });
-});
+);
 
 // ── Accept a friend request ──────────────────────────────────────────────────
 app.post("/api/friends/:friendId/accept", requireNotSuspended, async (req, res) => {
@@ -151,10 +167,9 @@ app.post("/api/friends/requests/:requestId/accept", requireNotSuspended, async (
     }
     const request = result.rows[0];
 
-    const usersRes = await client.query(
-      "SELECT id FROM users WHERE id = ANY($1::integer[]) AND deleted_at IS NULL",
-      [[request.requester_id, request.addressee_id]]
-    );
+    const usersRes = await client.query("SELECT id FROM users WHERE id = ANY($1::integer[]) AND deleted_at IS NULL", [
+      [request.requester_id, request.addressee_id]
+    ]);
     if (usersRes.rows.length !== 2) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Compte invalide" });

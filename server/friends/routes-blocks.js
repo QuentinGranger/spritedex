@@ -140,9 +140,7 @@ app.get("/api/friends/:friendId/status", async (req, res) => {
   try {
     const row = await getRelationship(reqUser, friendId);
     const status = row ? row.status : "none";
-    const direction = row
-      ? (Number(row.requester_id) === Number(reqUser) ? "outgoing" : "incoming")
-      : "none";
+    const direction = row ? (Number(row.requester_id) === Number(reqUser) ? "outgoing" : "incoming") : "none";
     res.json({ status, direction });
   } catch (err) {
     console.error("[/api/friends/:friendId/status]", err);

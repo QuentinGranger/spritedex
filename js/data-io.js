@@ -44,18 +44,18 @@ function importData(file) {
 
 function copyMissingList() {
   const allItems = getAllItems();
-  const notOwned = allItems.filter(item => {
+  const notOwned = allItems.filter((item) => {
     return isCollectibleMissingStatus(getEntry(item.id).status);
   });
 
-  const priority = notOwned.filter(item => getEntry(item.id).status === "priority");
-  const others = notOwned.filter(item => getEntry(item.id).status !== "priority");
+  const priority = notOwned.filter((item) => getEntry(item.id).status === "priority");
+  const others = notOwned.filter((item) => getEntry(item.id).status !== "priority");
 
   let lines = [t("io.missingHeader", { count: notOwned.length })];
 
   if (priority.length) {
     lines.push(t("io.highPriorityHeader"));
-    priority.forEach(item => lines.push(`- ${item.spriteName} ${item.variant}`));
+    priority.forEach((item) => lines.push(`- ${item.spriteName} ${item.variant}`));
     lines.push("");
   }
 
@@ -66,7 +66,7 @@ function copyMissingList() {
   }
   for (const [v, items] of Object.entries(byVariant)) {
     lines.push(t("io.missingVariantHeader", { variant: v.toUpperCase() }));
-    items.forEach(item => lines.push(`- ${item.spriteName} ${item.variant}`));
+    items.forEach((item) => lines.push(`- ${item.spriteName} ${item.variant}`));
     lines.push("");
   }
 

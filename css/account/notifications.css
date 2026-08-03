@@ -86,6 +86,9 @@
   color: var(--muted, #9aa0b5);
 }
 
-.notif-settings__status--ok { color: #86efac; }
-.notif-settings__status--err { color: #fca5a5; }
-
+.notif-settings__status--ok {
+  color: #86efac;
+}
+.notif-settings__status--err {
+  color: #fca5a5;
+}

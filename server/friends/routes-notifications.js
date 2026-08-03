@@ -52,19 +52,25 @@ function validateBooleanPreferenceMap(value, isKnown, label) {
 function validateNotificationPreferencePayload(body) {
   if (!isPlainRecord(body)) return { ok: false, error: "Préférences invalides" };
   const allowedRootKeys = new Set([
-    "pushEnabled", "categories", "types", "channels", "frequencies",
-    "delivery", "quietHours", "maxPushPerDay", "timeZone", "timezone"
+    "pushEnabled",
+    "categories",
+    "types",
+    "channels",
+    "frequencies",
+    "delivery",
+    "quietHours",
+    "maxPushPerDay",
+    "timeZone",
+    "timezone"
   ]);
-  if (Object.keys(body).some(key => !allowedRootKeys.has(key))) {
+  if (Object.keys(body).some((key) => !allowedRootKeys.has(key))) {
     return { ok: false, error: "Champ de préférence invalide" };
   }
   if (body.pushEnabled !== undefined && typeof body.pushEnabled !== "boolean") {
     return { ok: false, error: "pushEnabled invalide" };
   }
 
-  const categoryMap = validateBooleanPreferenceMap(
-    body.categories, catalog.isKnownCategory, "Catégories"
-  );
+  const categoryMap = validateBooleanPreferenceMap(body.categories, catalog.isKnownCategory, "Catégories");
   if (!categoryMap.ok) return categoryMap;
   const typeMap = validateBooleanPreferenceMap(body.types, catalog.isKnownType, "Types");
   if (!typeMap.ok) return typeMap;
@@ -91,30 +97,35 @@ function validateNotificationPreferencePayload(body) {
         return { ok: false, error: "Option de livraison invalide" };
       }
       const keys = Object.keys(config);
-      if (keys.some(key => key !== "inApp" && key !== "push") ||
-          (config.inApp !== undefined && typeof config.inApp !== "boolean") ||
-          (config.push !== undefined &&
-            (typeof config.push !== "string" || !catalog.getPushModeOptions(type).includes(config.push)))) {
+      if (
+        keys.some((key) => key !== "inApp" && key !== "push") ||
+        (config.inApp !== undefined && typeof config.inApp !== "boolean") ||
+        (config.push !== undefined &&
+          (typeof config.push !== "string" || !catalog.getPushModeOptions(type).includes(config.push)))
+      ) {
         return { ok: false, error: "Option de livraison invalide" };
       }
     }
   }
 
   if (body.quietHours !== undefined) {
-    if (!isPlainRecord(body.quietHours) ||
-        Object.keys(body.quietHours).some(key => key !== "start" && key !== "end")) {
+    if (
+      !isPlainRecord(body.quietHours) ||
+      Object.keys(body.quietHours).some((key) => key !== "start" && key !== "end")
+    ) {
       return { ok: false, error: "Heures silencieuses invalides" };
     }
     for (const value of [body.quietHours.start, body.quietHours.end]) {
-      if (value !== undefined && value !== null &&
-          (!Number.isInteger(value) || value < 0 || value > 23)) {
+      if (value !== undefined && value !== null && (!Number.isInteger(value) || value < 0 || value > 23)) {
         return { ok: false, error: "Heures silencieuses invalides" };
       }
     }
   }
 
-  if (body.maxPushPerDay !== undefined &&
-      (!Number.isInteger(body.maxPushPerDay) || body.maxPushPerDay < 0 || body.maxPushPerDay > 1000)) {
+  if (
+    body.maxPushPerDay !== undefined &&
+    (!Number.isInteger(body.maxPushPerDay) || body.maxPushPerDay < 0 || body.maxPushPerDay > 1000)
+  ) {
     return { ok: false, error: "Limite de notifications invalide" };
   }
   for (const value of [body.timeZone, body.timezone]) {
@@ -134,10 +145,8 @@ function parseBoolQuery(value) {
 }
 
 async function updateNotificationPreferences(reqUser, body = {}) {
-  const {
-    pushEnabled, categories, types, channels, frequencies,
-    quietHours, maxPushPerDay, timeZone, timezone
-  } = body || {};
+  const { pushEnabled, categories, types, channels, frequencies, quietHours, maxPushPerDay, timeZone, timezone } =
+    body || {};
   const { isValidTimeZone, normalizeTimeZone } = require("../timezone");
 
   if (typeof pushEnabled === "boolean") {
@@ -204,13 +213,11 @@ app.get("/api/notifications", async (req, res) => {
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
     await squadCompletion.hideInaccessibleSquadCompletionNotifications(pool, reqUser);
-    const {
-      limit, offset, cursor, category, filter,
-      unreadOnly: unreadOnlyRaw, unread
-    } = req.query;
-    const unreadOnly = parseBoolQuery(unreadOnlyRaw) === true
-      || parseBoolQuery(unread) === true
-      || String(filter || "").toLowerCase() === "unread";
+    const { limit, offset, cursor, category, filter, unreadOnly: unreadOnlyRaw, unread } = req.query;
+    const unreadOnly =
+      parseBoolQuery(unreadOnlyRaw) === true ||
+      parseBoolQuery(unread) === true ||
+      String(filter || "").toLowerCase() === "unread";
 
     if (cursor != null && cursor !== "" && !pushService.decodeNotificationCursor(cursor)) {
       return res.status(400).json({ error: "cursor invalide" });
@@ -343,12 +350,7 @@ app.post("/api/notifications/:notificationId/read", requireNotSuspended, async (
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
     const clicked = req.body?.clicked === true || req.query?.clicked === "true";
-    const row = await pushService.markNotificationRead(
-      pool,
-      reqUser,
-      req.params.notificationId,
-      { clicked }
-    );
+    const row = await pushService.markNotificationRead(pool, reqUser, req.params.notificationId, { clicked });
     if (!row) return res.status(404).json({ error: "Notification introuvable" });
     // The read endpoint is the authoritative notification-open signal; the
     // browser cannot forge another user's notification identifier here.

@@ -89,20 +89,29 @@ async function notifyNewsSubscribers(items) {
           { count },
           locale
         );
-        const rendered = notifI18n.renderTranslatedMessage("news_article", {
-          count,
-          articleTitle: articleTitle || fallbackArticle
-        }, locale);
+        const rendered = notifI18n.renderTranslatedMessage(
+          "news_article",
+          {
+            count,
+            articleTitle: articleTitle || fallbackArticle
+          },
+          locale
+        );
         return {
-          title: (rendered && rendered.title)
-            || (locale === "en" ? "New SPRITE-INDEX news" : locale === "nl" ? "Nieuw SPRITE-INDEX-nieuws" : "Nouvelle actu SPRITE-INDEX"),
+          title:
+            (rendered && rendered.title) ||
+            (locale === "en"
+              ? "New SPRITE-INDEX news"
+              : locale === "nl"
+                ? "Nieuw SPRITE-INDEX-nieuws"
+                : "Nouvelle actu SPRITE-INDEX"),
           body: (rendered && rendered.body) || articleTitle || fallbackArticle || "",
           icon,
           url
         };
       }
     });
-    const ok = (results || []).filter(r => r.ok).length;
+    const ok = (results || []).filter((r) => r.ok).length;
     console.log(`[PUSH] News notification sent to ${ok}/${(results || []).length} devices`);
   } catch (err) {
     console.error("[PUSH] Failed to send news notification:", err);
@@ -127,13 +136,15 @@ async function fanoutPublishedNews(row, { notifyPush = true } = {}) {
     });
   }
   broadcastNewsUpdate({
-    newItems: [{
-      source: item.source,
-      title: item.title,
-      link: item.link,
-      image: item.image,
-      date: item.date
-    }],
+    newItems: [
+      {
+        source: item.source,
+        title: item.title,
+        link: item.link,
+        image: item.image,
+        date: item.date
+      }
+    ],
     newCount: 1,
     extractedEvents: [],
     extractedEventCount: 0,

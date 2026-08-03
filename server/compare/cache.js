@@ -119,20 +119,16 @@ function rebuildCompareResult(result, records, entryCounts = null) {
   const aOwnedCount = bothOwnedCount + onlyUserACount;
   const bOwnedCount = bothOwnedCount + onlyUserBCount;
   const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
-  const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+  const toRate = (n, d) => (d ? Math.round((n / d) * 10000) / 100 : 0);
 
   // Counts are intentionally taken from the full presentation result rather
   // than the current query-filtered subset.  When a caller redacts priority
   // or notes first it supplies viewer-safe counts here, preventing those
   // metadata-only entries from becoming a side channel in `enteredCount`.
-  const aEnteredCount = entryCounts?.aEnteredCount
-    ?? result.summary?.aEnteredCount
-    ?? result.users?.userA?.enteredCount
-    ?? 0;
-  const bEnteredCount = entryCounts?.bEnteredCount
-    ?? result.summary?.bEnteredCount
-    ?? result.users?.userB?.enteredCount
-    ?? 0;
+  const aEnteredCount =
+    entryCounts?.aEnteredCount ?? result.summary?.aEnteredCount ?? result.users?.userA?.enteredCount ?? 0;
+  const bEnteredCount =
+    entryCounts?.bEnteredCount ?? result.summary?.bEnteredCount ?? result.users?.userB?.enteredCount ?? 0;
   const complementarityRate = toRate(onlyUserACount + onlyUserBCount, collectiveOwnedCount);
   const complementarityScore = computeComplementarityScore(complementarityRate, records);
   const summary = {
@@ -165,10 +161,7 @@ function rebuildCompareResult(result, records, entryCounts = null) {
 }
 
 function countVisibleCompareEntries(records, userKey) {
-  return records.reduce(
-    (count, record) => count + (compareServerIsExplicitEntry(record[userKey]) ? 1 : 0),
-    0
-  );
+  return records.reduce((count, record) => count + (compareServerIsExplicitEntry(record[userKey]) ? 1 : 0), 0);
 }
 
 function applyServerCompareFilters(result, query = {}) {
@@ -180,18 +173,37 @@ function applyServerCompareFilters(result, query = {}) {
     } else if (status === "differences" || status === "missingMatch") {
       records = [...result.groups.onlyUserA, ...result.groups.onlyUserB];
     } else if (status === "priorities") {
-      records = records.filter(r => compareServerIsPriority(r.userA) || compareServerIsPriority(r.userB));
+      records = records.filter((r) => compareServerIsPriority(r.userA) || compareServerIsPriority(r.userB));
     }
   }
 
-  if (query.seasonId) records = records.filter(r => r.seasonId === query.seasonId);
-  if (query.eventId) records = records.filter(r => r.eventId === query.eventId);
-  if (query.rarity) records = records.filter(r => r.rarity && String(r.rarity).toLowerCase() === String(query.rarity).toLowerCase());
-  if (query.variantType) records = records.filter(r => r.variantType && String(r.variantType).toLowerCase() === String(query.variantType).toLowerCase());
-  if (query.availability) records = records.filter(r => r.availabilityStatus === query.availability);
+  if (query.seasonId) records = records.filter((r) => r.seasonId === query.seasonId);
+  if (query.eventId) records = records.filter((r) => r.eventId === query.eventId);
+  if (query.rarity)
+    records = records.filter((r) => r.rarity && String(r.rarity).toLowerCase() === String(query.rarity).toLowerCase());
+  if (query.variantType)
+    records = records.filter(
+      (r) => r.variantType && String(r.variantType).toLowerCase() === String(query.variantType).toLowerCase()
+    );
+  if (query.availability) records = records.filter((r) => r.availabilityStatus === query.availability);
 
   return rebuildCompareResult(result, records);
 }
 
-
-module.exports = { pruneCompareResultCache, pruneCollectionCache, getCompareCacheKey, invalidateCompareCacheForUser, getServerCompareCatalogItemsCached, getCachedCompareResult, setCachedCompareResult, rebuildCompareResult, countVisibleCompareEntries, applyServerCompareFilters, COMPARE_CACHE_TTL_MS, compareCatalogCache, compareResultCache, MAX_COMPARE_RESULT_CACHE };
+module.exports = {
+  pruneCompareResultCache,
+  pruneCollectionCache,
+  getCompareCacheKey,
+  invalidateCompareCacheForUser,
+  getServerCompareCatalogItemsCached,
+  getCachedCompareResult,
+  setCachedCompareResult,
+  rebuildCompareResult,
+  countVisibleCompareEntries,
+  applyServerCompareFilters,
+  COMPARE_CACHE_TTL_MS,
+  collectionCache,
+  compareCatalogCache,
+  compareResultCache,
+  MAX_COMPARE_RESULT_CACHE
+};

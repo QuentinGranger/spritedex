@@ -5,10 +5,10 @@ function renderSquadFriendAction(m) {
   const status = m.friendshipStatus;
   const direction = m.friendRequestDirection;
   if (status === "pending" && direction === "received") {
-    return `<button class="squad-chip__add squad-chip__add--accept" data-accept-friend="${encodeURIComponent(m.userId)}" title="${t('squad.acceptRequest')}">${t("squad.acceptBtn")}</button>`;
+    return `<button class="squad-chip__add squad-chip__add--accept" data-accept-friend="${encodeURIComponent(m.userId)}" title="${t("squad.acceptRequest")}">${t("squad.acceptBtn")}</button>`;
   }
   if (status === "none" && m.canReceiveFriendRequest) {
-    return `<button class="squad-chip__add" data-add-friend="${encodeURIComponent(m.userId)}" title="${t('squad.addFriendTitle')}">+</button>`;
+    return `<button class="squad-chip__add" data-add-friend="${encodeURIComponent(m.userId)}" title="${t("squad.addFriendTitle")}">+</button>`;
   }
   return "";
 }
@@ -25,7 +25,7 @@ function passesMemberFilter(m) {
 function renderSquadMembers() {
   const isCreator = String(state.squadCreatedBy) === String(state.userId);
 
-  const allMembers = state.squadMembers.map(m => ({
+  const allMembers = state.squadMembers.map((m) => ({
     ...m,
     role: m.role || (String(m.userId) === String(state.squadCreatedBy) ? "owner" : "member")
   }));
@@ -38,13 +38,13 @@ function renderSquadMembers() {
   });
 
   const total = allMembers.length;
-  const friendCount = allMembers.filter(m => m.friendshipStatus === "accepted").length;
+  const friendCount = allMembers.filter((m) => m.friendshipStatus === "accepted").length;
   const nonFriendCount = total - friendCount;
-  const adminCount = allMembers.filter(m => m.role === "owner" || m.role === "admin").length;
+  const adminCount = allMembers.filter((m) => m.role === "owner" || m.role === "admin").length;
 
   if (els.squadMemberFilter) {
     els.squadMemberFilter.style.display = total > 0 ? "" : "none";
-    els.squadMemberFilter.querySelectorAll(".squad-member-filter__btn").forEach(btn => {
+    els.squadMemberFilter.querySelectorAll(".squad-member-filter__btn").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.memberFilter === (state.squadMemberFilter || "all"));
     });
   }
@@ -68,21 +68,23 @@ function renderSquadMembers() {
     const action = renderSquadFriendAction(m);
     const isMe = String(m.userId) === String(state.userId);
     const compare = !isMe
-      ? `<button class="squad-chip__compare" data-compare-user="${encodeURIComponent(m.username || m.userId)}" title="${t('squad.compareCollections')}">⇄</button>`
+      ? `<button class="squad-chip__compare" data-compare-user="${encodeURIComponent(m.username || m.userId)}" title="${t("squad.compareCollections")}">⇄</button>`
       : "";
-    const kick = isCreator && !isMe
-      ? `<button class="squad-chip__kick" data-kick="${encodeURIComponent(m.userId)}" title="${t('squad.kickBtn')}">✕</button>`
-      : "";
+    const kick =
+      isCreator && !isMe
+        ? `<button class="squad-chip__kick" data-kick="${encodeURIComponent(m.userId)}" title="${t("squad.kickBtn")}">✕</button>`
+        : "";
     const menu = !isMe
       ? `<button class="squad-chip__menu" data-member-menu="${encodeURIComponent(m.userId)}" data-member-name="${encodeURIComponent(m.username || t("squad.memberFallback"))}" title="${t("common.actions")}">⋯</button>`
       : "";
-    const incomplete = (m.entryCount || 0) === 0 ? `<span class="squad-chip__warn" title="${t('squad.checklistEmpty')}">?</span>` : "";
+    const incomplete =
+      (m.entryCount || 0) === 0 ? `<span class="squad-chip__warn" title="${t("squad.checklistEmpty")}">?</span>` : "";
     const stale = m.lastUpdated
-      ? `<span class="squad-chip__time" title="${t('squad.lastUpdateTitle', { time: timeAgo(m.lastUpdated) })}">${timeAgo(m.lastUpdated)}</span>`
-      : `<span class="squad-chip__time squad-chip__time--stale">${t('squad.neverSynced')}</span>`;
+      ? `<span class="squad-chip__time" title="${t("squad.lastUpdateTitle", { time: timeAgo(m.lastUpdated) })}">${timeAgo(m.lastUpdated)}</span>`
+      : `<span class="squad-chip__time squad-chip__time--stale">${t("squad.neverSynced")}</span>`;
 
     return `
-      <div class="squad-chip ${isMe ? 'squad-chip--me' : ''}" data-member-id="${encodeURIComponent(m.userId)}">
+      <div class="squad-chip ${isMe ? "squad-chip--me" : ""}" data-member-id="${encodeURIComponent(m.userId)}">
         <div class="squad-chip__info">
           <div class="squad-chip__name-row">
             <span class="squad-chip__name">${escapeHtml(m.username || t("squad.memberFallback"))}${incomplete}</span>
@@ -107,7 +109,7 @@ function renderSquadMembers() {
 
 function openMemberActionsDialog(userId, username) {
   if (!els.memberActionsDialog || !els.memberActionsList) return;
-  const m = state.squadMembers.find(x => String(x.userId) === String(userId));
+  const m = state.squadMembers.find((x) => String(x.userId) === String(userId));
   if (!m) return;
 
   state.pendingMemberAction = { userId, username: username || m.username };
@@ -132,18 +134,22 @@ function openMemberActionsDialog(userId, username) {
   items.push({ action: "block", label: t("friends.block"), icon: "🚫", danger: true });
   items.push({ action: "report", label: t("squad.report"), icon: "⚠", danger: true });
 
-  els.memberActionsList.innerHTML = items.map(it => `
-    <button type="button" class="member-action ${it.danger ? 'member-action--danger' : ''}" data-member-action="${it.action}">
+  els.memberActionsList.innerHTML = items
+    .map(
+      (it) => `
+    <button type="button" class="member-action ${it.danger ? "member-action--danger" : ""}" data-member-action="${it.action}">
       <span class="member-action__icon">${it.icon}</span>
       <span class="member-action__label">${escapeHtml(it.label)}</span>
     </button>
-  `).join("");
+  `
+    )
+    .join("");
 
   els.memberActionsDialog.showModal();
 }
 
 async function handleMemberAction(action, userId, username) {
-  const m = state.squadMembers.find(x => String(x.userId) === String(userId));
+  const m = state.squadMembers.find((x) => String(x.userId) === String(userId));
   const name = username || (m && m.username) || t("squad.memberFallback");
 
   switch (action) {
@@ -170,7 +176,10 @@ async function handleMemberAction(action, userId, username) {
     case "block":
       if (!confirm(t("squad.confirmBlock", { name: escapeHtml(name) }))) return;
       try {
-        const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/block`, { method: "POST", headers: authHeaders() });
+        const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}/block`, {
+          method: "POST",
+          headers: authHeaders()
+        });
         if (res.ok) {
           toast(t("squad.memberBlockedToast", { name: escapeHtml(name) }));
           if (state.activeSquad) await loadSquad(state.activeSquad);
@@ -211,7 +220,10 @@ async function handleMemberAction(action, userId, username) {
 async function showMemberPriorities(userId, username) {
   try {
     const res = await fetch(`${API_BASE}/collection/${encodeURIComponent(userId)}`, { headers: authHeaders() });
-    if (!res.ok) { toast(t("squad.collectionPrivate")); return; }
+    if (!res.ok) {
+      toast(t("squad.collectionPrivate"));
+      return;
+    }
     const collection = await res.json();
     const priorityIds = Object.entries(collection)
       .filter(([, entry]) => entry.priority && entry.priority !== "none")
@@ -230,4 +242,3 @@ async function showMemberPriorities(userId, username) {
     toast(t("squad.prioritiesError"));
   }
 }
-

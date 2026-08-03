@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "friend_invitation.sent : méthodes + agrégats publics (Étapes 21–22)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     assert.ok(FRIEND_INVITATION_METHODS.includes("username"));
     assert.strictEqual(normalizeInvitationMethod("qr"), "qr_code");

@@ -1,5 +1,21 @@
 const shared = require("./shared");
-const { assert, API, test, rnd, register, auth, cleanup, createSquad, joinSquad, sendFriendRequest, acceptFriendRequest, inviteToSquad, acceptSquadInvitation, getSquad, friendshipStatus } = shared;
+const {
+  assert,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  createSquad,
+  joinSquad,
+  sendFriendRequest,
+  acceptFriendRequest,
+  inviteToSquad,
+  acceptSquadInvitation,
+  getSquad,
+  friendshipStatus
+} = shared;
 
 module.exports = async function runFriendshipsAndCapacity({ alice, bob, charlie }) {
   await test("un ami peut être invité dans une squad", async () => {
@@ -14,7 +30,7 @@ module.exports = async function runFriendshipsAndCapacity({ alice, bob, charlie 
     assert.strictEqual(accept.status, 200, `accept failed: ${JSON.stringify(accept.data)}`);
     assert.strictEqual(accept.data.squadCode, squad.code);
     const details = await getSquad(alice.token, squad.code);
-    assert.ok(details.members.map(m => String(m.userId)).includes(String(bob.id)), "bob is not in squad");
+    assert.ok(details.members.map((m) => String(m.userId)).includes(String(bob.id)), "bob is not in squad");
   });
 
   await test("un non-ami ne peut pas être invité dans une squad", async () => {
@@ -31,7 +47,9 @@ module.exports = async function runFriendshipsAndCapacity({ alice, bob, charlie 
     assert.strictEqual(data.code, squad.code);
     assert.ok(data.qr.startsWith("data:image/png;base64,"), "squad QR is not a base64 png");
     assert.ok(data.url.includes(`joinSquad=${encodeURIComponent(squad.code)}`), "squad QR URL has no join code");
-    const forbidden = await fetch(`${API}/squads/${encodeURIComponent(squad.code)}/qr`, { headers: auth(charlie.token) });
+    const forbidden = await fetch(`${API}/squads/${encodeURIComponent(squad.code)}/qr`, {
+      headers: auth(charlie.token)
+    });
     assert.strictEqual(forbidden.status, 403, "a non-member must not be able to generate a squad QR");
   });
 
@@ -46,7 +64,8 @@ module.exports = async function runFriendshipsAndCapacity({ alice, bob, charlie 
   });
 
   await test("un membre de squad peut être ajouté comme ami", async () => {
-    const dave = await register(`SqDave${rnd()}`), eve = await register(`SqEve${rnd()}`);
+    const dave = await register(`SqDave${rnd()}`),
+      eve = await register(`SqEve${rnd()}`);
     try {
       const squad = await createSquad(dave.token, "Delta Squad");
       await joinSquad(eve.token, squad.code);
@@ -54,51 +73,102 @@ module.exports = async function runFriendshipsAndCapacity({ alice, bob, charlie 
       await sendFriendRequest(dave.token, eve.id);
       await acceptFriendRequest(eve.token, dave.id);
       assert.strictEqual(await friendshipStatus(dave.token, eve.id), "accepted", "friendship should be accepted");
-    } finally { await cleanup(dave); await cleanup(eve); }
+    } finally {
+      await cleanup(dave);
+      await cleanup(eve);
+    }
   });
 
   await test("une amitié n'est pas créée automatiquement en rejoignant une squad", async () => {
-    const frank = await register(`SqFrank${rnd()}`), grace = await register(`SqGrace${rnd()}`);
+    const frank = await register(`SqFrank${rnd()}`),
+      grace = await register(`SqGrace${rnd()}`);
     try {
       const squad = await createSquad(frank.token, "Echo Squad");
       await joinSquad(grace.token, squad.code);
-      assert.strictEqual(await friendshipStatus(frank.token, grace.id), "none", "joining a squad should not create friendship");
-    } finally { await cleanup(frank); await cleanup(grace); }
+      assert.strictEqual(
+        await friendshipStatus(frank.token, grace.id),
+        "none",
+        "joining a squad should not create friendship"
+      );
+    } finally {
+      await cleanup(frank);
+      await cleanup(grace);
+    }
   });
 
   await test("les arrivées concurrentes ne peuvent pas dépasser dix membres", async () => {
-    const owner = await register(`SqCapOwner${rnd()}`), joiners = [];
+    const owner = await register(`SqCapOwner${rnd()}`),
+      joiners = [];
     try {
       for (let index = 0; index < 11; index++) joiners.push(await register(`SqCap${index}${rnd()}`));
       const squad = await createSquad(owner.token, "Capacity Lock Squad");
-      const responses = await Promise.all(joiners.map(async joiner => {
-        const res = await fetch(`${API}/squads/join`, { method: "POST", headers: auth(joiner.token), body: JSON.stringify({ code: squad.code }) });
-        return { status: res.status, body: await res.json().catch(() => ({})) };
-      }));
-      const statuses = responses.map(result => result.status);
-      assert.strictEqual(statuses.filter(status => status === 200).length, 9, `join statuses: ${statuses}`);
-      assert.ok(statuses.every(status => status === 200 || status === 400), `unexpected join statuses: ${JSON.stringify(responses)}`);
-      assert.strictEqual((await getSquad(owner.token, squad.code)).members.length, 10, "the squad must never exceed ten active members");
-    } finally { await cleanup(owner); for (const joiner of joiners) await cleanup(joiner); }
+      const responses = await Promise.all(
+        joiners.map(async (joiner) => {
+          const res = await fetch(`${API}/squads/join`, {
+            method: "POST",
+            headers: auth(joiner.token),
+            body: JSON.stringify({ code: squad.code })
+          });
+          return { status: res.status, body: await res.json().catch(() => ({})) };
+        })
+      );
+      const statuses = responses.map((result) => result.status);
+      assert.strictEqual(statuses.filter((status) => status === 200).length, 9, `join statuses: ${statuses}`);
+      assert.ok(
+        statuses.every((status) => status === 200 || status === 400),
+        `unexpected join statuses: ${JSON.stringify(responses)}`
+      );
+      assert.strictEqual(
+        (await getSquad(owner.token, squad.code)).members.length,
+        10,
+        "the squad must never exceed ten active members"
+      );
+    } finally {
+      await cleanup(owner);
+      for (const joiner of joiners) await cleanup(joiner);
+    }
   });
 
   await test("une invitation acceptée et une arrivée directe partagent le même verrou de capacité", async () => {
-    const owner = await register(`SqMixOwner${rnd()}`), directJoiner = await register(`SqMixDirect${rnd()}`), invitee = await register(`SqMixInvitee${rnd()}`), fillers = [];
+    const owner = await register(`SqMixOwner${rnd()}`),
+      directJoiner = await register(`SqMixDirect${rnd()}`),
+      invitee = await register(`SqMixInvitee${rnd()}`),
+      fillers = [];
     try {
       await sendFriendRequest(owner.token, invitee.id);
       await acceptFriendRequest(invitee.token, owner.id);
       const squad = await createSquad(owner.token, "Mixed Capacity Lock Squad");
-      for (let index = 0; index < 8; index++) { const filler = await register(`SqMixFill${index}${rnd()}`); fillers.push(filler); await joinSquad(filler.token, squad.code); }
+      for (let index = 0; index < 8; index++) {
+        const filler = await register(`SqMixFill${index}${rnd()}`);
+        fillers.push(filler);
+        await joinSquad(filler.token, squad.code);
+      }
       const invitation = await inviteToSquad(owner.token, squad.id, invitee.id);
       assert.strictEqual(invitation.status, 200, `invite failed: ${JSON.stringify(invitation.data)}`);
       const [directRes, invitationRes] = await Promise.all([
-        fetch(`${API}/squads/join`, { method: "POST", headers: auth(directJoiner.token), body: JSON.stringify({ code: squad.code }) }),
+        fetch(`${API}/squads/join`, {
+          method: "POST",
+          headers: auth(directJoiner.token),
+          body: JSON.stringify({ code: squad.code })
+        }),
         acceptSquadInvitation(invitee.token, invitation.data.invitationId)
       ]);
       const statuses = [directRes.status, invitationRes.status];
-      assert.strictEqual(statuses.filter(status => status === 200).length, 1, `mixed capacity statuses: ${statuses}`);
-      assert.ok(statuses.every(status => status === 200 || status === 400), `unexpected mixed capacity statuses: ${statuses}`);
-      assert.strictEqual((await getSquad(owner.token, squad.code)).members.length, 10, "mixed joins must not exceed ten active members");
-    } finally { await cleanup(owner); await cleanup(directJoiner); await cleanup(invitee); for (const filler of fillers) await cleanup(filler); }
+      assert.strictEqual(statuses.filter((status) => status === 200).length, 1, `mixed capacity statuses: ${statuses}`);
+      assert.ok(
+        statuses.every((status) => status === 200 || status === 400),
+        `unexpected mixed capacity statuses: ${statuses}`
+      );
+      assert.strictEqual(
+        (await getSquad(owner.token, squad.code)).members.length,
+        10,
+        "mixed joins must not exceed ten active members"
+      );
+    } finally {
+      await cleanup(owner);
+      await cleanup(directJoiner);
+      await cleanup(invitee);
+      for (const filler of fillers) await cleanup(filler);
+    }
   });
 };

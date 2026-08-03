@@ -88,7 +88,12 @@ function formatBadgeAccessibleName(badge = {}) {
   const progressValue = badge.progressValue;
   const targetValue = badge.targetValue;
   if (progressValue != null && targetValue != null && !unlocked) {
-    return _pt("passport.badgeAccessibleProgress", { label, status: statusText, progress: progressValue, target: targetValue });
+    return _pt("passport.badgeAccessibleProgress", {
+      label,
+      status: statusText,
+      progress: progressValue,
+      target: targetValue
+    });
   }
   return _pt("passport.badgeAccessible", { label, status: statusText });
 }
@@ -104,9 +109,7 @@ function passportActivityLabel(item) {
       return _pt("passport.activity.variantOne");
     }
     case "badge_unlocked":
-      return data.label
-        ? _pt("passport.activity.badgeNamed", { label: data.label })
-        : _pt("passport.activity.badge");
+      return data.label ? _pt("passport.activity.badgeNamed", { label: data.label }) : _pt("passport.activity.badge");
     case "event_completed":
       return data.eventName
         ? _pt("passport.activity.eventNamed", { name: data.eventName })
@@ -138,42 +141,45 @@ function renderPassportContractHtml(data = {}, options = {}) {
   const u = data.user || {};
   const c = data.collection || null;
   const cat = data.catalogue || {};
-  const badges = Array.isArray(data.badgeProgress)
-    ? data.badgeProgress
-    : (Array.isArray(data.badges) ? data.badges : []);
+  const badges = Array.isArray(data.badgeProgress) ? data.badgeProgress : Array.isArray(data.badges) ? data.badges : [];
   const squads = Array.isArray(data.availableSquads) ? data.availableSquads : [];
   const primary = data.primarySquad;
   const username = truncateUi(u.username || u.displayName || "—", options.maxNameLength || 48);
-  const longCopy = options.longCopy
-    || _pt("passport.collectionIncomplete");
+  const longCopy = options.longCopy || _pt("passport.collectionIncomplete");
 
-  const squadLine = primary && primary.private
-    ? _pt("passport.squadPrivate")
-    : (primary && primary.name
-      ? truncateUi(primary.name, 40)
-      : (squads.length ? _pt("passport.squadsAvailable", { count: squads.length }) : _pt("passport.noSquad")));
+  const squadLine =
+    primary && primary.private
+      ? _pt("passport.squadPrivate")
+      : primary && primary.name
+        ? truncateUi(primary.name, 40)
+        : squads.length
+          ? _pt("passport.squadsAvailable", { count: squads.length })
+          : _pt("passport.noSquad");
 
-  const badgeHtml = badges.slice(0, options.maxBadgesRender || 100).map((b) => {
-    const label = truncateUi(b.label || b.badgeCode || b.code || b.id || "Badge", 40);
-    const a11y = formatBadgeAccessibleName(b);
-    const unlocked = !b.status || b.status === "unlocked";
-    const iconHtml = b.iconUrl
-      ? `<img class="collector-passport__badge-icon" src="${escapeHtml(b.iconUrl)}" alt="" loading="lazy" aria-hidden="true">`
-      : `<span class="collector-passport__badge-icon" aria-hidden="true">${escapeHtml(label.slice(0, 1).toUpperCase())}</span>`;
-    return `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}"`
-      + ` tabindex="0" role="listitem" aria-label="${escapeHtml(a11y)}" data-badge-status="${unlocked ? "unlocked" : "locked"}">`
-      + iconHtml
-      + `<strong>${escapeHtml(label)}</strong>`
-      + `<span class="collector-passport__badge-status">${escapeHtml(unlocked ? _pt("passport.badgeUnlocked") : _pt("passport.badgeLocked"))}</span>`
-      + `<small class="collector-passport__badge-declared">${escapeHtml(_pt("passport.badgeDeclared"))}</small></article>`;
-  }).join("");
+  const badgeHtml = badges
+    .slice(0, options.maxBadgesRender || 100)
+    .map((b) => {
+      const label = truncateUi(b.label || b.badgeCode || b.code || b.id || "Badge", 40);
+      const a11y = formatBadgeAccessibleName(b);
+      const unlocked = !b.status || b.status === "unlocked";
+      const iconHtml = b.iconUrl
+        ? `<img class="collector-passport__badge-icon" src="${escapeHtml(b.iconUrl)}" alt="" loading="lazy" aria-hidden="true">`
+        : `<span class="collector-passport__badge-icon" aria-hidden="true">${escapeHtml(label.slice(0, 1).toUpperCase())}</span>`;
+      return (
+        `<article class="collector-passport__badge-card collector-passport__badge-card--${unlocked ? "unlocked" : "locked"}"` +
+        ` tabindex="0" role="listitem" aria-label="${escapeHtml(a11y)}" data-badge-status="${unlocked ? "unlocked" : "locked"}">` +
+        iconHtml +
+        `<strong>${escapeHtml(label)}</strong>` +
+        `<span class="collector-passport__badge-status">${escapeHtml(unlocked ? _pt("passport.badgeUnlocked") : _pt("passport.badgeLocked"))}</span>` +
+        `<small class="collector-passport__badge-declared">${escapeHtml(_pt("passport.badgeDeclared"))}</small></article>`
+      );
+    })
+    .join("");
 
   const statsHidden = !c;
   const empty = c && Number(c.ownedVariantCount) === 0;
   const owned = c ? Number(c.ownedVariantCount) || 0 : 0;
-  const released = c
-    ? (Number(c.releasedVariantCount) || Number(cat.releasedVariantCount) || 0)
-    : 0;
+  const released = c ? Number(c.releasedVariantCount) || Number(cat.releasedVariantCount) || 0 : 0;
   const rate = c && c.completionRateDisplay != null ? c.completionRateDisplay : 0;
   const progressText = formatCollectionProgressText(owned, released, rate);
   const progressId = "passport-progress-text-contract";
@@ -188,9 +194,10 @@ function renderPassportContractHtml(data = {}, options = {}) {
       <p class="collector-passport__identity-meta">${escapeHtml(_pt("passport.primarySquad", { name: squadLine }))}</p>
     </div>
   </section>
-  ${statsHidden
-    ? `<p class="collector-passport__empty" role="status">${escapeHtml(_pt("passport.statsHidden"))}</p>`
-    : `<section class="collector-passport__section collector-passport__section--progress" aria-labelledby="passport-progress-heading">
+  ${
+    statsHidden
+      ? `<p class="collector-passport__empty" role="status">${escapeHtml(_pt("passport.statsHidden"))}</p>`
+      : `<section class="collector-passport__section collector-passport__section--progress" aria-labelledby="passport-progress-heading">
         <h3 id="passport-progress-heading">${escapeHtml(_pt("passport.progress"))}</h3>
         <div class="collector-passport__progress">
           <strong aria-hidden="true">${escapeHtml(String(rate))} %</strong>
@@ -203,7 +210,8 @@ function renderPassportContractHtml(data = {}, options = {}) {
           ${empty ? `<p class="collector-passport__empty">${escapeHtml(_pt("passport.collectionEmpty"))}</p>` : ""}
           <p class="collector-passport__disclaimer">${escapeHtml(_pt("passport.collectionDeclared"))}</p>
         </div>
-      </section>`}
+      </section>`
+  }
   ${options.showReliabilityWarning ? `<p class="collector-passport__warning" role="status">${escapeHtml(longCopy)}</p>` : ""}
   <section class="collector-passport__section collector-passport__section--badges" aria-labelledby="passport-badges-heading">
     <h3 id="passport-badges-heading">${escapeHtml(_pt("passport.badges"))}</h3>

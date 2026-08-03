@@ -152,8 +152,7 @@ function resolveUpdateMethod({
 }
 
 function isImportUpdateMethod(method) {
-  return method === GRAPH_UPDATE_METHODS.INITIAL_IMPORT
-    || method === GRAPH_UPDATE_METHODS.BULK_IMPORT;
+  return method === GRAPH_UPDATE_METHODS.INITIAL_IMPORT || method === GRAPH_UPDATE_METHODS.BULK_IMPORT;
 }
 
 function touchRateWindow(userId, { now = Date.now(), maxPerSec } = {}) {
@@ -190,14 +189,17 @@ function touchMassChangeWindow(userId, delta = 1, { now = Date.now() } = {}) {
  * Étape 69–70 — decide whether an event may be recorded / counted.
  * Legitimate imports are not treated as abuse.
  */
-async function evaluateGraphEventAcceptance(db = pool, {
-  actorUserId,
-  source = "api",
-  origin = null,
-  updateMethod = null,
-  changeCount = 1,
-  previousCollectionCount = null
-} = {}) {
+async function evaluateGraphEventAcceptance(
+  db = pool,
+  {
+    actorUserId,
+    source = "api",
+    origin = null,
+    updateMethod = null,
+    changeCount = 1,
+    previousCollectionCount = null
+  } = {}
+) {
   const method = resolveUpdateMethod({
     source,
     origin,
@@ -247,9 +249,7 @@ async function evaluateGraphEventAcceptance(db = pool, {
 
   const importLike = isImportUpdateMethod(method);
   const rate = touchRateWindow(actor, {
-    maxPerSec: importLike
-      ? GRAPH_ABUSE_LIMITS.maxEventsPerSecondImport
-      : GRAPH_ABUSE_LIMITS.maxEventsPerSecond
+    maxPerSec: importLike ? GRAPH_ABUSE_LIMITS.maxEventsPerSecondImport : GRAPH_ABUSE_LIMITS.maxEventsPerSecond
   });
   if (!rate.ok && !importLike) {
     return {
@@ -273,9 +273,7 @@ async function evaluateGraphEventAcceptance(db = pool, {
   }
 
   const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
-  const ageHours = createdAt
-    ? (Date.now() - createdAt) / (3600 * 1000)
-    : Infinity;
+  const ageHours = createdAt ? (Date.now() - createdAt) / (3600 * 1000) : Infinity;
   const isNewAccount = ageHours < GRAPH_ABUSE_LIMITS.newAccountHours;
 
   // New accounts still count via unique-user denominators; flag for monitoring.
@@ -293,9 +291,7 @@ async function evaluateGraphEventAcceptance(db = pool, {
 }
 
 function scrubPersonalContext(context) {
-  const src = context && typeof context === "object" && !Array.isArray(context)
-    ? context
-    : {};
+  const src = context && typeof context === "object" && !Array.isArray(context) ? context : {};
   const out = {};
   for (const key of ANONYMOUS_SAFE_CONTEXT_KEYS) {
     if (src[key] !== undefined) out[key] = src[key];
@@ -313,9 +309,7 @@ function scrubPersonalContext(context) {
  * actor/target → NULL, personal context removed, future eligibility excluded.
  * Anonymous aggregates remain; personal history cannot be reconstructed.
  */
-async function anonymizeUserGraphData(db = pool, userId, {
-  recalculateSensitive = false
-} = {}) {
+async function anonymizeUserGraphData(db = pool, userId, { recalculateSensitive = false } = {}) {
   const id = Number(userId);
   if (!Number.isFinite(id) || id <= 0) {
     return { ok: false, reason: "invalid_user" };
@@ -386,7 +380,9 @@ async function anonymizeUserGraphData(db = pool, userId, {
     await client.query("ROLLBACK").catch(() => {});
     try {
       await client.query("ALTER TABLE graph_events ENABLE TRIGGER trg_graph_events_append_only");
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     client.release();
     throw err;
   }
@@ -395,12 +391,10 @@ async function anonymizeUserGraphData(db = pool, userId, {
   if (recalculateSensitive) {
     try {
       const day = new Date().toISOString().slice(0, 10);
-      summary.recalculated = await require("./sprite-graph-counters").rebuildGraphMetrics(
-        db,
-        day,
-        day,
-        { runDailyPipeline: true, rebuildCounters: true }
-      );
+      summary.recalculated = await require("./sprite-graph-counters").rebuildGraphMetrics(db, day, day, {
+        runDailyPipeline: true,
+        rebuildCounters: true
+      });
     } catch (err) {
       summary.recalculated = { error: err.message };
     }
@@ -438,13 +432,11 @@ async function getCommunityStatsOptIn(db = pool, userId) {
   return {
     communityStatsOptIn: row.community_stats_opt_in,
     // Explicit column wins; else analytics cookie is soft signal.
-    participates: row.community_stats_opt_in === true
-      || (row.community_stats_opt_in == null && analytics),
+    participates: row.community_stats_opt_in === true || (row.community_stats_opt_in == null && analytics),
     layers: {
       necessary: true,
       analyticsInternal: analytics,
-      communityPublic: row.community_stats_opt_in === true
-        || (row.community_stats_opt_in == null && analytics)
+      communityPublic: row.community_stats_opt_in === true || (row.community_stats_opt_in == null && analytics)
     },
     essentialFeaturesRequireCommunityConsent: false
   };
@@ -457,10 +449,7 @@ async function applyGraphRetentionPolicy(db = pool) {
   const counters = require("./sprite-graph-counters");
   const result = await counters.pruneGraphTechnicalArtifacts(db, {
     outboxRetentionDays: GRAPH_RETENTION_POLICY.deliveryData.retentionDays,
-    counterRetentionDays: Math.max(
-      GRAPH_RETENTION_POLICY.technicalLogs.retentionDays,
-      90
-    ),
+    counterRetentionDays: Math.max(GRAPH_RETENTION_POLICY.technicalLogs.retentionDays, 90),
     compactTechnicalContext: true,
     technicalContextRetentionDays: GRAPH_RETENTION_POLICY.technicalLogs.retentionDays
   });

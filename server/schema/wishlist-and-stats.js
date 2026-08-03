@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureWishlistAndStatsSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS squad_wishlist_items (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         squad_id INTEGER NOT NULL REFERENCES squads(id) ON DELETE CASCADE,
@@ -18,7 +18,7 @@ async function ensureWishlistAndStatsSchema(pool) {
       CREATE INDEX IF NOT EXISTS idx_squad_wishlist_squad ON squad_wishlist_items (squad_id, status, updated_at DESC);
     `);
 
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS squad_stats (
         squad_id INTEGER PRIMARY KEY REFERENCES squads(id) ON DELETE CASCADE,
         collective_completion_rate NUMERIC(5,2) NOT NULL DEFAULT 0,

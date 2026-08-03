@@ -3,28 +3,55 @@
    ═══════════════════════════════════════════════ */
 
 @keyframes neonPulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes scanLine {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes floatUp {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 @keyframes glowBreathe {
-  0%, 100% { box-shadow: 0 0 15px rgba(0, 225, 255, 0.15), inset 0 0 15px rgba(0, 0, 0, 0.1); }
-  50% { box-shadow: 0 0 25px rgba(0, 225, 255, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.15); }
+  0%,
+  100% {
+    box-shadow:
+      0 0 15px rgba(0, 225, 255, 0.15),
+      inset 0 0 15px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(0, 225, 255, 0.3),
+      inset 0 0 20px rgba(0, 0, 0, 0.15);
+  }
 }
 
 @keyframes cardEntrance {
@@ -107,19 +134,21 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 225, 255, 0.015) 2px,
-      rgba(0, 225, 255, 0.015) 4px
-    );
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 225, 255, 0.015) 2px,
+    rgba(0, 225, 255, 0.015) 4px
+  );
   pointer-events: none;
   z-index: 9999;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -128,11 +157,14 @@ button {
 }
 
 /* ── Typography ── */
-h1, h2, p {
+h1,
+h2,
+p {
   margin: 0;
 }
 
-h1, h2 {
+h1,
+h2 {
   font-family: var(--font-heading);
   font-weight: 700;
   text-transform: uppercase;
@@ -159,6 +191,7 @@ h2 {
   text-shadow: 0 0 12px rgba(0, 225, 255, 0.4);
 }
 
-.muted, .hint {
+.muted,
+.hint {
   color: var(--muted);
 }

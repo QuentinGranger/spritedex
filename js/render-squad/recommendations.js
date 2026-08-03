@@ -14,15 +14,22 @@ async function renderSquadRecommendations() {
     const ownedCount = safeFiniteNumber(data.ownedCount, 0, { min: 0, max: 1000000 });
     const totalVariants = safeFiniteNumber(data.totalVariants, 0, { min: 0, max: 1000000 });
     const ownedRate = safePercentage(data.ownedRate, 0);
-    parts.push(`<div class="recommendations-header"><h3 class="recommendations-title">${t("squad.recTitle")}</h3><p class="recommendations-subtitle">${t("squad.recSubtitle", { owned: ownedCount, total: totalVariants, rate: ownedRate })}</p></div>`);
-    parts.push(`<div class="recommendations-engine-cta"><button type="button" class="ghost-button" id="openSquadEngineFromRecs">${t("squad.openEngineFromRecs")}</button></div>`);
+    parts.push(
+      `<div class="recommendations-header"><h3 class="recommendations-title">${t("squad.recTitle")}</h3><p class="recommendations-subtitle">${t("squad.recSubtitle", { owned: ownedCount, total: totalVariants, rate: ownedRate })}</p></div>`
+    );
+    parts.push(
+      `<div class="recommendations-engine-cta"><button type="button" class="ghost-button" id="openSquadEngineFromRecs">${t("squad.openEngineFromRecs")}</button></div>`
+    );
 
     if (data.mostComplementary) {
       const m = data.mostComplementary;
       const rarityParts = Object.entries(m.jointCoverageByRarity || {})
         .sort((a, b) => (b[1].coverage || 0) - (a[1].coverage || 0))
         .slice(0, 3)
-        .map(([r, info]) => `<span class="recommendation-rarity">${escapeHtml(localizedRarity(r))} : <strong>${formatUiPercent(info.coverage, { maximumFractionDigits: 0 })}</strong> (${safeFiniteNumber(info.owned, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(info.total, 0, { min: 0, max: 1000000 })})</span>`)
+        .map(
+          ([r, info]) =>
+            `<span class="recommendation-rarity">${escapeHtml(localizedRarity(r))} : <strong>${formatUiPercent(info.coverage, { maximumFractionDigits: 0 })}</strong> (${safeFiniteNumber(info.owned, 0, { min: 0, max: 1000000 })}/${safeFiniteNumber(info.total, 0, { min: 0, max: 1000000 })})</span>`
+        )
         .join(" · ");
       parts.push(`<div class="recommendation-card recommendation-card--highlight">`);
       parts.push(`<div class="recommendation-card__header">`);
@@ -30,7 +37,9 @@ async function renderSquadRecommendations() {
       parts.push(`<span class="recommendation-card__badge">${t("squad.mostComplementaryBadge")}</span>`);
       parts.push(`</div>`);
       parts.push(`<div class="recommendation-card__body">`);
-      parts.push(`<p>${t("squad.recMemberMissing", { name: escapeHtml(m.displayName || m.username), count: safeFiniteNumber(m.missingCount, 0, { min: 0, max: 1000000 }), priority: safeFiniteNumber(m.priorityMatchCount, 0, { min: 0, max: 1000000 }) })}</p>`);
+      parts.push(
+        `<p>${t("squad.recMemberMissing", { name: escapeHtml(m.displayName || m.username), count: safeFiniteNumber(m.missingCount, 0, { min: 0, max: 1000000 }), priority: safeFiniteNumber(m.priorityMatchCount, 0, { min: 0, max: 1000000 }) })}</p>`
+      );
       parts.push(`<p>${t("squad.recJointCoverage", { pct: safePercentage(m.jointCoverage, 0) })}</p>`);
       if (rarityParts) parts.push(`<p class="recommendation-rarities">${rarityParts}</p>`);
       parts.push(`</div></div>`);
@@ -118,7 +127,9 @@ async function renderSquadRecommendedFriends() {
   }
   els.squadRecommendedFriends.innerHTML = `<p class="squad-empty">${t("squad.loading")}</p>`;
   try {
-    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/recommended-friends`, { headers: authHeadersOnly() });
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/recommended-friends`, {
+      headers: authHeadersOnly()
+    });
     if (!res.ok) throw new Error("recommended friends failed");
     const data = await res.json();
     const candidates = data.candidates || [];
@@ -128,15 +139,18 @@ async function renderSquadRecommendedFriends() {
     }
     const squadName = escapeHtml(data.squadName || els.squadActiveName?.textContent || "l'escouade");
     const parts = [];
-    parts.push(`<div class="recommended-friends-section"><h4 class="recommended-friends__title">${t("squad.recommendedFriendsTitle")}</h4><div class="recommended-friends__list">`);
+    parts.push(
+      `<div class="recommended-friends-section"><h4 class="recommended-friends__title">${t("squad.recommendedFriendsTitle")}</h4><div class="recommended-friends__list">`
+    );
     for (const c of candidates) {
       const btn = c.canInvite
         ? `<button type="button" class="login-btn" data-recommended-id="${encodeURIComponent(c.userId)}" data-action="invite-recommended">${t("squad.inviteBtn")}</button>`
         : `<button type="button" class="ghost-button" disabled>${t("squad.inviteBtn")}</button>`;
       const contrib = safeFiniteNumber(c.potentialContribution || c.newVariantsForSquad, 0, { min: 0, max: 1000000 });
-      const contributionLine = contrib > 0
-        ? `<span class="recommended-friend__stat recommended-friend__stat--contribution">${t("squad.recContrib", { name: escapeHtml(c.displayName || c.username), count: contrib, squad: squadName })}</span>`
-        : "";
+      const contributionLine =
+        contrib > 0
+          ? `<span class="recommended-friend__stat recommended-friend__stat--contribution">${t("squad.recContrib", { name: escapeHtml(c.displayName || c.username), count: contrib, squad: squadName })}</span>`
+          : "";
       parts.push(`<div class="recommended-friend">
         <div class="recommended-friend__info">
           <span class="recommended-friend__name">${escapeHtml(c.displayName || c.username)}</span>
@@ -152,7 +166,7 @@ async function renderSquadRecommendedFriends() {
     }
     parts.push(`</div></div>`);
     els.squadRecommendedFriends.innerHTML = parts.join("");
-    els.squadRecommendedFriends.querySelectorAll("[data-action='invite-recommended']").forEach(btn => {
+    els.squadRecommendedFriends.querySelectorAll("[data-action='invite-recommended']").forEach((btn) => {
       btn.addEventListener("click", handleRecommendedFriendInvite);
     });
   } catch (e) {
@@ -169,7 +183,9 @@ async function renderSquadComplementaryPairs() {
   }
   els.squadComplementaryPairs.innerHTML = `<p class="squad-empty">${t("squad.loading")}</p>`;
   try {
-    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/complementary-pairs`, { headers: authHeadersOnly() });
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(state.activeSquad)}/complementary-pairs`, {
+      headers: authHeadersOnly()
+    });
     if (!res.ok) throw new Error("complementary pairs failed");
     const data = await res.json();
     const pairs = data.pairs || [];
@@ -178,7 +194,9 @@ async function renderSquadComplementaryPairs() {
       return;
     }
     const parts = [];
-    parts.push(`<div class="complementary-pairs-section"><h4 class="complementary-pairs__title">${t("squad.complementaryTitle")}</h4><div class="complementary-pairs__list">`);
+    parts.push(
+      `<div class="complementary-pairs-section"><h4 class="complementary-pairs__title">${t("squad.complementaryTitle")}</h4><div class="complementary-pairs__list">`
+    );
     for (const p of pairs) {
       parts.push(`<button type="button" class="complementary-pair" data-user-a-id="${encodeURIComponent(p.userAId)}" data-user-a-name="${escapeHtml(p.userAName)}" data-user-b-id="${encodeURIComponent(p.userBId)}" data-user-b-name="${escapeHtml(p.userBName)}">
         <span class="complementary-pair__names">${escapeHtml(p.userAName)} <span class="complementary-pair__cross">×</span> ${escapeHtml(p.userBName)}</span>
@@ -187,7 +205,7 @@ async function renderSquadComplementaryPairs() {
     }
     parts.push(`</div></div>`);
     els.squadComplementaryPairs.innerHTML = parts.join("");
-    els.squadComplementaryPairs.querySelectorAll(".complementary-pair").forEach(btn => {
+    els.squadComplementaryPairs.querySelectorAll(".complementary-pair").forEach((btn) => {
       btn.addEventListener("click", handleComplementaryPairClick);
     });
   } catch (e) {

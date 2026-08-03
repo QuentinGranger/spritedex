@@ -21,16 +21,37 @@
 // Ensembles de valeurs autorisées (statuts, raretés).
 const VALID_RARITIES = new Set(["common", "uncommon", "rare", "epic", "legendary", "mythic"]);
 const VALID_AVAILABILITY_STATUSES = new Set([
-  "available", "active", "live",
-  "upcoming", "unreleased", "coming_soon", "soon",
-  "ended", "unavailable", "inactive", "discontinued", "expired", "removed", "over",
-  "not_observed", "missing", "not_seen",
-  "unknown",
+  "available",
+  "active",
+  "live",
+  "upcoming",
+  "unreleased",
+  "coming_soon",
+  "soon",
+  "ended",
+  "unavailable",
+  "inactive",
+  "discontinued",
+  "expired",
+  "removed",
+  "over",
+  "not_observed",
+  "missing",
+  "not_seen",
+  "unknown"
 ]);
 const VALID_RELEASE_STATUSES = new Set(["released", "unreleased", "upcoming", "unknown"]);
 const VALID_DATA_STATUSES = new Set([
-  "complete", "incomplete", "needs_review", "unverified", "disputed", "archived",
-  "observed", "confirmed", "legacy", "unknown",
+  "complete",
+  "incomplete",
+  "needs_review",
+  "unverified",
+  "disputed",
+  "archived",
+  "observed",
+  "confirmed",
+  "legacy",
+  "unknown"
 ]);
 
 // Une valeur est « inconnue » (donc acceptable) si elle est nulle, vide ou "unknown".
@@ -134,7 +155,10 @@ function validateCatalog(catalog) {
     }
 
     const availability = sprite.availability || {};
-    if (!isUnknown(availability.status) && !VALID_AVAILABILITY_STATUSES.has(String(availability.status).toLowerCase())) {
+    if (
+      !isUnknown(availability.status) &&
+      !VALID_AVAILABILITY_STATUSES.has(String(availability.status).toLowerCase())
+    ) {
       addError(`Statut de disponibilité non autorisé pour le sprite "${label}" : "${availability.status}".`, label);
     }
     if (!isUnknown(sprite.dataStatus) && !VALID_DATA_STATUSES.has(String(sprite.dataStatus).toLowerCase())) {
@@ -168,16 +192,25 @@ function validateCatalog(catalog) {
     const firstObs = parseDate(sprite.firstObservedAt);
     const lastVer = parseDate(sprite.lastVerifiedAt);
 
-    if (!start.valid) addError(`Date de début invalide pour le sprite "${label}" : "${availability.startDate}".`, label);
+    if (!start.valid)
+      addError(`Date de début invalide pour le sprite "${label}" : "${availability.startDate}".`, label);
     if (!end.valid) addError(`Date de fin invalide pour le sprite "${label}" : "${availability.endDate}".`, label);
-    if (!firstObs.valid) addError(`Date de première observation invalide pour le sprite "${label}" : "${sprite.firstObservedAt}".`, label);
-    if (!lastVer.valid) addError(`Date de dernière vérification invalide pour le sprite "${label}" : "${sprite.lastVerifiedAt}".`, label);
+    if (!firstObs.valid)
+      addError(`Date de première observation invalide pour le sprite "${label}" : "${sprite.firstObservedAt}".`, label);
+    if (!lastVer.valid)
+      addError(`Date de dernière vérification invalide pour le sprite "${label}" : "${sprite.lastVerifiedAt}".`, label);
 
     if (start.date && end.date && end.date < start.date) {
-      addError(`Dates incohérentes pour le sprite "${label}" : la date de fin (${availability.endDate}) précède la date de début (${availability.startDate}).`, label);
+      addError(
+        `Dates incohérentes pour le sprite "${label}" : la date de fin (${availability.endDate}) précède la date de début (${availability.startDate}).`,
+        label
+      );
     }
     if (firstObs.date && lastVer.date && lastVer.date < firstObs.date) {
-      addError(`Dates incohérentes pour le sprite "${label}" : la dernière vérification (${sprite.lastVerifiedAt}) précède la première observation (${sprite.firstObservedAt}).`, label);
+      addError(
+        `Dates incohérentes pour le sprite "${label}" : la dernière vérification (${sprite.lastVerifiedAt}) précède la première observation (${sprite.firstObservedAt}).`,
+        label
+      );
     }
     // Date de fin inconnue → avertissement (information acceptable).
     if (released && !end.known) {
@@ -198,7 +231,10 @@ function validateCatalog(catalog) {
 
       // Variante orpheline : spriteId ne correspond pas au sprite parent.
       if (!isUnknown(v.spriteId) && !isUnknown(sprite.id) && v.spriteId !== sprite.id) {
-        addError(`Variante orpheline : "${v.id}" référence le sprite "${v.spriteId}" mais est déclarée sous "${sprite.id}".`, vLabel);
+        addError(
+          `Variante orpheline : "${v.id}" référence le sprite "${v.spriteId}" mais est déclarée sous "${sprite.id}".`,
+          vLabel
+        );
       }
 
       // Statut de sortie / données non autorisé (ERREUR).
@@ -238,7 +274,10 @@ function validateCatalog(catalog) {
     // Cohérence variantIds ↔ variants (ERREUR : référence orpheline).
     for (const vid of declaredVariantIds) {
       if (!actualVariantIds.has(vid)) {
-        addError(`Variante orpheline : le sprite "${label}" déclare la variante "${vid}" dans variantIds, mais aucun objet variante correspondant n'existe.`, label);
+        addError(
+          `Variante orpheline : le sprite "${label}" déclare la variante "${vid}" dans variantIds, mais aucun objet variante correspondant n'existe.`,
+          label
+        );
       }
     }
     for (const vid of actualVariantIds) {
@@ -254,7 +293,7 @@ function validateCatalog(catalog) {
     ...(catalog.season?.sourceIds || []),
     ...(catalog.weeklyEvents?.sourceIds || []),
     ...(catalog.events || []).flatMap((e) => e.sourceIds || []),
-    ...(catalog.seasons || []).flatMap((s) => s.sourceIds || []),
+    ...(catalog.seasons || []).flatMap((s) => s.sourceIds || [])
   ];
   for (const sid of referencedFromMeta) {
     if (!knownSourceIds.has(sid)) {
@@ -325,10 +364,30 @@ function finalizeCatalog(catalog) {
       if (isUnknown(v.id)) missingVariantId++;
     }
   }
-  addCheck(missingSpriteId === 0, "Identifiants stables des Sprites", missingSpriteId ? `${missingSpriteId} id manquant(s)` : "Tous les sprites ont un id");
-  addCheck(missingVariantId === 0, "Identifiants stables des variantes", missingVariantId ? `${missingVariantId} id manquant(s)` : "Toutes les variantes ont un id");
+  addCheck(
+    missingSpriteId === 0,
+    "Identifiants stables des Sprites",
+    missingSpriteId ? `${missingSpriteId} id manquant(s)` : "Tous les sprites ont un id"
+  );
+  addCheck(
+    missingVariantId === 0,
+    "Identifiants stables des variantes",
+    missingVariantId ? `${missingVariantId} id manquant(s)` : "Toutes les variantes ont un id"
+  );
 
-  const requiredSpriteFields = ["id", "name", "slug", "rarity", "variants", "availability", "acquisition", "recurrence", "sources", "dates", "dataStatus"];
+  const requiredSpriteFields = [
+    "id",
+    "name",
+    "slug",
+    "rarity",
+    "variants",
+    "availability",
+    "acquisition",
+    "recurrence",
+    "sources",
+    "dates",
+    "dataStatus"
+  ];
   let inconsistent = 0;
   let missingVerification = 0;
   let missingSources = 0;
@@ -339,17 +398,39 @@ function finalizeCatalog(catalog) {
     const lastVer = sprite.dates?.lastVerifiedAt || sprite.lastVerifiedAt;
     if (isUnknown(lastVer)) missingVerification++;
 
-    const sourceCount = (Array.isArray(sprite.sources) ? sprite.sources.length : 0) + (Array.isArray(sprite.sourceIds) ? sprite.sourceIds.length : 0);
+    const sourceCount =
+      (Array.isArray(sprite.sources) ? sprite.sources.length : 0) +
+      (Array.isArray(sprite.sourceIds) ? sprite.sourceIds.length : 0);
     if (sourceCount === 0 && sprite.dataStatus !== "complete" && !isUnknown(sprite.availability?.status)) {
       missingSources++;
     }
   }
-  addCheck(inconsistent === 0, "Structure uniforme des fiches", inconsistent ? `${inconsistent} fiche(s) incomplète(s)` : "Toutes les fiches partagent la même structure");
-  addCheck(missingVerification === 0, "Date de dernière vérification", missingVerification ? `${missingVerification} fiche(s) sans date` : "Chaque fiche a une date de dernière vérification");
-  addCheck(missingSources === 0, "Sources attachées aux données", missingSources ? `${missingSources} fiche(s) manquent de sources` : "Les données importantes sont reliées à une source");
+  addCheck(
+    inconsistent === 0,
+    "Structure uniforme des fiches",
+    inconsistent ? `${inconsistent} fiche(s) incomplète(s)` : "Toutes les fiches partagent la même structure"
+  );
+  addCheck(
+    missingVerification === 0,
+    "Date de dernière vérification",
+    missingVerification
+      ? `${missingVerification} fiche(s) sans date`
+      : "Chaque fiche a une date de dernière vérification"
+  );
+  addCheck(
+    missingSources === 0,
+    "Sources attachées aux données",
+    missingSources
+      ? `${missingSources} fiche(s) manquent de sources`
+      : "Les données importantes sont reliées à une source"
+  );
 
   // Les champs inconnus sont acceptés : la validation ne les bloque pas.
-  addCheck(true, "Informations inconnues acceptées", "La validation traite les inconnus comme des avertissements, pas des erreurs");
+  addCheck(
+    true,
+    "Informations inconnues acceptées",
+    "La validation traite les inconnus comme des avertissements, pas des erreurs"
+  );
 
   let ambiguousSources = 0;
   for (const { sprite } of allSprites) {
@@ -359,7 +440,11 @@ function finalizeCatalog(catalog) {
       if (isUnknown(rel) && isUnknown(type)) ambiguousSources++;
     }
   }
-  addCheck(ambiguousSources === 0, "Sources officielles / observées / communautaires séparées", ambiguousSources ? `${ambiguousSources} source(s) sans type/reliabilité` : "Chaque source est typée");
+  addCheck(
+    ambiguousSources === 0,
+    "Sources officielles / observées / communautaires séparées",
+    ambiguousSources ? `${ambiguousSources} source(s) sans type/reliabilité` : "Chaque source est typée"
+  );
 
   const now = new Date();
   let futureDates = 0;
@@ -368,7 +453,7 @@ function finalizeCatalog(catalog) {
       sprite.dates?.lastVerifiedAt,
       sprite.dates?.firstObservedAt,
       sprite.availability?.startDate,
-      sprite.availability?.endDate,
+      sprite.availability?.endDate
     ];
     for (const d of dates) {
       if (isUnknown(d)) continue;
@@ -376,11 +461,21 @@ function finalizeCatalog(catalog) {
       if (!Number.isNaN(dt.getTime()) && dt > now) futureDates++;
     }
   }
-  addCheck(futureDates === 0, "Aucune information future inventée", futureDates ? `${futureDates} date(s) future(s)` : "Aucune date postérieure à aujourd'hui");
+  addCheck(
+    futureDates === 0,
+    "Aucune information future inventée",
+    futureDates ? `${futureDates} date(s) future(s)` : "Aucune date postérieure à aujourd'hui"
+  );
 
   // Éléments dépendant du backend / des migrations (à vérifier manuellement).
-  addManual("Collections existantes migrées", "Vérifier que sprite_entries et collection_history utilisent les identifiants stables.");
-  addManual("Catalogue modifiable sans casser les collections", "Vérifier l'usage de legacy_sprite_name_map et des migrations.");
+  addManual(
+    "Collections existantes migrées",
+    "Vérifier que sprite_entries et collection_history utilisent les identifiants stables."
+  );
+  addManual(
+    "Catalogue modifiable sans casser les collections",
+    "Vérifier l'usage de legacy_sprite_name_map et des migrations."
+  );
 
   const ready = validation.errors.length === 0 && checks.every((c) => c.ok);
   return { ready, checks, manual, errors: validation.errors, warnings: validation.warnings };
@@ -389,7 +484,11 @@ function finalizeCatalog(catalog) {
 function formatFinalizationReport({ ready, checks, manual, errors, warnings }) {
   const lines = [];
   lines.push("");
-  lines.push(ready ? "✅ Catalogue finalisé — prêt pour la phase suivante." : "⛔ Finalisation insuffisante — voir les points bloquants ci-dessous.");
+  lines.push(
+    ready
+      ? "✅ Catalogue finalisé — prêt pour la phase suivante."
+      : "⛔ Finalisation insuffisante — voir les points bloquants ci-dessous."
+  );
   lines.push("");
   lines.push("── Vérifications automatiques ──");
   for (const c of checks) {

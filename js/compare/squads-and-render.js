@@ -7,7 +7,10 @@ async function loadCompareSquads() {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/squads/common/${encodeURIComponent(state.userId)}/${encodeURIComponent(state.compareTarget.userId)}`, { headers: authHeadersOnly() });
+    const res = await fetch(
+      `${API_BASE}/squads/common/${encodeURIComponent(state.userId)}/${encodeURIComponent(state.compareTarget.userId)}`,
+      { headers: authHeadersOnly() }
+    );
     if (!res.ok) throw new Error("common squads failed");
     const data = await res.json();
     state.compareCommonSquads = data.squads || [];
@@ -33,7 +36,7 @@ function handleCompareSquadAction(e) {
   if (typeof loadSquad === "function") loadSquad(code);
   if (action === "hunt" || action === "session") {
     state.squadView = action;
-    document.querySelectorAll(".squad-view-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".squad-view-btn").forEach((b) => b.classList.remove("active"));
     const activeBtn = document.querySelector(`.squad-view-btn[data-squad-view="${action}"]`);
     if (activeBtn) activeBtn.classList.add("active");
   }
@@ -46,7 +49,9 @@ function renderCompareSquads() {
     els.compareSquads.innerHTML = "";
     return;
   }
-  const cards = squads.map(s => `
+  const cards = squads
+    .map(
+      (s) => `
     <div class="compare-squad-card">
       <span class="compare-squad-card__name">${escapeHtml(s.name)}</span>
       <div class="compare-squad-card__actions">
@@ -54,18 +59,30 @@ function renderCompareSquads() {
         <button type="button" class="login-btn" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="hunt">${t("compare.commonGoal")}</button>
         <button type="button" class="ghost-button" data-squad-code="${encodeURIComponent(s.code)}" data-squad-action="session">${t("compare.recommendationsTitle")}</button>
       </div>
-    </div>`).join("");
+    </div>`
+    )
+    .join("");
   els.compareSquads.innerHTML = `
     <div class="compare-section compare-section--squads">
       <h3 class="compare-section__title">${t("compare.commonSquads")}</h3>
       <p class="compare-squads__intro">${t("compare.bothMembers")}</p>
       <div class="compare-squads__list">${cards}</div>
     </div>`;
-  els.compareSquads.querySelectorAll("[data-squad-action]").forEach(b => b.addEventListener("click", handleCompareSquadAction));
+  els.compareSquads
+    .querySelectorAll("[data-squad-action]")
+    .forEach((b) => b.addEventListener("click", handleCompareSquadAction));
 }
 
 function renderCompare() {
-  if (!els.compareResults || !els.compareSummary || !els.compareTable || !els.compareRecommendations || !els.compareActions || !els.compareSquads) return;
+  if (
+    !els.compareResults ||
+    !els.compareSummary ||
+    !els.compareTable ||
+    !els.compareRecommendations ||
+    !els.compareActions ||
+    !els.compareSquads
+  )
+    return;
   if (!state.compareTarget) {
     els.compareResults.style.display = "none";
     if (els.compareStatus) els.compareStatus.textContent = "";
@@ -73,14 +90,18 @@ function renderCompare() {
   }
   els.compareResults.style.display = "block";
   const pairA = state.compareAsPair?.userA;
-  const aName = pairA ? pairA.displayName : (state.username || t("compare.me"));
+  const aName = pairA ? pairA.displayName : state.username || t("compare.me");
   const bName = state.compareTarget.username || t("compare.friend");
   if (els.comparePlayerAName) els.comparePlayerAName.textContent = aName;
   if (els.comparePlayerBName) els.comparePlayerBName.textContent = bName;
   const userA = pairA
     ? { id: pairA.id || "userA", displayName: pairA.displayName, collection: pairA.collection }
     : { id: state.userId || "userA", displayName: state.username || t("compare.me"), collection: state.collection };
-  const userB = { id: state.compareTarget.userId || state.compareTarget.username || "userB", displayName: state.compareTarget.username || t("compare.friend"), collection: state.compareTarget.collection };
+  const userB = {
+    id: state.compareTarget.userId || state.compareTarget.username || "userB",
+    displayName: state.compareTarget.username || t("compare.friend"),
+    collection: state.compareTarget.collection
+  };
   const result = compareCollections(userA, userB, getCompareCatalogItems());
   state.lastCompareResult = result;
   renderCompareSummary(result, aName, bName);

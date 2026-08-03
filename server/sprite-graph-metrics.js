@@ -84,20 +84,11 @@ async function setOpsCounter(db = pool, key, value) {
 
 async function getOpsCounter(db = pool, key) {
   await ensureGraphOpsTables(db);
-  const r = await db.query(
-    `SELECT counter_value FROM graph_ops_counters WHERE counter_key = $1`,
-    [String(key)]
-  );
+  const r = await db.query(`SELECT counter_value FROM graph_ops_counters WHERE counter_key = $1`, [String(key)]);
   return r.rows[0] ? Number(r.rows[0].counter_value) : 0;
 }
 
-async function recordOpsRun(db = pool, {
-  runType,
-  startedAt,
-  finishedAt = new Date(),
-  ok = true,
-  details = {}
-} = {}) {
+async function recordOpsRun(db = pool, { runType, startedAt, finishedAt = new Date(), ok = true, details = {} } = {}) {
   await ensureGraphOpsTables(db);
   const start = startedAt instanceof Date ? startedAt : new Date(startedAt || Date.now());
   const end = finishedAt instanceof Date ? finishedAt : new Date(finishedAt);
@@ -126,9 +117,7 @@ async function recordOpsRun(db = pool, {
 /**
  * Étape 97 — technical metrics (admin / ops only).
  */
-async function getSpriteGraphTechnicalMetrics(db = pool, {
-  windowMinutes = 60
-} = {}) {
+async function getSpriteGraphTechnicalMetrics(db = pool, { windowMinutes = 60 } = {}) {
   await ensureGraphOpsTables(db);
   const minutes = Math.max(1, Math.min(24 * 60, Math.floor(Number(windowMinutes) || 60)));
 
@@ -154,12 +143,16 @@ async function getSpriteGraphTechnicalMetrics(db = pool, {
     pendingOutbox = lag.rows[0]?.pending || 0;
     failedOutbox = lag.rows[0]?.failed || 0;
     workerLagSeconds = lag.rows[0]?.lag_s != null ? Number(lag.rows[0].lag_s) : 0;
-  } catch (_) { /* outbox may be empty / missing */ }
+  } catch (_) {
+    /* outbox may be empty / missing */
+  }
 
-  const tableSize = await db.query(
-    `SELECT pg_total_relation_size('graph_events')::bigint AS bytes,
+  const tableSize = await db
+    .query(
+      `SELECT pg_total_relation_size('graph_events')::bigint AS bytes,
             (SELECT COUNT(*)::bigint FROM graph_events) AS row_count`
-  ).catch(() => ({ rows: [{ bytes: 0, row_count: 0 }] }));
+    )
+    .catch(() => ({ rows: [{ bytes: 0, row_count: 0 }] }));
 
   const dedupSkips = await getOpsCounter(db, GRAPH_OPS_COUNTERS.DEDUP_SKIPS);
   const recordErrors = await getOpsCounter(db, GRAPH_OPS_COUNTERS.RECORD_ERRORS);
@@ -189,18 +182,15 @@ async function getSpriteGraphTechnicalMetrics(db = pool, {
 
 async function isPublicMetricDisabled(db = pool, metricKey) {
   await ensureGraphOpsTables(db);
-  const r = await db.query(
-    `SELECT disabled FROM graph_feature_flags WHERE flag_key = $1`,
-    [String(metricKey)]
-  );
+  const r = await db.query(`SELECT disabled FROM graph_feature_flags WHERE flag_key = $1`, [String(metricKey)]);
   return !!(r.rows[0] && r.rows[0].disabled === true);
 }
 
-async function setPublicMetricDisabled(db = pool, metricKey, {
-  disabled = true,
-  reason = null,
-  updatedBy = null
-} = {}) {
+async function setPublicMetricDisabled(
+  db = pool,
+  metricKey,
+  { disabled = true, reason = null, updatedBy = null } = {}
+) {
   await ensureGraphOpsTables(db);
   const key = String(metricKey || "").slice(0, 80);
   if (!key) return null;
@@ -262,7 +252,9 @@ async function getSpriteGraphControlBoard(db = pool) {
          AND COALESCE(failed_at, processed_at, available_at) >= NOW() - INTERVAL '24 hours'`
     );
     rejected = rej.rows[0]?.n || 0;
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
   let lastConsolidation = null;
   try {
@@ -279,7 +271,9 @@ async function getSpriteGraphControlBoard(db = pool) {
         catalogueVersion: pub.rows[0].catalogue_version
       };
     }
-  } catch (_) { /* table may be missing */ }
+  } catch (_) {
+    /* table may be missing */
+  }
 
   let sampleSizes = { avg: null, min: null, max: null, rows: 0 };
   try {
@@ -301,7 +295,9 @@ async function getSpriteGraphControlBoard(db = pool) {
         max: s.rows[0].max
       };
     }
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
   const flags = await listPublicMetricFlags(db);
   const suspendedPublic = flags.filter((f) => f.disabled).map((f) => f.key);
@@ -326,16 +322,13 @@ async function getSpriteGraphControlBoard(db = pool) {
 }
 
 /** Safe admin export — aggregates only, never raw private events. */
-async function getAdminAggregateExport(db = pool, {
-  metricDate = null,
-  limit = 200
-} = {}) {
+async function getAdminAggregateExport(db = pool, { metricDate = null, limit = 200 } = {}) {
   try {
     await require("./sprite-graph-formula").ensureFormulaVersionColumns(db);
-  } catch (_) { /* ignore */ }
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  } catch (_) {
+    /* ignore */
+  }
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const lim = Math.max(1, Math.min(2000, Math.floor(Number(limit) || 200)));
   const rows = await db.query(
     `SELECT metric_date, variant_id, sample_size, ownership_rate, priority_rate,

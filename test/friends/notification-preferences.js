@@ -12,7 +12,8 @@ module.exports = async function runNotificationPreferences(ctx) {
       const cat = await catRes.json();
       const first = cat.sprites[0];
       const second = cat.sprites[1] || cat.sprites[0];
-      const variantId = (first && first.variantIds && first.variantIds[0]) || (first && first.id) || "sprite_burnt_peanut";
+      const variantId =
+        (first && first.variantIds && first.variantIds[0]) || (first && first.id) || "sprite_burnt_peanut";
       const variantId2 = (second && second.variantIds && second.variantIds[0]) || (second && second.id) || variantId;
 
       let res = await fetch(`${API}/friends/${gina.id}/request`, { method: "POST", headers: auth(fred.token) });
@@ -23,14 +24,20 @@ module.exports = async function runNotificationPreferences(ctx) {
       let notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
       assert.strictEqual(notifRes.status, 200);
       let notifs = await notifRes.json();
-      assert.ok(notifs.notifications.some(n => n.type === "friend_request_received" && n.actor_id === fred.id), "gina missing friend_request_received");
+      assert.ok(
+        notifs.notifications.some((n) => n.type === "friend_request_received" && n.actor_id === fred.id),
+        "gina missing friend_request_received"
+      );
 
       notifRes = await fetch(`${API}/notifications`, { headers: auth(fred.token) });
       notifs = await notifRes.json();
-      const accepted = notifs.notifications.find(n => n.type === "friend_request_accepted" && n.actor_id === gina.id);
+      const accepted = notifs.notifications.find((n) => n.type === "friend_request_accepted" && n.actor_id === gina.id);
       assert.ok(accepted, "fred missing friend_request_accepted");
       // Étape 13 — content shape
-      assert.ok(accepted.title && accepted.title.includes("a accepté votre invitation"), "title should name the accepter");
+      assert.ok(
+        accepted.title && accepted.title.includes("a accepté votre invitation"),
+        "title should name the accepter"
+      );
       assert.strictEqual(accepted.body || accepted.message, "Vous pouvez maintenant comparer vos collections.");
       assert.strictEqual(String(accepted.data.friendId), String(gina.id));
       assert.ok(accepted.data.friendshipId, "data.friendshipId missing");
@@ -42,7 +49,7 @@ module.exports = async function runNotificationPreferences(ctx) {
       notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
       notifs = await notifRes.json();
       assert.ok(
-        !notifs.notifications.some(n => n.type === "friend_request_accepted"),
+        !notifs.notifications.some((n) => n.type === "friend_request_accepted"),
         "accepter should not receive friend_request_accepted"
       );
 
@@ -68,12 +75,18 @@ module.exports = async function runNotificationPreferences(ctx) {
       });
       assert.strictEqual(res.status, 200, `fred owned update failed: ${res.status}`);
 
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 700));
       notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
       notifs = await notifRes.json();
-      assert.ok(notifs.notifications.some(n => n.type === "friend_collection_updated" && n.actor_id === fred.id), "gina missing friend_collection_updated");
+      assert.ok(
+        notifs.notifications.some((n) => n.type === "friend_collection_updated" && n.actor_id === fred.id),
+        "gina missing friend_collection_updated"
+      );
       const acquired = notifs.notifications.find(
-        n => n.type === "friend_acquired_missing_variant" && n.actor_id === fred.id && String(n.entity_id) === String(variantId)
+        (n) =>
+          n.type === "friend_acquired_missing_variant" &&
+          n.actor_id === fred.id &&
+          String(n.entity_id) === String(variantId)
       );
       assert.ok(acquired, "gina missing friend_acquired_missing_variant");
       assert.strictEqual(acquired.data.recipientCollectionStatus, "missing");
@@ -118,11 +131,17 @@ module.exports = async function runNotificationPreferences(ctx) {
       });
       assert.strictEqual(res.status, 200, `fred own v2 failed: ${res.status}`);
 
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 700));
       notifRes = await fetch(`${API}/notifications`, { headers: auth(gina.token) });
       notifs = await notifRes.json();
-      assert.ok(!notifs.notifications.some(n => n.type === "friend_collection_updated" && n.read_at === null), "disabled collection notification created");
-      assert.ok(!notifs.notifications.some(n => n.type === "friend_acquired_missing_variant" && n.read_at === null), "disabled acquired notification created");
+      assert.ok(
+        !notifs.notifications.some((n) => n.type === "friend_collection_updated" && n.read_at === null),
+        "disabled collection notification created"
+      );
+      assert.ok(
+        !notifs.notifications.some((n) => n.type === "friend_acquired_missing_variant" && n.read_at === null),
+        "disabled acquired notification created"
+      );
     } finally {
       await cleanup(fred);
       await cleanup(gina);
@@ -150,7 +169,7 @@ module.exports = async function runNotificationPreferences(ctx) {
       assert.strictEqual(notifRes.status, 200);
       const notifs = await notifRes.json();
       assert.ok(
-        !notifs.notifications.some(n => n.type === "friend_request_accepted"),
+        !notifs.notifications.some((n) => n.type === "friend_request_accepted"),
         "social-disabled recipient should not get friend_request_accepted"
       );
     } finally {

@@ -81,7 +81,10 @@ async function main() {
   const probeCode = totpAt(decodeBase32(mfaSecret));
   assert.strictEqual(verifyTotpCode(probeCode, { secret: mfaSecret }), true);
   assert.strictEqual((await consumeTotpCode(probeCode, { purpose: "test-replay", secret: mfaSecret })).ok, true);
-  assert.strictEqual((await consumeTotpCode(probeCode, { purpose: "test-replay", secret: mfaSecret })).reason, "replay");
+  assert.strictEqual(
+    (await consumeTotpCode(probeCode, { purpose: "test-replay", secret: mfaSecret })).reason,
+    "replay"
+  );
 
   // Use a fresh secret so login is not blocked by the probe counter above.
   const loginSecret = generateTotpSecret();
@@ -94,17 +97,17 @@ async function main() {
   );
   assert.ok(await peekAdminTicket(mfaTicket), "failed MFA must not burn the one-time ticket");
   const loginCode = totpAt(decodeBase32(loginSecret));
-  const mfaSession = await consumeAdminTicket(mfaTicket, { ip: "127.0.0.1", userAgent: "admin-mfa-test" }, { totp: loginCode });
+  const mfaSession = await consumeAdminTicket(
+    mfaTicket,
+    { ip: "127.0.0.1", userAgent: "admin-mfa-test" },
+    { totp: loginCode }
+  );
   assert.ok(mfaSession);
   assert.strictEqual(mfaSession.role, "owner");
   await assert.rejects(
     async () => {
       const replayTicket = await issueAdminTicket({ ip: "127.0.0.1", userAgent: "admin-mfa-replay" });
-      await consumeAdminTicket(
-        replayTicket,
-        { ip: "127.0.0.1", userAgent: "admin-mfa-replay" },
-        { totp: loginCode }
-      );
+      await consumeAdminTicket(replayTicket, { ip: "127.0.0.1", userAgent: "admin-mfa-replay" }, { totp: loginCode });
     },
     (error) => error instanceof AdminAccessError && error.code === "ADMIN_MFA_REPLAY"
   );
@@ -117,7 +120,10 @@ async function main() {
 
   process.env.ADMIN_OPERATOR_ROLE = "readonly";
   const readonlyTicket = await issueAdminTicket({ ip: "127.0.0.1", userAgent: "admin-readonly-test" });
-  const readonlySession = await consumeAdminTicket(readonlyTicket, { ip: "127.0.0.1", userAgent: "admin-readonly-test" });
+  const readonlySession = await consumeAdminTicket(readonlyTicket, {
+    ip: "127.0.0.1",
+    userAgent: "admin-readonly-test"
+  });
   assert.strictEqual(readonlySession.role, "readonly");
   assert.ok(!readonlySession.capabilities.includes("privacy.purge"));
   process.env.ADMIN_OPERATOR_ROLE = "owner";

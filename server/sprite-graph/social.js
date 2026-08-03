@@ -21,7 +21,9 @@ function normalizeComparisonPair(userAId, userBId) {
 }
 
 function normalizeInvitationMethod(value, { fallback = "username" } = {}) {
-  const raw = String(value == null ? "" : value).trim().toLowerCase();
+  const raw = String(value == null ? "" : value)
+    .trim()
+    .toLowerCase();
   if (FRIEND_INVITATION_METHOD_SET.has(raw)) return raw;
   if (raw === "username_search" || raw === "search") return "username";
   if (raw === "link" || raw === "invite" || raw === "invite-link") return "invite_link";
@@ -41,12 +43,18 @@ function buildFriendInvitationSentContext({
   status = "pending"
 } = {}) {
   const method = normalizeInvitationMethod(invitationMethod);
-  const sourceHint = invitationSource
-    || (method === "username" ? "username_search"
-      : method === "invite_link" ? "invite_link"
-        : method === "qr_code" ? "qr_code"
-          : method === "squad_member" ? "squad_member"
-            : method === "passport" ? "passport"
+  const sourceHint =
+    invitationSource ||
+    (method === "username"
+      ? "username_search"
+      : method === "invite_link"
+        ? "invite_link"
+        : method === "qr_code"
+          ? "qr_code"
+          : method === "squad_member"
+            ? "squad_member"
+            : method === "passport"
+              ? "passport"
               : "username_search");
   return {
     invitationMethod: method,
@@ -112,9 +120,8 @@ async function getFriendInvitationPublicMetrics(db = pool, { windowDays = null }
     acceptedParams
   );
   const acceptedCount = accepted.rows[0]?.n || 0;
-  const acceptanceRate = totalInvitationsSent > 0
-    ? Math.round((acceptedCount / totalInvitationsSent) * 1000) / 1000
-    : 0;
+  const acceptanceRate =
+    totalInvitationsSent > 0 ? Math.round((acceptedCount / totalInvitationsSent) * 1000) / 1000 : 0;
 
   return {
     totalInvitationsSent,
@@ -129,4 +136,10 @@ function isFriendInvitationPubliclyExposable() {
   return false;
 }
 
-module.exports = { normalizeComparisonPair, normalizeInvitationMethod, buildFriendInvitationSentContext, getFriendInvitationPublicMetrics, isFriendInvitationPubliclyExposable };
+module.exports = {
+  normalizeComparisonPair,
+  normalizeInvitationMethod,
+  buildFriendInvitationSentContext,
+  getFriendInvitationPublicMetrics,
+  isFriendInvitationPubliclyExposable
+};

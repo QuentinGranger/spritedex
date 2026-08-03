@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "tendances (Étape 93)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     const {
       resolveInterestTrend,
       evaluateTrendEligibility,
@@ -43,9 +43,7 @@ module.exports = {
     });
     assert.ok(seriesFresh == null || seriesFresh.latest?.trend == null);
 
-    const variantRes = await pool.query(
-      `SELECT v.id FROM sprite_variants v ORDER BY v.id LIMIT 1`
-    );
+    const variantRes = await pool.query(`SELECT v.id FROM sprite_variants v ORDER BY v.id LIMIT 1`);
     const variantId = variantRes.rows[0].id;
     await pool.query(`DELETE FROM variant_interest_daily WHERE variant_id = $1`, [variantId]);
     await pool.query(
@@ -62,23 +60,26 @@ module.exports = {
     });
     assert.ok(series);
     assert.strictEqual(series.latest.trend, null);
-    assert.ok(
-      (series.latest.trendMessage || series.trendEligibility?.message || "")
-        .includes("Pas encore assez")
-    );
+    assert.ok((series.latest.trendMessage || series.trendEligibility?.message || "").includes("Pas encore assez"));
 
     // Événement temporaire — priority_added avec eventId.
     const user = await register(`Sg93Ev${rnd()}`);
-    const tmp = await recordCollectionGraphEvents(user.id, [{
-      variantId: `sg93tmp_${rnd()}`,
-      spriteId: "sg93s",
-      isNewEntry: false,
-      historyId: 9301,
-      previousStatus: "missing",
-      newStatus: "priority",
-      newPriority: "urgent",
-      eventId: "event_hot_temp_93"
-    }], { source: "api", catalogueVersion: "2026.07.18-1" });
+    const tmp = await recordCollectionGraphEvents(
+      user.id,
+      [
+        {
+          variantId: `sg93tmp_${rnd()}`,
+          spriteId: "sg93s",
+          isNewEntry: false,
+          historyId: 9301,
+          previousStatus: "missing",
+          newStatus: "priority",
+          newPriority: "urgent",
+          eventId: "event_hot_temp_93"
+        }
+      ],
+      { source: "api", catalogueVersion: "2026.07.18-1" }
+    );
     const prio = tmp.find((e) => e.eventType === "collection.priority_added");
     assert.ok(prio);
     assert.strictEqual(prio.context.eventId, "event_hot_temp_93");

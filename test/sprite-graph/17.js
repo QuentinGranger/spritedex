@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "compteurs temps réel + rebuild + rétention (Étapes 61–65)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const {
       GRAPH_COUNTER_METRICS,
@@ -27,9 +27,7 @@ module.exports = {
     assert.ok(GRAPH_RETENTION.technicalContextKeys.includes("requestId"));
 
     const day = new Date().toISOString().slice(0, 10);
-    const variantRes = await pool.query(
-      `SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`
-    );
+    const variantRes = await pool.query(`SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`);
     assert.ok(variantRes.rows.length);
     const variantId = variantRes.rows[0].id;
     const spriteId = variantRes.rows[0].sprite_id;
@@ -88,9 +86,9 @@ module.exports = {
       occurred_at: `${day}T14:00:00.000Z`
     });
     assert.ok(bumps.some((b) => b.metricType === GRAPH_COUNTER_METRICS.COMPARISON_COMPLETED));
-    assert.ok(bumps.some((b) => (
-      b.metricType === GRAPH_COUNTER_METRICS.COMPARISON_DIFFERENCE && b.entityId === spriteId
-    )));
+    assert.ok(
+      bumps.some((b) => b.metricType === GRAPH_COUNTER_METRICS.COMPARISON_DIFFERENCE && b.entityId === spriteId)
+    );
 
     // Étape 63 — direct increment API.
     await incrementMetricCounter(pool, {
@@ -154,20 +152,14 @@ module.exports = {
       limit: 50
     });
     assert.ok(compacted >= 0);
-    const afterCompact = await pool.query(
-      `SELECT context FROM graph_events WHERE deduplication_key = $1`,
-      [oldKey]
-    );
+    const afterCompact = await pool.query(`SELECT context FROM graph_events WHERE deduplication_key = $1`, [oldKey]);
     if (compacted > 0 && afterCompact.rows[0]) {
       assert.strictEqual(afterCompact.rows[0].context.requestId, undefined);
       assert.strictEqual(afterCompact.rows[0].context.goalScope, "personal");
     }
 
     // Raw event row still exists (not deleted).
-    const stillThere = await pool.query(
-      `SELECT id FROM graph_events WHERE deduplication_key = $1`,
-      [oldKey]
-    );
+    const stillThere = await pool.query(`SELECT id FROM graph_events WHERE deduplication_key = $1`, [oldKey]);
     assert.strictEqual(stillThere.rows.length, 1);
   }
 };

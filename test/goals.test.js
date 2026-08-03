@@ -159,16 +159,26 @@ async function run() {
       assert.ok(goal.goalId, "goal id missing");
 
       const list = await listGoals(alice.token);
-      assert.ok(list.goals.some(g => g.id === goal.goalId), "personal goal not listed");
-      assert.ok(list.goals.some(g => g.id === goal.goalId && String(g.userId) === String(alice.id)), "goal should belong to creator");
+      assert.ok(
+        list.goals.some((g) => g.id === goal.goalId),
+        "personal goal not listed"
+      );
+      assert.ok(
+        list.goals.some((g) => g.id === goal.goalId && String(g.userId) === String(alice.id)),
+        "goal should belong to creator"
+      );
     });
 
     await test("un objectif peut appartenir à une squad", async () => {
       const squad = await createSquad(alice.token, "Goal Squad");
-      const goal = await createGoal(alice.token, { title: "Squad Goal", squadId: squad.id, variantId: samples.activeId });
+      const goal = await createGoal(alice.token, {
+        title: "Squad Goal",
+        squadId: squad.id,
+        variantId: samples.activeId
+      });
 
       const list = await listGoals(alice.token);
-      const found = list.goals.find(g => g.id === goal.goalId);
+      const found = list.goals.find((g) => g.id === goal.goalId);
       assert.ok(found, "squad goal not listed");
       assert.strictEqual(String(found.squadId), String(squad.id), "goal should belong to squad");
     });
@@ -177,16 +187,20 @@ async function run() {
       const squad = await createSquad(alice.token, "Progress Squad");
       await joinSquad(bob.token, squad.code);
 
-      const goal = await createGoal(alice.token, { title: "Progress Goal", squadId: squad.id, variantId: samples.activeId });
+      const goal = await createGoal(alice.token, {
+        title: "Progress Goal",
+        squadId: squad.id,
+        variantId: samples.activeId
+      });
 
       let list = await listGoals(alice.token);
-      let found = list.goals.find(g => g.id === goal.goalId);
+      let found = list.goals.find((g) => g.id === goal.goalId);
       assert.strictEqual(found.status, "active", "goal should start active");
 
       await setEntry(bob.token, bob.id, samples.activeId, "owned");
 
       list = await listGoals(alice.token);
-      found = list.goals.find(g => g.id === goal.goalId);
+      found = list.goals.find((g) => g.id === goal.goalId);
       assert.strictEqual(found.status, "completed", "squad goal should complete when variant is owned");
     });
 
@@ -194,16 +208,23 @@ async function run() {
       const squad = await createSquad(alice.token, "Leave Squad");
       await joinSquad(bob.token, squad.code);
 
-      const goal = await createGoal(alice.token, { title: "Leave Goal", squadId: squad.id, variantId: samples.activeId });
+      const goal = await createGoal(alice.token, {
+        title: "Leave Goal",
+        squadId: squad.id,
+        variantId: samples.activeId
+      });
 
       let list = await listGoals(bob.token);
-      assert.ok(list.goals.some(g => g.id === goal.goalId), "bob should see squad goal");
+      assert.ok(
+        list.goals.some((g) => g.id === goal.goalId),
+        "bob should see squad goal"
+      );
 
       const left = await leaveSquad(bob.token, squad.code);
       assert.ok(left, "leave squad failed");
 
       list = await listGoals(bob.token);
-      assert.ok(!list.goals.some(g => g.id === goal.goalId), "bob should no longer see squad goal after leaving");
+      assert.ok(!list.goals.some((g) => g.id === goal.goalId), "bob should no longer see squad goal after leaving");
     });
 
     await test("une recommandation forgée ne peut ni cibler un non-membre ni surcharger les participants", async () => {
@@ -239,7 +260,11 @@ async function run() {
             confirm: false
           })
         });
-        assert.strictEqual(oversizedAssignments.status, 400, `oversized assignments should fail: ${await oversizedAssignments.text()}`);
+        assert.strictEqual(
+          oversizedAssignments.status,
+          400,
+          `oversized assignments should fail: ${await oversizedAssignments.text()}`
+        );
 
         const safePrefill = await fetch(`${API}/collection-goals/from-recommendation`, {
           method: "POST",
@@ -298,19 +323,28 @@ async function run() {
       const directSquad = await createSquad(alice.token, "Atomic Direct Goals");
       await setGoalLimit(alice.token, directSquad.code, 1);
       const directResponses = await Promise.all(
-        Array.from({ length: 5 }, (_, index) => fetch(`${API}/collection-goals`, {
-          method: "POST",
-          headers: auth(alice.token),
-          body: JSON.stringify({
-            title: `Atomic direct ${index}`,
-            squadId: directSquad.id,
-            variantId: samples.activeId
+        Array.from({ length: 5 }, (_, index) =>
+          fetch(`${API}/collection-goals`, {
+            method: "POST",
+            headers: auth(alice.token),
+            body: JSON.stringify({
+              title: `Atomic direct ${index}`,
+              squadId: directSquad.id,
+              variantId: samples.activeId
+            })
           })
-        }))
+        )
       );
-      const directStatuses = directResponses.map(res => res.status);
-      assert.strictEqual(directStatuses.filter(status => status === 201).length, 1, `direct statuses: ${directStatuses}`);
-      assert.ok(directStatuses.every(status => status === 201 || status === 429), `unexpected direct statuses: ${directStatuses}`);
+      const directStatuses = directResponses.map((res) => res.status);
+      assert.strictEqual(
+        directStatuses.filter((status) => status === 201).length,
+        1,
+        `direct statuses: ${directStatuses}`
+      );
+      assert.ok(
+        directStatuses.every((status) => status === 201 || status === 429),
+        `unexpected direct statuses: ${directStatuses}`
+      );
 
       const recommendationSquad = await createSquad(alice.token, "Atomic Recommendation Goals");
       await setGoalLimit(alice.token, recommendationSquad.code, 1);
@@ -322,28 +356,40 @@ async function run() {
         expectedCollectiveGain: 1
       };
       const recommendationResponses = await Promise.all(
-        Array.from({ length: 5 }, (_, index) => fetch(`${API}/collection-goals/from-recommendation`, {
-          method: "POST",
-          headers: auth(alice.token),
-          body: JSON.stringify({
-            recommendation: { ...recommendation, title: `${recommendation.title} ${index}` },
-            overrides: { squadId: recommendationSquad.id },
-            confirm: true
+        Array.from({ length: 5 }, (_, index) =>
+          fetch(`${API}/collection-goals/from-recommendation`, {
+            method: "POST",
+            headers: auth(alice.token),
+            body: JSON.stringify({
+              recommendation: { ...recommendation, title: `${recommendation.title} ${index}` },
+              overrides: { squadId: recommendationSquad.id },
+              confirm: true
+            })
           })
-        }))
+        )
       );
-      const recommendationStatuses = recommendationResponses.map(res => res.status);
-      assert.strictEqual(recommendationStatuses.filter(status => status === 201).length, 1, `recommendation statuses: ${recommendationStatuses}`);
-      assert.ok(recommendationStatuses.every(status => status === 201 || status === 429), `unexpected recommendation statuses: ${recommendationStatuses}`);
+      const recommendationStatuses = recommendationResponses.map((res) => res.status);
+      assert.strictEqual(
+        recommendationStatuses.filter((status) => status === 201).length,
+        1,
+        `recommendation statuses: ${recommendationStatuses}`
+      );
+      assert.ok(
+        recommendationStatuses.every((status) => status === 201 || status === 429),
+        `unexpected recommendation statuses: ${recommendationStatuses}`
+      );
 
       const goals = await listGoals(alice.token);
       assert.strictEqual(
-        goals.goals.filter(goal => String(goal.squadId) === String(directSquad.id) && goal.status === "active").length,
+        goals.goals.filter((goal) => String(goal.squadId) === String(directSquad.id) && goal.status === "active")
+          .length,
         1,
         "direct squad must retain exactly one active goal"
       );
       assert.strictEqual(
-        goals.goals.filter(goal => String(goal.squadId) === String(recommendationSquad.id) && goal.status === "active").length,
+        goals.goals.filter(
+          (goal) => String(goal.squadId) === String(recommendationSquad.id) && goal.status === "active"
+        ).length,
         1,
         "recommendation squad must retain exactly one active goal"
       );
@@ -360,12 +406,18 @@ async function run() {
         // Clear old notifications
         await fetch(`${API}/notifications/read-all`, { method: "POST", headers: auth(charlie.token) });
 
-        const goal = await createGoal(charlie.token, { title: "Notify Goal", squadId: squad.id, variantId: samples.activeId });
+        const goal = await createGoal(charlie.token, {
+          title: "Notify Goal",
+          squadId: squad.id,
+          variantId: samples.activeId
+        });
 
         await setEntry(bob.token, bob.id, samples.activeId, "owned");
 
         const notifications = await getNotifications(charlie.token);
-        const goalNotification = notifications.notifications.find(n => n.type === "goal_completed" || (n.metadata && n.metadata.type === "goal_completed"));
+        const goalNotification = notifications.notifications.find(
+          (n) => n.type === "goal_completed" || (n.metadata && n.metadata.type === "goal_completed")
+        );
         assert.ok(goalNotification, "goal completion should create a notification");
       } finally {
         await cleanup(charlie);

@@ -8,7 +8,13 @@ async function upsertAvailabilityPeriod(client, spriteId, availability, eventId,
   const startDate = availability.startDate || null;
   const endDate = availability.endDate || null;
   const eventKey = eventId || "";
-  const periodId = "availability_" + crypto.createHash("md5").update(`${spriteId}|${startDate || "unknown"}|${eventKey}`).digest("hex").slice(0, 16);
+  const periodId =
+    "availability_" +
+    crypto
+      .createHash("md5")
+      .update(`${spriteId}|${startDate || "unknown"}|${eventKey}`)
+      .digest("hex")
+      .slice(0, 16);
   const status = normalizeAvailabilityStatus(availability.status, startDate, endDate);
 
   await client.query(
@@ -32,7 +38,7 @@ async function upsertAvailabilityPeriod(client, spriteId, availability, eventId,
       eventId || null,
       availability.confidence || "unknown",
       startDate ? "complete" : "incomplete",
-      JSON.stringify(sourceIds || []),
+      JSON.stringify(sourceIds || [])
     ]
   );
 }

@@ -2,15 +2,18 @@
 
 const { pool } = require("../db");
 const { awardBadgeByCode } = require("./unlocking");
+const { precisePercent } = require("./rarities-events");
 
 /**
  * Étapes 44–45 — complementary_collection from a real compare engine result.
  * Awards both users when eligible. Returns { awarded: [], skippedReason }.
  */
-async function evaluateAndAwardComplementaryBadge(userAId, userBId, compareResult, {
-  catalogueVersion = null,
-  db = pool
-} = {}) {
+async function evaluateAndAwardComplementaryBadge(
+  userAId,
+  userBId,
+  compareResult,
+  { catalogueVersion = null, db = pool } = {}
+) {
   const aId = Number(userAId);
   const bId = Number(userBId);
   if (!Number.isSafeInteger(aId) || !Number.isSafeInteger(bId) || aId === bId) {
@@ -23,7 +26,7 @@ async function evaluateAndAwardComplementaryBadge(userAId, userBId, compareResul
   const { areFriends, shareActiveSquad, isAccountSuspended } = require("../auth");
   const { passportReliability } = require("../passport-math");
 
-  if (await isAccountSuspended(aId) || await isAccountSuspended(bId)) {
+  if ((await isAccountSuspended(aId)) || (await isAccountSuspended(bId))) {
     return { awarded: [], skippedReason: "suspended" };
   }
 

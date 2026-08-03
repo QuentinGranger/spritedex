@@ -75,9 +75,15 @@
   margin-bottom: 5px;
 }
 
-.squad-card__group--owned .squad-card__label { color: #00ff87; }
-.squad-card__group--missing .squad-card__label { color: #ff3a6e; }
-.squad-card__group--prio .squad-card__label { color: #ffcc00; }
+.squad-card__group--owned .squad-card__label {
+  color: #00ff87;
+}
+.squad-card__group--missing .squad-card__label {
+  color: #ff3a6e;
+}
+.squad-card__group--prio .squad-card__label {
+  color: #ffcc00;
+}
 
 .squad-card__players {
   display: flex;
@@ -117,4 +123,3 @@
   font-style: italic;
   padding: 4px 0;
 }
-

@@ -16,7 +16,11 @@ assert.strictEqual(catalog.sources.length, 27);
 assert.strictEqual(catalog.unreleasedContent.baseSprites.length, 1);
 assert.strictEqual(validation.errors.length, 0, validation.errors.map((error) => error.message).join("\n"));
 
-for (const relativePath of [...manifest.sections.sprites, ...manifest.sections.variantDefinitions, ...manifest.sections.sources]) {
+for (const relativePath of [
+  ...manifest.sections.sprites,
+  ...manifest.sections.variantDefinitions,
+  ...manifest.sections.sources
+]) {
   assert.ok(fs.existsSync(path.join(DEFAULT_CATALOG_PATH, relativePath)), `fragment absent : ${relativePath}`);
 }
 

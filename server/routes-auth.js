@@ -3,7 +3,21 @@
 const analytics = require("../analytics");
 const security = require("../security");
 const secLog = require("../security-logger");
-const { LEGACY_PBKDF2_ITERATIONS, PBKDF2_ITERATIONS, burnPasswordWork, createSession, getRequestingUser, hashPassword, hashSessionToken, verifyPassword } = require("./auth");
+const {
+  LEGACY_PBKDF2_ITERATIONS,
+  PBKDF2_ITERATIONS,
+  buildAuthSessionPayload,
+  burnPasswordWork,
+  clearPlayerAuthCookies,
+  createSession,
+  getRequestingUser,
+  hashPassword,
+  hashSessionToken,
+  issueCsrfToken,
+  readSessionCookie,
+  validateSession,
+  verifyPassword
+} = require("./auth");
 const { APP_URL, app, resend, sendPasswordResetEmail, sendVerificationEmail } = require("./core");
 const { pool } = require("./db");
 const { revokeSessionSockets, revokeUserSockets } = require("./ws");
@@ -27,86 +41,108 @@ function isOAuthExchangeChallenge(value) {
 }
 
 // ── Auth : Email register ──
-app.post("/api/auth/register", security.registerLimiter, security.validateBody(security.schemas.registerSchema), async (req, res) => {
-  const { email, password, username: reqUsername, displayName: reqDisplayName, cguAccepted, cguVersion, ageConfirmed, cookieConsent } = req.validatedBody;
-  const consentPayload = normalizeCookieConsent(cookieConsent);
-  if (!consentPayload) {
-    return res.status(400).json({ error: "Consentement invalide" });
-  }
-  try {
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL", [email.toLowerCase()]);
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ error: "Impossible de créer le compte" });
+app.post(
+  "/api/auth/register",
+  security.registerLimiter,
+  security.validateBody(security.schemas.registerSchema),
+  async (req, res) => {
+    const {
+      email,
+      password,
+      username: reqUsername,
+      displayName: reqDisplayName,
+      cguAccepted,
+      cguVersion,
+      ageConfirmed,
+      cookieConsent
+    } = req.validatedBody;
+    const consentPayload = normalizeCookieConsent(cookieConsent);
+    if (!consentPayload) {
+      return res.status(400).json({ error: "Consentement invalide" });
     }
-    const { salt, hash, iterations } = await hashPassword(password);
-    const rawUsername = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") || "joueur";
-    const username = rawUsername.length < 3 ? `${rawUsername}_${crypto.randomBytes(3).toString("hex")}` : rawUsername.slice(0, 24);
-    const { isUsernameReserved } = require("./username-history");
-    if (await isUsernameReserved(username)) {
-      return res.status(409).json({ error: "Ce pseudo est déjà pris ou temporairement réservé" });
-    }
-    const displayName = reqDisplayName || username;
-    const emailToken = crypto.randomBytes(32).toString("hex");
-    const emailTokenHash = hashOpaqueToken(emailToken);
-    const emailTokenExpires = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
-    const result = await pool.query(
-      `INSERT INTO users (username, display_name, email, password_hash, password_salt, password_iterations, email_verify_token, email_verify_token_expires, cgu_accepted, cgu_version, cgu_accepted_at, age_confirmed, cookie_consent)
+    try {
+      const existing = await pool.query("SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL", [
+        email.toLowerCase()
+      ]);
+      if (existing.rows.length > 0) {
+        return res.status(409).json({ error: "Impossible de créer le compte" });
+      }
+      const { salt, hash, iterations } = await hashPassword(password);
+      const rawUsername = reqUsername || email.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "") || "joueur";
+      const username =
+        rawUsername.length < 3 ? `${rawUsername}_${crypto.randomBytes(3).toString("hex")}` : rawUsername.slice(0, 24);
+      const { isUsernameReserved } = require("./username-history");
+      if (await isUsernameReserved(username)) {
+        return res.status(409).json({ error: "Ce pseudo est déjà pris ou temporairement réservé" });
+      }
+      const displayName = reqDisplayName || username;
+      const emailToken = crypto.randomBytes(32).toString("hex");
+      const emailTokenHash = hashOpaqueToken(emailToken);
+      const emailTokenExpires = new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS);
+      const result = await pool.query(
+        `INSERT INTO users (username, display_name, email, password_hash, password_salt, password_iterations, email_verify_token, email_verify_token_expires, cgu_accepted, cgu_version, cgu_accepted_at, age_confirmed, cookie_consent)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id, username, display_name, created_at`,
-      [
-        username,
-        displayName,
-        email.toLowerCase(),
-        hash,
-        salt,
-        iterations,
-        emailTokenHash,
-        emailTokenExpires,
-        cguAccepted === true,
-        cguVersion || null,
-        cguAccepted === true ? new Date().toISOString() : null,
-        ageConfirmed === true,
-        JSON.stringify(consentPayload)
-      ]
-    );
-    const user = result.rows[0];
-    const emailLower = email.toLowerCase();
-    // Non-production only: integration suites register @example.com inboxes.
-    // Never auto-verify reserved example domains in production (gate bypass).
-    const autoVerifyTestInbox = process.env.NODE_ENV !== "production"
-      && /@(example\.com|example\.org)$/i.test(emailLower);
-    if (autoVerifyTestInbox) {
-      await pool.query(
-        `UPDATE users
+        [
+          username,
+          displayName,
+          email.toLowerCase(),
+          hash,
+          salt,
+          iterations,
+          emailTokenHash,
+          emailTokenExpires,
+          cguAccepted === true,
+          cguVersion || null,
+          cguAccepted === true ? new Date().toISOString() : null,
+          ageConfirmed === true,
+          JSON.stringify(consentPayload)
+        ]
+      );
+      const user = result.rows[0];
+      const emailLower = email.toLowerCase();
+      // Non-production only: integration suites register @example.com inboxes.
+      // Never auto-verify reserved example domains in production (gate bypass).
+      const autoVerifyTestInbox =
+        process.env.NODE_ENV !== "production" && /@(example\.com|example\.org)$/i.test(emailLower);
+      if (autoVerifyTestInbox) {
+        await pool.query(
+          `UPDATE users
          SET email_verified = TRUE, email_verify_token = NULL, email_verify_token_expires = NULL
          WHERE id = $1`,
-        [user.id]
-      );
-    } else {
-      const sendResult = await sendVerificationEmail(emailLower, emailToken, resolveLocale(req.get("accept-language")));
-      if (sendResult && sendResult.skipped) {
-        const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${emailToken}`;
-        console.warn(`[AUTH] Verification email not delivered (${sendResult.reason}). Dev verify URL: ${verifyUrl}`);
+          [user.id]
+        );
+      } else {
+        const sendResult = await sendVerificationEmail(
+          emailLower,
+          emailToken,
+          resolveLocale(req.get("accept-language"))
+        );
+        if (sendResult && sendResult.skipped) {
+          const verifyUrl = `${APP_URL}/api/auth/verify-email?token=${emailToken}`;
+          console.warn(`[AUTH] Verification email not delivered (${sendResult.reason}). Dev verify URL: ${verifyUrl}`);
+        }
       }
+      const token = await createSession(user.id);
+      secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "register", status: "ok" });
+      res.json(
+        buildAuthSessionPayload(req, res, token, {
+          id: user.id,
+          username: user.username,
+          displayName: user.display_name,
+          usernameNormalized: user.username.toLowerCase(),
+          emailVerified: autoVerifyTestInbox,
+          created_at: user.created_at
+        })
+      );
+    } catch (err) {
+      if (err.code === "23505") {
+        return res.status(409).json({ error: "Impossible de créer le compte" });
+      }
+      console.error(err);
+      res.status(500).json({ error: "Erreur serveur" });
     }
-    const token = await createSession(user.id);
-    secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "register", status: "ok" });
-    res.json({
-      id: user.id,
-      username: user.username,
-      displayName: user.display_name,
-      usernameNormalized: user.username.toLowerCase(),
-      token,
-      emailVerified: autoVerifyTestInbox,
-      created_at: user.created_at
-    });
-  } catch (err) {
-    if (err.code === "23505") {
-      return res.status(409).json({ error: "Impossible de créer le compte" });
-    }
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
   }
-});
+);
 
 // ── Auth : Verify email ──
 app.get("/api/auth/verify-email", async (req, res) => {
@@ -145,13 +181,12 @@ app.post("/api/auth/resend-verification", security.emailVerifLimiter, async (req
     if (!user.rows.length) return res.status(404).json({ error: "Utilisateur non trouvé" });
     if (user.rows[0].email_verified) return res.json({ ok: true, message: "Email déjà vérifié" });
     const emailToken = crypto.randomBytes(32).toString("hex");
-    await pool.query(
-      "UPDATE users SET email_verify_token = $1, email_verify_token_expires = $2 WHERE id = $3",
-      [hashOpaqueToken(emailToken), new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS), reqUser]
-    );
-    const mailLang = resolveLocale(
-      req.get("accept-language") || user.rows[0].preferred_language || "fr"
-    );
+    await pool.query("UPDATE users SET email_verify_token = $1, email_verify_token_expires = $2 WHERE id = $3", [
+      hashOpaqueToken(emailToken),
+      new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
+      reqUser
+    ]);
+    const mailLang = resolveLocale(req.get("accept-language") || user.rows[0].preferred_language || "fr");
     sendVerificationEmail(user.rows[0].email, emailToken, mailLang);
     res.json({ ok: true, message: "Email de vérification renvoyé" });
   } catch (err) {
@@ -161,162 +196,196 @@ app.post("/api/auth/resend-verification", security.emailVerifLimiter, async (req
 });
 
 // ── Auth : Request password reset ──
-app.post("/api/auth/forgot-password", security.passwordResetLimiter, security.validateBody(security.schemas.forgotPasswordSchema), async (req, res) => {
-  const { email } = req.validatedBody;
-  try {
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    // Perform the same indexed UPDATE for existing and unknown addresses.  A
-    // generic response alone is not enough if the known-address path performs
-    // visibly more database work than the unknown-address path.
-    const updated = await pool.query(
-      `UPDATE users
+app.post(
+  "/api/auth/forgot-password",
+  security.passwordResetLimiter,
+  security.validateBody(security.schemas.forgotPasswordSchema),
+  async (req, res) => {
+    const { email } = req.validatedBody;
+    try {
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      // Perform the same indexed UPDATE for existing and unknown addresses.  A
+      // generic response alone is not enough if the known-address path performs
+      // visibly more database work than the unknown-address path.
+      const updated = await pool.query(
+        `UPDATE users
        SET reset_token = $1, reset_token_expires = $2
        WHERE email = $3 AND deleted_at IS NULL
        RETURNING id, email, preferred_language`,
-      [hashOpaqueToken(resetToken), resetExpires, email.toLowerCase()]
-    );
-    res.json({ ok: true, message: "Si un compte existe, un email a été envoyé" });
-    // Keep the response path identical; any mail provider and audit-log work
-    // happens after it has been sent and never reveals account existence.
-    if (updated.rows.length) {
-      const user = updated.rows[0];
-      const mailLang = resolveLocale(
-        user.preferred_language || req.get("accept-language") || "fr"
+        [hashOpaqueToken(resetToken), resetExpires, email.toLowerCase()]
       );
-      setImmediate(() => {
-        sendPasswordResetEmail(user.email, resetToken, mailLang);
-        secLog.logSecurityEvent(pool, { req, userId: user.id, email: user.email, event: "password_reset_request", status: "ok" });
-      });
+      res.json({ ok: true, message: "Si un compte existe, un email a été envoyé" });
+      // Keep the response path identical; any mail provider and audit-log work
+      // happens after it has been sent and never reveals account existence.
+      if (updated.rows.length) {
+        const user = updated.rows[0];
+        const mailLang = resolveLocale(user.preferred_language || req.get("accept-language") || "fr");
+        setImmediate(() => {
+          sendPasswordResetEmail(user.email, resetToken, mailLang);
+          secLog.logSecurityEvent(pool, {
+            req,
+            userId: user.id,
+            email: user.email,
+            event: "password_reset_request",
+            status: "ok"
+          });
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur serveur" });
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
   }
-});
+);
 
 // ── Auth : Reset password with token ──
-app.post("/api/auth/reset-password", security.passwordResetLimiter, security.validateBody(security.schemas.resetPasswordSchema), async (req, res) => {
-  const { token, newPassword } = req.validatedBody;
-  const tokenHash = hashOpaqueToken(token);
-  if (!tokenHash) return res.status(400).json({ error: "Token invalide" });
-  try {
-    const result = await pool.query(
-      "SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW() AND deleted_at IS NULL",
-      [tokenHash]
-    );
-    if (!result.rows.length) return res.status(400).json({ error: "Token invalide ou expiré" });
-    const { salt, hash, iterations } = await hashPassword(newPassword);
-    await pool.query(
-      "UPDATE users SET password_hash = $1, password_salt = $2, password_iterations = $3, reset_token = NULL, reset_token_expires = NULL WHERE id = $4",
-      [hash, salt, iterations, result.rows[0].id]
-    );
-    // Invalidate all existing sessions for security
-    await pool.query("DELETE FROM sessions WHERE user_id = $1", [result.rows[0].id]);
-    revokeUserSockets(result.rows[0].id, "Password reset");
-    secLog.logSecurityEvent(pool, { req, userId: result.rows[0].id, event: "password_reset_complete", status: "ok" });
-    res.json({ ok: true, message: "Mot de passe réinitialisé" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
+app.post(
+  "/api/auth/reset-password",
+  security.passwordResetLimiter,
+  security.validateBody(security.schemas.resetPasswordSchema),
+  async (req, res) => {
+    const { token, newPassword } = req.validatedBody;
+    const tokenHash = hashOpaqueToken(token);
+    if (!tokenHash) return res.status(400).json({ error: "Token invalide" });
+    try {
+      const result = await pool.query(
+        "SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW() AND deleted_at IS NULL",
+        [tokenHash]
+      );
+      if (!result.rows.length) return res.status(400).json({ error: "Token invalide ou expiré" });
+      const { salt, hash, iterations } = await hashPassword(newPassword);
+      await pool.query(
+        "UPDATE users SET password_hash = $1, password_salt = $2, password_iterations = $3, reset_token = NULL, reset_token_expires = NULL WHERE id = $4",
+        [hash, salt, iterations, result.rows[0].id]
+      );
+      // Invalidate all existing sessions for security
+      await pool.query("DELETE FROM sessions WHERE user_id = $1", [result.rows[0].id]);
+      revokeUserSockets(result.rows[0].id, "Password reset");
+      secLog.logSecurityEvent(pool, { req, userId: result.rows[0].id, event: "password_reset_complete", status: "ok" });
+      res.json({ ok: true, message: "Mot de passe réinitialisé" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur serveur" });
+    }
   }
-});
+);
 
 // ── Auth : Email login ──
-app.post("/api/auth/login", security.loginLimiter, security.loginEmailLimiter, security.validateBody(security.schemas.loginSchema), async (req, res) => {
-  const { email, password } = req.validatedBody;
-  try {
-    const result = await pool.query(
-      `SELECT id, username, email_verified, password_hash, password_salt, password_iterations,
+app.post(
+  "/api/auth/login",
+  security.loginLimiter,
+  security.loginEmailLimiter,
+  security.validateBody(security.schemas.loginSchema),
+  async (req, res) => {
+    const { email, password } = req.validatedBody;
+    try {
+      const result = await pool.query(
+        `SELECT id, username, email_verified, password_hash, password_salt, password_iterations,
               avatar_url, privacy, created_at, suspended_until, suspension_source
        FROM users WHERE email = $1 AND deleted_at IS NULL`,
-      [email.toLowerCase()]
-    );
-    // Same generic error whether the email is unknown or the password is wrong,
-    // to avoid leaking which emails have an account (user enumeration).
-    const genericError = () => res.status(401).json({ error: "Email ou mot de passe incorrect" });
-    if (!result.rows.length) {
-      // Do the same expensive work as a password check. Otherwise an unknown
-      // email returns measurably faster than a known one and defeats the
-      // generic error message through timing-based account enumeration.
-      await burnPasswordWork(password);
-      return genericError();
-    }
-    const user = result.rows[0];
-    const rawIterations = Number(user.password_iterations);
-    // The work factor is persisted data, so keep a malformed/corrupted value
-    // from turning one login request into an unbounded CPU job.
-    const storedIterations = Number.isInteger(rawIterations)
-      && rawIterations >= LEGACY_PBKDF2_ITERATIONS
-      && rawIterations <= PBKDF2_ITERATIONS
-      ? rawIterations
-      : LEGACY_PBKDF2_ITERATIONS;
-    let passwordMatches = false;
-    if (user.password_hash && user.password_salt) {
-      passwordMatches = await verifyPassword(password, user.password_hash, user.password_salt, storedIterations);
-      // Older hashes use fewer iterations. Pad their work to the current
-      // baseline so they do not become a timing oracle either.
-      if (storedIterations < PBKDF2_ITERATIONS) {
-        await burnPasswordWork(password, PBKDF2_ITERATIONS - storedIterations);
+        [email.toLowerCase()]
+      );
+      // Same generic error whether the email is unknown or the password is wrong,
+      // to avoid leaking which emails have an account (user enumeration).
+      const genericError = () => res.status(401).json({ error: "Email ou mot de passe incorrect" });
+      if (!result.rows.length) {
+        // Do the same expensive work as a password check. Otherwise an unknown
+        // email returns measurably faster than a known one and defeats the
+        // generic error message through timing-based account enumeration.
+        await burnPasswordWork(password);
+        return genericError();
       }
-    } else {
-      await burnPasswordWork(password);
-    }
-    if (!passwordMatches) {
-      secLog.logSecurityEvent(pool, { req, email, event: "login", status: "failed", details: { reason: "wrong_password" } });
-      return genericError();
-    }
-    const adminSuspended = user.suspension_source === "admin"
-      && user.suspended_until
-      && new Date(user.suspended_until) > new Date();
-    if (adminSuspended) {
+      const user = result.rows[0];
+      const rawIterations = Number(user.password_iterations);
+      // The work factor is persisted data, so keep a malformed/corrupted value
+      // from turning one login request into an unbounded CPU job.
+      const storedIterations =
+        Number.isInteger(rawIterations) &&
+        rawIterations >= LEGACY_PBKDF2_ITERATIONS &&
+        rawIterations <= PBKDF2_ITERATIONS
+          ? rawIterations
+          : LEGACY_PBKDF2_ITERATIONS;
+      let passwordMatches = false;
+      if (user.password_hash && user.password_salt) {
+        passwordMatches = await verifyPassword(password, user.password_hash, user.password_salt, storedIterations);
+        // Older hashes use fewer iterations. Pad their work to the current
+        // baseline so they do not become a timing oracle either.
+        if (storedIterations < PBKDF2_ITERATIONS) {
+          await burnPasswordWork(password, PBKDF2_ITERATIONS - storedIterations);
+        }
+      } else {
+        await burnPasswordWork(password);
+      }
+      if (!passwordMatches) {
+        secLog.logSecurityEvent(pool, {
+          req,
+          email,
+          event: "login",
+          status: "failed",
+          details: { reason: "wrong_password" }
+        });
+        return genericError();
+      }
+      const adminSuspended =
+        user.suspension_source === "admin" && user.suspended_until && new Date(user.suspended_until) > new Date();
+      if (adminSuspended) {
+        secLog.logSecurityEvent(pool, {
+          req,
+          userId: user.id,
+          email,
+          event: "login",
+          status: "blocked",
+          details: { reason: "admin_suspension", suspendedUntil: user.suspended_until }
+        });
+        return res.status(403).json({
+          error: "Compte suspendu par un administrateur",
+          suspended: true,
+          suspensionSource: "admin",
+          suspendedUntil: user.suspended_until
+        });
+      }
       secLog.logSecurityEvent(pool, {
         req,
         userId: user.id,
         email,
         event: "login",
-        status: "blocked",
-        details: { reason: "admin_suspension", suspendedUntil: user.suspended_until }
+        status: "ok",
+        details: { method: "email" }
       });
-      return res.status(403).json({
-        error: "Compte suspendu par un administrateur",
-        suspended: true,
-        suspensionSource: "admin",
-        suspendedUntil: user.suspended_until
-      });
-    }
-    secLog.logSecurityEvent(pool, { req, userId: user.id, email, event: "login", status: "ok", details: { method: "email" } });
-    // Transparent upgrade: if this account was hashed with a weaker (legacy)
-    // work factor, re-hash the just-verified password with the current factor.
-    if (storedIterations < PBKDF2_ITERATIONS) {
-      try {
-        const upgraded = await hashPassword(password);
-        await pool.query(
-          "UPDATE users SET password_hash = $1, password_salt = $2, password_iterations = $3 WHERE id = $4",
-          [upgraded.hash, upgraded.salt, upgraded.iterations, user.id]
-        );
-      } catch (upErr) {
-        console.error("[PWD-UPGRADE] Failed to re-hash password for user", user.id, upErr);
+      // Transparent upgrade: if this account was hashed with a weaker (legacy)
+      // work factor, re-hash the just-verified password with the current factor.
+      if (storedIterations < PBKDF2_ITERATIONS) {
+        try {
+          const upgraded = await hashPassword(password);
+          await pool.query(
+            "UPDATE users SET password_hash = $1, password_salt = $2, password_iterations = $3 WHERE id = $4",
+            [upgraded.hash, upgraded.salt, upgraded.iterations, user.id]
+          );
+        } catch (upErr) {
+          console.error("[PWD-UPGRADE] Failed to re-hash password for user", user.id, upErr);
+        }
       }
+      const token = await createSession(user.id);
+      const isSuspended = user.suspended_until && new Date(user.suspended_until) > new Date();
+      res.json(
+        buildAuthSessionPayload(req, res, token, {
+          id: user.id,
+          username: user.username,
+          emailVerified: user.email_verified || false,
+          avatar_url: user.avatar_url || "",
+          privacy: user.privacy || "squad_only",
+          created_at: user.created_at,
+          suspended: !!isSuspended,
+          suspendedUntil: isSuspended ? user.suspended_until : null
+        })
+      );
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur serveur" });
     }
-    const token = await createSession(user.id);
-    const isSuspended = user.suspended_until && new Date(user.suspended_until) > new Date();
-    res.json({
-      id: user.id,
-      username: user.username,
-      token,
-      emailVerified: user.email_verified || false,
-      avatar_url: user.avatar_url || "",
-      privacy: user.privacy || "squad_only",
-      created_at: user.created_at,
-      suspended: !!isSuspended,
-      suspendedUntil: isSuspended ? user.suspended_until : null
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur serveur" });
   }
-});
+);
 
 // ── OAuth configuration ──
 const OAUTH_CONFIG = {
@@ -425,8 +494,7 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
   const exchangeChallenge = req.cookies?.[`oauth_exchange_${provider}`];
   res.clearCookie(`oauth_return_${provider}`, { path: "/api/auth/callback" });
   res.clearCookie(`oauth_exchange_${provider}`, { path: "/api/auth/callback" });
-  const sendResult = (query) =>
-    res.redirect(returnMode === "app" ? `sprite-index://auth?${query}` : `/?${query}`);
+  const sendResult = (query) => res.redirect(returnMode === "app" ? `sprite-index://auth?${query}` : `/?${query}`);
 
   const code = req.query.code || req.body?.code;
   if (!code) return res.status(400).send("Code manquant");
@@ -472,7 +540,10 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
     }
 
     // Get user info
-    let email, username, avatarUrl, providerEmailVerified = false;
+    let email,
+      username,
+      avatarUrl,
+      providerEmailVerified = false;
     if (provider === "google") {
       const userRes = await fetch(config.userInfoUrl, {
         headers: { Authorization: `Bearer ${tokenData.access_token}` }
@@ -508,7 +579,9 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
       // Provider display names are arbitrary (length, unicode, punctuation) but the
       // username column is VARCHAR(50) with a unique normalized index. Sanitize and
       // retry with a random suffix on collision so OAuth login never 500s.
-      const cleaned = String(username || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
+      const cleaned = String(username || "")
+        .replace(/[^a-zA-Z0-9_-]/g, "")
+        .slice(0, 40);
       const baseUsername = cleaned.length >= 3 ? cleaned : `joueur_${crypto.randomBytes(3).toString("hex")}`;
       let finalUsername = baseUsername;
       let inserted = null;
@@ -525,7 +598,8 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
             [finalUsername, email.toLowerCase(), avatarUrl, provider]
           );
         } catch (e) {
-          if (e.code === "23505") { // unique_violation (username or email)
+          if (e.code === "23505") {
+            // unique_violation (username or email)
             finalUsername = `${baseUsername.slice(0, 40)}_${crypto.randomBytes(3).toString("hex")}`;
             continue;
           }
@@ -575,17 +649,24 @@ app.all("/api/auth/callback/:provider", async (req, res) => {
           await pool.query("UPDATE users SET email_verified = TRUE WHERE id = $1", [existing.id]);
         }
         if (!existing.oauth_provider) {
-          await pool.query(
-            "UPDATE users SET oauth_provider = COALESCE(oauth_provider, $2) WHERE id = $1",
-            [existing.id, provider]
-          );
+          await pool.query("UPDATE users SET oauth_provider = COALESCE(oauth_provider, $2) WHERE id = $1", [
+            existing.id,
+            provider
+          ]);
         }
       }
     }
 
     const dbUser = userRow.rows[0];
     const exchangeCode = await createOAuthExchangeCode(dbUser.id, exchangeChallenge);
-    secLog.logSecurityEvent(pool, { req, userId: dbUser.id, email, event: "login", status: "ok", details: { method: "oauth", provider } });
+    secLog.logSecurityEvent(pool, {
+      req,
+      userId: dbUser.id,
+      email,
+      event: "login",
+      status: "ok",
+      details: { method: "oauth", provider }
+    });
 
     // Return a short-lived, single-use code instead of a bearer token. The
     // client must prove possession of its local verifier to exchange it.
@@ -624,9 +705,8 @@ app.post("/api/auth/oauth/exchange", security.oauthExchangeLimiter, async (req, 
     );
     if (!userResult.rows.length) return res.status(401).json({ error: "Session indisponible" });
     const user = userResult.rows[0];
-    const adminSuspended = user.suspension_source === "admin"
-      && user.suspended_until
-      && new Date(user.suspended_until) > new Date();
+    const adminSuspended =
+      user.suspension_source === "admin" && user.suspended_until && new Date(user.suspended_until) > new Date();
     if (adminSuspended) {
       secLog.logSecurityEvent(pool, {
         req,
@@ -645,47 +725,72 @@ app.post("/api/auth/oauth/exchange", security.oauthExchangeLimiter, async (req, 
     const token = await createSession(user.id);
     pool.query("UPDATE users SET last_active_at = NOW() WHERE id = $1", [user.id]).catch(() => {});
     const isSuspended = user.suspended_until && new Date(user.suspended_until) > new Date();
-    res.json({
-      id: user.id,
-      username: user.username,
-      token,
-      emailVerified: !!user.email_verified,
-      avatar_url: user.avatar_url || "",
-      privacy: user.privacy || "squad_only",
-      created_at: user.created_at,
-      suspended: !!isSuspended,
-      suspendedUntil: isSuspended ? user.suspended_until : null
-    });
+    res.json(
+      buildAuthSessionPayload(req, res, token, {
+        id: user.id,
+        username: user.username,
+        emailVerified: !!user.email_verified,
+        avatar_url: user.avatar_url || "",
+        privacy: user.privacy || "squad_only",
+        created_at: user.created_at,
+        suspended: !!isSuspended,
+        suspendedUntil: isSuspended ? user.suspended_until : null
+      })
+    );
   } catch (err) {
     console.error("[OAuth exchange]", err);
     res.status(500).json({ error: "Erreur serveur OAuth" });
   }
 });
 
-// ── Auth : Logout ──
-app.post("/api/auth/logout", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
-    const tokenHash = hashSessionToken(token);
-    if (tokenHash) {
-      await pool.query("DELETE FROM sessions WHERE token = $1", [tokenHash]).catch(() => {});
-      // A WebSocket authenticated with this bearer must not survive logout
-      // until its periodic session revalidation.
-      revokeSessionSockets(token);
-    }
-  }
-  res.json({ ok: true });
+// ── Auth : CSRF bootstrap (double-submit cookie for web cookie sessions) ──
+app.get("/api/auth/csrf", (req, res) => {
+  const csrfToken = issueCsrfToken(req, res);
+  res.json({ ok: true, csrfToken });
 });
 
-// ── Auth : Verify token (check session validity) ──
-app.get("/api/auth/me", async (req, res) => {
+// Migrate a legacy localStorage bearer into an HttpOnly cookie (web only).
+app.post("/api/auth/session/upgrade", async (req, res) => {
   const authHeader = req.headers["authorization"];
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Token manquant" });
   }
   const token = authHeader.slice(7);
-  const tokenHash = hashSessionToken(token);
+  const userId = await validateSession(token);
+  if (!userId) return res.status(401).json({ error: "Session expirée" });
+  const { attachSessionCookie } = require("./auth");
+  const issued = attachSessionCookie(req, res, token);
+  res.json({ ok: true, authMode: issued.authMode, csrfToken: issued.csrfToken, id: userId });
+});
+
+// ── Auth : Logout ──
+app.post("/api/auth/logout", async (req, res) => {
+  let token = null;
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.slice(7);
+  } else {
+    token = readSessionCookie(req);
+  }
+  if (token) {
+    const tokenHash = hashSessionToken(token);
+    if (tokenHash) {
+      await pool.query("DELETE FROM sessions WHERE token = $1", [tokenHash]).catch(() => {});
+      revokeSessionSockets(token);
+    }
+  }
+  clearPlayerAuthCookies(req, res);
+  res.json({ ok: true });
+});
+
+// ── Auth : Verify token (check session validity) ──
+app.get("/api/auth/me", async (req, res) => {
+  const reqUser = await getRequestingUser(req);
+  if (!reqUser) {
+    return res.status(401).json({ error: "Token manquant" });
+  }
+  const token = req.auth?.token;
+  const tokenHash = token ? hashSessionToken(token) : null;
   if (!tokenHash) return res.status(401).json({ error: "Session expirée" });
   try {
     const result = await pool.query(
@@ -707,6 +812,7 @@ app.get("/api/auth/me", async (req, res) => {
     const isSuspended = row.suspended_until && new Date(row.suspended_until) > new Date();
     res.json({
       ...row,
+      authMode: req.auth?.method || null,
       suspended: !!isSuspended,
       suspensionSource: isSuspended ? row.suspension_source : null,
       suspendedUntil: isSuspended ? row.suspended_until : null

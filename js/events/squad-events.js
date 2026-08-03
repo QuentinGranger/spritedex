@@ -42,7 +42,9 @@ function setupSquadEvents() {
   }
   els.squadCreateBtn.addEventListener("click", createSquad);
   els.squadJoinBtn.addEventListener("click", joinSquad);
-  els.squadCodeInput.addEventListener("keydown", (e) => { if (e.key === "Enter") joinSquad(); });
+  els.squadCodeInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") joinSquad();
+  });
   els.squadLeaveBtn.addEventListener("click", leaveSquad);
   els.squadRefreshBtn.addEventListener("click", () => {
     if (state.activeSquad) loadSquad(state.activeSquad);
@@ -82,13 +84,12 @@ function setupSquadEvents() {
     list.classList.toggle("hunt-list--collapsed");
     toggle.closest(".hunt-section").classList.toggle("hunt-section--collapsed");
   });
-  document.querySelectorAll(".squad-view-btn").forEach(btn => {
+  document.querySelectorAll(".squad-view-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".squad-view-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".squad-view-btn").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       state.squadView = btn.dataset.squadView;
       renderSquad();
     });
   });
-
 }

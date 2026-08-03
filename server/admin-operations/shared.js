@@ -18,7 +18,14 @@ const { enqueuePassportRecalc } = require("../passport-summary");
 const { processDeliveryQueue } = require("../notification-delivery-queue");
 const { syncCatalogueMetaAndFanout } = require("../passport-summary");
 const { fanoutPublishedNews } = require("../news");
-const { buildUserDataExport, listDeletionQueue, purgeDeletedAccounts, retentionDays, restoreDeletedAccount, revokeActiveShareCapabilities } = require("../privacy-ops");
+const {
+  buildUserDataExport,
+  listDeletionQueue,
+  purgeDeletedAccounts,
+  retentionDays,
+  restoreDeletedAccount,
+  revokeActiveShareCapabilities
+} = require("../privacy-ops");
 const { rateLimit } = require("../../security");
 const { writeAdminAudit, withAdminAudit, AdminHttpError, notFound } = require("../admin-audit");
 
@@ -89,7 +96,12 @@ function validAssetUrl(value) {
   return raw && /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(raw) ? raw : null;
 }
 
-async function audit(action, targetType, targetId, { justification = null, details = {}, actor = "unknown", requireJustification = true } = {}) {
+async function audit(
+  action,
+  targetType,
+  targetId,
+  { justification = null, details = {}, actor = "unknown", requireJustification = true } = {}
+) {
   // Prefer withAdminAudit() for DB mutations so write + audit commit together.
   // Side-effectful jobs (queue flush, passport enqueue) still call this after
   // the work; failures surface instead of being swallowed.
@@ -111,7 +123,10 @@ function route(handler) {
     } catch (error) {
       console.error("[admin] operation failed:", error.message);
       if (res.headersSent) return;
-      if (error instanceof AdminHttpError || (Number.isInteger(error.status) && error.status >= 400 && error.status < 600)) {
+      if (
+        error instanceof AdminHttpError ||
+        (Number.isInteger(error.status) && error.status >= 400 && error.status < 600)
+      ) {
         return res.status(error.status).json({ error: error.message || "Requête invalide" });
       }
       res.status(500).json({ error: "Opération administrative indisponible" });
@@ -138,10 +153,14 @@ function safeAuditDetails(value, depth = 0) {
   if (depth > 4 || value == null) return value == null ? value : "[truncated]";
   if (Array.isArray(value)) return value.slice(0, 24).map((item) => safeAuditDetails(item, depth + 1));
   if (typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).slice(0, 40).map(([key, item]) => [
-      key,
-      AUDIT_PRIVATE_DETAIL_KEY.test(key) ? "[redacted]" : safeAuditDetails(item, depth + 1)
-    ]));
+    return Object.fromEntries(
+      Object.entries(value)
+        .slice(0, 40)
+        .map(([key, item]) => [
+          key,
+          AUDIT_PRIVATE_DETAIL_KEY.test(key) ? "[redacted]" : safeAuditDetails(item, depth + 1)
+        ])
+    );
   }
   return typeof value === "string" ? value.slice(0, 1000) : value;
 }
@@ -153,7 +172,10 @@ function auditRowForAdmin(row) {
 function auditFilters(query = {}) {
   const values = [];
   const clauses = [];
-  const add = (sql, value) => { values.push(value); clauses.push(sql.replace("?", `$${values.length}`)); };
+  const add = (sql, value) => {
+    values.push(value);
+    clauses.push(sql.replace("?", `$${values.length}`));
+  };
   const q = text(query.q, 120);
   const actor = text(query.actor, 80);
   const action = text(query.action, 100);
@@ -172,7 +194,9 @@ function auditFilters(query = {}) {
     const pattern = `%${q}%`;
     values.push(pattern);
     const marker = `$${values.length}`;
-    clauses.push(`(actor ILIKE ${marker} OR action ILIKE ${marker} OR target_type ILIKE ${marker} OR COALESCE(target_id, '') ILIKE ${marker} OR COALESCE(justification, '') ILIKE ${marker})`);
+    clauses.push(
+      `(actor ILIKE ${marker} OR action ILIKE ${marker} OR target_type ILIKE ${marker} OR COALESCE(target_id, '') ILIKE ${marker} OR COALESCE(justification, '') ILIKE ${marker})`
+    );
   }
   if (actor) add("actor ILIKE ?", `%${actor}%`);
   if (action) add("action = ?", action);
@@ -188,5 +212,58 @@ function csvCell(value) {
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
-
-module.exports = { crypto, app, pool, requireAdminCapability, requireAdminStepUp, adminActorFromReq, listActiveAdminSessions, describeAuthz, hasCapability, isAdminMfaConfigured, revokeUserSockets, invalidateSquadAnalysisCacheForUser, enqueuePassportRecalc, processDeliveryQueue, syncCatalogueMetaAndFanout, fanoutPublishedNews, buildUserDataExport, listDeletionQueue, purgeDeletedAccounts, retentionDays, restoreDeletedAccount, revokeActiveShareCapabilities, rateLimit, writeAdminAudit, withAdminAudit, AdminHttpError, notFound, adminMutationLimiter, PAGE_SIZE, MAX_PAGE_SIZE, MAX_AUDIT_EXPORT_ROWS, REPORT_STATUSES, REPORT_PRIORITIES, APPEAL_STATUSES, NEWS_STATUSES, DATA_STATUSES, AVAILABILITY_STATUSES, CONFIDENCE_LEVELS, EDITORIAL_STATUSES, numberId, pagination, text, nullableDate, jsonValue, validUrl, validAssetUrl, audit, route, paged, safeAuditDetails, auditRowForAdmin, auditFilters, csvCell };
+module.exports = {
+  crypto,
+  app,
+  pool,
+  requireAdminCapability,
+  requireAdminStepUp,
+  adminActorFromReq,
+  listActiveAdminSessions,
+  describeAuthz,
+  hasCapability,
+  isAdminMfaConfigured,
+  revokeUserSockets,
+  invalidateSquadAnalysisCacheForUser,
+  enqueuePassportRecalc,
+  processDeliveryQueue,
+  syncCatalogueMetaAndFanout,
+  fanoutPublishedNews,
+  buildUserDataExport,
+  listDeletionQueue,
+  purgeDeletedAccounts,
+  retentionDays,
+  restoreDeletedAccount,
+  revokeActiveShareCapabilities,
+  rateLimit,
+  writeAdminAudit,
+  withAdminAudit,
+  AdminHttpError,
+  notFound,
+  adminMutationLimiter,
+  PAGE_SIZE,
+  MAX_PAGE_SIZE,
+  MAX_AUDIT_EXPORT_ROWS,
+  REPORT_STATUSES,
+  REPORT_PRIORITIES,
+  APPEAL_STATUSES,
+  NEWS_STATUSES,
+  DATA_STATUSES,
+  AVAILABILITY_STATUSES,
+  CONFIDENCE_LEVELS,
+  EDITORIAL_STATUSES,
+  numberId,
+  pagination,
+  text,
+  nullableDate,
+  jsonValue,
+  validUrl,
+  validAssetUrl,
+  audit,
+  route,
+  paged,
+  safeAuditDetails,
+  auditRowForAdmin,
+  auditFilters,
+  csvCell
+};

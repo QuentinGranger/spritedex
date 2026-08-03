@@ -1,7 +1,5 @@
 "use strict";
 
-
-
 // ── SPRITE-INDEX contextual notification catalog ──────────────────────────────
 // Single source of truth for the "contextual notifications" feature.
 //
@@ -187,10 +185,27 @@ const NOTIFICATION_CHANNEL_LIST = Object.freeze([
   NOTIFICATION_CHANNELS.EMAIL
 ]);
 
-
 function normalizeLang(lang) {
-  const locale = String(lang == null ? "" : lang).trim().toLowerCase().slice(0, 2);
+  const locale = String(lang == null ? "" : lang)
+    .trim()
+    .toLowerCase()
+    .slice(0, 2);
   return SUPPORTED_LANGUAGES.includes(locale) ? locale : DEFAULT_LANGUAGE;
 }
 
-module.exports = { normalizeLang, NOTIFICATION_TYPES, CONTEXTUAL_NOTIFICATION_TYPES, NOTIFICATION_CATEGORIES, NOTIFICATION_CATEGORY_LIST, NOTIFICATION_STATUSES, NOTIFICATION_STATUS_LIST, STATUS_DEFINITIONS, STATUS_TRANSITIONS, CATEGORY_DEFINITIONS, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LIST };
+module.exports = {
+  normalizeLang,
+  NOTIFICATION_TYPES,
+  CONTEXTUAL_NOTIFICATION_TYPES,
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CATEGORY_LIST,
+  NOTIFICATION_STATUSES,
+  NOTIFICATION_STATUS_LIST,
+  STATUS_DEFINITIONS,
+  STATUS_TRANSITIONS,
+  CATEGORY_DEFINITIONS,
+  SUPPORTED_LANGUAGES,
+  DEFAULT_LANGUAGE,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_CHANNEL_LIST
+};

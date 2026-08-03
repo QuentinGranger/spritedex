@@ -29,11 +29,13 @@ const BADGE_COPY = Object.freeze({
   "badge.squad_member.name": "Esprit d'escouade",
   "badge.squad_member.description": "Vous participez à une squad.",
   "badge.squad_founder.name": "Fondateur de squad",
-  "badge.squad_founder.description": "Vous avez créé une squad rejointe par un autre collectionneur et active depuis au moins 24 heures.",
+  "badge.squad_founder.description":
+    "Vous avez créé une squad rejointe par un autre collectionneur et active depuis au moins 24 heures.",
   "badge.complementary_collection.name": "Collection complémentaire",
   "badge.complementary_collection.description": "Votre collection complète réellement celle d’un ami ou coéquipier.",
   "badge.archivist.name": "Archiviste",
-  "badge.archivist.description": "Vous avez maintenu une collection complète et à jour pendant trois mises à jour du catalogue.",
+  "badge.archivist.description":
+    "Vous avez maintenu une collection complète et à jour pendant trois mises à jour du catalogue.",
   "badge.early_collector.name": "Early Collector",
   "badge.early_collector.description": "Vous faites partie des collectionneurs présents dès le début de sprite-index.",
   "badge.all_rarities.name": "Une variante de chaque rareté",
@@ -64,7 +66,8 @@ const BADGE_COPY_EN = Object.freeze({
   "badge.squad_member.name": "Squad spirit",
   "badge.squad_member.description": "You are part of a squad.",
   "badge.squad_founder.name": "Squad founder",
-  "badge.squad_founder.description": "You created a squad joined by another collector and active for at least 24 hours.",
+  "badge.squad_founder.description":
+    "You created a squad joined by another collector and active for at least 24 hours.",
   "badge.complementary_collection.name": "Complementary collection",
   "badge.complementary_collection.description": "Your collection meaningfully complements a friend or teammate.",
   "badge.archivist.name": "Archivist",
@@ -99,13 +102,15 @@ const BADGE_COPY_NL = Object.freeze({
   "badge.squad_member.name": "Teamgeest",
   "badge.squad_member.description": "Je maakt deel uit van een squad.",
   "badge.squad_founder.name": "Squadoprichter",
-  "badge.squad_founder.description": "Je hebt een squad gemaakt waar een andere verzamelaar zich bij aansloot en die minstens 24 uur actief is.",
+  "badge.squad_founder.description":
+    "Je hebt een squad gemaakt waar een andere verzamelaar zich bij aansloot en die minstens 24 uur actief is.",
   "badge.complementary_collection.name": "Aanvullende collectie",
   "badge.complementary_collection.description": "Je collectie vult die van een vriend of teamgenoot daadwerkelijk aan.",
   "badge.archivist.name": "Archivaris",
   "badge.archivist.description": "Je hebt drie catalogusupdates lang een volledige, actuele collectie behouden.",
   "badge.early_collector.name": "Early Collector",
-  "badge.early_collector.description": "Je behoort tot de verzamelaars die er vanaf het begin van sprite-index bij waren.",
+  "badge.early_collector.description":
+    "Je behoort tot de verzamelaars die er vanaf het begin van sprite-index bij waren.",
   "badge.all_rarities.name": "Een variant van elke zeldzaamheid",
   "badge.all_rarities.description": "Je bezit minstens één variant van elke officiële zeldzaamheid in de catalogus.",
   "badge.event_completed.name": "Evenement voltooid",
@@ -166,5 +171,11 @@ function getBadgeIconUrl(code) {
   return TROPHY_IMAGE_MAP[code] || null;
 }
 
-
-module.exports = { VERIFICATION_STATUSES, BADGE_COPY, BADGE_COPY_EN, BADGE_COPY_NL, EARLY_COLLECTOR_BEFORE, getBadgeIconUrl };
+module.exports = {
+  VERIFICATION_STATUSES,
+  BADGE_COPY,
+  BADGE_COPY_EN,
+  BADGE_COPY_NL,
+  EARLY_COLLECTOR_BEFORE,
+  getBadgeIconUrl
+};

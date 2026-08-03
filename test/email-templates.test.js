@@ -1,12 +1,6 @@
 // Smoke checks for transactional email HTML/text templates.
 const assert = require("assert");
-const {
-  EMAIL_COPY,
-  emailCopy,
-  emailLocale,
-  emailShell,
-  emailText
-} = require("../src/app/http/email-templates");
+const { EMAIL_COPY, emailCopy, emailLocale, emailShell, emailText } = require("../src/app/http/email-templates");
 
 function test(name, fn) {
   try {

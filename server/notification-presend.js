@@ -22,10 +22,7 @@ function auth() {
 
 // ── Pure gates (unit-testable) ──
 
-function evaluateFriendshipStillRelevant({
-  friendshipAccepted = false,
-  blocked = false
-} = {}) {
+function evaluateFriendshipStillRelevant({ friendshipAccepted = false, blocked = false } = {}) {
   if (blocked) return { ok: false, reason: "blocked", cancel: true };
   if (!friendshipAccepted) return { ok: false, reason: "friendship_gone", cancel: true };
   return { ok: true };
@@ -72,9 +69,7 @@ function evaluatePriorityVariantStillRelevant({
 // ── Live checks ──
 
 async function countUnownedVariants(pool, recipientId, variantIds) {
-  const ids = (Array.isArray(variantIds) ? variantIds : [])
-    .map(String)
-    .filter(Boolean);
+  const ids = (Array.isArray(variantIds) ? variantIds : []).map(String).filter(Boolean);
   if (!recipientId || !ids.length) return 0;
   const owned = await pool.query(
     `SELECT variant_id FROM sprite_entries
@@ -116,13 +111,14 @@ async function revalidateFriendAcquisition(pool, notif) {
   const { areFriends, canViewCollection, isBlocked } = auth();
   const blocked = await isBlocked(recipientId, actorId);
   const friendshipAccepted = await areFriends(recipientId, actorId);
-  const collectionVisible = friendshipAccepted && !blocked
-    ? await canViewCollection(recipientId, actorId)
-    : false;
+  const collectionVisible = friendshipAccepted && !blocked ? await canViewCollection(recipientId, actorId) : false;
 
-  const variantIds = Array.isArray(data.variantIds) && data.variantIds.length
-    ? data.variantIds
-    : (data.variantId != null ? [data.variantId] : []);
+  const variantIds =
+    Array.isArray(data.variantIds) && data.variantIds.length
+      ? data.variantIds
+      : data.variantId != null
+        ? [data.variantId]
+        : [];
   const remainingVariantCount = await countUnownedVariants(pool, recipientId, variantIds);
 
   return evaluateFriendAcquisitionStillRelevant({
@@ -173,17 +169,13 @@ async function revalidatePriorityVariant(pool, notif) {
   if (!variantId) return { ok: false, reason: "variant_missing", cancel: true };
 
   const variantAvailable = require("./notification-variant-available");
-  const check = await variantAvailable.verifyAvailabilityForRecipient(
-    variantId,
-    recipientId,
-    {
-      availabilityPeriodId: data.availabilityPeriodId || null,
-      availableFrom: data.availableFrom || null,
-      availableUntil: data.availableUntil || null,
-      confidence: data.confidence || null,
-      eventId: data.eventId || null
-    }
-  );
+  const check = await variantAvailable.verifyAvailabilityForRecipient(variantId, recipientId, {
+    availabilityPeriodId: data.availabilityPeriodId || null,
+    availableFrom: data.availableFrom || null,
+    availableUntil: data.availableUntil || null,
+    confidence: data.confidence || null,
+    eventId: data.eventId || null
+  });
   if (check.ok) return { ok: true };
   if (check.reason === "already_owned") {
     return evaluatePriorityVariantStillRelevant({
@@ -203,7 +195,9 @@ async function revalidateWantedEvent(pool, notif) {
   const eventId = data.eventId || notif.entity_id;
   const candidateVariantIds = Array.isArray(data.remainingPriorityVariantIds)
     ? data.remainingPriorityVariantIds
-    : (Array.isArray(data.variantIds) ? data.variantIds : []);
+    : Array.isArray(data.variantIds)
+      ? data.variantIds
+      : [];
   const ending = require("./notification-event-ending");
   return ending.revalidateWantedEventBeforeSend({
     recipientId: notif.recipient_id,

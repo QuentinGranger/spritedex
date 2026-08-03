@@ -14,6 +14,7 @@ const { invalidateSquadAnalysisCache } = require("../../../../../server/squad-an
 const MAX_RECOMMENDATION_VARIANTS = 100;
 const MAX_RECOMMENDATION_ASSIGNEES = 10; // A squad has at most ten active members.
 const MAX_RECOMMENDATION_DEADLINE_LENGTH = 64;
+const MAX_RECOMMENDATION_REASON_LENGTH = 1000;
 const MAX_RECOMMENDATION_GAIN = 10000;
 const MAX_USER_ID = 2147483647;
 const recommendationGoalLimiter = security.rateLimit({
@@ -232,6 +233,7 @@ module.exports = {
   logSquadGoalCompleted,
   invalidateSquadAnalysisCache,
   MAX_RECOMMENDATION_ASSIGNEES,
+  MAX_RECOMMENDATION_REASON_LENGTH,
   MAX_RECOMMENDATION_GAIN,
   MAX_USER_ID,
   hasBlockedPair,

@@ -1,8 +1,6 @@
-
 body.light .notif-dropdown,
 body.light .notif-center {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 255, 0.98));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 255, 0.98));
   border-color: rgba(100, 120, 220, 0.22);
   box-shadow:
     0 20px 48px rgba(60, 70, 140, 0.18),
@@ -16,8 +14,7 @@ body.light .notif-center {
   gap: 10px;
   padding: 15px 14px 14px 17px;
   border-bottom: 1px solid rgba(161, 183, 255, 0.14);
-  background:
-    linear-gradient(135deg, rgba(141, 124, 255, 0.12), rgba(0, 225, 255, 0.06) 55%, transparent);
+  background: linear-gradient(135deg, rgba(141, 124, 255, 0.12), rgba(0, 225, 255, 0.06) 55%, transparent);
 }
 
 .notif-dropdown__heading {
@@ -28,8 +25,7 @@ body.light .notif-center {
 }
 
 body.light .notif-dropdown__header {
-  background:
-    linear-gradient(135deg, rgba(141, 124, 255, 0.1), rgba(0, 180, 220, 0.05) 55%, transparent);
+  background: linear-gradient(135deg, rgba(141, 124, 255, 0.1), rgba(0, 180, 220, 0.05) 55%, transparent);
 }
 
 .notif-dropdown__title {
@@ -72,7 +68,11 @@ body.light .notif-dropdown__header {
   padding: 5px 11px;
   cursor: pointer;
   letter-spacing: 0.02em;
-  transition: color 150ms, border-color 150ms, background 150ms, box-shadow 150ms;
+  transition:
+    color 150ms,
+    border-color 150ms,
+    background 150ms,
+    box-shadow 150ms;
 }
 
 .notif-dropdown__mark-read:hover {
@@ -95,7 +95,10 @@ body.light .notif-dropdown__header {
   font-size: 0.95rem;
   cursor: pointer;
   line-height: 1;
-  transition: color 150ms, background 150ms, border-color 150ms;
+  transition:
+    color 150ms,
+    background 150ms,
+    border-color 150ms;
 }
 
 .notif-dropdown__mark-read:focus-visible,

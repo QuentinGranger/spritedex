@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "cgu": legalDocument({
-    id: "cgu",
-    title: "Conditions générales d'utilisation",
-    short: "Conditions d'accès, règles d'utilisation, comptes et responsabilités.",
-    content: `
+    cgu: legalDocument({
+      id: "cgu",
+      title: "Conditions générales d'utilisation",
+      short: "Conditions d'accès, règles d'utilisation, comptes et responsabilités.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Objet</h2>
@@ -112,8 +112,7 @@
       <p>Les présentes CGU sont soumises au droit français, sous réserve des dispositions impératives plus protectrices éventuellement applicables au lieu de résidence de l'utilisateur.</p>
       <p>En cas de difficulté, l'utilisateur est invité à contacter d'abord <a href="mailto:[CONTACT_EMAIL]">[CONTACT_EMAIL]</a> afin de rechercher une solution amiable.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

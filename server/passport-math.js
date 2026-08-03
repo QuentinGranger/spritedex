@@ -4,7 +4,7 @@
 
 function passportReliability(explicitCount, totalCount) {
   const rate = totalCount ? Math.round((explicitCount / totalCount) * 10000) / 100 : 0;
-  const level = rate >= 90 ? "complete" : (rate >= 60 ? "usable" : "insufficient");
+  const level = rate >= 90 ? "complete" : rate >= 60 ? "usable" : "insufficient";
   return {
     rate,
     level,
@@ -36,9 +36,10 @@ function computePassportProgress(ownedVariantCount, releasedVariantCount) {
       nextStep = {
         targetPercent: target,
         remainingVariants: remaining,
-        label: remaining === 0
-          ? `Prochaine étape : ${target} %.`
-          : `Plus que ${remaining} variante${remaining > 1 ? "s" : ""} avant ${target} %.`
+        label:
+          remaining === 0
+            ? `Prochaine étape : ${target} %.`
+            : `Plus que ${remaining} variante${remaining > 1 ? "s" : ""} avant ${target} %.`
       };
     }
   }
@@ -183,18 +184,16 @@ function computeOwnedRarityStats(catalogue, ownedIds) {
       };
     });
 
-  const variantTypeBreakdown = TYPE_KEYS
-    .filter((key) => (releasedByType[key] || 0) > 0)
-    .map((key) => {
-      const label = key === "base" ? "Base" : (SPECIAL_VARIANT_LABEL[key] || key);
-      return {
-        key,
-        label,
-        ownedCount: ownedByType[key] || 0,
-        releasedCount: releasedByType[key] || 0,
-        filter: `variant:${label}`
-      };
-    });
+  const variantTypeBreakdown = TYPE_KEYS.filter((key) => (releasedByType[key] || 0) > 0).map((key) => {
+    const label = key === "base" ? "Base" : SPECIAL_VARIANT_LABEL[key] || key;
+    return {
+      key,
+      label,
+      ownedCount: ownedByType[key] || 0,
+      releasedCount: releasedByType[key] || 0,
+      filter: `variant:${label}`
+    };
+  });
 
   if (!bestScore) {
     return {

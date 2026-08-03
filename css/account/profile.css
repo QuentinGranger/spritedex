@@ -31,7 +31,7 @@
 }
 
 .profile-hero__name {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 1.4rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -65,7 +65,7 @@
 }
 
 .profile-stat__value {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
   color: #00e1ff;
@@ -73,7 +73,7 @@
 }
 
 .profile-stat__label {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.66rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -89,4 +89,3 @@
   color: rgba(205, 224, 255, 0.58);
   text-align: center;
 }
-

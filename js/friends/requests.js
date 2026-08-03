@@ -3,7 +3,13 @@
 function getPendingEntries() {
   const entries = [];
   for (const r of friendsState.received) {
-    entries.push({ kind: "received", requestId: r.requestId, createdAt: r.createdAt, user: r.user, commonSquad: r.commonSquad });
+    entries.push({
+      kind: "received",
+      requestId: r.requestId,
+      createdAt: r.createdAt,
+      user: r.user,
+      commonSquad: r.commonSquad
+    });
   }
   for (const r of friendsState.sent) {
     entries.push({ kind: "sent", requestId: r.requestId, createdAt: r.createdAt, user: r.user });
@@ -13,11 +19,12 @@ function getPendingEntries() {
 
 function renderPendingItem(item) {
   const user = item.user || {};
-  const actions = item.kind === "received"
-    ? `<button class="ghost-button success-text" data-action="accept" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.accept")}</button>
+  const actions =
+    item.kind === "received"
+      ? `<button class="ghost-button success-text" data-action="accept" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.accept")}</button>
        <button class="ghost-button danger-text" data-action="decline" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.decline")}</button>
        <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(user.id))}">${t("friends.block")}</button>`
-    : `<button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.cancel")}</button>`;
+      : `<button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(item.requestId))}">${t("friends.cancel")}</button>`;
   return `
     <div class="friend-item" data-request-id="${escapeHtml(String(item.requestId))}">
       ${friendAvatarHTML(user)}
@@ -76,4 +83,3 @@ async function acceptFriendRequest(userId) {
     toast(t("common.networkError"));
   }
 }
-

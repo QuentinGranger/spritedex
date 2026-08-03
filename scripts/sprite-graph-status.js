@@ -48,11 +48,19 @@ function printReport({ readiness, board }) {
   console.log(`Débit : ${tech.eventsPerMinute}/min · délai worker : ${tech.workerLagSeconds}s`);
   console.log(`Outbox : ${tech.pendingOutbox} en attente · ${tech.failedOutbox} en échec`);
   console.log(`Erreurs : ${tech.errorCount} · doublons évités : ${tech.duplicateSkipCount}`);
-  console.log(`Dernière consolidation : ${board.lastConsolidation
-    ? `${board.lastConsolidation.metricDate} (${iso(board.lastConsolidation.publishedAt)})`
-    : "aucune"}`);
-  console.log(`Échantillons du jour : ${board.sampleSizes.rows} métriques · min ${board.sampleSizes.min ?? "—"} · moy. ${board.sampleSizes.avg ?? "—"} · max ${board.sampleSizes.max ?? "—"}`);
-  console.log(`Métriques publiques suspendues : ${board.publicMetricsSuspended.length ? board.publicMetricsSuspended.join(", ") : "aucune"}`);
+  console.log(
+    `Dernière consolidation : ${
+      board.lastConsolidation
+        ? `${board.lastConsolidation.metricDate} (${iso(board.lastConsolidation.publishedAt)})`
+        : "aucune"
+    }`
+  );
+  console.log(
+    `Échantillons du jour : ${board.sampleSizes.rows} métriques · min ${board.sampleSizes.min ?? "—"} · moy. ${board.sampleSizes.avg ?? "—"} · max ${board.sampleSizes.max ?? "—"}`
+  );
+  console.log(
+    `Métriques publiques suspendues : ${board.publicMetricsSuspended.length ? board.publicMetricsSuspended.join(", ") : "aucune"}`
+  );
 
   console.log("\nÉvénements sur 24 h :");
   if (!board.eventsByType.length) console.log("  Aucun événement.");
@@ -63,7 +71,11 @@ function printReport({ readiness, board }) {
     console.log(`  ${status(criterion.ok)} — ${criterion.label}`);
   }
   for (const probe of readiness.liveProbes) {
-    const suffix = probe.error ? ` (${probe.error})` : probe.missing?.length ? ` — absents : ${probe.missing.join(", ")}` : "";
+    const suffix = probe.error
+      ? ` (${probe.error})`
+      : probe.missing?.length
+        ? ` — absents : ${probe.missing.join(", ")}`
+        : "";
     console.log(`  ${status(probe.ok)} — ${probe.label}${suffix}`);
   }
   console.log();

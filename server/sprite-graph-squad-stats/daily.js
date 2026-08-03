@@ -1,16 +1,18 @@
 const {
-  pool, resolveCatalogueContext, round2, ratePercent,
-  decomposeCatalogueVsAcquisition, toIsoDate
+  pool,
+  resolveCatalogueContext,
+  round2,
+  ratePercent,
+  decomposeCatalogueVsAcquisition,
+  toIsoDate
 } = require("./shared");
 const { ensureSquadDailyStatsTables } = require("./schema");
 const { listEligibleSquadIds } = require("./eligibility");
 
-async function calculateSquadDailyStats(db = pool, {
-  metricDate = null,
-  catalogueVersion = null,
-  catalogueVariantCount = null,
-  eligibleSquadIds = null
-} = {}) {
+async function calculateSquadDailyStats(
+  db = pool,
+  { metricDate = null, catalogueVersion = null, catalogueVariantCount = null, eligibleSquadIds = null } = {}
+) {
   await ensureSquadDailyStatsTables(db);
   // Mirror table from Étape 55 (avoid requiring trends → circular).
   await db.query(`
@@ -32,13 +34,12 @@ async function calculateSquadDailyStats(db = pool, {
       ADD COLUMN IF NOT EXISTS catalogue_version VARCHAR(80);
   `);
 
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
-  const cat = catalogueVersion && catalogueVariantCount != null
-    ? { catalogueVersion, catalogueVariantCount }
-    : await resolveCatalogueContext(db);
+  const cat =
+    catalogueVersion && catalogueVariantCount != null
+      ? { catalogueVersion, catalogueVariantCount }
+      : await resolveCatalogueContext(db);
   const version = cat.catalogueVersion;
   const catalogueCount = cat.catalogueVariantCount;
 
@@ -99,11 +100,12 @@ async function calculateSquadDailyStats(db = pool, {
       const completion = compare.getSquadCollectiveCompletion(matrix, "");
       covered = completion.coveredVariantCount || 0;
       totalVariants = completion.totalVariantCount || catalogueCount;
-      rate = completion.collectiveCompletionRate != null
-        ? Number(completion.collectiveCompletionRate)
-        : (ratePercent(covered, totalVariants) || 0);
-      uniqueOwnerVariantCount = (compare.getSquadUniqueOwners(matrix).totalUnique) || 0;
-      sharedVariantCount = (compare.getSquadSharedVariants(matrix).totalShared) || 0;
+      rate =
+        completion.collectiveCompletionRate != null
+          ? Number(completion.collectiveCompletionRate)
+          : ratePercent(covered, totalVariants) || 0;
+      uniqueOwnerVariantCount = compare.getSquadUniqueOwners(matrix).totalUnique || 0;
+      sharedVariantCount = compare.getSquadSharedVariants(matrix).totalShared || 0;
     } catch (_) {
       rate = ratePercent(covered, totalVariants) || 0;
     }
@@ -117,9 +119,7 @@ async function calculateSquadDailyStats(db = pool, {
        LIMIT 40`,
       [squad.squad_id, day]
     );
-    const byDate = new Map(
-      prior.rows.map((r) => [toIsoDate(r.metric_date), r])
-    );
+    const byDate = new Map(prior.rows.map((r) => [toIsoDate(r.metric_date), r]));
     const rowOnOrBefore = (target) => {
       if (byDate.has(target)) return byDate.get(target);
       for (const [d, row] of byDate.entries()) {
@@ -143,32 +143,26 @@ async function calculateSquadDailyStats(db = pool, {
     // Étape 58 — vs previous snapshot (catalogue bias vs acquisition).
     const decomp = prevDay
       ? decomposeCatalogueVsAcquisition({
-        previousCovered: prevDay.covered_variant_count,
-        previousCatalogueCount: prevDay.catalogue_variant_count,
-        currentCovered: covered,
-        currentCatalogueCount: totalVariants
-      })
+          previousCovered: prevDay.covered_variant_count,
+          previousCatalogueCount: prevDay.catalogue_variant_count,
+          currentCovered: covered,
+          currentCatalogueCount: totalVariants
+        })
       : {
-        completionRateBeforeCatalogueUpdate: null,
-        completionRateAfterCatalogueUpdate: null,
-        catalogueExpansionImpact: null,
-        acquisitionProgress: null
-      };
+          completionRateBeforeCatalogueUpdate: null,
+          completionRateAfterCatalogueUpdate: null,
+          catalogueExpansionImpact: null,
+          acquisitionProgress: null
+        };
 
-    const rateOf = (row) => (
-      row && row.collective_completion_rate != null
-        ? Number(row.collective_completion_rate)
-        : null
-    );
+    const rateOf = (row) =>
+      row && row.collective_completion_rate != null ? Number(row.collective_completion_rate) : null;
     // Prefer acquisition-aware progress (ignore pure catalogue shock).
     const progressFrom = (prevRow) => {
       if (!prevRow) return null;
       if (decomp.acquisitionProgress != null && prevRow === prevDay) {
         // Day-over-day: use acquisition progress when catalogue changed.
-        if (
-          Number(prevRow.catalogue_variant_count) !== Number(totalVariants)
-          && decomp.acquisitionProgress != null
-        ) {
+        if (Number(prevRow.catalogue_variant_count) !== Number(totalVariants) && decomp.acquisitionProgress != null) {
           return decomp.acquisitionProgress;
         }
       }
@@ -195,7 +189,9 @@ async function calculateSquadDailyStats(db = pool, {
     const formulaVersion = require("../sprite-graph-formula").squadFormulaVersion();
     try {
       await require("../sprite-graph-formula").ensureFormulaVersionColumns(db);
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     await db.query(
       `INSERT INTO squad_daily_stats (
          metric_date, squad_id,

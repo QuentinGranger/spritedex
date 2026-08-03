@@ -19,5 +19,4 @@ async function resolveCompareUser(identifier) {
   return result.rows[0] || null;
 }
 
-
 module.exports = { resolveCompareUser };

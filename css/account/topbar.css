@@ -9,7 +9,9 @@
   place-items: center;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 200ms ease, box-shadow 200ms ease;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
   padding: 0;
 }
 
@@ -38,4 +40,3 @@
 .topbar-avatar:has(.topbar-avatar__img:not([style*="display:none"])) .topbar-avatar__fallback {
   display: none;
 }
-

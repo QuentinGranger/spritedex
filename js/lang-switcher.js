@@ -24,10 +24,7 @@
   }
 
   function regionFor(code) {
-    return tKey(
-      `lang.region.${code}`,
-      LOCALES.find((item) => item.code === code)?.region || ""
-    );
+    return tKey(`lang.region.${code}`, LOCALES.find((item) => item.code === code)?.region || "");
   }
 
   function switcherLabel() {
@@ -177,7 +174,9 @@
       }
       try {
         localStorage.setItem(window.SPRITE_INDEX_LOCALE_KEY || "sprite-index_locale", code);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       window.location.reload();
     }, 180);
   }
@@ -230,8 +229,8 @@
         // Avoid forcing focus on touch devices (virtual keyboard / scroll jump).
         const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
         if (!coarse) {
-          const active = root.querySelector('.lang-menu__option[aria-selected="true"]')
-            || root.querySelector(".lang-menu__option");
+          const active =
+            root.querySelector('.lang-menu__option[aria-selected="true"]') || root.querySelector(".lang-menu__option");
           active?.focus();
         }
       }
@@ -267,7 +266,13 @@
           event.preventDefault();
           closeAll(root);
           setOpen(root, true);
-          focusOption(root, Math.max(0, options.findIndex((el) => el.getAttribute("aria-selected") === "true")));
+          focusOption(
+            root,
+            Math.max(
+              0,
+              options.findIndex((el) => el.getAttribute("aria-selected") === "true")
+            )
+          );
         }
         return;
       }

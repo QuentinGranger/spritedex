@@ -1,7 +1,5 @@
 "use strict";
 
-
-
 // ── Server-side comparison engine (mirrors js/compare.js logic) ──
 const COMPARE_SERVER_RULES = {
   owned: ["owned"],
@@ -10,10 +8,18 @@ const COMPARE_SERVER_RULES = {
   unknown: ["new", "unknown", "unsure"]
 };
 
-function compareServerIsOwned(status) { return COMPARE_SERVER_RULES.owned.includes(status); }
-function compareServerIsMissing(status) { return COMPARE_SERVER_RULES.missing.includes(status); }
-function compareServerIsUnknown(status) { return !status || COMPARE_SERVER_RULES.unknown.includes(status); }
-function compareServerIsRecommend(status) { return COMPARE_SERVER_RULES.recommend.includes(status); }
+function compareServerIsOwned(status) {
+  return COMPARE_SERVER_RULES.owned.includes(status);
+}
+function compareServerIsMissing(status) {
+  return COMPARE_SERVER_RULES.missing.includes(status);
+}
+function compareServerIsUnknown(status) {
+  return !status || COMPARE_SERVER_RULES.unknown.includes(status);
+}
+function compareServerIsRecommend(status) {
+  return COMPARE_SERVER_RULES.recommend.includes(status);
+}
 
 function compareServerIsPriority(entry) {
   if (!entry) return false;
@@ -48,7 +54,19 @@ function countServerExplicitCollectionEntries(collection) {
   return count;
 }
 
-function compareServerDefaultEntry() { return { status: "new", priority: "none", note: "" }; }
+function compareServerDefaultEntry() {
+  return { status: "new", priority: "none", note: "" };
+}
 
-
-module.exports = { compareServerIsOwned, compareServerIsMissing, compareServerIsUnknown, compareServerIsRecommend, compareServerIsPriority, compareServerClassify, compareServerIsExplicitEntry, countServerExplicitCollectionEntries, compareServerDefaultEntry, COMPARE_SERVER_RULES };
+module.exports = {
+  compareServerIsOwned,
+  compareServerIsMissing,
+  compareServerIsUnknown,
+  compareServerIsRecommend,
+  compareServerIsPriority,
+  compareServerClassify,
+  compareServerIsExplicitEntry,
+  countServerExplicitCollectionEntries,
+  compareServerDefaultEntry,
+  COMPARE_SERVER_RULES
+};

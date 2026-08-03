@@ -9,10 +9,12 @@
   position: relative;
   overflow: hidden;
   padding: 17px 19px;
-  border: 1px solid rgba(99, 139, 255, .24);
+  border: 1px solid rgba(99, 139, 255, 0.24);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(19, 42, 91, .8), rgba(10, 18, 45, .86)), #091432;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 9px 28px rgba(0,0,0,.12);
+  background: linear-gradient(145deg, rgba(19, 42, 91, 0.8), rgba(10, 18, 45, 0.86)), #091432;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 9px 28px rgba(0, 0, 0, 0.12);
 }
 
 .account-overview-card::before {
@@ -20,11 +22,14 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: .8;
-  background: radial-gradient(circle at 0 0, rgba(0, 220, 255, .1), transparent 31%);
+  opacity: 0.8;
+  background: radial-gradient(circle at 0 0, rgba(0, 220, 255, 0.1), transparent 31%);
 }
 
-.account-overview-card > * { position: relative; z-index: 1; }
+.account-overview-card > * {
+  position: relative;
+  z-index: 1;
+}
 
 .account-overview-card__header {
   display: flex;
@@ -37,8 +42,10 @@
 .account-overview-card__header h3 {
   margin: 0;
   color: #f1f4ff;
-  font: 800 1rem 'Rajdhani', sans-serif;
-  letter-spacing: .02em;
+  font:
+    800 1rem "Rajdhani",
+    sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .account-overview-card__header h3::before {
@@ -47,24 +54,31 @@
   width: 7px;
   height: 7px;
   margin: 0 8px 1px 0;
-  border: 1px solid rgba(111, 232, 255, .9);
+  border: 1px solid rgba(111, 232, 255, 0.9);
   border-radius: 2px;
-  background: rgba(0, 214, 255, .3);
-  box-shadow: 0 0 10px rgba(0, 225, 255, .65);
+  background: rgba(0, 214, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 225, 255, 0.65);
 }
 
 .account-overview-card__period,
 .account-overview-card__link {
   padding: 5px 9px;
-  border: 1px solid rgba(103, 143, 255, .23);
+  border: 1px solid rgba(103, 143, 255, 0.23);
   border-radius: 7px;
-  background: rgba(6, 14, 38, .36);
-  color: rgba(213, 225, 255, .72);
-  font: 700 .64rem 'Rajdhani', sans-serif;
+  background: rgba(6, 14, 38, 0.36);
+  color: rgba(213, 225, 255, 0.72);
+  font:
+    700 0.64rem "Rajdhani",
+    sans-serif;
 }
 
-.account-overview-card__link { cursor: pointer; }
-.account-overview-card__link:hover { color: #dffaff; border-color: rgba(0,225,255,.5); }
+.account-overview-card__link {
+  cursor: pointer;
+}
+.account-overview-card__link:hover {
+  color: #dffaff;
+  border-color: rgba(0, 225, 255, 0.5);
+}
 
 .account-collection-overview {
   display: flex;
@@ -82,8 +96,14 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(#12e7d3 var(--account-overview-progress), #7757f2 calc(var(--account-overview-progress) + 7%), rgba(112, 132, 215, .2) 0);
-  box-shadow: 0 0 0 8px rgba(46, 109, 220, .08), 0 0 24px rgba(0, 225, 255, .14);
+  background: conic-gradient(
+    #12e7d3 var(--account-overview-progress),
+    #7757f2 calc(var(--account-overview-progress) + 7%),
+    rgba(112, 132, 215, 0.2) 0
+  );
+  box-shadow:
+    0 0 0 8px rgba(46, 109, 220, 0.08),
+    0 0 24px rgba(0, 225, 255, 0.14);
 }
 
 .account-overview-ring::before {
@@ -92,14 +112,37 @@
   inset: 9px;
   border-radius: inherit;
   background: #0a1636;
-  box-shadow: inset 0 0 18px rgba(0,0,0,.5);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5);
 }
 
-.account-overview-ring strong { position: relative; color: #f3f5ff; font: 800 1.05rem 'Rajdhani', sans-serif; }
-.account-overview-collection-copy { display: grid; gap: 2px; }
-.account-overview-collection-copy > strong { color: #f2f5ff; font: 800 1.35rem 'Rajdhani', sans-serif; line-height: 1; }
-.account-overview-collection-copy > span { color: rgba(209, 221, 255, .64); font-size: .72rem; }
-.account-overview-collection-copy > small { margin-top: 8px; color: #7de7db; font-size: .7rem; line-height: 1.3; }
+.account-overview-ring strong {
+  position: relative;
+  color: #f3f5ff;
+  font:
+    800 1.05rem "Rajdhani",
+    sans-serif;
+}
+.account-overview-collection-copy {
+  display: grid;
+  gap: 2px;
+}
+.account-overview-collection-copy > strong {
+  color: #f2f5ff;
+  font:
+    800 1.35rem "Rajdhani",
+    sans-serif;
+  line-height: 1;
+}
+.account-overview-collection-copy > span {
+  color: rgba(209, 221, 255, 0.64);
+  font-size: 0.72rem;
+}
+.account-overview-collection-copy > small {
+  margin-top: 8px;
+  color: #7de7db;
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
 
 .account-overview-insight {
   display: grid;
@@ -113,14 +156,19 @@
   gap: 3px;
   padding: 7px 9px;
   border-radius: 8px;
-  background: rgba(3, 11, 34, .25);
-  color: rgba(205, 217, 255, .6);
-  font: 700 .62rem 'Rajdhani', sans-serif;
+  background: rgba(3, 11, 34, 0.25);
+  color: rgba(205, 217, 255, 0.6);
+  font:
+    700 0.62rem "Rajdhani",
+    sans-serif;
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: 0.05em;
 }
 
-.account-overview-insight strong { color: #eaf0ff; font-size: .82rem; }
+.account-overview-insight strong {
+  color: #eaf0ff;
+  font-size: 0.82rem;
+}
 
 .account-overview-card__action {
   width: 100%;
@@ -130,51 +178,169 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid rgba(110, 141, 255, .2);
+  border: 1px solid rgba(110, 141, 255, 0.2);
   border-radius: 8px;
-  background: rgba(9, 19, 49, .68);
-  color: rgba(230, 237, 255, .85);
-  font: 700 .73rem 'Rajdhani', sans-serif;
+  background: rgba(9, 19, 49, 0.68);
+  color: rgba(230, 237, 255, 0.85);
+  font:
+    700 0.73rem "Rajdhani",
+    sans-serif;
   cursor: pointer;
 }
 
 .account-overview-card__action:hover {
-  border-color: rgba(0, 225, 255, .48);
+  border-color: rgba(0, 225, 255, 0.48);
   color: #d9fbff;
-  background: rgba(0, 183, 255, .09);
+  background: rgba(0, 183, 255, 0.09);
 }
 
-.account-overview-card__action span { color: #6fdaff; font-size: 1.25rem; line-height: 1; }
+.account-overview-card__action span {
+  color: #6fdaff;
+  font-size: 1.25rem;
+  line-height: 1;
+}
 
 .account-activity-kpis {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
   overflow: hidden;
-  border: 1px solid rgba(104, 139, 255, .14);
+  border: 1px solid rgba(104, 139, 255, 0.14);
   border-radius: 10px;
-  background: rgba(2, 10, 31, .28);
+  background: rgba(2, 10, 31, 0.28);
 }
 
-.account-activity-kpis span { padding: 9px; color: rgba(204, 218, 255, .58); font-size: .64rem; line-height: 1.15; }
-.account-activity-kpis strong { display: block; margin-bottom: 2px; color: #f4f6ff; font: 800 1.04rem 'Rajdhani', sans-serif; }
-.account-overview-activity-list { min-height: 77px; margin: 10px 0; }
-.account-overview-activity-list p { margin: 22px 0 0; color: rgba(205,217,255,.46); font-size: .72rem; text-align: center; }
-.account-overview-activity-list ul { display: grid; gap: 4px; padding: 0; margin: 0; list-style: none; }
-.account-overview-activity-list li { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; min-width: 0; padding-bottom: 4px; border-bottom: 1px solid rgba(129,151,255,.08); }
-.account-overview-activity-list li span { overflow: hidden; color: rgba(231,237,255,.8); font-size: .69rem; text-overflow: ellipsis; white-space: nowrap; }
-.account-overview-activity-list time { flex: 0 0 auto; color: rgba(176,193,244,.45); font-size: .62rem; }
+.account-activity-kpis span {
+  padding: 9px;
+  color: rgba(204, 218, 255, 0.58);
+  font-size: 0.64rem;
+  line-height: 1.15;
+}
+.account-activity-kpis strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #f4f6ff;
+  font:
+    800 1.04rem "Rajdhani",
+    sans-serif;
+}
+.account-overview-activity-list {
+  min-height: 77px;
+  margin: 10px 0;
+}
+.account-overview-activity-list p {
+  margin: 22px 0 0;
+  color: rgba(205, 217, 255, 0.46);
+  font-size: 0.72rem;
+  text-align: center;
+}
+.account-overview-activity-list ul {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.account-overview-activity-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(129, 151, 255, 0.08);
+}
+.account-overview-activity-list li span {
+  overflow: hidden;
+  color: rgba(231, 237, 255, 0.8);
+  font-size: 0.69rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-overview-activity-list time {
+  flex: 0 0 auto;
+  color: rgba(176, 193, 244, 0.45);
+  font-size: 0.62rem;
+}
 
-.account-badge-preview { display: flex; align-items: flex-start; gap: 12px; min-height: 75px; }
-.account-badge-preview > p { margin: 20px auto; color: rgba(205,217,255,.45); font-size: .72rem; }
-.account-badge-preview__item { display: grid; gap: 5px; justify-items: center; width: 52px; text-align: center; }
-.account-badge-preview__item > span { width: 42px; height: 48px; display: grid; place-items: center; clip-path: polygon(50% 0, 92% 23%, 92% 76%, 50% 100%, 8% 76%, 8% 23%); border: 1px solid #22d6ff; background: linear-gradient(135deg, rgba(0,211,255,.35), rgba(44,77,211,.5)); color: #effbff; font: 800 1.1rem 'Rajdhani', sans-serif; text-shadow: 0 0 13px #00dfff; }
-.account-badge-preview__item small { display: -webkit-box; overflow: hidden; color: rgba(221,230,255,.75); font-size: .58rem; line-height: 1.05; text-align: center; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
-.account-badge-preview__more { width: 48px; height: 54px; display: grid; place-items: center; border: 1px dashed rgba(137,159,255,.35); border-radius: 10px; color: #e2e9ff; font: 800 .95rem 'Rajdhani', sans-serif; }
+.account-badge-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 75px;
+}
+.account-badge-preview > p {
+  margin: 20px auto;
+  color: rgba(205, 217, 255, 0.45);
+  font-size: 0.72rem;
+}
+.account-badge-preview__item {
+  display: grid;
+  gap: 5px;
+  justify-items: center;
+  width: 52px;
+  text-align: center;
+}
+.account-badge-preview__item > span {
+  width: 42px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 23%, 92% 76%, 50% 100%, 8% 76%, 8% 23%);
+  border: 1px solid #22d6ff;
+  background: linear-gradient(135deg, rgba(0, 211, 255, 0.35), rgba(44, 77, 211, 0.5));
+  color: #effbff;
+  font:
+    800 1.1rem "Rajdhani",
+    sans-serif;
+  text-shadow: 0 0 13px #00dfff;
+}
+.account-badge-preview__item small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: rgba(221, 230, 255, 0.75);
+  font-size: 0.58rem;
+  line-height: 1.05;
+  text-align: center;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.account-badge-preview__more {
+  width: 48px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(137, 159, 255, 0.35);
+  border-radius: 10px;
+  color: #e2e9ff;
+  font:
+    800 0.95rem "Rajdhani",
+    sans-serif;
+}
 
-.account-quick-preferences { display: grid; gap: 3px; margin-bottom: 9px; }
-.account-quick-preferences span { display: flex; align-items: center; justify-content: space-between; min-height: 19px; padding-bottom: 3px; border-bottom: 1px solid rgba(128,151,255,.1); color: rgba(218,228,255,.68); font-size: .7rem; }
-.account-quick-preferences strong { color: #65dfc9; font: 800 .67rem 'Rajdhani', sans-serif; text-transform: uppercase; }
+.account-quick-preferences {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 9px;
+}
+.account-quick-preferences span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 19px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(128, 151, 255, 0.1);
+  color: rgba(218, 228, 255, 0.68);
+  font-size: 0.7rem;
+}
+.account-quick-preferences strong {
+  color: #65dfc9;
+  font:
+    800 0.67rem "Rajdhani",
+    sans-serif;
+  text-transform: uppercase;
+}
 
 @media (min-width: 1024px) {
   .account-overview-grid {
@@ -185,23 +351,73 @@
   }
 
   /* Desktop overrides only */
-  .account-overview-card--collection { grid-column: span 4; min-height: 296px; }
-  .account-overview-card--activity { grid-column: span 4; min-height: 296px; }
-  .account-overview-side { grid-column: span 4; display: grid; grid-template-rows: 1fr 1fr; gap: 14px; }
+  .account-overview-card--collection {
+    grid-column: span 4;
+    min-height: 296px;
+  }
+  .account-overview-card--activity {
+    grid-column: span 4;
+    min-height: 296px;
+  }
+  .account-overview-side {
+    grid-column: span 4;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 14px;
+  }
   .account-overview-card--badges,
-  .account-overview-card--preferences { min-height: 141px; }
-  .account-collection-overview { min-height: 116px; }
-  .account-overview-ring { width: 94px; height: 94px; }
-  .account-overview-ring strong { font-size: 1.15rem; }
-  .account-overview-collection-copy > strong { font-size: 1.55rem; }
-  .account-badge-preview__item:nth-child(2) > span { border-color: #63e48d; color: #caffd9; background: linear-gradient(135deg, rgba(17,193,108,.36), rgba(19,104,83,.5)); }
-  .account-badge-preview__item:nth-child(3) > span { border-color: #bc73ff; color: #f0d4ff; background: linear-gradient(135deg, rgba(150,65,237,.44), rgba(79,31,139,.6)); }
-  .account-badge-preview__item:nth-child(4) > span { border-color: #f4bd4e; color: #fff2bc; background: linear-gradient(135deg, rgba(231,157,20,.4), rgba(137,75,18,.6)); }
-  .account-panel__sections { margin-top: 0; }
-  #accountCloudSection { order: 1; grid-column: span 4; }
-  #accountPrivacySection { order: 2; grid-column: span 4; }
-  #accountSecuritySection { order: 3; grid-column: span 4; }
-  #accountInfoSection { order: 4; grid-column: 1 / -1; min-height: auto; }
-  #notifSettingsSection { order: 5; }
+  .account-overview-card--preferences {
+    min-height: 141px;
+  }
+  .account-collection-overview {
+    min-height: 116px;
+  }
+  .account-overview-ring {
+    width: 94px;
+    height: 94px;
+  }
+  .account-overview-ring strong {
+    font-size: 1.15rem;
+  }
+  .account-overview-collection-copy > strong {
+    font-size: 1.55rem;
+  }
+  .account-badge-preview__item:nth-child(2) > span {
+    border-color: #63e48d;
+    color: #caffd9;
+    background: linear-gradient(135deg, rgba(17, 193, 108, 0.36), rgba(19, 104, 83, 0.5));
+  }
+  .account-badge-preview__item:nth-child(3) > span {
+    border-color: #bc73ff;
+    color: #f0d4ff;
+    background: linear-gradient(135deg, rgba(150, 65, 237, 0.44), rgba(79, 31, 139, 0.6));
+  }
+  .account-badge-preview__item:nth-child(4) > span {
+    border-color: #f4bd4e;
+    color: #fff2bc;
+    background: linear-gradient(135deg, rgba(231, 157, 20, 0.4), rgba(137, 75, 18, 0.6));
+  }
+  .account-panel__sections {
+    margin-top: 0;
+  }
+  #accountCloudSection {
+    order: 1;
+    grid-column: span 4;
+  }
+  #accountPrivacySection {
+    order: 2;
+    grid-column: span 4;
+  }
+  #accountSecuritySection {
+    order: 3;
+    grid-column: span 4;
+  }
+  #accountInfoSection {
+    order: 4;
+    grid-column: 1 / -1;
+    min-height: auto;
+  }
+  #notifSettingsSection {
+    order: 5;
+  }
 }
-

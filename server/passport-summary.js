@@ -10,9 +10,7 @@ const QUEUE_POLL_MS = Math.max(0, Number(process.env.PASSPORT_RECALC_QUEUE_MS ??
 const BATCH_SIZE = Math.max(1, Number(process.env.PASSPORT_RECALC_BATCH || 10));
 const CATALOGUE_FANOUT_BATCH = Math.max(1, Number(process.env.PASSPORT_CATALOGUE_FANOUT_BATCH || 200));
 
-const PASSPORT_EXPLICIT_STATUSES = new Set([
-  "owned", "missing", "priority", "spotted", "unavailable", "unknown"
-]);
+const PASSPORT_EXPLICIT_STATUSES = new Set(["owned", "missing", "priority", "spotted", "unavailable", "unknown"]);
 
 let tablesReady = false;
 let workerStarted = false;
@@ -97,10 +95,7 @@ function rowToSummary(row) {
 
 async function getPassportSummary(userId, db = pool) {
   await ensurePassportSummaryTables(db);
-  const result = await db.query(
-    "SELECT * FROM user_passport_summaries WHERE user_id = $1",
-    [userId]
-  );
+  const result = await db.query("SELECT * FROM user_passport_summaries WHERE user_id = $1", [userId]);
   return rowToSummary(result.rows[0] || null);
 }
 
@@ -162,16 +157,15 @@ async function upsertPassportSummary(userId, data = {}, db = pool) {
 async function computeSummaryPayload(userId, built = null, db = pool) {
   const achievements = require("./passport-achievements");
   const comparisonSessions = require("./comparison-sessions");
-  const resolved = built || await achievements.buildPassportEvalContext(userId, db, { notify: false });
+  const resolved = built || (await achievements.buildPassportEvalContext(userId, db, { notify: false }));
   const catalogue = resolved.catalogue || [];
   const releasedSpriteCount = new Set(catalogue.map((item) => String(item.spriteId))).size;
-  const peakResult = await db.query(
-    "SELECT peak_completion_rate FROM user_collection_peaks WHERE user_id = $1",
-    [userId]
-  );
+  const peakResult = await db.query("SELECT peak_completion_rate FROM user_collection_peaks WHERE user_id = $1", [
+    userId
+  ]);
   const peakRate = peakResult.rows[0]
     ? Number(peakResult.rows[0].peak_completion_rate) || 0
-    : (resolved.progress.completionRatePrecise || 0);
+    : resolved.progress.completionRatePrecise || 0;
 
   const comparisonStats = await comparisonSessions.getComparisonStatsForUser(userId).catch(() => ({
     comparisonCount: 0,
@@ -195,15 +189,12 @@ async function computeSummaryPayload(userId, built = null, db = pool) {
     releasedVariantCount: resolved.progress.releasedVariantCount || 0,
     completionRate: resolved.progress.completionRatePrecise || 0,
     personalBestRate: Math.max(peakRate, resolved.progress.completionRatePrecise || 0),
-    collectionCoverageRate: resolved.reliability?.rate != null
-      ? resolved.reliability.rate
-      : (resolved.ctx.reliabilityRate || 0),
+    collectionCoverageRate:
+      resolved.reliability?.rate != null ? resolved.reliability.rate : resolved.ctx.reliabilityRate || 0,
     completedEventCount: resolved.ctx.eventsCompletedCount || 0,
     comparisonCount: comparisonStats.comparisonCount || 0,
     distinctComparedUsers: comparisonStats.distinctCollectorsCompared || 0,
-    highestOfficialRarity: rarityStats.highestOfficialRarity
-      ? rarityStats.highestOfficialRarity.key
-      : null,
+    highestOfficialRarity: rarityStats.highestOfficialRarity ? rarityStats.highestOfficialRarity.key : null,
     lastCollectionUpdateAt: lastUpdated.rows[0]?.last_updated || null,
     _built: resolved
   };
@@ -212,13 +203,16 @@ async function computeSummaryPayload(userId, built = null, db = pool) {
 /**
  * Full recalc: badges + peak + summary. Used by the queue worker and sync paths.
  */
-async function recalculatePassportSummary(userId, {
-  triggerEvent = "collection.updated",
-  notify = true,
-  batchNotify = true,
-  collectionChanged = false,
-  catalogueDelta = null
-} = {}) {
+async function recalculatePassportSummary(
+  userId,
+  {
+    triggerEvent = "collection.updated",
+    notify = true,
+    batchNotify = true,
+    collectionChanged = false,
+    catalogueDelta = null
+  } = {}
+) {
   const achievements = require("./passport-achievements");
   const previous = await getPassportSummary(userId);
   const refreshed = await achievements.refreshPassportProgress(userId, triggerEvent, {
@@ -231,10 +225,10 @@ async function recalculatePassportSummary(userId, {
 
   // Étape 75 — notify when catalogue growth drops completion.
   if (
-    catalogueDelta
-    && previous
-    && summary
-    && Number(previous.completionRate) > Number(summary.completionRate) + 0.05
+    catalogueDelta &&
+    previous &&
+    summary &&
+    Number(previous.completionRate) > Number(summary.completionRate) + 0.05
   ) {
     await maybeNotifyCatalogueCompletionDrop(userId, previous, summary, catalogueDelta);
   }
@@ -247,24 +241,19 @@ async function maybeNotifyCatalogueCompletionDrop(userId, previous, summary, cat
     const pushService = require("../push-service");
     const eventIdempotency = require("./event-idempotency");
     const dedupeKey = `passport_catalogue_drop:${userId}:${summary.catalogueVersion}`;
-    const claimed = await eventIdempotency.claimDedupeKey(
-      pool,
-      dedupeKey,
-      "passport_catalogue_updated",
-      userId
-    ).catch(() => true);
+    const claimed = await eventIdempotency
+      .claimDedupeKey(pool, dedupeKey, "passport_catalogue_updated", userId)
+      .catch(() => true);
     if (!claimed) return;
 
     const from = Math.round(Number(previous.completionRate) * 10) / 10;
     const to = Math.round(Number(summary.completionRate) * 10) / 10;
     const fromLabel = String(from).replace(".", ",");
     const toLabel = String(to).replace(".", ",");
-    const added = catalogueDelta.addedVariantCount != null
-      ? catalogueDelta.addedVariantCount
-      : Math.max(
-        0,
-        (summary.releasedVariantCount || 0) - (previous.releasedVariantCount || 0)
-      );
+    const added =
+      catalogueDelta.addedVariantCount != null
+        ? catalogueDelta.addedVariantCount
+        : Math.max(0, (summary.releasedVariantCount || 0) - (previous.releasedVariantCount || 0));
 
     await pushService.createNotification(pool, {
       recipientId: userId,
@@ -297,13 +286,16 @@ async function maybeNotifyCatalogueCompletionDrop(userId, previous, summary, cat
 /**
  * Enqueue a durable recalc job. Coalesces pending jobs per user.
  */
-async function enqueuePassportRecalc(userId, {
-  reason = "collection.updated",
-  triggerEvent = "collection.updated",
-  collectionChanged = false,
-  catalogueDelta = null,
-  notify = true
-} = {}) {
+async function enqueuePassportRecalc(
+  userId,
+  {
+    reason = "collection.updated",
+    triggerEvent = "collection.updated",
+    collectionChanged = false,
+    catalogueDelta = null,
+    notify = true
+  } = {}
+) {
   await ensurePassportSummaryTables();
   const id = Number(userId);
   if (!Number.isSafeInteger(id) || id < 1) return null;
@@ -344,9 +336,7 @@ function schedulePassportRecalc(userId, options = {}) {
         batchNotify: options.batchNotify !== false,
         collectionChanged: options.collectionChanged === true,
         catalogueDelta: options.catalogueDelta || null
-      }).catch((err) =>
-        console.error("[passport-summary] immediate recalc failed", err.message)
-      );
+      }).catch((err) => console.error("[passport-summary] immediate recalc failed", err.message));
     });
     return Promise.resolve({ mode: "immediate" });
   }
@@ -408,9 +398,7 @@ function startPassportRecalcWorker(db = pool) {
   ensurePassportSummaryTables(db).catch(() => {});
   if (QUEUE_POLL_MS <= 0) return;
   workerInterval = setInterval(() => {
-    processPassportRecalcBatch(db).catch((err) =>
-      console.error("[passport-summary] worker tick failed", err.message)
-    );
+    processPassportRecalcBatch(db).catch((err) => console.error("[passport-summary] worker tick failed", err.message));
   }, QUEUE_POLL_MS);
   if (typeof workerInterval.unref === "function") workerInterval.unref();
 }
@@ -438,9 +426,8 @@ async function handleCataloguePublished({
   const prevMeta = await pool.query("SELECT * FROM passport_catalogue_meta WHERE id = 1");
   const stored = prevMeta.rows[0] || null;
   const fromVersion = previousVersion || (stored && stored.catalogue_version);
-  const fromReleased = previousReleasedVariantCount != null
-    ? previousReleasedVariantCount
-    : (stored ? stored.released_variant_count : null);
+  const fromReleased =
+    previousReleasedVariantCount != null ? previousReleasedVariantCount : stored ? stored.released_variant_count : null;
 
   await pool.query(
     `INSERT INTO passport_catalogue_meta (id, catalogue_version, released_sprite_count, released_variant_count, updated_at)
@@ -450,20 +437,14 @@ async function handleCataloguePublished({
        released_sprite_count = EXCLUDED.released_sprite_count,
        released_variant_count = EXCLUDED.released_variant_count,
        updated_at = NOW()`,
-    [
-      newVersion,
-      Number(newReleasedSpriteCount) || 0,
-      Number(newReleasedVariantCount) || 0
-    ]
+    [newVersion, Number(newReleasedSpriteCount) || 0, Number(newReleasedVariantCount) || 0]
   );
 
   if (fromVersion && fromVersion === newVersion) {
     return { enqueued: 0, unchanged: true };
   }
 
-  const deltaReleased = fromReleased != null
-    ? (Number(newReleasedVariantCount) || 0) - Number(fromReleased)
-    : null;
+  const deltaReleased = fromReleased != null ? (Number(newReleasedVariantCount) || 0) - Number(fromReleased) : null;
   const addedVariantCount = deltaReleased != null ? Math.max(0, deltaReleased) : null;
   const removedVariantCount = deltaReleased != null ? Math.max(0, -deltaReleased) : null;
   const shrink = !!(removedVariantCount && removedVariantCount > 0);
@@ -479,11 +460,7 @@ async function handleCataloguePublished({
            WHEN $2::int > 0 THEN ROUND((owned_variant_count::numeric * 100) / $2::numeric, 4)
            ELSE 0
          END`,
-    [
-      Number(newReleasedSpriteCount) || 0,
-      Number(newReleasedVariantCount) || 0,
-      newVersion
-    ]
+    [Number(newReleasedSpriteCount) || 0, Number(newReleasedVariantCount) || 0, newVersion]
   );
 
   // 2) Enqueue full recalc. Badges / peaks / snapshots / sprite_entries stay intact.
@@ -538,7 +515,9 @@ async function handleCataloguePublished({
         }
       });
     }
-  } catch (_) { /* optional bus */ }
+  } catch (_) {
+    /* optional bus */
+  }
 
   return {
     enqueued,
@@ -571,10 +550,7 @@ async function syncCatalogueMetaAndFanout() {
  */
 function applySummaryToCollection(collection, summary, peakRow = null) {
   if (!summary) return collection;
-  const progress = computePassportProgress(
-    summary.ownedVariantCount,
-    summary.releasedVariantCount
-  );
+  const progress = computePassportProgress(summary.ownedVariantCount, summary.releasedVariantCount);
   const personalBestRate = peakRow
     ? Number(peakRow.peak_completion_rate) || summary.personalBestRate
     : summary.personalBestRate;

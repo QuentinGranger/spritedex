@@ -18,6 +18,7 @@ const {
   broadcastGoalUpdate,
   invalidateSquadAnalysisCache,
   MAX_RECOMMENDATION_ASSIGNEES,
+  MAX_RECOMMENDATION_REASON_LENGTH,
   MAX_RECOMMENDATION_GAIN,
   MAX_USER_ID
 } = require("./shared");

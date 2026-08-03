@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureCatalogueHistorySchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS catalog_change_history (
         id SERIAL PRIMARY KEY,
         entity_type VARCHAR(30) NOT NULL DEFAULT 'sprite',

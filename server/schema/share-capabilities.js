@@ -1,7 +1,7 @@
 "use strict";
 
 async function ensureShareCapabilitiesSchema(pool) {
-    await pool.query(`
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS compare_share_tokens (
         id SERIAL PRIMARY KEY,
         token VARCHAR(64) UNIQUE NOT NULL,

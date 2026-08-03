@@ -9,14 +9,17 @@ let historyMeta = { total: 0, weeklyStats: [], monthlyStats: [] };
 let historySelection = new Set();
 
 function historyEntryKey(item) {
-  return [item?.sprite_id, item?.old_status, item?.new_status, item?.created_at].map((value) => String(value || "")).join("|");
+  return [item?.sprite_id, item?.old_status, item?.new_status, item?.created_at]
+    .map((value) => String(value || ""))
+    .join("|");
 }
 
 function historyVariantId(item) {
   const rawId = String(item?.sprite_id || "");
-  const catalogueItem = typeof getAllItems === "function"
-    ? getAllItems().find((entry) => String(entry.id) === rawId || String(entry.variantId) === rawId)
-    : null;
+  const catalogueItem =
+    typeof getAllItems === "function"
+      ? getAllItems().find((entry) => String(entry.id) === rawId || String(entry.variantId) === rawId)
+      : null;
   return catalogueItem?.id || "";
 }
 
@@ -38,10 +41,14 @@ function historyStatusLabel(status) {
 
 function statusIcon(status) {
   const map = {
-    owned: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
-    missing: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-    priority: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
-    unsure: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
+    owned:
+      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+    missing:
+      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    priority:
+      '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    unsure:
+      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>',
     new: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'
   };
   return map[status] || map.new;
@@ -51,24 +58,26 @@ function spriteName(spriteId) {
   const rawId = String(spriteId || "");
   // Newer history stores the stable variant id. Resolve it from the loaded
   // catalogue first, then retain compatibility with legacy composite ids.
-  const item = typeof getAllItems === "function"
-    ? getAllItems().find((entry) => entry.id === rawId || entry.variantId === rawId)
-    : null;
-  if (item) return {
-    name: item.spriteName,
-    variant: item.variant || item.variantName || "Base",
-    image: typeof safeImageUrl === "function" ? safeImageUrl(item.img) : "",
-    rarity: item.rarity || "",
-    sprite: SPRITES.find(s => s.id === item.spriteId) || null
-  };
+  const item =
+    typeof getAllItems === "function"
+      ? getAllItems().find((entry) => entry.id === rawId || entry.variantId === rawId)
+      : null;
+  if (item)
+    return {
+      name: item.spriteName,
+      variant: item.variant || item.variantName || "Base",
+      image: typeof safeImageUrl === "function" ? safeImageUrl(item.img) : "",
+      rarity: item.rarity || "",
+      sprite: SPRITES.find((s) => s.id === item.spriteId) || null
+    };
 
   const [baseId, legacyVariant] = rawId.includes("::")
     ? rawId.split("::", 2)
     : rawId.includes("__")
       ? rawId.split("__", 2)
       : [rawId, "Base"];
-  const sprite = SPRITES.find(s => s.id === baseId);
-  const name = sprite ? sprite.name : baseId.replace(/[_-]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const sprite = SPRITES.find((s) => s.id === baseId);
+  const name = sprite ? sprite.name : baseId.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return { name, variant: legacyVariant || "Base", image: "", rarity: sprite?.rarity || "", sprite };
 }
 
@@ -90,7 +99,9 @@ function historyDateLocale() {
 
 function formatHistoryDate(dateStr) {
   const date = historyDate(dateStr);
-  return date ? date.toLocaleDateString(historyDateLocale(), { day: "numeric", month: "short", year: "numeric" }) : t("history.dateUnknown");
+  return date
+    ? date.toLocaleDateString(historyDateLocale(), { day: "numeric", month: "short", year: "numeric" })
+    : t("history.dateUnknown");
 }
 
 function formatHistoryTime(dateStr) {
@@ -105,7 +116,11 @@ function formatHistoryUpdate(dateStr) {
   const sameDay = date.toDateString() === today.toDateString();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  const prefix = sameDay ? t("history.today") : (date.toDateString() === yesterday.toDateString() ? t("history.yesterday") : formatHistoryDate(dateStr));
+  const prefix = sameDay
+    ? t("history.today")
+    : date.toDateString() === yesterday.toDateString()
+      ? t("history.yesterday")
+      : formatHistoryDate(dateStr);
   return `${prefix} · ${formatHistoryTime(dateStr)}`;
 }
 
@@ -131,7 +146,10 @@ function renderHistoryItem(item, index) {
   const event = historyEventFor(item);
   const kind = historyItemKind(item);
   const changeText = historyChangeText(item);
-  const dateText = t("history.dateAt", { date: formatHistoryDate(item.created_at), time: formatHistoryTime(item.created_at) });
+  const dateText = t("history.dateAt", {
+    date: formatHistoryDate(item.created_at),
+    time: formatHistoryTime(item.created_at)
+  });
   const key = historyEntryKey(item);
   const selected = historySelection.has(key);
   return `
@@ -151,19 +169,25 @@ function renderHistoryItem(item, index) {
 }
 
 function weeklyData(weeks) {
-  return (Array.isArray(weeks) ? weeks : []).map(week => ({
-    date: historyDate(week.week),
-    changes: safeFiniteNumber(week.changes, 0, { min: 0, max: 1000000 }),
-    acquisitions: safeFiniteNumber(week.acquisitions, 0, { min: 0, max: 1000000 })
-  })).filter(week => week.date).sort((a, b) => a.date - b.date);
+  return (Array.isArray(weeks) ? weeks : [])
+    .map((week) => ({
+      date: historyDate(week.week),
+      changes: safeFiniteNumber(week.changes, 0, { min: 0, max: 1000000 }),
+      acquisitions: safeFiniteNumber(week.acquisitions, 0, { min: 0, max: 1000000 })
+    }))
+    .filter((week) => week.date)
+    .sort((a, b) => a.date - b.date);
 }
 
 function monthlyData(months) {
-  return (Array.isArray(months) ? months : []).map(month => ({
-    date: historyDate(month.month),
-    changes: safeFiniteNumber(month.changes, 0, { min: 0, max: 1000000 }),
-    acquisitions: safeFiniteNumber(month.acquisitions, 0, { min: 0, max: 1000000 })
-  })).filter(month => month.date).sort((a, b) => a.date - b.date);
+  return (Array.isArray(months) ? months : [])
+    .map((month) => ({
+      date: historyDate(month.month),
+      changes: safeFiniteNumber(month.changes, 0, { min: 0, max: 1000000 }),
+      acquisitions: safeFiniteNumber(month.acquisitions, 0, { min: 0, max: 1000000 })
+    }))
+    .filter((month) => month.date)
+    .sort((a, b) => a.date - b.date);
 }
 
 function historyTotals() {
@@ -182,32 +206,58 @@ function renderHistoryKpis() {
   const latest = historyEntries[0];
   const streakHint = streak > 1 ? t("history.kpiStreakWeekOther") : t("history.kpiStreakWeekOne");
   const cards = [
-    { key: "acquisition", icon: "↓", label: t("history.kpiAcquisitionLabel"), value: acquisitions, hint: t("history.kpiAcquisitionHint") },
-    { key: "change", icon: "⇄", label: t("history.kpiChangeLabel"), value: nonAcquisition, hint: t("history.kpiChangeHint") },
+    {
+      key: "acquisition",
+      icon: "↓",
+      label: t("history.kpiAcquisitionLabel"),
+      value: acquisitions,
+      hint: t("history.kpiAcquisitionHint")
+    },
+    {
+      key: "change",
+      icon: "⇄",
+      label: t("history.kpiChangeLabel"),
+      value: nonAcquisition,
+      hint: t("history.kpiChangeHint")
+    },
     { key: "streak", icon: "♨", label: t("history.kpiStreakLabel"), value: streak, hint: streakHint },
-    { key: "updated", icon: "▣", label: t("history.kpiUpdatedLabel"), value: latest ? formatHistoryDate(latest.created_at) : "—", hint: latest ? formatHistoryTime(latest.created_at) : t("history.kpiNoActivity") }
+    {
+      key: "updated",
+      icon: "▣",
+      label: t("history.kpiUpdatedLabel"),
+      value: latest ? formatHistoryDate(latest.created_at) : "—",
+      hint: latest ? formatHistoryTime(latest.created_at) : t("history.kpiNoActivity")
+    }
   ];
-  stats.innerHTML = cards.map(card => `
+  stats.innerHTML = cards
+    .map(
+      (card) => `
     <article class="history-kpi history-kpi--${card.key}">
       <span class="history-kpi__icon" aria-hidden="true">${card.icon}</span>
       <span class="history-kpi__label">${card.label}</span>
       <strong class="history-kpi__value">${escapeHtml(String(card.value))}</strong>
       <span class="history-kpi__hint">${escapeHtml(card.hint)}</span>
-    </article>`).join("");
+    </article>`
+    )
+    .join("");
 }
 
 function renderWeeklyChart(weeks) {
   const rows = weeklyData(weeks);
-  const max = Math.max(...rows.map(row => row.changes), 1);
+  const max = Math.max(...rows.map((row) => row.changes), 1);
   const total = rows.reduce((sum, row) => sum + row.changes, 0);
-  const bars = rows.length ? rows.map(row => {
-    const label = row.date.toLocaleDateString(historyDateLocale(), { day: "numeric", month: "short" });
-    const pct = Math.max(5, Math.round((row.changes / max) * 100));
-    const weekStr = t("history.chartBarWeek", { date: label });
-    const acqStr = t("history.chartBarAcq", { count: row.acquisitions, plural: row.acquisitions > 1 ? "s" : "" });
-    const barAria = `${weekStr} : ${activityLabel(row.changes)}, ${acqStr}`;
-    return `<li class="history-trend__bar" style="--history-bar:${pct}%" aria-label="${escapeHtml(barAria)}"><span class="history-trend__bar-value">${row.changes}</span><span class="history-trend__bar-column" aria-hidden="true"></span><span class="history-trend__bar-label">${label}</span></li>`;
-  }).join("") : `<li class="history-trend__empty">${escapeHtml(t("history.chartEmpty"))}</li>`;
+  const bars = rows.length
+    ? rows
+        .map((row) => {
+          const label = row.date.toLocaleDateString(historyDateLocale(), { day: "numeric", month: "short" });
+          const pct = Math.max(5, Math.round((row.changes / max) * 100));
+          const weekStr = t("history.chartBarWeek", { date: label });
+          const acqStr = t("history.chartBarAcq", { count: row.acquisitions, plural: row.acquisitions > 1 ? "s" : "" });
+          const barAria = `${weekStr} : ${activityLabel(row.changes)}, ${acqStr}`;
+          return `<li class="history-trend__bar" style="--history-bar:${pct}%" aria-label="${escapeHtml(barAria)}"><span class="history-trend__bar-value">${row.changes}</span><span class="history-trend__bar-column" aria-hidden="true"></span><span class="history-trend__bar-label">${label}</span></li>`;
+        })
+        .join("")
+    : `<li class="history-trend__empty">${escapeHtml(t("history.chartEmpty"))}</li>`;
   return `
     <header class="history-panel__header">
       <div><p class="history-panel__eyebrow">${escapeHtml(t("history.chartEyebrow"))}</p><h3 id="historyTrendTitle">${escapeHtml(t("history.chartTitle"))}</h3></div>
@@ -218,13 +268,17 @@ function renderWeeklyChart(weeks) {
 
 function renderMonthlyTimeline(months) {
   const rows = monthlyData(months);
-  const max = Math.max(...rows.map(row => row.changes), 1);
+  const max = Math.max(...rows.map((row) => row.changes), 1);
   const total = rows.reduce((sum, row) => sum + row.acquisitions, 0);
-  const items = rows.length ? rows.map(row => {
-    const label = row.date.toLocaleDateString(historyDateLocale(), { month: "short", year: "2-digit" });
-    const pct = Math.max(8, Math.round((row.changes / max) * 100));
-    return `<li class="history-monthly__item" style="--history-month:${pct}%"><span class="history-monthly__dot"></span><span class="history-monthly__label">${escapeHtml(label)}</span><strong>${row.acquisitions}</strong><small>${escapeHtml(t("history.monthlyAcquisitions"))}</small></li>`;
-  }).join("") : `<li class="history-panel__empty">${escapeHtml(t("history.monthlyEmpty"))}</li>`;
+  const items = rows.length
+    ? rows
+        .map((row) => {
+          const label = row.date.toLocaleDateString(historyDateLocale(), { month: "short", year: "2-digit" });
+          const pct = Math.max(8, Math.round((row.changes / max) * 100));
+          return `<li class="history-monthly__item" style="--history-month:${pct}%"><span class="history-monthly__dot"></span><span class="history-monthly__label">${escapeHtml(label)}</span><strong>${row.acquisitions}</strong><small>${escapeHtml(t("history.monthlyAcquisitions"))}</small></li>`;
+        })
+        .join("")
+    : `<li class="history-panel__empty">${escapeHtml(t("history.monthlyEmpty"))}</li>`;
   return `<header class="history-panel__header"><div><p class="history-panel__eyebrow">${escapeHtml(t("history.monthlyEyebrow"))}</p><h3 id="historyMonthlyTitle">${escapeHtml(t("history.monthlyTitle"))}</h3></div><span class="history-panel__meta">${escapeHtml(t("history.monthlyTotal", { count: total }))}</span></header><ol class="history-monthly__timeline">${items}</ol>`;
 }
 
@@ -235,13 +289,17 @@ function renderRecentAcquisitions() {
   target.setAttribute("aria-busy", "false");
   target.innerHTML = `
     <header class="history-panel__header"><div><p class="history-panel__eyebrow">${escapeHtml(t("history.recentEyebrow"))}</p><h3 id="historyRecentTitle">${escapeHtml(t("history.recentTitle"))}</h3></div></header>
-    ${acquisitions.length ? `<ul class="history-recent__list">${acquisitions.map(item => {
-      const { name, variant, image } = spriteName(String(item.sprite_id || ""));
-      const thumbnail = image
-        ? `<img src="${escapeHtml(image)}" alt="" />`
-        : statusIcon("owned");
-      return `<li class="history-recent__item"><span class="history-recent__avatar" aria-hidden="true">${thumbnail}</span><span class="history-recent__name"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(variant)}</small></span><time datetime="${escapeHtml(String(item.created_at || ""))}">${escapeHtml(formatHistoryUpdate(item.created_at))}</time></li>`;
-    }).join("")}</ul>` : `<p class="history-panel__empty">${escapeHtml(t("history.recentEmpty"))}</p>`}`;
+    ${
+      acquisitions.length
+        ? `<ul class="history-recent__list">${acquisitions
+            .map((item) => {
+              const { name, variant, image } = spriteName(String(item.sprite_id || ""));
+              const thumbnail = image ? `<img src="${escapeHtml(image)}" alt="" />` : statusIcon("owned");
+              return `<li class="history-recent__item"><span class="history-recent__avatar" aria-hidden="true">${thumbnail}</span><span class="history-recent__name"><strong>${escapeHtml(name)}</strong><small>${escapeHtml(variant)}</small></span><time datetime="${escapeHtml(String(item.created_at || ""))}">${escapeHtml(formatHistoryUpdate(item.created_at))}</time></li>`;
+            })
+            .join("")}</ul>`
+        : `<p class="history-panel__empty">${escapeHtml(t("history.recentEmpty"))}</p>`
+    }`;
 }
 
 function renderActionSummary() {
@@ -249,7 +307,7 @@ function renderActionSummary() {
   if (!target) return;
   const { acquisitions, changes } = historyTotals();
   const regressions = Math.min(
-    historyEntries.filter(item => item.old_status === "owned" && item.new_status !== "owned").length,
+    historyEntries.filter((item) => item.old_status === "owned" && item.new_status !== "owned").length,
     Math.max(0, changes - acquisitions)
   );
   const otherChanges = Math.max(0, changes - acquisitions - regressions);
@@ -268,24 +326,31 @@ function renderActiveSprites() {
   const target = document.getElementById("historyActiveSprites");
   if (!target) return;
   const counts = new Map();
-  historyEntries.forEach(item => counts.set(item.sprite_id, (counts.get(item.sprite_id) || 0) + 1));
+  historyEntries.forEach((item) => counts.set(item.sprite_id, (counts.get(item.sprite_id) || 0) + 1));
   const active = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
   const max = Math.max(...active.map(([, count]) => count), 1);
   target.setAttribute("aria-busy", "false");
   target.innerHTML = `
     <header class="history-panel__header"><div><p class="history-panel__eyebrow">${escapeHtml(t("history.activeEyebrow"))}</p><h3 id="historyActiveSpritesTitle">${escapeHtml(t("history.activeTitle"))}</h3></div></header>
-    ${active.length ? `<ol class="history-active__list">${active.map(([spriteId, count], index) => {
-      const { name } = spriteName(String(spriteId || ""));
-      const actionText = t(count === 1 ? "history.actionsOne" : "history.actionsMany", { count });
-      return `<li><span class="history-active__rank">${index + 1}</span><strong>${escapeHtml(name)}</strong><span class="history-active__bar"><i style="--history-active:${Math.round((count / max) * 100)}%"></i></span><span>${actionText}</span></li>`;
-    }).join("")}</ol>` : `<p class="history-panel__empty">${escapeHtml(t("history.activeEmpty"))}</p>`}`;
+    ${
+      active.length
+        ? `<ol class="history-active__list">${active
+            .map(([spriteId, count], index) => {
+              const { name } = spriteName(String(spriteId || ""));
+              const actionText = t(count === 1 ? "history.actionsOne" : "history.actionsMany", { count });
+              return `<li><span class="history-active__rank">${index + 1}</span><strong>${escapeHtml(name)}</strong><span class="history-active__bar"><i style="--history-active:${Math.round((count / max) * 100)}%"></i></span><span>${actionText}</span></li>`;
+            })
+            .join("")}</ol>`
+        : `<p class="history-panel__empty">${escapeHtml(t("history.activeEmpty"))}</p>`
+    }`;
 }
 
 function filteredHistoryEntries() {
   return historyEntries.filter((item) => {
     if (historyFilter !== "all" && historyItemKind(item) !== historyFilter) return false;
     const details = spriteName(String(item.sprite_id || ""));
-    if (historyFilters.rarity !== "all" && String(details.rarity || "").toLowerCase() !== historyFilters.rarity) return false;
+    if (historyFilters.rarity !== "all" && String(details.rarity || "").toLowerCase() !== historyFilters.rarity)
+      return false;
     const event = historyEventFor(item);
     if (historyFilters.eventId !== "all" && event.id !== historyFilters.eventId) return false;
     if (historyFilters.dateDays !== "all") {
@@ -318,10 +383,22 @@ function renderHistoryFilterOptions() {
     const rarity = String(spriteName(String(item.sprite_id || "")).rarity || "").trim();
     if (rarity) rarities.add(rarity);
   });
-  eventSelect.innerHTML = `<option value="all">${escapeHtml(t("history.filterEventAll"))}</option>${[...events.entries()].sort((a, b) => a[1].localeCompare(b[1], uiLocale())).map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join("")}`;
-  raritySelect.innerHTML = `<option value="all">${escapeHtml(t("history.filterRarityAll"))}</option>${[...rarities].sort((a, b) => localizedRarity(a).localeCompare(localizedRarity(b), uiLocale())).map((rarity) => `<option value="${escapeHtml(rarity.toLowerCase())}">${escapeHtml(localizedRarity(rarity))}</option>`).join("")}`;
+  eventSelect.innerHTML = `<option value="all">${escapeHtml(t("history.filterEventAll"))}</option>${[
+    ...events.entries()
+  ]
+    .sort((a, b) => a[1].localeCompare(b[1], uiLocale()))
+    .map(([id, name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`)
+    .join("")}`;
+  raritySelect.innerHTML = `<option value="all">${escapeHtml(t("history.filterRarityAll"))}</option>${[...rarities]
+    .sort((a, b) => localizedRarity(a).localeCompare(localizedRarity(b), uiLocale()))
+    .map(
+      (rarity) => `<option value="${escapeHtml(rarity.toLowerCase())}">${escapeHtml(localizedRarity(rarity))}</option>`
+    )
+    .join("")}`;
   eventSelect.value = events.has(historyFilters.eventId) ? historyFilters.eventId : "all";
-  raritySelect.value = [...rarities].some((rarity) => rarity.toLowerCase() === historyFilters.rarity) ? historyFilters.rarity : "all";
+  raritySelect.value = [...rarities].some((rarity) => rarity.toLowerCase() === historyFilters.rarity)
+    ? historyFilters.rarity
+    : "all";
   dateSelect.value = historyFilters.dateDays;
 }
 
@@ -330,10 +407,16 @@ function renderHistoryGroups(entries) {
   entries.forEach((item, index) => {
     const date = historyDate(item.created_at);
     const key = date ? date.toDateString() : "unknown";
-    if (!groups.has(key)) groups.set(key, { label: date ? formatHistoryDate(item.created_at) : t("history.dateUnknown"), entries: [] });
+    if (!groups.has(key))
+      groups.set(key, { label: date ? formatHistoryDate(item.created_at) : t("history.dateUnknown"), entries: [] });
     groups.get(key).entries.push({ item, index });
   });
-  return [...groups.values()].map((group) => `<section class="history-day-group"><header><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(activityLabel(group.entries.length))}</span></header>${group.entries.map(({ item, index }) => renderHistoryItem(item, index)).join("")}</section>`).join("");
+  return [...groups.values()]
+    .map(
+      (group) =>
+        `<section class="history-day-group"><header><strong>${escapeHtml(group.label)}</strong><span>${escapeHtml(activityLabel(group.entries.length))}</span></header>${group.entries.map(({ item, index }) => renderHistoryItem(item, index)).join("")}</section>`
+    )
+    .join("");
 }
 
 function renderHistoryList() {
@@ -341,9 +424,10 @@ function renderHistoryList() {
   const count = document.getElementById("historyActivityCount");
   if (!list) return;
   const entries = filteredHistoryEntries();
-  const totalLabel = entries.length === 1
-    ? t(historyFilter === "all" ? "history.totalLoadedOne" : "history.totalShownOne", { count: entries.length })
-    : t(historyFilter === "all" ? "history.totalLoadedMany" : "history.totalShownMany", { count: entries.length });
+  const totalLabel =
+    entries.length === 1
+      ? t(historyFilter === "all" ? "history.totalLoadedOne" : "history.totalShownOne", { count: entries.length })
+      : t(historyFilter === "all" ? "history.totalLoadedMany" : "history.totalShownMany", { count: entries.length });
   if (count) count.textContent = totalLabel;
   list.setAttribute("aria-busy", "false");
   if (!entries.length) {
@@ -351,7 +435,9 @@ function renderHistoryList() {
     renderHistoryBulkActions(entries);
     return;
   }
-  list.innerHTML = renderHistoryGroups(entries) + (!historyHasMore ? `<p class="history-end">${escapeHtml(t("history.listEnd"))}</p>` : "");
+  list.innerHTML =
+    renderHistoryGroups(entries) +
+    (!historyHasMore ? `<p class="history-end">${escapeHtml(t("history.listEnd"))}</p>` : "");
   renderHistoryBulkActions(entries);
 }
 
@@ -368,7 +454,9 @@ function renderHistoryBulkActions(visibleEntries = filteredHistoryEntries()) {
   const visibleKeys = visibleEntries.map(historyEntryKey);
   const allVisibleSelected = visibleKeys.length > 0 && visibleKeys.every((key) => historySelection.has(key));
   root.hidden = selected.length === 0;
-  count.textContent = t(selected.length === 1 ? "history.bulkSelectedOne" : "history.bulkSelectedMany", { count: selected.length });
+  count.textContent = t(selected.length === 1 ? "history.bulkSelectedOne" : "history.bulkSelectedMany", {
+    count: selected.length
+  });
   selectAll.textContent = allVisibleSelected ? t("history.bulkDeselectVisible") : t("history.bulkSelectVisible");
   selectAll.disabled = visibleKeys.length === 0;
 }
@@ -401,7 +489,11 @@ function prioritiseSelectedHistoryEntries() {
 }
 
 function renderHistoryDashboard(data) {
-  historyMeta = { total: safeFiniteNumber(data.total, 0, { min: 0, max: 1000000 }), weeklyStats: Array.isArray(data.weeklyStats) ? data.weeklyStats : [], monthlyStats: Array.isArray(data.monthlyStats) ? data.monthlyStats : [] };
+  historyMeta = {
+    total: safeFiniteNumber(data.total, 0, { min: 0, max: 1000000 }),
+    weeklyStats: Array.isArray(data.weeklyStats) ? data.weeklyStats : [],
+    monthlyStats: Array.isArray(data.monthlyStats) ? data.monthlyStats : []
+  };
   renderHistoryKpis();
   const weeklyEl = document.getElementById("historyWeekly");
   if (weeklyEl) {
@@ -420,7 +512,7 @@ function renderHistoryDashboard(data) {
 
 function setHistoryFilter(nextFilter) {
   historyFilter = ["all", "acquisition", "change"].includes(nextFilter) ? nextFilter : "all";
-  document.querySelectorAll("[data-history-filter]").forEach(button => {
+  document.querySelectorAll("[data-history-filter]").forEach((button) => {
     const active = button.dataset.historyFilter === historyFilter;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
@@ -440,7 +532,7 @@ function setHistoryAdvancedFilter() {
 }
 
 function setupHistoryControls() {
-  document.querySelectorAll("[data-history-filter]").forEach(button => {
+  document.querySelectorAll("[data-history-filter]").forEach((button) => {
     if (button.dataset.historyBound === "true") return;
     button.dataset.historyBound = "true";
     button.addEventListener("click", () => setHistoryFilter(button.dataset.historyFilter));
@@ -467,7 +559,8 @@ function setupHistoryControls() {
       const checkbox = event.target.closest("[data-history-select]");
       if (!checkbox) return;
       const key = checkbox.dataset.historySelect;
-      if (checkbox.checked) historySelection.add(key); else historySelection.delete(key);
+      if (checkbox.checked) historySelection.add(key);
+      else historySelection.delete(key);
       renderHistoryList();
     });
   }
@@ -478,14 +571,17 @@ function setupHistoryControls() {
       const entries = filteredHistoryEntries();
       const keys = entries.map(historyEntryKey);
       const allSelected = keys.length > 0 && keys.every((key) => historySelection.has(key));
-      keys.forEach((key) => allSelected ? historySelection.delete(key) : historySelection.add(key));
+      keys.forEach((key) => (allSelected ? historySelection.delete(key) : historySelection.add(key)));
       renderHistoryList();
     });
   }
   const clearSelection = document.getElementById("historyBulkClear");
   if (clearSelection && clearSelection.dataset.historyBound !== "true") {
     clearSelection.dataset.historyBound = "true";
-    clearSelection.addEventListener("click", () => { historySelection.clear(); renderHistoryList(); });
+    clearSelection.addEventListener("click", () => {
+      historySelection.clear();
+      renderHistoryList();
+    });
   }
   const copySelection = document.getElementById("historyBulkCopy");
   if (copySelection && copySelection.dataset.historyBound !== "true") {
@@ -503,11 +599,16 @@ async function loadMoreHistory() {
   if (historyLoading || !historyHasMore) return;
   historyLoading = true;
   const list = document.getElementById("historyList");
-  if (!list) { historyLoading = false; return; }
+  if (!list) {
+    historyLoading = false;
+    return;
+  }
   list.setAttribute("aria-busy", "true");
 
   try {
-    const res = await fetch(`${API_BASE}/history/${state.userId}?limit=30&offset=${historyOffset}`, { headers: authHeadersOnly() });
+    const res = await fetch(`${API_BASE}/history/${state.userId}?limit=30&offset=${historyOffset}`, {
+      headers: authHeadersOnly()
+    });
     if (!res.ok) {
       if (historyOffset === 0) list.innerHTML = `<p class="squad-empty">${escapeHtml(t("history.loadError"))}</p>`;
       return;

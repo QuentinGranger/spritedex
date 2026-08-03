@@ -32,18 +32,17 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
   Object.freeze({
     id: "ownership_rate",
     name: "Taux de possession communautaire",
-    description:
-      "Part des collectionneurs éligibles ayant renseigné la variante et la possédant.",
+    description: "Part des collectionneurs éligibles ayant renseigné la variante et la possédant.",
     formula:
-      "Nombre d’utilisateurs éligibles possédant la variante "
-      + "divisé par "
-      + "nombre d’utilisateurs éligibles ayant renseigné la variante "
-      + "(statuts owned / missing / priority / spotted).",
+      "Nombre d’utilisateurs éligibles possédant la variante " +
+      "divisé par " +
+      "nombre d’utilisateurs éligibles ayant renseigné la variante " +
+      "(statuts owned / missing / priority / spotted).",
     eligiblePopulation:
-      `Utilisateurs non suspendus, non test, actifs ≤ ${COMMUNITY_ELIGIBILITY.recentActivityDays} j, `
-      + `opt-in communauté / consentement analytics, collection remplie ≥ `
-      + `${Math.round(COMMUNITY_ELIGIBILITY.minCollectionFillRate * 100)} %, `
-      + "avec un statut renseigné (hors unknown dans le dénominateur).",
+      `Utilisateurs non suspendus, non test, actifs ≤ ${COMMUNITY_ELIGIBILITY.recentActivityDays} j, ` +
+      `opt-in communauté / consentement analytics, collection remplie ≥ ` +
+      `${Math.round(COMMUNITY_ELIGIBILITY.minCollectionFillRate * 100)} %, ` +
+      "avec un statut renseigné (hors unknown dans le dénominateur).",
     timeWindow: "Snapshot journalier (metric_date) ; consolidation nocturne.",
     minimumThreshold: `${PUBLIC_ANONYMIZATION_MIN_USERS} utilisateurs dans l’échantillon pour affichage public`,
     version: GRAPH_FORMULA_IDS.OWNERSHIP_RATE,
@@ -58,34 +57,27 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
   Object.freeze({
     id: "priority_rate",
     name: "Taux de priorité parmi les manquants",
-    description:
-      "Part des collectionneurs éligibles auxquels la variante manque et qui l’ont placée en priorité.",
+    description: "Part des collectionneurs éligibles auxquels la variante manque et qui l’ont placée en priorité.",
     formula:
-      "Nombre d’utilisateurs éligibles en statut priority "
-      + "divisé par "
-      + "nombre d’utilisateurs éligibles en missing + priority + spotted (non-owned renseignés).",
-    eligiblePopulation:
-      "Même population que le taux de possession ; dénominateur = non-owned renseignés.",
+      "Nombre d’utilisateurs éligibles en statut priority " +
+      "divisé par " +
+      "nombre d’utilisateurs éligibles en missing + priority + spotted (non-owned renseignés).",
+    eligiblePopulation: "Même population que le taux de possession ; dénominateur = non-owned renseignés.",
     timeWindow: "Snapshot journalier (metric_date).",
     minimumThreshold: `${PUBLIC_ANONYMIZATION_MIN_USERS} utilisateurs (échantillon public)`,
     version: GRAPH_FORMULA_IDS.PRIORITY_RATE,
-    limits: [
-      "Ne mesure pas l’urgence individuelle",
-      "Les ajouts en priorité sur 7/30/90 j sont des compteurs séparés"
-    ],
+    limits: ["Ne mesure pas l’urgence individuelle", "Les ajouts en priorité sur 7/30/90 j sont des compteurs séparés"],
     lastModified: METRIC_CATALOG_LAST_REVIEW,
     surface: "public"
   }),
   Object.freeze({
     id: "interest_score",
     name: "Indice d’intérêt communautaire",
-    description:
-      "Score 0–100 combinant priorités, ajouts collection, différences de comparaison et notifications.",
+    description: "Score 0–100 combinant priorités, ajouts collection, différences de comparaison et notifications.",
     formula:
-      "interest_score = priorityScore×0,40 + collectionScore×0,30 + comparisonScore×0,20 + notificationScore×0,10 "
-      + "(chaque composante = percentile 0–100 sur la fenêtre).",
-    eligiblePopulation:
-      "Agrégats issus des événements graph et stats communauté des utilisateurs éligibles.",
+      "interest_score = priorityScore×0,40 + collectionScore×0,30 + comparisonScore×0,20 + notificationScore×0,10 " +
+      "(chaque composante = percentile 0–100 sur la fenêtre).",
+    eligiblePopulation: "Agrégats issus des événements graph et stats communauté des utilisateurs éligibles.",
     timeWindow: "Fenêtre glissante 7 jours par défaut (calcul journalier).",
     minimumThreshold: `${TREND_MIN_VOLUME} utilisateurs / volume min pour classer une tendance associée`,
     version: GRAPH_FORMULA_IDS.INTEREST_SCORE,
@@ -99,16 +91,15 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
   Object.freeze({
     id: "interest_trend",
     name: "Tendance sprite-index",
-    description:
-      "Direction d’évolution de l’indice d’intérêt (forte hausse → forte baisse).",
+    description: "Direction d’évolution de l’indice d’intérêt (forte hausse → forte baisse).",
     formula:
-      "Classification du % de variation de interest_score (7 j) : "
-      + "≥25 fortement en hausse ; ≥10 en hausse ; >−10 stable ; >−25 en baisse ; sinon fortement en baisse.",
+      "Classification du % de variation de interest_score (7 j) : " +
+      "≥25 fortement en hausse ; ≥10 en hausse ; >−10 stable ; >−25 en baisse ; sinon fortement en baisse.",
     eligiblePopulation: "Variantes avec série interest_score calculée.",
     timeWindow:
-      `Affichage si ≥ ${TREND_DISPLAY_REQUIREMENTS.minDaysOfData} j de données, `
-      + `≥ ${TREND_DISPLAY_REQUIREMENTS.minEligibleUsers} utilisateurs, `
-      + `≥ ${TREND_DISPLAY_REQUIREMENTS.minRelevantEvents} événements pertinents (7 j).`,
+      `Affichage si ≥ ${TREND_DISPLAY_REQUIREMENTS.minDaysOfData} j de données, ` +
+      `≥ ${TREND_DISPLAY_REQUIREMENTS.minEligibleUsers} utilisateurs, ` +
+      `≥ ${TREND_DISPLAY_REQUIREMENTS.minRelevantEvents} événements pertinents (7 j).`,
     minimumThreshold: TREND_DISPLAY_REQUIREMENTS,
     version: `${GRAPH_FORMULA_IDS.INTEREST_SCORE}+trend_bands_v1`,
     limits: [
@@ -121,14 +112,13 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
   Object.freeze({
     id: "squad_progress",
     name: "Progression collective de squad",
-    description:
-      "Évolution du taux de complétion collective, séparant choc catalogue et acquisitions.",
+    description: "Évolution du taux de complétion collective, séparant choc catalogue et acquisitions.",
     formula:
-      "Δ complétion corrigé : acquisition_progress = taux après acquisitions − taux après seule expansion catalogue "
-      + "(decomposeCatalogueVsAcquisition).",
+      "Δ complétion corrigé : acquisition_progress = taux après acquisitions − taux après seule expansion catalogue " +
+      "(decomposeCatalogueVsAcquisition).",
     eligiblePopulation:
-      `Squads avec ≥ ${SQUAD_COMMUNITY_ELIGIBILITY.minActiveMembers} membres actifs non suspendus, `
-      + "collections suffisamment renseignées, activité récente ; collections private exclues de la couverture.",
+      `Squads avec ≥ ${SQUAD_COMMUNITY_ELIGIBILITY.minActiveMembers} membres actifs non suspendus, ` +
+      "collections suffisamment renseignées, activité récente ; collections private exclues de la couverture.",
     timeWindow: "Snapshots journaliers ; progress_7d / progress_30d vs jours antérieurs.",
     minimumThreshold: `${SQUAD_COMMUNITY_ELIGIBILITY.minActiveMembers} membres actifs pour éligibilité communauté`,
     version: GRAPH_FORMULA_IDS.SQUAD_PROGRESS,
@@ -143,8 +133,7 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
   Object.freeze({
     id: "sample_size",
     name: "Taille d’échantillon",
-    description:
-      "Nombre de collections éligibles ayant renseigné la variante (dénominateur possession).",
+    description: "Nombre de collections éligibles ayant renseigné la variante (dénominateur possession).",
     formula: "COUNT(utilisateurs éligibles avec statut ∈ {owned, missing, priority, spotted}).",
     eligiblePopulation: "Identique à ownership_rate.",
     timeWindow: "Journalier.",
@@ -222,9 +211,7 @@ const GRAPH_METRIC_CATALOG = Object.freeze([
 ]);
 
 function getGraphMetricCatalog({ surface = null } = {}) {
-  const items = surface
-    ? GRAPH_METRIC_CATALOG.filter((m) => m.surface === surface)
-    : [...GRAPH_METRIC_CATALOG];
+  const items = surface ? GRAPH_METRIC_CATALOG.filter((m) => m.surface === surface) : [...GRAPH_METRIC_CATALOG];
   return {
     version: 1,
     lastReview: METRIC_CATALOG_LAST_REVIEW,

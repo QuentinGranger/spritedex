@@ -3,7 +3,12 @@
 const crypto = require("crypto");
 const { pool } = require("../db");
 const { GRAPH_RECORDABLE_EVENT_TYPE_SET } = require("./constants");
-const { buildGraphEventEnvelope, rowToGraphEventEnvelope, normalizeIntId, normalizeContext } = require("./normalization");
+const {
+  buildGraphEventEnvelope,
+  rowToGraphEventEnvelope,
+  normalizeIntId,
+  normalizeContext
+} = require("./normalization");
 
 /**
  * Append one structured graph event. Silent no-op on unknown types.
@@ -11,12 +16,11 @@ const { buildGraphEventEnvelope, rowToGraphEventEnvelope, normalizeIntId, normal
  * Never updates existing rows (Étape 6).
  * @returns {Promise<object|null>} camelCase envelope or null if skipped/deduped
  */
-async function recordGraphEvent(db, input = {}, {
-  throwOnError = false,
-  enqueueOutbox = true,
-  governanceAcceptance = null,
-  skipGovernance = false
-} = {}) {
+async function recordGraphEvent(
+  db,
+  input = {},
+  { throwOnError = false, enqueueOutbox = true, governanceAcceptance = null, skipGovernance = false } = {}
+) {
   const client = db && typeof db.query === "function" ? db : pool;
   const envelope = buildGraphEventEnvelope(input);
   if (!GRAPH_RECORDABLE_EVENT_TYPE_SET.has(envelope.eventType)) return null;
@@ -24,14 +28,16 @@ async function recordGraphEvent(db, input = {}, {
   // Étape 69–70 — abuse / import gates (imports are not penalized).
   if (!skipGovernance) {
     const gov = require("../sprite-graph-governance");
-    const acceptance = governanceAcceptance || await gov.evaluateGraphEventAcceptance(client, {
-      actorUserId: envelope.actorUserId,
-      source: envelope.source,
-      origin: envelope.context?.origin || input.origin || null,
-      updateMethod: envelope.context?.updateMethod || input.updateMethod || null,
-      changeCount: 1,
-      previousCollectionCount: input.previousCollectionCount
-    });
+    const acceptance =
+      governanceAcceptance ||
+      (await gov.evaluateGraphEventAcceptance(client, {
+        actorUserId: envelope.actorUserId,
+        source: envelope.source,
+        origin: envelope.context?.origin || input.origin || null,
+        updateMethod: envelope.context?.updateMethod || input.updateMethod || null,
+        changeCount: 1,
+        previousCollectionCount: input.previousCollectionCount
+      }));
     if (!acceptance.accept) return null;
     if (acceptance.updateMethod && !envelope.context.updateMethod) {
       envelope.context.updateMethod = acceptance.updateMethod;
@@ -90,7 +96,9 @@ async function recordGraphEvent(db, input = {}, {
           require("../sprite-graph-metrics").GRAPH_OPS_COUNTERS.DEDUP_SKIPS,
           1
         );
-      } catch (_) { /* ops best-effort */ }
+      } catch (_) {
+        /* ops best-effort */
+      }
     }
     // Étape 31 — same connection/TX: graph event → outbox entry.
     if (row && enqueueOutbox) {
@@ -107,7 +115,9 @@ async function recordGraphEvent(db, input = {}, {
         require("../sprite-graph-metrics").GRAPH_OPS_COUNTERS.RECORD_ERRORS,
         1
       );
-    } catch (_) { /* ops best-effort */ }
+    } catch (_) {
+      /* ops best-effort */
+    }
     if (throwOnError) throw err;
     return null;
   }
@@ -122,10 +132,9 @@ function recordGraphEventSafe(input) {
 
 async function isGraphEventCancelled(eventId, db = pool) {
   if (!eventId) return false;
-  const result = await db.query(
-    `SELECT 1 FROM graph_event_corrections WHERE cancelled_event_id = $1::uuid LIMIT 1`,
-    [eventId]
-  );
+  const result = await db.query(`SELECT 1 FROM graph_event_corrections WHERE cancelled_event_id = $1::uuid LIMIT 1`, [
+    eventId
+  ]);
   return result.rows.length > 0;
 }
 
@@ -148,10 +157,9 @@ async function correctGraphEvent(db, opts = {}) {
     return { ok: false, error: "cancelledEventId and reason are required" };
   }
 
-  const existing = await client.query(
-    `SELECT id, event_type FROM graph_events WHERE id = $1::uuid`,
-    [cancelledEventId]
-  );
+  const existing = await client.query(`SELECT id, event_type FROM graph_events WHERE id = $1::uuid`, [
+    cancelledEventId
+  ]);
   if (!existing.rows.length) {
     return { ok: false, error: "event_not_found" };
   }

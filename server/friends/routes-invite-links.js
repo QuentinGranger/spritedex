@@ -7,63 +7,74 @@ const { pool } = require("../db");
 const security = require("../../security");
 const QRCode = require("qrcode");
 const { pairWhereClause, getActiveFriendship, recentRequestCooldown } = require("./helpers");
-const { generateInviteToken, hashInviteToken, computeInviteLinkMeta, fetchInviteLink, buildLinkUrl } = require("./invite-links-helpers");
+const {
+  generateInviteToken,
+  hashInviteToken,
+  computeInviteLinkMeta,
+  fetchInviteLink,
+  buildLinkUrl
+} = require("./invite-links-helpers");
 
 // ── Create a friend invite link ─────────────────────────────────────────────
-app.post("/api/friends/invite-links", security.capabilityLinkLimiter, security.validateBody(security.schemas.friendInviteLinkCreateSchema), async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  if (await isAccountSuspended(reqUser)) {
-    return res.status(403).json({ error: "Compte suspendu" });
-  }
-  const { duration } = req.validatedBody;
-  const { expiresAt, maxUses } = computeInviteLinkMeta(duration);
-  const token = generateInviteToken();
-  const tokenHash = hashInviteToken(token);
+app.post(
+  "/api/friends/invite-links",
+  security.capabilityLinkLimiter,
+  security.validateBody(security.schemas.friendInviteLinkCreateSchema),
+  async (req, res) => {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    if (await isAccountSuspended(reqUser)) {
+      return res.status(403).json({ error: "Compte suspendu" });
+    }
+    const { duration } = req.validatedBody;
+    const { expiresAt, maxUses } = computeInviteLinkMeta(duration);
+    const token = generateInviteToken();
+    const tokenHash = hashInviteToken(token);
 
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    // Serialize capacity checks per owner. An IP limiter alone can be bypassed
-    // by concurrent requests from multiple addresses on the same account.
-    await client.query("SELECT pg_advisory_xact_lock($1::bigint)", [reqUser]);
-    const activeCount = await client.query(
-      `SELECT COUNT(*)::int AS count
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Serialize capacity checks per owner. An IP limiter alone can be bypassed
+      // by concurrent requests from multiple addresses on the same account.
+      await client.query("SELECT pg_advisory_xact_lock($1::bigint)", [reqUser]);
+      const activeCount = await client.query(
+        `SELECT COUNT(*)::int AS count
        FROM friend_invite_links
        WHERE owner_id = $1
          AND revoked_at IS NULL
          AND (expires_at IS NULL OR expires_at > NOW())
          AND (max_uses IS NULL OR use_count < max_uses)`,
-      [reqUser]
-    );
-    if ((activeCount.rows[0]?.count || 0) >= 25) {
-      await client.query("ROLLBACK");
-      return res.status(429).json({ error: "Trop de liens actifs : révoque un lien avant d'en créer un autre" });
-    }
-    const result = await client.query(
-      `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
+        [reqUser]
+      );
+      if ((activeCount.rows[0]?.count || 0) >= 25) {
+        await client.query("ROLLBACK");
+        return res.status(429).json({ error: "Trop de liens actifs : révoque un lien avant d'en créer un autre" });
+      }
+      const result = await client.query(
+        `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
        VALUES ($1, $2, $3, $4) RETURNING id, expires_at, max_uses, use_count, created_at`,
-      [reqUser, tokenHash, expiresAt, maxUses]
-    );
-    await client.query("COMMIT");
-    const link = result.rows[0];
-    res.status(201).json({
-      id: link.id,
-      token,
-      url: buildLinkUrl(req, token),
-      expiresAt: link.expires_at,
-      maxUses: link.max_uses,
-      useCount: link.use_count,
-      createdAt: link.created_at
-    });
-  } catch (err) {
-    await client.query("ROLLBACK").catch(() => {});
-    console.error("[/api/friends/invite-links]", err);
-    res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    client.release();
+        [reqUser, tokenHash, expiresAt, maxUses]
+      );
+      await client.query("COMMIT");
+      const link = result.rows[0];
+      res.status(201).json({
+        id: link.id,
+        token,
+        url: buildLinkUrl(req, token),
+        expiresAt: link.expires_at,
+        maxUses: link.max_uses,
+        useCount: link.use_count,
+        createdAt: link.created_at
+      });
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error("[/api/friends/invite-links]", err);
+      res.status(500).json({ error: "Erreur serveur" });
+    } finally {
+      client.release();
+    }
   }
-});
+);
 
 // ── List my invite links ────────────────────────────────────────────────────
 app.get("/api/friends/invite-links", async (req, res) => {
@@ -78,7 +89,7 @@ app.get("/api/friends/invite-links", async (req, res) => {
       [reqUser]
     );
     const now = new Date();
-    const links = result.rows.map(link => {
+    const links = result.rows.map((link) => {
       const expired = link.expires_at && new Date(link.expires_at) < now;
       const depleted = link.max_uses !== null && link.use_count >= link.max_uses;
       return {
@@ -130,7 +141,7 @@ app.get("/api/friends/invite-links/:token", async (req, res) => {
     if (link.invalid) return res.status(410).json({ error: "Lien expiré ou révoqué" });
 
     const owner = await client.query(
-      "SELECT id, username, display_name AS \"displayName\", avatar_url FROM users WHERE id = $1 AND deleted_at IS NULL",
+      'SELECT id, username, display_name AS "displayName", avatar_url FROM users WHERE id = $1 AND deleted_at IS NULL',
       [link.owner_id]
     );
     if (!owner.rows.length) return res.status(404).json({ error: "Utilisateur introuvable" });
@@ -170,16 +181,19 @@ app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const linkResult = await client.query(
-      "SELECT * FROM friend_invite_links WHERE token_hash = $1 FOR UPDATE",
-      [tokenHash]
-    );
+    const linkResult = await client.query("SELECT * FROM friend_invite_links WHERE token_hash = $1 FOR UPDATE", [
+      tokenHash
+    ]);
     if (!linkResult.rows.length) {
       await client.query("ROLLBACK");
       return res.status(404).json({ error: "Lien introuvable" });
     }
     const link = linkResult.rows[0];
-    if (link.revoked_at || (link.expires_at && new Date(link.expires_at) < new Date()) || (link.max_uses !== null && link.use_count >= link.max_uses)) {
+    if (
+      link.revoked_at ||
+      (link.expires_at && new Date(link.expires_at) < new Date()) ||
+      (link.max_uses !== null && link.use_count >= link.max_uses)
+    ) {
       await client.query("ROLLBACK");
       return res.status(410).json({ error: "Lien expiré ou révoqué" });
     }
@@ -221,7 +235,9 @@ app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req
       await client.query("ROLLBACK");
       const row = active.rows[0];
       const status = row.status;
-      return res.status(409).json({ error: status === "accepted" ? "Vous êtes déjà amis" : "Une relation existe déjà", status });
+      return res
+        .status(409)
+        .json({ error: status === "accepted" ? "Vous êtes déjà amis" : "Une relation existe déjà", status });
     }
 
     const insert = await client.query(
@@ -230,10 +246,7 @@ app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req
        RETURNING id, status, created_at`,
       [reqUser, link.owner_id]
     );
-    await client.query(
-      "UPDATE friend_invite_links SET use_count = use_count + 1 WHERE id = $1",
-      [link.id]
-    );
+    await client.query("UPDATE friend_invite_links SET use_count = use_count + 1 WHERE id = $1", [link.id]);
     await client.query("COMMIT");
 
     const row = insert.rows[0];
@@ -244,19 +257,17 @@ app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req
         buildFriendInvitationSentContext,
         normalizeInvitationMethod
       } = require("../sprite-graph");
-      const via = String(req.query.via || req.body?.via || "").trim().toLowerCase();
-      const invitationMethod = normalizeInvitationMethod(
-        via === "qr" || via === "qr_code" ? "qr_code" : "invite_link"
-      );
+      const via = String(req.query.via || req.body?.via || "")
+        .trim()
+        .toLowerCase();
+      const invitationMethod = normalizeInvitationMethod(via === "qr" || via === "qr_code" ? "qr_code" : "invite_link");
       recordGraphEventSafe({
         eventType: GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT,
         actorUserId: reqUser,
         targetUserId: link.owner_id,
         friendshipId: row.id,
         source: "api",
-        origin: invitationMethod === "qr_code"
-          ? "friends.invite_link.qr"
-          : "friends.invite_link.use",
+        origin: invitationMethod === "qr_code" ? "friends.invite_link.qr" : "friends.invite_link.use",
         context: buildFriendInvitationSentContext({
           invitationMethod,
           invitationSource: invitationMethod,
@@ -264,7 +275,9 @@ app.post("/api/friends/invite-links/:token/use", requireNotSuspended, async (req
         }),
         deduplicationKey: `${GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT}:${row.id}`
       });
-    } catch (_) { /* optional */ }
+    } catch (_) {
+      /* optional */
+    }
     res.status(201).json({ requestId: row.id, status: row.status, createdAt: row.created_at });
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {});
@@ -293,7 +306,11 @@ app.get("/api/friends/invite-links/:token/qr", async (req, res) => {
     );
     if (!result.rows.length) return res.status(404).json({ error: "Lien introuvable" });
     const link = result.rows[0];
-    if (link.revoked_at || (link.expires_at && new Date(link.expires_at) < new Date()) || (link.max_uses !== null && link.use_count >= link.max_uses)) {
+    if (
+      link.revoked_at ||
+      (link.expires_at && new Date(link.expires_at) < new Date()) ||
+      (link.max_uses !== null && link.use_count >= link.max_uses)
+    ) {
       return res.status(410).json({ error: "Lien expiré ou révoqué" });
     }
     const url = buildLinkUrl(req, token);
@@ -307,50 +324,55 @@ app.get("/api/friends/invite-links/:token/qr", async (req, res) => {
 
 // ── Regenerate an invite link token ───────────────────────────────────────────
 // Keeps the same duration settings, but creates a new token and revokes the old one.
-app.post("/api/friends/invite-links/:id/regenerate", security.capabilityLinkLimiter, requireNotSuspended, async (req, res) => {
-  const reqUser = await getRequestingUser(req);
-  if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const old = await client.query(
-      "SELECT * FROM friend_invite_links WHERE id = $1 AND owner_id = $2 FOR UPDATE",
-      [req.params.id, reqUser]
-    );
-    if (!old.rows.length) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Lien introuvable" });
-    }
-    const oldLink = old.rows[0];
-    // Mark old token as revoked
-    await client.query("UPDATE friend_invite_links SET revoked_at = NOW() WHERE id = $1", [oldLink.id]);
-    // Create a fresh link with the same settings
-    const token = generateInviteToken();
-    const tokenHash = hashInviteToken(token);
-    const insert = await client.query(
-      `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
+app.post(
+  "/api/friends/invite-links/:id/regenerate",
+  security.capabilityLinkLimiter,
+  requireNotSuspended,
+  async (req, res) => {
+    const reqUser = await getRequestingUser(req);
+    if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const old = await client.query("SELECT * FROM friend_invite_links WHERE id = $1 AND owner_id = $2 FOR UPDATE", [
+        req.params.id,
+        reqUser
+      ]);
+      if (!old.rows.length) {
+        await client.query("ROLLBACK");
+        return res.status(404).json({ error: "Lien introuvable" });
+      }
+      const oldLink = old.rows[0];
+      // Mark old token as revoked
+      await client.query("UPDATE friend_invite_links SET revoked_at = NOW() WHERE id = $1", [oldLink.id]);
+      // Create a fresh link with the same settings
+      const token = generateInviteToken();
+      const tokenHash = hashInviteToken(token);
+      const insert = await client.query(
+        `INSERT INTO friend_invite_links (owner_id, token_hash, expires_at, max_uses)
        VALUES ($1, $2, $3, $4)
        RETURNING id, expires_at, max_uses, use_count, created_at`,
-      [reqUser, tokenHash, oldLink.expires_at, oldLink.max_uses]
-    );
-    await client.query("COMMIT");
-    const link = insert.rows[0];
-    res.status(201).json({
-      id: link.id,
-      token,
-      url: buildLinkUrl(req, token),
-      expiresAt: link.expires_at,
-      maxUses: link.max_uses,
-      useCount: link.use_count,
-      createdAt: link.created_at
-    });
-  } catch (err) {
-    await client.query("ROLLBACK").catch(() => {});
-    console.error("[/api/friends/invite-links/:id/regenerate]", err);
-    res.status(500).json({ error: "Erreur serveur" });
-  } finally {
-    client.release();
+        [reqUser, tokenHash, oldLink.expires_at, oldLink.max_uses]
+      );
+      await client.query("COMMIT");
+      const link = insert.rows[0];
+      res.status(201).json({
+        id: link.id,
+        token,
+        url: buildLinkUrl(req, token),
+        expiresAt: link.expires_at,
+        maxUses: link.max_uses,
+        useCount: link.use_count,
+        createdAt: link.created_at
+      });
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => {});
+      console.error("[/api/friends/invite-links/:id/regenerate]", err);
+      res.status(500).json({ error: "Erreur serveur" });
+    } finally {
+      client.release();
+    }
   }
-});
+);
 
 module.exports = {};

@@ -13,9 +13,7 @@ function requiredRaritiesFromCatalogue(catalogue) {
       present.set(score, OFFICIAL_RARITY_KEY[score]);
     }
   }
-  return [...present.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([, key]) => key);
+  return [...present.entries()].sort((a, b) => a[0] - b[0]).map(([, key]) => key);
 }
 
 function evaluateAllRaritiesOwned(catalogue, ownedIds) {
@@ -34,7 +32,11 @@ function evaluateAllRaritiesOwned(catalogue, ownedIds) {
 }
 
 /** Étape 50 — award one event_completed badge per completed event version. */
-async function awardEventCompletedBadges(userId, completions, { catalogueVersion = null, db = pool, notify = true } = {}) {
+async function awardEventCompletedBadges(
+  userId,
+  completions,
+  { catalogueVersion = null, db = pool, notify = true } = {}
+) {
   const awarded = [];
   for (const row of completions || []) {
     const badge = await awardBadgeByCode(userId, "event_completed", {
@@ -56,9 +58,7 @@ async function awardEventCompletedBadges(userId, completions, { catalogueVersion
         ...badge,
         badgeCode: "event_completed",
         code: "event_completed",
-        label: row.eventName
-          ? `Événement complété · ${row.eventName}`
-          : "Événement complété",
+        label: row.eventName ? `Événement complété · ${row.eventName}` : "Événement complété",
         contextType: "event_version",
         contextId: row.eventVersionId
       });
@@ -81,5 +81,9 @@ function precisePercent(count, total) {
   return d > 0 ? (n / d) * 100 : 0;
 }
 
-
-module.exports = { requiredRaritiesFromCatalogue, evaluateAllRaritiesOwned, awardEventCompletedBadges };
+module.exports = {
+  requiredRaritiesFromCatalogue,
+  evaluateAllRaritiesOwned,
+  awardEventCompletedBadges,
+  precisePercent
+};

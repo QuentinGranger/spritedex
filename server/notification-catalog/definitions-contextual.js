@@ -1,7 +1,25 @@
 "use strict";
 
 const { NOTIFICATION_TYPES, NOTIFICATION_CATEGORIES } = require("./constants");
-const { str, num, pct, pluralFr, pluralEn, variantLabel, formatEndDate, buildPriorityVariantActionUrl, buildWantedEventActionUrl, buildSquadEngineActionUrl, buildFriendCompareActionUrl, formatThresholdRemaining, formatEventEndingWhen, FALLBACK_NAME, FALLBACK_SPRITE, FALLBACK_SQUAD, FALLBACK_EVENT } = require("./locale");
+const {
+  str,
+  num,
+  pct,
+  pluralFr,
+  pluralEn,
+  variantLabel,
+  formatEndDate,
+  buildPriorityVariantActionUrl,
+  buildWantedEventActionUrl,
+  buildSquadEngineActionUrl,
+  buildFriendCompareActionUrl,
+  formatThresholdRemaining,
+  formatEventEndingWhen,
+  FALLBACK_NAME,
+  FALLBACK_SPRITE,
+  FALLBACK_SQUAD,
+  FALLBACK_EVENT
+} = require("./locale");
 const { normalizeTimeZone } = require("../timezone");
 
 module.exports = {
@@ -25,9 +43,7 @@ module.exports = {
     },
     url: (ctx) => buildFriendCompareActionUrl(ctx) || "/friends",
     data(ctx) {
-      const friendId = ctx.friendId != null
-        ? String(ctx.friendId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
       const friendshipId = ctx.friendshipId != null ? String(ctx.friendshipId) : null;
       const actionUrl = buildFriendCompareActionUrl(ctx);
       return {
@@ -37,9 +53,7 @@ module.exports = {
       };
     },
     actions(ctx, lang) {
-      const friendId = ctx.friendId != null
-        ? String(ctx.friendId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
       const compareUrl = buildFriendCompareActionUrl(ctx) || "/friends";
       const profileUrl = friendId ? `/profile/${encodeURIComponent(friendId)}` : "/friends";
       if (lang === "en") {
@@ -112,9 +126,7 @@ module.exports = {
     },
     url: (ctx) => buildFriendCompareActionUrl(ctx, { withVariant: true }),
     data(ctx) {
-      const friendId = ctx.friendId != null
-        ? String(ctx.friendId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
       const variantId = ctx.variantId != null ? String(ctx.variantId) : null;
       const actionUrl = buildFriendCompareActionUrl(ctx, { withVariant: true });
       const out = {
@@ -130,9 +142,7 @@ module.exports = {
       return out;
     },
     actions(ctx, lang) {
-      const friendId = ctx.friendId != null
-        ? String(ctx.friendId)
-        : (ctx.actorId != null ? String(ctx.actorId) : null);
+      const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
       const compareUrl = buildFriendCompareActionUrl(ctx, { withVariant: true });
       if (lang === "en") {
         return {
@@ -173,9 +183,10 @@ module.exports = {
         const total = num(ctx.totalVariants);
         return {
           title: `${squad} atteint ${milestone} %`,
-          body: total > 0
-            ? `Votre squad couvre désormais ${covered} variantes sur ${total}.`
-            : `Votre squad couvre désormais ${rate} % du catalogue.`
+          body:
+            total > 0
+              ? `Votre squad couvre désormais ${covered} variantes sur ${total}.`
+              : `Votre squad couvre désormais ${rate} % du catalogue.`
         };
       }
       if (count > 1 || ctx.kind === "batch") {
@@ -201,9 +212,10 @@ module.exports = {
         const total = num(ctx.totalVariants);
         return {
           title: `${squad} reached ${milestone}%`,
-          body: total > 0
-            ? `Your squad now covers ${covered} variants out of ${total}.`
-            : `Your squad now covers ${rate}% of the catalogue.`
+          body:
+            total > 0
+              ? `Your squad now covers ${covered} variants out of ${total}.`
+              : `Your squad now covers ${rate}% of the catalogue.`
         };
       }
       if (count > 1 || ctx.kind === "batch") {
@@ -272,9 +284,7 @@ module.exports = {
       const until = formatEndDate(ctx.availableUntil, "en", tz);
       return {
         title: `${name} is available`,
-        body: until
-          ? `${name} is available until ${until}.`
-          : "A variant you marked as a priority is now available."
+        body: until ? `${name} is available until ${until}.` : "A variant you marked as a priority is now available."
       };
     },
     url: (ctx) => buildPriorityVariantActionUrl(ctx),
@@ -320,9 +330,10 @@ module.exports = {
       const variants = pluralFr(count, "variante prioritaire", "variantes prioritaires");
       return {
         title: `${event} se termine ${when}`,
-        body: count > 0
-          ? `Il vous manque encore ${count} ${variants}.`
-          : "Il vous manque encore des variantes prioritaires."
+        body:
+          count > 0
+            ? `Il vous manque encore ${count} ${variants}.`
+            : "Il vous manque encore des variantes prioritaires."
       };
     },
     en(ctx) {
@@ -332,9 +343,7 @@ module.exports = {
       const variants = pluralEn(count, "priority variant", "priority variants");
       return {
         title: `${event} ends ${when}`,
-        body: count > 0
-          ? `You still need ${count} ${variants}.`
-          : "You still need priority variants from this event."
+        body: count > 0 ? `You still need ${count} ${variants}.` : "You still need priority variants from this event."
       };
     },
     url: (ctx) => buildWantedEventActionUrl(ctx),
@@ -344,9 +353,11 @@ module.exports = {
       const timeZone = normalizeTimeZone(ctx.timeZone || ctx.timezone);
       const ids = Array.isArray(ctx.remainingPriorityVariantIds)
         ? ctx.remainingPriorityVariantIds.map(String)
-        : (Array.isArray(ctx.variantIds) ? ctx.variantIds.map(String) : []);
+        : Array.isArray(ctx.variantIds)
+          ? ctx.variantIds.map(String)
+          : [];
       const remainingCount = num(
-        ctx.remainingCount != null ? ctx.remainingCount : (ctx.wantedCount != null ? ctx.wantedCount : ids.length)
+        ctx.remainingCount != null ? ctx.remainingCount : ctx.wantedCount != null ? ctx.wantedCount : ids.length
       );
       return {
         ...(eventId ? { eventId } : {}),
@@ -368,6 +379,5 @@ module.exports = {
       }
       return { primary: { id: "open_event", label: "Voir l'événement", url } };
     }
-  },
-
+  }
 };

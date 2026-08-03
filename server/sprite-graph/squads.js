@@ -7,10 +7,7 @@ const { normalizeIntId } = require("./normalization");
  * Étape 23–24 — coverage + complementarity impact of a new squad member.
  * Call after the member row is active. previousMemberIds = active members minus joiner.
  */
-async function computeSquadJoinImpact(squadId, joinerUserId, {
-  previousMemberIds = null,
-  db = pool
-} = {}) {
+async function computeSquadJoinImpact(squadId, joinerUserId, { previousMemberIds = null, db = pool } = {}) {
   const squad = normalizeIntId(squadId);
   const joiner = normalizeIntId(joinerUserId);
   if (!squad || !joiner) {
@@ -24,7 +21,10 @@ async function computeSquadJoinImpact(squadId, joinerUserId, {
   }
 
   let previous = Array.isArray(previousMemberIds)
-    ? previousMemberIds.map(normalizeIntId).filter(Boolean).filter((id) => id !== joiner)
+    ? previousMemberIds
+        .map(normalizeIntId)
+        .filter(Boolean)
+        .filter((id) => id !== joiner)
     : null;
   if (!previous) {
     const membersRes = await db.query(
@@ -42,10 +42,10 @@ async function computeSquadJoinImpact(squadId, joinerUserId, {
 
   const previousOwned = previous.length
     ? await db.query(
-      `SELECT DISTINCT variant_id FROM sprite_entries
+        `SELECT DISTINCT variant_id FROM sprite_entries
        WHERE user_id = ANY($1::int[]) AND status = 'owned'`,
-      [previous]
-    )
+        [previous]
+      )
     : { rows: [] };
   const joinerOwned = await db.query(
     `SELECT DISTINCT variant_id FROM sprite_entries
@@ -69,12 +69,10 @@ async function computeSquadJoinImpact(squadId, joinerUserId, {
 
   return {
     memberCountAfterJoin: memberCountRes.rows[0]?.n || afterMemberIds.length,
-    collectiveCompletionBefore: beforeSummary.collectiveCompletionRate != null
-      ? Number(beforeSummary.collectiveCompletionRate)
-      : 0,
-    collectiveCompletionAfter: afterSummary.collectiveCompletionRate != null
-      ? Number(afterSummary.collectiveCompletionRate)
-      : 0,
+    collectiveCompletionBefore:
+      beforeSummary.collectiveCompletionRate != null ? Number(beforeSummary.collectiveCompletionRate) : 0,
+    collectiveCompletionAfter:
+      afterSummary.collectiveCompletionRate != null ? Number(afterSummary.collectiveCompletionRate) : 0,
     newVariantsAddedToSquad,
     sharedVariantsAdded
   };
@@ -99,15 +97,9 @@ function buildSquadJoinedContext({
   const ctx = {
     inviterId: normalizeIntId(inviterId),
     memberRole: String(memberRole || "member").slice(0, 40),
-    memberCountAfterJoin: Number.isFinite(Number(memberCountAfterJoin))
-      ? Number(memberCountAfterJoin)
-      : null,
-    collectiveCompletionBefore: collectiveCompletionBefore != null
-      ? Number(collectiveCompletionBefore)
-      : null,
-    collectiveCompletionAfter: collectiveCompletionAfter != null
-      ? Number(collectiveCompletionAfter)
-      : null,
+    memberCountAfterJoin: Number.isFinite(Number(memberCountAfterJoin)) ? Number(memberCountAfterJoin) : null,
+    collectiveCompletionBefore: collectiveCompletionBefore != null ? Number(collectiveCompletionBefore) : null,
+    collectiveCompletionAfter: collectiveCompletionAfter != null ? Number(collectiveCompletionAfter) : null,
     newVariantsAddedToSquad: Number(newVariantsAddedToSquad) || 0,
     sharedVariantsAdded: Number(sharedVariantsAdded) || 0
   };

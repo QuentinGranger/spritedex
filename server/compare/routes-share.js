@@ -1,6 +1,21 @@
 "use strict";
 
-const { analytics, security, secLog, APP_URL, app, pool, crypto, QRCode, canViewCollection, comparisonSessions, getRequestingUser, getVisibility, hashCapabilityToken, requireNotSuspended } = require("./shared");
+const {
+  analytics,
+  security,
+  secLog,
+  APP_URL,
+  app,
+  pool,
+  crypto,
+  QRCode,
+  canViewCollection,
+  comparisonSessions,
+  getRequestingUser,
+  getVisibility,
+  hashCapabilityToken,
+  requireNotSuspended
+} = require("./shared");
 const { compareCollectionsServer } = require("./complementarity");
 const { getServerCompareCatalogItemsCached } = require("./cache");
 const { loadServerCompareCollection } = require("./catalog");
@@ -63,8 +78,16 @@ app.post("/api/compare/share", security.capabilityLinkLimiter, requireNotSuspend
     }
 
     secLog.logSecurityEvent(pool, { req, userId: reqUser, event: "compare_share_created", status: "ok" });
-    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_shared", details: { duration, source: "compare" } });
-    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "compare_invitation_generated", details: { source: "compare" } });
+    analytics.logCompareAnalyticsEvent(pool, {
+      userId: reqUser,
+      event: "comparison_shared",
+      details: { duration, source: "compare" }
+    });
+    analytics.logCompareAnalyticsEvent(pool, {
+      userId: reqUser,
+      event: "compare_invitation_generated",
+      details: { source: "compare" }
+    });
     const shareUrl = `${APP_URL}/compare/share/${token}`;
     let qr = null;
     try {
@@ -115,9 +138,7 @@ app.get("/api/compare/share/:token", async (req, res) => {
 
     // collectionVisible is an explicit owner privacy choice, independent of
     // the visibility required to resolve the share link itself.
-    const ownerCollection = share.collection_visible
-      ? await loadCollectionForShare(share.owner_user_id, share)
-      : {};
+    const ownerCollection = share.collection_visible ? await loadCollectionForShare(share.owner_user_id, share) : {};
     let visitorCollection = {};
     let visitorName = "Visiteur";
     if (visitor && share.allow_visitor_compare) {
@@ -131,7 +152,11 @@ app.get("/api/compare/share/:token", async (req, res) => {
     const catalogue = await getServerCompareCatalogItemsCached();
     const result = compareCollectionsServer(userA, userB, catalogue);
 
-    analytics.logCompareAnalyticsEvent(pool, { userId: visitor, event: "comparison_viewed", details: { source: "share", ownerId: share.owner_user_id } });
+    analytics.logCompareAnalyticsEvent(pool, {
+      userId: visitor,
+      event: "comparison_viewed",
+      details: { source: "share", ownerId: share.owner_user_id }
+    });
 
     if (visitor && String(visitor) !== String(share.owner_user_id) && share.allow_visitor_compare) {
       try {
@@ -221,5 +246,4 @@ app.delete("/api/compare/shares/:shareId", requireNotSuspended, async (req, res)
   }
 });
 
-
-module.exports = {  };
+module.exports = {};

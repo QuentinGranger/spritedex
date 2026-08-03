@@ -34,19 +34,10 @@ const EXPLICIT_COLLECTION_STATUSES = Object.freeze([
  * Étape 41 — statuses used for ownership sample / rates.
  * `unknown` is tracked but excluded from ownership denominators.
  */
-const OWNERSHIP_SAMPLE_STATUSES = Object.freeze([
-  "owned",
-  "missing",
-  "priority",
-  "spotted"
-]);
+const OWNERSHIP_SAMPLE_STATUSES = Object.freeze(["owned", "missing", "priority", "spotted"]);
 
 /** Not owned but intentionally filled (priority-rate denominator). */
-const NOT_OWNED_SAMPLE_STATUSES = Object.freeze([
-  "missing",
-  "priority",
-  "spotted"
-]);
+const NOT_OWNED_SAMPLE_STATUSES = Object.freeze(["missing", "priority", "spotted"]);
 
 const PRIORITY_WINDOWS_DAYS = Object.freeze([7, 30, 90]);
 
@@ -177,7 +168,7 @@ function roundRate(numerator, denominator, { digits = 2 } = {}) {
 function formatRateLabel(rate, { digits = 1 } = {}) {
   if (rate == null || !Number.isFinite(Number(rate))) return null;
   const n = Number(rate);
-  const rounded = Math.round(n * (10 ** digits)) / (10 ** digits);
+  const rounded = Math.round(n * 10 ** digits) / 10 ** digits;
   return String(rounded).replace(".", ",");
 }
 
@@ -230,12 +221,15 @@ function hasAnalyticsConsent(cookieConsent) {
 /**
  * Étape 39 — eligible community-stat users.
  */
-async function listEligibleCommunityUserIds(db = pool, {
-  minFillRate = COMMUNITY_ELIGIBILITY.minCollectionFillRate,
-  recentActivityDays = COMMUNITY_ELIGIBILITY.recentActivityDays,
-  requireAnalyticsConsent = COMMUNITY_ELIGIBILITY.requireAnalyticsConsent,
-  asOf = new Date()
-} = {}) {
+async function listEligibleCommunityUserIds(
+  db = pool,
+  {
+    minFillRate = COMMUNITY_ELIGIBILITY.minCollectionFillRate,
+    recentActivityDays = COMMUNITY_ELIGIBILITY.recentActivityDays,
+    requireAnalyticsConsent = COMMUNITY_ELIGIBILITY.requireAnalyticsConsent,
+    asOf = new Date()
+  } = {}
+) {
   const catalogue = await db.query(`SELECT COUNT(*)::int AS n FROM sprite_variants`);
   const catalogueCount = catalogue.rows[0]?.n || 0;
   if (catalogueCount <= 0) return [];
@@ -296,10 +290,12 @@ async function countGraphAddsForDate(db, metricDate, eventType) {
 }
 
 /** Étape 45 — priority_added events in rolling windows (eligible actors only). */
-async function countPriorityAddsByWindow(db, eligibleIds, variantIds, {
-  asOf = new Date(),
-  windows = PRIORITY_WINDOWS_DAYS
-} = {}) {
+async function countPriorityAddsByWindow(
+  db,
+  eligibleIds,
+  variantIds,
+  { asOf = new Date(), windows = PRIORITY_WINDOWS_DAYS } = {}
+) {
   if (!eligibleIds.length || !variantIds.length) {
     return { 7: new Map(), 30: new Map(), 90: new Map() };
   }
@@ -340,24 +336,21 @@ async function countPriorityAddsByWindow(db, eligibleIds, variantIds, {
 /**
  * Étape 38–45 — recompute community_variant_stats for a calendar day.
  */
-async function calculateCommunityVariantStats(db = pool, {
-  metricDate = null,
-  variantIds = null,
-  eligibility = null,
-  eligibleUserIds = null,
-  catalogueVersion = null
-} = {}) {
+async function calculateCommunityVariantStats(
+  db = pool,
+  { metricDate = null, variantIds = null, eligibility = null, eligibleUserIds = null, catalogueVersion = null } = {}
+) {
   await ensureCommunityStatsTables(db);
   try {
     await db.query(
       `ALTER TABLE community_variant_stats
          ADD COLUMN IF NOT EXISTS catalogue_version VARCHAR(80)`
     );
-  } catch (_) { /* ignore */ }
+  } catch (_) {
+    /* ignore */
+  }
 
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
 
   const eligibleIds = Array.isArray(eligibleUserIds)
     ? eligibleUserIds.map(Number).filter(Number.isFinite)
@@ -369,19 +362,16 @@ async function calculateCommunityVariantStats(db = pool, {
   let catVersion = catalogueVersion;
   if (!catVersion) {
     try {
-      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db))
-        .catalogueVersion;
+      catVersion = (await require("./sprite-graph-catalogue").resolveCatalogueContext(db)).catalogueVersion;
     } catch (_) {
       catVersion = null;
     }
   }
 
-  const variantsRes = variantIds && variantIds.length
-    ? await db.query(
-      `SELECT id FROM sprite_variants WHERE id = ANY($1::text[])`,
-      [variantIds.map(String)]
-    )
-    : await db.query(`SELECT id FROM sprite_variants`);
+  const variantsRes =
+    variantIds && variantIds.length
+      ? await db.query(`SELECT id FROM sprite_variants WHERE id = ANY($1::text[])`, [variantIds.map(String)])
+      : await db.query(`SELECT id FROM sprite_variants`);
   const variants = variantsRes.rows.map((r) => String(r.id));
   if (!variants.length) return { metricDate: day, variants: 0, eligibleUsers: eligibleIds.length };
 
@@ -416,10 +406,7 @@ async function calculateCommunityVariantStats(db = pool, {
   );
   const byVariant = new Map(counts.rows.map((r) => [String(r.variant_id), r]));
 
-  const {
-    ensureFormulaVersionColumns,
-    communityFormulaVersion
-  } = require("./sprite-graph-formula");
+  const { ensureFormulaVersionColumns, communityFormulaVersion } = require("./sprite-graph-formula");
   await ensureFormulaVersionColumns(db);
   const formulaVersion = communityFormulaVersion();
 
@@ -547,14 +534,13 @@ function rowToCommunityVariantPayload(row, { level = GRAPH_DATA_LEVELS.AGGREGATE
 /**
  * Read community ownership / priority stats for a variant (public-gated).
  */
-async function getCommunityVariantOwnership(db = pool, variantId, {
-  metricDate = null,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getCommunityVariantOwnership(
+  db = pool,
+  variantId,
+  { metricDate = null, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureCommunityStatsTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const result = await db.query(
     `SELECT * FROM community_variant_stats
      WHERE metric_date = $1::date AND variant_id = $2`,
@@ -592,15 +578,12 @@ async function getCommunityVariantOwnership(db = pool, variantId, {
 /**
  * Étape 43 — most sought variants (current priority unique users).
  */
-async function getMostSoughtVariants(db = pool, {
-  metricDate = null,
-  limit = 20,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getMostSoughtVariants(
+  db = pool,
+  { metricDate = null, limit = 20, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureCommunityStatsTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const result = await db.query(
     `SELECT *
      FROM community_variant_stats

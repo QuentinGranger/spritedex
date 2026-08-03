@@ -1,7 +1,21 @@
 "use strict";
 
-const { analytics, pool, app, canViewCollection, getRequestingUser, isBlocked, shareSquad, comparisonSessions } = require("./shared");
-const { getCachedCompareResult, getServerCompareCatalogItemsCached, setCachedCompareResult, applyServerCompareFilters } = require("./cache");
+const {
+  analytics,
+  pool,
+  app,
+  canViewCollection,
+  getRequestingUser,
+  isBlocked,
+  shareSquad,
+  comparisonSessions
+} = require("./shared");
+const {
+  getCachedCompareResult,
+  getServerCompareCatalogItemsCached,
+  setCachedCompareResult,
+  applyServerCompareFilters
+} = require("./cache");
 const { loadServerCompareCollection } = require("./catalog");
 const { compareCollectionsServer } = require("./complementarity");
 const { applyCollectionVisibilityFilters } = require("./visibility");
@@ -20,7 +34,7 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
          AND (suspended_until IS NULL OR suspended_until < NOW())`,
       [[userAId, userBId]]
     );
-    const userMap = Object.fromEntries(usersResult.rows.map(u => [u.id, u]));
+    const userMap = Object.fromEntries(usersResult.rows.map((u) => [u.id, u]));
     if (!userMap[userAId] || !userMap[userBId]) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
@@ -45,12 +59,24 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
       ]);
       catalogueForVersion = catalogue;
 
-      const userA = { id: userAId, displayName: userMap[userAId].display_name || userMap[userAId].username || userAId, collection: collectionA };
-      const userB = { id: userBId, displayName: userMap[userBId].display_name || userMap[userBId].username || userBId, collection: collectionB };
+      const userA = {
+        id: userAId,
+        displayName: userMap[userAId].display_name || userMap[userAId].username || userAId,
+        collection: collectionA
+      };
+      const userB = {
+        id: userBId,
+        displayName: userMap[userBId].display_name || userMap[userBId].username || userBId,
+        collection: collectionB
+      };
 
       result = compareCollectionsServer(userA, userB, catalogue);
       setCachedCompareResult(userAId, userBId, result);
-      analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_created", details: { userAId, userBId, source: "api" } });
+      analytics.logCompareAnalyticsEvent(pool, {
+        userId: reqUser,
+        event: "comparison_created",
+        details: { userAId, userBId, source: "api" }
+      });
     } else {
       catalogueForVersion = await getServerCompareCatalogItemsCached();
     }
@@ -63,14 +89,19 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
     result = applyServerCompareFilters(result, req.query);
 
     const sharesSquad = await shareSquad(userAId, userBId);
-    const pairSource = comparisonSessions.resolveCompareSource(
-      req.query.source,
-      sharesSquad ? "squad" : "direct"
-    );
-    analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_viewed", details: { userAId, userBId, source: pairSource } });
+    const pairSource = comparisonSessions.resolveCompareSource(req.query.source, sharesSquad ? "squad" : "direct");
+    analytics.logCompareAnalyticsEvent(pool, {
+      userId: reqUser,
+      event: "comparison_viewed",
+      details: { userAId, userBId, source: pairSource }
+    });
 
     if (sharesSquad) {
-      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, event: "squad_member_comparison_opened", details: { userAId, userBId } });
+      analytics.logProductAnalyticsEvent(pool, {
+        userId: reqUser,
+        event: "squad_member_comparison_opened",
+        details: { userAId, userBId }
+      });
     }
 
     try {
@@ -95,7 +126,11 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
 
     for (const [key, value] of Object.entries(req.query)) {
       if (value && ["status", "seasonId", "eventId", "rarity", "variantType", "availability"].includes(key)) {
-        analytics.logCompareAnalyticsEvent(pool, { userId: reqUser, event: "comparison_filter_used", details: { filter: key, value: String(value) } });
+        analytics.logCompareAnalyticsEvent(pool, {
+          userId: reqUser,
+          event: "comparison_filter_used",
+          details: { filter: key, value: String(value) }
+        });
       }
     }
 
@@ -106,5 +141,4 @@ app.get("/api/comparisons/users/:userAId/:userBId", async (req, res) => {
   }
 });
 
-
-module.exports = {  };
+module.exports = {};

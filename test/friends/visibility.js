@@ -68,23 +68,32 @@ module.exports = async function runVisibility(ctx) {
       await setVisibility(quinn, { profileVisibility: "squad" });
 
       // roger searches for quinn and should not find her
-      const searchRoger = await fetch(`${API}/users/search?q=${encodeURIComponent(quinn.username)}`, { headers: auth(roger.token) });
+      const searchRoger = await fetch(`${API}/users/search?q=${encodeURIComponent(quinn.username)}`, {
+        headers: auth(roger.token)
+      });
       const rogerResults = await searchRoger.json();
-      assert.ok(!rogerResults.users.some(u => u.id === quinn.id), "roger found squad-only profile");
+      assert.ok(!rogerResults.users.some((u) => u.id === quinn.id), "roger found squad-only profile");
 
       // paul (squad member) should find her
-      const searchPaul = await fetch(`${API}/users/search?q=${encodeURIComponent(quinn.username)}`, { headers: auth(paul.token) });
+      const searchPaul = await fetch(`${API}/users/search?q=${encodeURIComponent(quinn.username)}`, {
+        headers: auth(paul.token)
+      });
       const paulResults = await searchPaul.json();
-      assert.ok(paulResults.users.some(u => u.id === quinn.id), "paul did not find squad profile");
+      assert.ok(
+        paulResults.users.some((u) => u.id === quinn.id),
+        "paul did not find squad profile"
+      );
     });
 
     await test("private profile users are not returned in search", async () => {
       await setVisibility(quinn, { profileVisibility: "private" });
 
-      const searchRes = await fetch(`${API}/users/search?q=${encodeURIComponent(quinn.username)}`, { headers: auth(roger.token) });
+      const searchRes = await fetch(`${API}/users/search?q=${encodeURIComponent(quinn.username)}`, {
+        headers: auth(roger.token)
+      });
       assert.strictEqual(searchRes.status, 200, `expected 200, got ${searchRes.status}`);
       const results = await searchRes.json();
-      assert.ok(!results.users.some(u => u.id === quinn.id), "private profile found in search");
+      assert.ok(!results.users.some((u) => u.id === quinn.id), "private profile found in search");
 
       await setVisibility(quinn, { profileVisibility: "friends" });
     });
@@ -178,13 +187,19 @@ module.exports = async function runVisibility(ctx) {
       res = await fetch(`${API}/squads/${squad.code}`, { headers: auth(quinn.token) });
       if (!res.ok) assert.fail(`squad details after leave failed: ${await res.text()}`);
       const withoutRoger = await res.json();
-      assert.ok(withoutRoger.collectiveCompletionRate < withRoger.collectiveCompletionRate, "squad coverage should drop after roger leaves");
+      assert.ok(
+        withoutRoger.collectiveCompletionRate < withRoger.collectiveCompletionRate,
+        "squad coverage should drop after roger leaves"
+      );
 
       // But Roger's personal collection remains intact.
       res = await fetch(`${API}/collection/${roger.id}`, { headers: auth(roger.token) });
       if (!res.ok) assert.fail(`roger collection failed: ${await res.text()}`);
       const coll = await res.json();
-      assert.ok(coll[variantId] && coll[variantId].status === "owned", "roger's personal entry should remain after leaving");
+      assert.ok(
+        coll[variantId] && coll[variantId].status === "owned",
+        "roger's personal entry should remain after leaving"
+      );
     });
 
     await test("leaving squad keeps friendship and removing friend does not kick from squad", async () => {
@@ -216,7 +231,10 @@ module.exports = async function runVisibility(ctx) {
       res = await fetch(`${API}/friends`, { headers: auth(quinn.token) });
       if (!res.ok) assert.fail(`friend list failed: ${await res.text()}`);
       const friends = await res.json();
-      assert.ok(friends.friends.some(f => f.id === paul.id), "friendship should remain after leaving squad");
+      assert.ok(
+        friends.friends.some((f) => f.id === paul.id),
+        "friendship should remain after leaving squad"
+      );
 
       // Compare between the two friends still works.
       res = await fetch(`${API}/comparisons/users/${quinn.id}/${paul.id}`, { headers: auth(quinn.token) });
@@ -231,11 +249,17 @@ module.exports = async function runVisibility(ctx) {
       if (!res.ok) assert.fail(`create second squad failed: ${await res.text()}`);
       const squadB = await res.json();
 
-      res = await fetch(`${API}/squads/${squadB.code}/invite/${roger.id}`, { method: "POST", headers: auth(quinn.token) });
+      res = await fetch(`${API}/squads/${squadB.code}/invite/${roger.id}`, {
+        method: "POST",
+        headers: auth(quinn.token)
+      });
       if (!res.ok) assert.fail(`roger invite failed: ${await res.text()}`);
       let { invitationId } = await res.json();
 
-      res = await fetch(`${API}/squads/invitations/${invitationId}/accept`, { method: "POST", headers: auth(roger.token) });
+      res = await fetch(`${API}/squads/invitations/${invitationId}/accept`, {
+        method: "POST",
+        headers: auth(roger.token)
+      });
       if (!res.ok) assert.fail(`roger accept invite failed: ${await res.text()}`);
 
       res = await fetch(`${API}/friends/${roger.id}/remove`, { method: "POST", headers: auth(quinn.token) });
@@ -245,7 +269,10 @@ module.exports = async function runVisibility(ctx) {
       res = await fetch(`${API}/squads/${squadB.code}`, { headers: auth(quinn.token) });
       if (!res.ok) assert.fail(`squad details failed: ${await res.text()}`);
       const data = await res.json();
-      assert.ok(data.members.some(m => String(m.userId) === String(roger.id)), "removing friendship should not remove roger from squad");
+      assert.ok(
+        data.members.some((m) => String(m.userId) === String(roger.id)),
+        "removing friendship should not remove roger from squad"
+      );
     });
   } finally {
     await cleanup(paul);

@@ -1,15 +1,16 @@
 "use strict";
 
 const { GOAL_SCOPE_SET } = require("./constants");
+const { normalizeIntId } = require("./normalization");
 
 /**
  * Étape 26 — personal | friends | squad.
  * Explicit goal.goalScope / goal.scope wins; else squad_id ⇒ squad, else personal.
  */
 function resolveGoalScope(goal = null) {
-  const explicit = String(
-    (goal && (goal.goalScope || goal.goal_scope || goal.scope)) || ""
-  ).trim().toLowerCase();
+  const explicit = String((goal && (goal.goalScope || goal.goal_scope || goal.scope)) || "")
+    .trim()
+    .toLowerCase();
   if (GOAL_SCOPE_SET.has(explicit)) return explicit;
   if (goal && goal.squad_id) return "squad";
   return "personal";
@@ -26,11 +27,14 @@ function buildGoalCompletedContext({
   completedAt = null,
   goalScope = null
 } = {}) {
-  const targetIds = Array.isArray(targetVariantIds) && targetVariantIds.length
-    ? targetVariantIds.map(String)
-    : (goal && Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length
-      ? goal.target_variant_ids.map(String)
-      : (goal && goal.variant_id ? [String(goal.variant_id)] : []));
+  const targetIds =
+    Array.isArray(targetVariantIds) && targetVariantIds.length
+      ? targetVariantIds.map(String)
+      : goal && Array.isArray(goal.target_variant_ids) && goal.target_variant_ids.length
+        ? goal.target_variant_ids.map(String)
+        : goal && goal.variant_id
+          ? [String(goal.variant_id)]
+          : [];
   const createdAt = goal && goal.created_at ? new Date(goal.created_at) : null;
   const doneAt = completedAt ? new Date(completedAt) : new Date();
   let durationDays = null;
@@ -43,11 +47,12 @@ function buildGoalCompletedContext({
   const isSquad = scope === "squad";
   return {
     goalScope: scope,
-    goalType: isSquad ? "event_completion"
-      : (scope === "friends" ? "friends_completion" : "personal_completion"),
+    goalType: isSquad ? "event_completion" : scope === "friends" ? "friends_completion" : "personal_completion",
     participantCount: Number.isFinite(Number(participantCount))
       ? Number(participantCount)
-      : (isSquad || scope === "friends" ? null : 1),
+      : isSquad || scope === "friends"
+        ? null
+        : 1,
     targetVariantCount: targetIds.length,
     completedVariantCount: targetIds.length,
     durationDays,
@@ -61,13 +66,8 @@ function buildGoalCompletedContext({
  * Étape 27 — notification.opened context.
  * Étape 28 — this means the notification was consulted, not that a CTA ran.
  */
-function buildNotificationOpenedContext(notification = {}, {
-  channel = null,
-  openedAt = null
-} = {}) {
-  const data = (notification && notification.data && typeof notification.data === "object")
-    ? notification.data
-    : {};
+function buildNotificationOpenedContext(notification = {}, { channel = null, openedAt = null } = {}) {
+  const data = notification && notification.data && typeof notification.data === "object" ? notification.data : {};
   const deliveredRaw = notification.delivered_at || notification.created_at || null;
   const opened = openedAt ? new Date(openedAt) : new Date();
   let delaySinceDeliverySeconds = null;
@@ -78,9 +78,7 @@ function buildNotificationOpenedContext(notification = {}, {
     }
   }
   const channels = Array.isArray(data.channels) ? data.channels.map(String) : [];
-  const resolvedChannel = channel
-    || (channels.includes("push") ? "push"
-      : (channels[0] || "in_app"));
+  const resolvedChannel = channel || (channels.includes("push") ? "push" : channels[0] || "in_app");
   const destination = data.url || notification.url || data.destination || null;
   return {
     notificationType: notification.type ? String(notification.type) : null,

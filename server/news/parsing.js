@@ -3,22 +3,40 @@
 const crypto = require("crypto");
 
 const SPRITE_KEYWORDS = [
-  "sprite", "sprites", "esprit", "esprits",
-  "gummy", "gold", "galaxy", "holofoil", "rift",
-  "legendary", "mythic", "légendaire", "mythique",
-  "mastery monday", "catch up",
-  "gold hours", "gummy hours", "galaxy hours",
-  "collecte effrénée", "pouvoir d'esprit"
+  "sprite",
+  "sprites",
+  "esprit",
+  "esprits",
+  "gummy",
+  "gold",
+  "galaxy",
+  "holofoil",
+  "rift",
+  "legendary",
+  "mythic",
+  "légendaire",
+  "mythique",
+  "mastery monday",
+  "catch up",
+  "gold hours",
+  "gummy hours",
+  "galaxy hours",
+  "collecte effrénée",
+  "pouvoir d'esprit"
 ];
 
 const EVENT_PATTERNS = [
   { regex: /mastery monday|lundi de la maîtrise/i, type: "weekly_event", name: "Mastery Monday" },
   { regex: /holofoil hours/i, type: "weekly_event", name: "Holofoil Hours" },
-  { regex: /gold\s*(?:&\s*gummy|\s*hours|fish)|gummy\s*hours|mythic goldfish/i, type: "weekly_event", name: "Gold & Gummy Hours" },
+  {
+    regex: /gold\s*(?:&\s*gummy|\s*hours|fish)|gummy\s*hours|mythic goldfish/i,
+    type: "weekly_event",
+    name: "Gold & Gummy Hours"
+  },
   { regex: /galaxy hours/i, type: "weekly_event", name: "Galaxy Hours" },
   { regex: /catch up day|catch up/i, type: "catch_up_event", name: "Catch Up Day" },
   { regex: /gone wild/i, type: "seasonal_event", name: "Gone Wild" },
-  { regex: /summer hits|summer adventure|fun in the sun/i, type: "seasonal_event", name: "Summer Event" },
+  { regex: /summer hits|summer adventure|fun in the sun/i, type: "seasonal_event", name: "Summer Event" }
 ];
 
 function detectEventInfo(text) {
@@ -52,8 +70,25 @@ const MONTH_NAMES = {
 const MONTHS_REGEX = new RegExp(`(${MONTH_NAMES.en}|${MONTH_NAMES.fr})`, "i");
 
 function parseMonth(monthStr) {
-  const m = String(monthStr).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const m = String(monthStr)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+  const months = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december"
+  ];
   for (let i = 0; i < months.length; i++) {
     if (months[i].startsWith(m) || months[i].slice(0, 3) === m.slice(0, 3)) return i;
   }
@@ -70,7 +105,10 @@ function normalizeYearDate(day, month, year, now) {
 }
 
 function parseAbsoluteDate(text, now) {
-  const normalized = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalized = String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
   // "July 23" or "23 July" or "Jul 23, 2025" or "23 juillet 2025"
   let m = normalized.match(/(\d{1,2})\s+([a-z]{3,9})\s*(?:,\s*(\d{4}))?/i);
@@ -116,7 +154,8 @@ function parseEndDateFromText(text, start, now) {
   if (relHours !== null) return addHours(start, relHours);
 
   // Phrase "until ..." or "through ..."
-  const untilRegex = /(?:until|through|till|jusqu'au|jusqu'à|jusque|se termine(?:\s+le)?|ends?(?:\s+on)?|fin(?:\s+le)?)\s*[:\-]?\s*(.+?)(?:\.|,|;|$|and\s|with\s)/i;
+  const untilRegex =
+    /(?:until|through|till|jusqu'au|jusqu'à|jusque|se termine(?:\s+le)?|ends?(?:\s+on)?|fin(?:\s+le)?)\s*[:\-]?\s*(.+?)(?:\.|,|;|$|and\s|with\s)/i;
   const untilMatch = normalized.match(untilRegex);
   if (untilMatch) {
     const parsed = parseAbsoluteDate(untilMatch[1], now);
@@ -127,7 +166,9 @@ function parseEndDateFromText(text, start, now) {
   }
 
   // Any standalone date in the text as a last resort
-  const dateMatch = normalized.match(/(?:\d{1,2}\s+[a-z]{3,9}|[a-z]{3,9}\s+\d{1,2}|\d{4}[-/](?:0?\d|1[0-2])[-/]\d{1,2})/i);
+  const dateMatch = normalized.match(
+    /(?:\d{1,2}\s+[a-z]{3,9}|[a-z]{3,9}\s+\d{1,2}|\d{4}[-/](?:0?\d|1[0-2])[-/]\d{1,2})/i
+  );
   if (dateMatch) {
     const parsed = parseAbsoluteDate(dateMatch[0], now);
     if (parsed && parsed > start) {
@@ -164,7 +205,7 @@ function estimateEventEndDate(eventInfo, startDate, text) {
 
 function matchesSpriteKeywords(text) {
   const lower = text.toLowerCase();
-  return SPRITE_KEYWORDS.some(kw => lower.includes(kw));
+  return SPRITE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 function newsHash(source, title, date) {
@@ -189,12 +230,14 @@ function decodeHtmlEntities(value) {
 }
 
 function htmlText(value) {
-  return decodeHtmlEntities(String(value || "")
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim());
+  return decodeHtmlEntities(
+    String(value || "")
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 function htmlAttribute(fragment, name) {
@@ -224,7 +267,10 @@ function resolveAbsoluteUrl(raw, base = "https://fortnite.gg") {
 
 /** Pick the largest candidate from a srcset / data-srcset attribute. */
 function pickBestSrcsetUrl(srcset, base = "https://fortnite.gg") {
-  const parts = String(srcset || "").split(",").map((part) => part.trim()).filter(Boolean);
+  const parts = String(srcset || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
   let bestUrl = null;
   let bestScore = -1;
   for (const part of parts) {
@@ -251,10 +297,7 @@ function extractImageFromHtmlBlock(block, base = "https://fortnite.gg") {
   const scored = [];
   for (const tag of imgTags) {
     const attrs = tag.slice(4, -1);
-    const srcsetBest = pickBestSrcsetUrl(
-      htmlAttribute(attrs, "srcset") || htmlAttribute(attrs, "data-srcset"),
-      base
-    );
+    const srcsetBest = pickBestSrcsetUrl(htmlAttribute(attrs, "srcset") || htmlAttribute(attrs, "data-srcset"), base);
     const candidates = [
       { url: srcsetBest, score: 3000 },
       { url: resolveAbsoluteUrl(htmlAttribute(attrs, "data-src"), base), score: 2000 },
@@ -284,9 +327,10 @@ function extractImageFromHtmlBlock(block, base = "https://fortnite.gg") {
 // never evaluates third-party scripts.
 function parseFortniteGGNewsHtml(html) {
   const source = String(html || "");
-  const blocks = source.match(/<article\b[^>]*>[\s\S]*?<\/article>/gi)
-    || source.match(/<(?:li|div)\b[^>]*class=["'][^"']*(?:news|article)[^"']*["'][^>]*>[\s\S]*?<\/(?:li|div)>/gi)
-    || [];
+  const blocks =
+    source.match(/<article\b[^>]*>[\s\S]*?<\/article>/gi) ||
+    source.match(/<(?:li|div)\b[^>]*class=["'][^"']*(?:news|article)[^"']*["'][^>]*>[\s\S]*?<\/(?:li|div)>/gi) ||
+    [];
   const seen = new Set();
   const entries = [];
   for (const block of blocks.slice(0, 80)) {
@@ -297,11 +341,20 @@ function parseFortniteGGNewsHtml(html) {
     seen.add(key);
     const description = firstHtmlTagText(block, "p").slice(0, 500);
     const timeMatch = /<time\b([^>]*)>([\s\S]*?)<\/time>/i.exec(block);
-    const date = timeMatch ? (htmlAttribute(timeMatch[1], "datetime") || htmlText(timeMatch[2])) : "";
+    const date = timeMatch ? htmlAttribute(timeMatch[1], "datetime") || htmlText(timeMatch[2]) : "";
     const image = extractImageFromHtmlBlock(block, "https://fortnite.gg");
     entries.push({ title, desc: description, date, img: image || null });
   }
   return entries;
 }
 
-module.exports = { EVENT_PATTERNS, SPRITE_KEYWORDS, detectEventInfo, estimateEventEndDate, matchesSpriteKeywords, newsHash, safeIsoDate, parseFortniteGGNewsHtml };
+module.exports = {
+  EVENT_PATTERNS,
+  SPRITE_KEYWORDS,
+  detectEventInfo,
+  estimateEventEndDate,
+  matchesSpriteKeywords,
+  newsHash,
+  safeIsoDate,
+  parseFortniteGGNewsHtml
+};

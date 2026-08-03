@@ -1,13 +1,33 @@
 (() => {
   "use strict";
 
-  function openPrivacyPurgeDialog({ userId = null, label = "", username = "", ready = true, batch = false, volume = 0 } = {}) {
-    state.privacyPurge = { userId, label, username: username || String(label || "").replace(/^@/, ""), ready, batch, volume };
+  function openPrivacyPurgeDialog({
+    userId = null,
+    label = "",
+    username = "",
+    ready = true,
+    batch = false,
+    volume = 0
+  } = {}) {
+    state.privacyPurge = {
+      userId,
+      label,
+      username: username || String(label || "").replace(/^@/, ""),
+      ready,
+      batch,
+      volume
+    };
     $("#privacyPurgeTitle").textContent = batch
-      ? (english ? "Purge ready accounts" : "Purger les comptes prêts")
-      : (english ? "Purge account permanently" : "Purger définitivement le compte");
+      ? english
+        ? "Purge ready accounts"
+        : "Purger les comptes prêts"
+      : english
+        ? "Purge account permanently"
+        : "Purger définitivement le compte";
     $("#privacyPurgeSummary").textContent = batch
-      ? (english ? "Every account past the retention window will be deleted permanently." : "Tous les comptes hors délai de rétention seront définitivement supprimés.")
+      ? english
+        ? "Every account past the retention window will be deleted permanently."
+        : "Tous les comptes hors délai de rétention seront définitivement supprimés."
       : `${label || `#${userId}`}${volume ? ` · ${formatNumber(volume)} ${english ? "collection entries" : "entrées collection"}` : ""}`;
     $("#privacyPurgeImpact").textContent = english
       ? "This cannot be undone. Export the account first if you still need a GDPR archive."
@@ -49,10 +69,14 @@
       return;
     }
     if (!operation.batch) {
-      const expected = String(operation.username || "").trim().toLowerCase();
+      const expected = String(operation.username || "")
+        .trim()
+        .toLowerCase();
       const typed = $("#privacyPurgeConfirm").value.trim().toLowerCase();
       if (!expected || typed !== expected) {
-        errorNode.textContent = english ? "Confirmation username does not match." : "Le username de confirmation ne correspond pas.";
+        errorNode.textContent = english
+          ? "Confirmation username does not match."
+          : "Le username de confirmation ne correspond pas.";
         errorNode.hidden = false;
         return;
       }
@@ -80,9 +104,11 @@
         body: JSON.stringify(payload)
       });
       closePrivacyPurgeDialog();
-      setNotice(english
-        ? `${formatNumber(result.count || 0)} account(s) purged.`
-        : `${formatNumber(result.count || 0)} compte(s) purgé(s).`);
+      setNotice(
+        english
+          ? `${formatNumber(result.count || 0)} account(s) purged.`
+          : `${formatNumber(result.count || 0)} compte(s) purgé(s).`
+      );
       await loadTab("privacy", true);
     } catch (error) {
       errorNode.textContent = error.message || tr("saveFailed");
@@ -94,12 +120,16 @@
 
   function openPrivacyExportDialog({ userId = null, label = "" } = {}) {
     state.privacyExport = { userId, preview: null };
-    $("#privacyExportTarget").value = userId ? String(userId) : ($("#privacyExportSearch")?.value || "");
+    $("#privacyExportTarget").value = userId ? String(userId) : $("#privacyExportSearch")?.value || "";
     $("#privacyExportReason").value = "";
     if ($("#privacyExportMfa")) $("#privacyExportMfa").value = "";
     $("#privacyExportSummary").textContent = label
-      ? (english ? `Export personal data for ${label}.` : `Exporter les données personnelles de ${label}.`)
-      : (english ? "Generate an administrative JSON export for a GDPR request or internal review." : "Génère un JSON administratif pour une demande RGPD ou un contrôle interne.");
+      ? english
+        ? `Export personal data for ${label}.`
+        : `Exporter les données personnelles de ${label}.`
+      : english
+        ? "Generate an administrative JSON export for a GDPR request or internal review."
+        : "Génère un JSON administratif pour une demande RGPD ou un contrôle interne.";
     $("#privacyExportPreview").hidden = true;
     $("#privacyExportPreview").textContent = "";
     $("#privacyExportError").hidden = true;
@@ -116,7 +146,9 @@
   }
 
   async function resolvePrivacyExportUserId(raw) {
-    const value = String(raw || "").trim().replace(/^#/, "");
+    const value = String(raw || "")
+      .trim()
+      .replace(/^#/, "");
     if (!value) throw new Error(english ? "Account is required." : "Le compte est requis.");
     const data = await adminFetch(`/api/admin/privacy/lookup?q=${encodeURIComponent(value)}`);
     const items = data.items || [];
@@ -124,7 +156,11 @@
     if (items.length === 1 || /^\d+$/.test(value)) return items[0];
     const exact = items.find((item) => String(item.username || "").toLowerCase() === value.toLowerCase());
     if (exact) return exact;
-    throw new Error(english ? "Multiple accounts match. Use the numeric id." : "Plusieurs comptes correspondent. Utilisez l’identifiant numérique.");
+    throw new Error(
+      english
+        ? "Multiple accounts match. Use the numeric id."
+        : "Plusieurs comptes correspondent. Utilisez l’identifiant numérique."
+    );
   }
 
   async function previewPrivacyExportTarget() {
@@ -168,7 +204,9 @@
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 0);
       closePrivacyExportDialog();
-      setNotice(english ? `Export downloaded for @${account.username}.` : `Export téléchargé pour @${account.username}.`);
+      setNotice(
+        english ? `Export downloaded for @${account.username}.` : `Export téléchargé pour @${account.username}.`
+      );
       await loadTab("privacy", true);
     } catch (error) {
       errorNode.textContent = error.message || tr("saveFailed");
@@ -218,9 +256,11 @@
         body: JSON.stringify({ userId: Number(operation.id), reason: reasonValue, totp: mfaCode || undefined })
       });
       closePrivacyRestoreDialog();
-      setNotice(english
-        ? `Account @${result.user?.username || operation.label} restored.`
-        : `Compte @${result.user?.username || operation.label} restauré.`);
+      setNotice(
+        english
+          ? `Account @${result.user?.username || operation.label} restored.`
+          : `Compte @${result.user?.username || operation.label} restauré.`
+      );
       await loadTab("privacy", true);
     } catch (error) {
       errorNode.textContent = error.message || tr("saveFailed");
@@ -266,9 +306,11 @@
       });
       closePrivacyRevokeLinksDialog();
       const revoked = result.revoked || {};
-      setNotice(english
-        ? `Revoked ${formatNumber(revoked.passportLinks)} passport, ${formatNumber(revoked.compareLinks)} compare, ${formatNumber(revoked.friendInviteLinks)} invite link(s).`
-        : `Révoqué ${formatNumber(revoked.passportLinks)} passeport(s), ${formatNumber(revoked.compareLinks)} comparaison(s), ${formatNumber(revoked.friendInviteLinks)} invitation(s).`);
+      setNotice(
+        english
+          ? `Revoked ${formatNumber(revoked.passportLinks)} passport, ${formatNumber(revoked.compareLinks)} compare, ${formatNumber(revoked.friendInviteLinks)} invite link(s).`
+          : `Révoqué ${formatNumber(revoked.passportLinks)} passeport(s), ${formatNumber(revoked.compareLinks)} comparaison(s), ${formatNumber(revoked.friendInviteLinks)} invitation(s).`
+      );
       await loadTab("privacy", true);
     } catch (error) {
       errorNode.textContent = error.message || tr("saveFailed");
@@ -278,5 +320,20 @@
     }
   }
 
-  Object.assign(window, { openPrivacyPurgeDialog, closePrivacyPurgeDialog, submitPrivacyPurge, openPrivacyExportDialog, closePrivacyExportDialog, resolvePrivacyExportUserId, previewPrivacyExportTarget, submitPrivacyExport, openPrivacyRestoreDialog, closePrivacyRestoreDialog, submitPrivacyRestore, openPrivacyRevokeLinksDialog, closePrivacyRevokeLinksDialog, submitPrivacyRevokeLinks });
+  Object.assign(window, {
+    openPrivacyPurgeDialog,
+    closePrivacyPurgeDialog,
+    submitPrivacyPurge,
+    openPrivacyExportDialog,
+    closePrivacyExportDialog,
+    resolvePrivacyExportUserId,
+    previewPrivacyExportTarget,
+    submitPrivacyExport,
+    openPrivacyRestoreDialog,
+    closePrivacyRestoreDialog,
+    submitPrivacyRestore,
+    openPrivacyRevokeLinksDialog,
+    closePrivacyRevokeLinksDialog,
+    submitPrivacyRevokeLinks
+  });
 })();

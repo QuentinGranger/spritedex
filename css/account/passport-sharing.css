@@ -34,7 +34,10 @@
   scrollbar-color: rgba(113, 218, 255, 0.45) transparent;
 }
 
-.passport-share-dialog__card > * { min-width: 0; max-width: 100%; }
+.passport-share-dialog__card > * {
+  min-width: 0;
+  max-width: 100%;
+}
 
 /* Override the generic dialog shimmer (200% wide): it was counted as overflow
    by browsers and created a horizontal scrollbar inside this scrollable modal. */
@@ -47,7 +50,7 @@
   margin: 0;
   padding-right: 46px;
   color: #f8fbff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 1.36rem;
   font-weight: 800;
   letter-spacing: 0.025em;
@@ -60,12 +63,14 @@
   background: rgba(10, 22, 53, 0.88);
 }
 
-.passport-share-dialog__header { margin-bottom: 9px; }
+.passport-share-dialog__header {
+  margin-bottom: 9px;
+}
 
 .passport-share-dialog__eyebrow {
   margin: 0 0 3px;
   color: #82f3de;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.67rem;
   font-weight: 800;
   letter-spacing: 0.13em;
@@ -144,7 +149,7 @@
   margin-bottom: 7px;
   padding: 0;
   color: rgba(235, 247, 255, 0.9);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.045em;
@@ -166,14 +171,34 @@
   font-size: 0.84rem;
   line-height: 1.2;
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
-.passport-share-option:hover { border-color: rgba(0, 225, 255, 0.34); background: rgba(0, 225, 255, 0.06); }
-.passport-share-option:has(input:checked) { border-color: rgba(0, 225, 255, 0.32); background: rgba(0, 225, 255, 0.085); }
-.passport-share-option input { width: 18px; height: 18px; margin: 0; accent-color: #16b6ff; cursor: pointer; }
-.passport-share-option input:disabled { opacity: 0.38; cursor: not-allowed; }
-.passport-share-option:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.passport-share-option:hover {
+  border-color: rgba(0, 225, 255, 0.34);
+  background: rgba(0, 225, 255, 0.06);
+}
+.passport-share-option:has(input:checked) {
+  border-color: rgba(0, 225, 255, 0.32);
+  background: rgba(0, 225, 255, 0.085);
+}
+.passport-share-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #16b6ff;
+  cursor: pointer;
+}
+.passport-share-option input:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.passport-share-option:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 .passport-share-invite {
   margin: 0 0 14px;
@@ -188,7 +213,7 @@
 .passport-share-invite legend {
   padding: 0 5px;
   color: #aef6ff;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.045em;
@@ -235,7 +260,10 @@
   outline-offset: 2px;
 }
 
-.passport-share-format select option { color: #f4f9ff; background: #101b3a; }
+.passport-share-format select option {
+  color: #f4f9ff;
+  background: #101b3a;
+}
 
 .passport-share-result {
   display: grid;
@@ -248,7 +276,9 @@
   background: linear-gradient(120deg, rgba(61, 233, 180, 0.11), rgba(0, 225, 255, 0.07));
 }
 
-.passport-share-result[hidden] { display: none; }
+.passport-share-result[hidden] {
+  display: none;
+}
 
 .passport-share-result__preview {
   width: 74px;
@@ -259,10 +289,29 @@
   background: #0b1430;
 }
 
-.passport-share-result__preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.passport-share-result__copy { min-width: 0; align-self: center; }
-.passport-share-result__copy strong { display: block; color: #d9fff1; font-family: 'Rajdhani', sans-serif; font-size: .92rem; letter-spacing: .035em; }
-.passport-share-result__copy p { margin: 3px 0 0; color: rgba(223, 255, 246, .7); font-size: .74rem; line-height: 1.3; }
+.passport-share-result__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.passport-share-result__copy {
+  min-width: 0;
+  align-self: center;
+}
+.passport-share-result__copy strong {
+  display: block;
+  color: #d9fff1;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.035em;
+}
+.passport-share-result__copy p {
+  margin: 3px 0 0;
+  color: rgba(223, 255, 246, 0.7);
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
 
 .passport-share-result__actions {
   grid-column: 1 / -1;
@@ -271,8 +320,18 @@
   gap: 7px;
 }
 
-.passport-share-result__actions .login-btn { width: 100%; grid-column: 1 / -1; min-height: 38px; padding: 8px; font-size: .76rem; }
-.passport-share-result__actions .ghost-button { min-width: 0; padding: 8px 6px; font-size: .76rem; }
+.passport-share-result__actions .login-btn {
+  width: 100%;
+  grid-column: 1 / -1;
+  min-height: 38px;
+  padding: 8px;
+  font-size: 0.76rem;
+}
+.passport-share-result__actions .ghost-button {
+  min-width: 0;
+  padding: 8px 6px;
+  font-size: 0.76rem;
+}
 
 .passport-share-actions {
   display: flex;
@@ -281,13 +340,25 @@
   padding-top: 4px;
 }
 
-.passport-share-actions .login-btn { width: auto; min-width: 166px; }
+.passport-share-actions .login-btn {
+  width: auto;
+  min-width: 166px;
+}
 
 @media (max-width: 480px) {
-  .passport-share-dialog { width: min(100vw - 16px, 440px); }
-  .passport-share-dialog__card { padding: 23px 16px 16px; }
-  .passport-share-actions { display: grid; grid-template-columns: 1fr 1.25fr; }
-  .passport-share-actions .login-btn { min-width: 0; }
+  .passport-share-dialog {
+    width: min(100vw - 16px, 440px);
+  }
+  .passport-share-dialog__card {
+    padding: 23px 16px 16px;
+  }
+  .passport-share-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr;
+  }
+  .passport-share-actions .login-btn {
+    min-width: 0;
+  }
 }
 
 .public-passport-view__actions {
@@ -317,4 +388,3 @@
   padding: 0;
   background: transparent;
 }
-

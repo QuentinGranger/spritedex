@@ -10,40 +10,48 @@ function renderSharedProfile(data) {
   const isOwned = (id) => (collection[id]?.status || "new") === "owned";
 
   const total = items.length;
-  const ownedTotal = items.filter(i => isOwned(i.id)).length;
+  const ownedTotal = items.filter((i) => isOwned(i.id)).length;
   const pct = collectionPercent(ownedTotal, total);
 
   // Per-rarity breakdown (ordered like the rest of the app).
   const rarities = Object.keys(RARITY_ORDER)
     .sort((a, b) => RARITY_ORDER[a] - RARITY_ORDER[b])
-    .map(rarity => {
-      const group = items.filter(i => i.rarity === rarity);
-      const owned = group.filter(i => isOwned(i.id)).length;
+    .map((rarity) => {
+      const group = items.filter((i) => i.rarity === rarity);
+      const owned = group.filter((i) => isOwned(i.id)).length;
       return { label: rarity, total: group.length, owned, pct: collectionPercent(owned, group.length) };
     })
-    .filter(r => r.total > 0);
+    .filter((r) => r.total > 0);
 
-  const ownedItems = items.filter(i => isOwned(i.id));
+  const ownedItems = items.filter((i) => isOwned(i.id));
 
   const avatarUrl = safeImageUrl(data.avatarUrl);
   const avatar = avatarUrl
     ? `<img src="${escapeHtml(avatarUrl)}" alt="" class="shared-view__avatar" />`
     : `<div class="shared-view__avatar shared-view__avatar--empty">?</div>`;
 
-  const rarityBars = rarities.map(r => `
+  const rarityBars = rarities
+    .map(
+      (r) => `
     <div class="shared-stat">
       <span class="shared-stat__label">${escapeHtml(r.label)}</span>
       <div class="shared-stat__bar"><div class="shared-stat__fill" style="width:${r.pct}%"></div></div>
       <span class="shared-stat__val">${r.owned}/${r.total}</span>
-    </div>`).join("");
+    </div>`
+    )
+    .join("");
 
   const grid = ownedItems.length
-    ? ownedItems.map(i => `
+    ? ownedItems
+        .map(
+          (i) => `
         <div class="shared-card" title="${escapeHtml(i.spriteName)} · ${escapeHtml(i.variant)}">
           ${safeImageUrl(i.img) ? `<img src="${escapeHtml(safeImageUrl(i.img))}" alt="" class="shared-card__img" loading="lazy" />` : `<div class="shared-card__img shared-card__img--empty"></div>`}
           <span class="shared-card__name">${escapeHtml(i.spriteName)}</span>
           <span class="shared-card__variant">${escapeHtml(i.variant)}</span>
-        </div>`).join("")
+        </div>`
+        )
+        .join("")
     : `<p class="shared-view__empty">${t("shared.empty")}</p>`;
 
   const overlay = document.createElement("div");

@@ -20,7 +20,7 @@ function isFriendsPanelVisible() {
 }
 
 async function refreshFriendsRealtime() {
-  if (friendsRefreshQueued || !localStorage.getItem(TOKEN_KEY)) return;
+  if (friendsRefreshQueued || !hasAuthSession()) return;
   friendsRefreshQueued = true;
   try {
     await loadFriendsData();
@@ -32,20 +32,19 @@ async function refreshFriendsRealtime() {
 
 function sendFriendsPresence() {
   if (friendsWs?.readyState !== WebSocket.OPEN) return;
-  try { friendsWs.send(JSON.stringify({ type: "presence_ping" })); } catch {}
+  try {
+    friendsWs.send(JSON.stringify({ type: "presence_ping" }));
+  } catch {}
 }
 
 function connectFriendsRealtime() {
-  if (typeof WebSocket === "undefined" || !state.userId || !localStorage.getItem(TOKEN_KEY)) return;
+  if (typeof WebSocket === "undefined" || !state.userId || !hasAuthSession()) return;
   if (friendsWs && (friendsWs.readyState === WebSocket.CONNECTING || friendsWs.readyState === WebSocket.OPEN)) return;
 
   friendsWs = new WebSocket(WS_URL);
   friendsWs.onopen = () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (token) {
-      friendsWs.send(JSON.stringify({ type: "auth", token }));
-      sendFriendsPresence();
-    }
+    friendsWs.send(JSON.stringify(wsAuthMessage()));
+    sendFriendsPresence();
   };
   friendsWs.onmessage = (event) => {
     try {
@@ -58,7 +57,7 @@ function connectFriendsRealtime() {
   friendsWs.onclose = () => {
     friendsWs = null;
     clearTimeout(friendsWsReconnectTimer);
-    if (state.userId && localStorage.getItem(TOKEN_KEY)) {
+    if (state.userId && hasAuthSession()) {
       friendsWsReconnectTimer = setTimeout(connectFriendsRealtime, 3000);
     }
   };

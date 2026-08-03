@@ -5,19 +5,22 @@ require("dotenv").config();
 const { Pool } = require("pg");
 const { databasePoolConfig } = require("../server/db");
 
-const pool = new Pool(process.env.DATABASE_URL
-  ? databasePoolConfig(process.env.DATABASE_URL)
-  : {
-      database: process.env.PGDATABASE || "sprite-index",
-      host: process.env.PGHOST || "localhost",
-      port: process.env.PGPORT || 5432,
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-    });
+const pool = new Pool(
+  process.env.DATABASE_URL
+    ? databasePoolConfig(process.env.DATABASE_URL)
+    : {
+        database: process.env.PGDATABASE || "sprite-index",
+        host: process.env.PGHOST || "localhost",
+        port: process.env.PGPORT || 5432,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD
+      }
+);
 
 function inferSourceType(sourceId) {
   const s = (sourceId || "").toLowerCase();
-  if (s.includes("official") || s.includes("epic") || s.includes("fortnite.com") || s.includes("fortnite-api")) return "official";
+  if (s.includes("official") || s.includes("epic") || s.includes("fortnite.com") || s.includes("fortnite-api"))
+    return "official";
   if (s.includes("in_game") || s.includes("observed")) return "in_game";
   if (s.includes("creator") || s.includes("youtuber") || s.includes("streamer")) return "creator";
   if (s.includes("community") || s.includes("discord") || s.includes("reddit")) return "community";
@@ -44,7 +47,7 @@ async function main() {
       { table: "sprites", column: "sources" },
       { table: "sprite_variants", column: "sources" },
       { table: "availability_periods", column: "sources" },
-      { table: "events", column: "sources" },
+      { table: "events", column: "sources" }
     ];
 
     for (const { table, column } of tables) {
@@ -52,7 +55,11 @@ async function main() {
       for (const row of res.rows) {
         let values = row[column];
         if (typeof values === "string") {
-          try { values = JSON.parse(values); } catch { values = [values]; }
+          try {
+            values = JSON.parse(values);
+          } catch {
+            values = [values];
+          }
         }
         if (Array.isArray(values)) {
           for (const id of values) if (id) ids.add(id);

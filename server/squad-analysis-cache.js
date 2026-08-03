@@ -49,7 +49,10 @@ function getSquadFilterHash(req, endpoint) {
 function computeCatalogueVersion(catalogue) {
   const active = catalogue.filter(compare.isVariantReleasedAndActiveServer);
   const payload = active
-    .map(i => `${i.id}|${i.availabilityStatus || ''}|${i.endDate || ''}|${i.acquisitionMethod || ''}|${i.rarity || ''}|${i.eventId || ''}`)
+    .map(
+      (i) =>
+        `${i.id}|${i.availabilityStatus || ""}|${i.endDate || ""}|${i.acquisitionMethod || ""}|${i.rarity || ""}|${i.eventId || ""}`
+    )
     .sort()
     .join("\n");
   const hash = crypto.createHash("sha256").update(payload).digest("hex").slice(0, 8);
@@ -72,7 +75,7 @@ async function getSquadCollectionVersion(squad) {
     [squad.id]
   );
   const r = result.rows[0];
-  const payload = `${r.user_ids || ''}:${r.members_max || ''}:${r.entries_max || ''}:${r.entries_count || '0'}:${r.users_max || ''}:${r.goals_max || ''}:${r.friends_max || ''}:${r.blocks_max || ''}:${r.squad_updated || ''}`;
+  const payload = `${r.user_ids || ""}:${r.members_max || ""}:${r.entries_max || ""}:${r.entries_count || "0"}:${r.users_max || ""}:${r.goals_max || ""}:${r.friends_max || ""}:${r.blocks_max || ""}:${r.squad_updated || ""}`;
   return crypto.createHash("sha256").update(payload).digest("hex").slice(0, 12);
 }
 

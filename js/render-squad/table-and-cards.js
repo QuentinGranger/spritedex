@@ -15,11 +15,14 @@ function renderSquadTable(rows, players, items) {
     const spriteName = row.item.spriteName;
     if (spriteName !== currentSprite) {
       currentSprite = spriteName;
-      parts.push(`<tr class="squad-table__sprite-header"><td colspan="${colCount + 1}"><span class="squad-table__sprite-name">${escapeHtml(spriteName)}</span><span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></td></tr>`);
+      parts.push(
+        `<tr class="squad-table__sprite-header"><td colspan="${colCount + 1}"><span class="squad-table__sprite-name">${escapeHtml(spriteName)}</span><span class="squad-table__rarity">${escapeHtml(localizedRarity(row.item.rarity))}</span></td></tr>`
+      );
     }
     parts.push(`<tr class="squad-table__row"><td class="squad-table__variant">${escapeHtml(row.item.variant)}</td>`);
     for (const status of row.statuses) {
-      const cls = status === "owned" ? "squad-cell--owned" : status === "new" ? "squad-cell--new" : "squad-cell--missing";
+      const cls =
+        status === "owned" ? "squad-cell--owned" : status === "new" ? "squad-cell--new" : "squad-cell--missing";
       parts.push(`<td class="squad-table__cell ${cls}">${squadIcon(status)}</td>`);
     }
     parts.push(`</tr>`);

@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "événements sociaux (Étape 91)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const { applyFriendAction } = require("../server/friends/state-machine");
 
@@ -85,10 +85,7 @@ module.exports = {
       [joiner.id]
     );
     assert.strictEqual(joinEv.rows.length, 1);
-    assert.ok(
-      joinEv.rows[0].context?.joinSource === "join_code"
-        || joinEv.rows[0].context?.memberRole
-    );
+    assert.ok(joinEv.rows[0].context?.joinSource === "join_code" || joinEv.rows[0].context?.memberRole);
 
     // Comparaison comptée une seule fois.
     const result = {

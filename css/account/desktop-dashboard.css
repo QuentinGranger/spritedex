@@ -58,17 +58,19 @@
 
   .profile-hero__tagline {
     display: block;
-    color: rgba(225, 235, 255, .73);
-    font-size: .84rem;
+    color: rgba(225, 235, 255, 0.73);
+    font-size: 0.84rem;
     line-height: 1.35;
   }
 
   .profile-hero__since {
     align-self: auto;
-    font-size: .75rem;
+    font-size: 0.75rem;
   }
 
-  .account-panel__header-actions { gap: 10px; }
+  .account-panel__header-actions {
+    gap: 10px;
+  }
 
   .account-panel__edit {
     min-height: 39px;
@@ -76,23 +78,28 @@
     align-items: center;
     gap: 8px;
     padding: 0 14px;
-    border: 1px solid rgba(116, 103, 255, .7);
+    border: 1px solid rgba(116, 103, 255, 0.7);
     border-radius: 9px;
-    background: linear-gradient(100deg, rgba(0, 135, 214, .12), rgba(107, 63, 214, .16));
+    background: linear-gradient(100deg, rgba(0, 135, 214, 0.12), rgba(107, 63, 214, 0.16));
     color: #eef1ff;
-    font: 800 .72rem 'Rajdhani', sans-serif;
-    letter-spacing: .03em;
+    font:
+      800 0.72rem "Rajdhani",
+      sans-serif;
+    letter-spacing: 0.03em;
     cursor: pointer;
   }
 
-  .account-panel__edit:hover { border-color: #00dfff; color: #d9fbff; }
+  .account-panel__edit:hover {
+    border-color: #00dfff;
+    color: #d9fbff;
+  }
 
   .account-panel__close {
     width: 38px;
     height: 38px;
     padding: 0;
-    border-color: rgba(116, 143, 255, .26);
-    background: rgba(13, 25, 61, .72);
+    border-color: rgba(116, 143, 255, 0.26);
+    background: rgba(13, 25, 61, 0.72);
   }
 
   .profile-stats {
@@ -103,7 +110,7 @@
     gap: 0;
     padding: 8px 0;
     border-radius: 0;
-    background: rgba(4, 10, 31, .14);
+    background: rgba(4, 10, 31, 0.14);
   }
 
   .profile-stat {
@@ -111,15 +118,27 @@
     justify-content: center;
     padding: 11px 9px;
     border: 0;
-    border-left: 1px solid rgba(122, 158, 255, .13);
+    border-left: 1px solid rgba(122, 158, 255, 0.13);
     border-radius: 0;
     background: transparent;
   }
 
-  .profile-stat:first-child { border-left: 0; }
-  .profile-stat::before { right: -17px; bottom: -22px; opacity: .8; }
-  .profile-stat__value { font-size: 1.28rem; }
-  .profile-stat__label { max-width: 78px; font-size: .59rem; line-height: 1.25; }
+  .profile-stat:first-child {
+    border-left: 0;
+  }
+  .profile-stat::before {
+    right: -17px;
+    bottom: -22px;
+    opacity: 0.8;
+  }
+  .profile-stat__value {
+    font-size: 1.28rem;
+  }
+  .profile-stat__label {
+    max-width: 78px;
+    font-size: 0.59rem;
+    line-height: 1.25;
+  }
 
   .profile-actions {
     grid-area: actions;
@@ -133,12 +152,12 @@
   .profile-action-btn {
     min-height: 37px;
     padding: 8px 11px;
-    font-size: .72rem;
+    font-size: 0.72rem;
   }
 
   .profile-action-btn:first-child,
   .profile-action-btn:nth-child(5) {
-    background: linear-gradient(100deg, rgba(0, 195, 255, .9), rgba(100, 76, 255, .92));
+    background: linear-gradient(100deg, rgba(0, 195, 255, 0.9), rgba(100, 76, 255, 0.92));
   }
 
   .account-section-nav {
@@ -162,9 +181,19 @@
     min-height: 202px;
   }
 
-  .profile-hero__avatar { width: 92px; height: 92px; }
-  .profile-stat { min-height: 102px; padding-inline: 15px; }
-  .profile-stat__value { font-size: 1.45rem; }
-  .profile-stat__label { max-width: 96px; font-size: .64rem; }
+  .profile-hero__avatar {
+    width: 92px;
+    height: 92px;
+  }
+  .profile-stat {
+    min-height: 102px;
+    padding-inline: 15px;
+  }
+  .profile-stat__value {
+    font-size: 1.45rem;
+  }
+  .profile-stat__label {
+    max-width: 96px;
+    font-size: 0.64rem;
+  }
 }
-

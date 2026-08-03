@@ -43,13 +43,19 @@ module.exports = async function runSquadAnalytics(ctx) {
       let detailsRes = await fetch(`${API}/squads/${squad.code}`, { headers: auth(tina.token) });
       if (!detailsRes.ok) assert.fail(`squad details failed: ${await detailsRes.text()}`);
       let details = await detailsRes.json();
-      const steveBeforeBlock = details.members.find(m => String(m.userId) === String(steve.id));
-      assert.strictEqual(steveBeforeBlock?.collection?.[variantId]?.priority, "none", "private priority leaked in squad details");
+      const steveBeforeBlock = details.members.find((m) => String(m.userId) === String(steve.id));
+      assert.strictEqual(
+        steveBeforeBlock?.collection?.[variantId]?.priority,
+        "none",
+        "private priority leaked in squad details"
+      );
 
-      const acquisitionRes = await fetch(`${API}/squads/${squad.code}/completion/recommendations`, { headers: auth(tina.token) });
+      const acquisitionRes = await fetch(`${API}/squads/${squad.code}/completion/recommendations`, {
+        headers: auth(tina.token)
+      });
       if (!acquisitionRes.ok) assert.fail(`squad recommendation engine failed: ${await acquisitionRes.text()}`);
       const acquisition = await acquisitionRes.json();
-      const priorityRow = (acquisition.priorities || []).find(row => row.variantId === variantId);
+      const priorityRow = (acquisition.priorities || []).find((row) => row.variantId === variantId);
       assert.ok(priorityRow, "priority fixture missing from acquisition engine");
       assert.strictEqual(priorityRow.priorityCount, 0, "private priority leaked into squad acquisition score");
 
@@ -66,21 +72,30 @@ module.exports = async function runSquadAnalytics(ctx) {
       assert.strictEqual(profileRes.status, 404, "blocked profile should be hidden");
 
       // Comparison between them is now impossible.
-      const blockCompareRes = await fetch(`${API}/comparisons/users/${tina.id}/${steve.id}`, { headers: auth(tina.token) });
+      const blockCompareRes = await fetch(`${API}/comparisons/users/${tina.id}/${steve.id}`, {
+        headers: auth(tina.token)
+      });
       assert.strictEqual(blockCompareRes.status, 403, "comparison should be blocked");
 
       // A blocked member's collection must not influence aggregate metrics.
       res = await fetch(`${API}/squads/${squad.code}`, { headers: auth(tina.token) });
       if (!res.ok) assert.fail(`squad details failed: ${await res.text()}`);
       const data = await res.json();
-      assert.strictEqual(data.coveredVariantCount, 0, "blocked member's collection must not contribute to squad coverage");
-      assert.ok(!data.members.some(m => String(m.userId) === String(steve.id)), "blocked member should not appear in member list");
+      assert.strictEqual(
+        data.coveredVariantCount,
+        0,
+        "blocked member's collection must not contribute to squad coverage"
+      );
+      assert.ok(
+        !data.members.some((m) => String(m.userId) === String(steve.id)),
+        "blocked member should not appear in member list"
+      );
 
       const uniqueRes = await fetch(`${API}/squads/${squad.code}/unique-owners`, { headers: auth(tina.token) });
       if (!uniqueRes.ok) assert.fail(`unique owner analysis failed: ${await uniqueRes.text()}`);
       const unique = await uniqueRes.json();
       assert.ok(
-        !(unique.uniqueVariants || []).some(row => String(row.uniqueOwnerId) === String(steve.id)),
+        !(unique.uniqueVariants || []).some((row) => String(row.uniqueOwnerId) === String(steve.id)),
         "blocked member leaked through unique-owner analytics"
       );
     });

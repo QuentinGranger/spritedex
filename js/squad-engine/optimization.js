@@ -50,7 +50,7 @@ function renderEngineOptimization(r) {
           <button type="submit" class="ghost-button engine-sim__submit" ${members.length && variants.length ? "" : "disabled"}>${t("engine.addAcquisition")}</button>
         </form>
         <form class="engine-sim" id="squadEngineScenarioJoinForm">
-          <label class="engine-sim__field"><span>${t("engine.newMember")}</span><input class="engine-select" name="username" maxlength="80" placeholder="${t('engine.usernamePlaceholder')}"></label>
+          <label class="engine-sim__field"><span>${t("engine.newMember")}</span><input class="engine-select" name="username" maxlength="80" placeholder="${t("engine.usernamePlaceholder")}"></label>
           <label class="engine-sim__field"><span>${t("engine.variantsOwned")}</span><select class="engine-select engine-sim__multi" name="ownedVariantIds" multiple>${variantOpts}</select></label>
           <button type="submit" class="ghost-button engine-sim__submit">${t("engine.addJoin")}</button>
         </form>
@@ -65,4 +65,3 @@ function renderEngineOptimization(r) {
     </div>
   `;
 }
-

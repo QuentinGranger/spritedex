@@ -32,14 +32,16 @@ async function listBadgeDefinitions(db = pool) {
 
 function defaultVerificationForCode(code, seedStatus) {
   if (seedStatus && VERIFICATION_STATUSES.includes(seedStatus)) return seedStatus;
-  if ([
-    "first_collection",
-    "squad_member",
-    "squad_founder",
-    "social",
-    "complementary_collection",
-    "early_collector"
-  ].includes(code)) {
+  if (
+    [
+      "first_collection",
+      "squad_member",
+      "squad_founder",
+      "social",
+      "complementary_collection",
+      "early_collector"
+    ].includes(code)
+  ) {
     return "system_confirmed";
   }
   return "declared";

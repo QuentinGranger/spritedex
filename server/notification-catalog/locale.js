@@ -40,12 +40,7 @@ function variantLabel(context, lang) {
   return sprite ? `${variant} (${sprite})` : variant;
 }
 
-const {
-  normalizeTimeZone,
-  calendarDaysUntil,
-  formatDateInTimeZone,
-  DEFAULT_TIMEZONE
-} = require("../timezone");
+const { normalizeTimeZone, calendarDaysUntil, formatDateInTimeZone, DEFAULT_TIMEZONE } = require("../timezone");
 
 function formatEndDate(value, lang = DEFAULT_LANGUAGE, timeZone = DEFAULT_TIMEZONE) {
   if (!value) return null;
@@ -78,9 +73,7 @@ function buildSquadEngineActionUrl(ctx = {}) {
 }
 
 function buildFriendCompareActionUrl(ctx = {}, { withVariant = false } = {}) {
-  const friendId = ctx.friendId != null
-    ? String(ctx.friendId)
-    : (ctx.actorId != null ? String(ctx.actorId) : null);
+  const friendId = ctx.friendId != null ? String(ctx.friendId) : ctx.actorId != null ? String(ctx.actorId) : null;
   if (!friendId) return null;
   const base = `/compare/${encodeURIComponent(friendId)}`;
   if (!withVariant) return base;
@@ -136,5 +129,23 @@ function formatEventEndingWhen(ctx = {}, lang = DEFAULT_LANGUAGE) {
   return formatThresholdRemaining(ctx.threshold, lang);
 }
 
-
-module.exports = { str, num, pct, pluralFr, pluralEn, variantLabel, formatEndDate, buildPriorityVariantActionUrl, buildWantedEventActionUrl, buildSquadEngineActionUrl, buildFriendCompareActionUrl, formatThresholdRemaining, formatEventEndingWhen, FALLBACK_NAME, FALLBACK_SPRITE, FALLBACK_SQUAD, FALLBACK_EVENT, DEFAULT_TIMEZONE };
+module.exports = {
+  str,
+  num,
+  pct,
+  pluralFr,
+  pluralEn,
+  variantLabel,
+  formatEndDate,
+  buildPriorityVariantActionUrl,
+  buildWantedEventActionUrl,
+  buildSquadEngineActionUrl,
+  buildFriendCompareActionUrl,
+  formatThresholdRemaining,
+  formatEventEndingWhen,
+  FALLBACK_NAME,
+  FALLBACK_SPRITE,
+  FALLBACK_SQUAD,
+  FALLBACK_EVENT,
+  DEFAULT_TIMEZONE
+};

@@ -4,14 +4,7 @@
 // Roles are assigned at session open (env), stored on the durable session,
 // and enforced server-side. The UI only mirrors capabilities for UX.
 
-const ADMIN_ROLES = Object.freeze([
-  "owner",
-  "ops",
-  "moderator",
-  "editor",
-  "privacy",
-  "readonly"
-]);
+const ADMIN_ROLES = Object.freeze(["owner", "ops", "moderator", "editor", "privacy", "readonly"]);
 
 const ALL_CAPABILITIES = Object.freeze([
   "overview.read",
@@ -119,11 +112,12 @@ function parseOperatorRoleMap(raw = process.env.ADMIN_OPERATOR_ROLES || "") {
 }
 
 function resolveOperatorRole(operatorLabel = process.env.ADMIN_OPERATOR_LABEL || "terminal") {
-  const label = String(operatorLabel || "terminal")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "terminal";
+  const label =
+    String(operatorLabel || "terminal")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "terminal";
   const mapped = parseOperatorRoleMap().get(label);
   if (mapped) return mapped;
   const fallback = normalizeRole(process.env.ADMIN_OPERATOR_ROLE || "owner");
@@ -136,9 +130,7 @@ function listCapabilitiesForRole(role) {
 }
 
 function hasCapability(roleOrSession, capability) {
-  const role = typeof roleOrSession === "string"
-    ? roleOrSession
-    : (roleOrSession?.role || "readonly");
+  const role = typeof roleOrSession === "string" ? roleOrSession : roleOrSession?.role || "readonly";
   const needed = String(capability || "").trim();
   if (!needed) return false;
   return listCapabilitiesForRole(role).includes(needed);

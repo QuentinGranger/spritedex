@@ -29,10 +29,19 @@ assert.match(facade, /@\/features\/notifications\/infrastructure\/push-service/)
 
 const service = require("../push-service");
 for (const name of [
-  "getVapidPublicKey", "ensurePushTables", "registerToken", "unregisterToken",
-  "getEnabledTokensForUser", "buildNotificationPayload", "dispatchNotification",
-  "notifyUser", "createNotification", "deliverExternalChannels", "getNotifications",
-  "markNotificationRead", "deleteNotification"
+  "getVapidPublicKey",
+  "ensurePushTables",
+  "registerToken",
+  "unregisterToken",
+  "getEnabledTokensForUser",
+  "buildNotificationPayload",
+  "dispatchNotification",
+  "notifyUser",
+  "createNotification",
+  "deliverExternalChannels",
+  "getNotifications",
+  "markNotificationRead",
+  "deleteNotification"
 ]) {
   assert.strictEqual(typeof service[name], "function", `${name} must remain public`);
 }

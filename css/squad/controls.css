@@ -46,7 +46,9 @@
   opacity: 0.3;
 }
 
-.squad-table__row:hover td { background: rgba(0, 225, 255, 0.04); }
+.squad-table__row:hover td {
+  background: rgba(0, 225, 255, 0.04);
+}
 
 /* ── View toggle ── */
 .squad-view-toggle {
@@ -80,4 +82,3 @@
   border-color: var(--muted);
   color: var(--text);
 }
-

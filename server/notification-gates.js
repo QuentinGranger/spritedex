@@ -42,13 +42,7 @@ function buildFriendRequestAcceptedDedupeKey(friendshipId, recipientId) {
 // ── Friend acquired missing variant (Étapes 15–21) ──
 
 // Étape 15 — previous statuses that may transition into `owned` and fire the event.
-const ACQUIRED_FROM_STATUSES = Object.freeze([
-  "missing",
-  "priority",
-  "spotted",
-  "unavailable",
-  "unknown"
-]);
+const ACQUIRED_FROM_STATUSES = Object.freeze(["missing", "priority", "spotted", "unavailable", "unknown"]);
 
 // Étape 16/17 — only these recipient statuses create a notification.
 // `unknown` is intentionally excluded.
@@ -79,10 +73,7 @@ function buildFriendAcquiredDedupeKey(actorId, recipientId, variantId, collectio
 const SQUAD_MILESTONES = Object.freeze([25, 50, 75, 80, 90, 95, 100]);
 
 // Étape 27 — default 20 minutes (within the recommended 15–30 window).
-const SQUAD_BATCH_WINDOW_MS = Math.max(
-  0,
-  Number(process.env.NOTIFICATION_SQUAD_BATCH_MS ?? 20 * 60 * 1000)
-);
+const SQUAD_BATCH_WINDOW_MS = Math.max(0, Number(process.env.NOTIFICATION_SQUAD_BATCH_MS ?? 20 * 60 * 1000));
 
 // Highest newly crossed milestone, or null.
 function crossedSquadMilestone(previousRate, newRate) {
@@ -107,25 +98,12 @@ function buildSquadCompletionKey(squadId, newCoveredCount) {
 // ── Priority variant available (Étapes 28–33) ──
 
 // Étape 28 — previous statuses that may transition into available_now.
-const VARIANT_AVAILABLE_FROM_STATUSES = Object.freeze([
-  "upcoming",
-  "not_observed",
-  "ended",
-  "unknown"
-]);
+const VARIANT_AVAILABLE_FROM_STATUSES = Object.freeze(["upcoming", "not_observed", "ended", "unknown"]);
 
 // Étape 29 — confidence levels that may generate an automatic push alert.
-const TRUSTED_AVAILABILITY_CONFIDENCE = Object.freeze([
-  "official",
-  "observed",
-  "confirmed"
-]);
+const TRUSTED_AVAILABILITY_CONFIDENCE = Object.freeze(["official", "observed", "confirmed"]);
 
-const UNTRUSTED_AVAILABILITY_CONFIDENCE = Object.freeze([
-  "estimated",
-  "unverified",
-  "unknown"
-]);
+const UNTRUSTED_AVAILABILITY_CONFIDENCE = Object.freeze(["estimated", "unverified", "unknown"]);
 
 // Normalize raw DB / news statuses into the étape 28 vocabulary.
 function classifyAvailabilityStatus(status) {
@@ -159,12 +137,7 @@ function buildPriorityVariantAvailableDedupeKey(recipientId, variantId, availabi
 }
 
 // Étape 31 — pure date/status gate (source validity checked separately with DB).
-function evaluateVariantStillAvailable({
-  status,
-  availableFrom,
-  availableUntil,
-  now = new Date()
-} = {}) {
+function evaluateVariantStillAvailable({ status, availableFrom, availableUntil, now = new Date() } = {}) {
   if (classifyAvailabilityStatus(status) !== "available_now") {
     return { ok: false, reason: "not_available" };
   }
@@ -244,7 +217,9 @@ const WANTED_EVENT_STRONG_THRESHOLD_ID = WANTED_EVENT_THRESHOLDS.TWENTY_FOUR_HOU
 const WANTED_EVENT_STRONG_PRIORITIES = Object.freeze(["urgent", "important"]);
 
 function normalizeWantedEventThresholdId(thresholdId) {
-  const raw = String(thresholdId || "").toLowerCase().trim();
+  const raw = String(thresholdId || "")
+    .toLowerCase()
+    .trim();
   if (!raw) return null;
   if (raw === "7d" || raw === "7_days" || raw === "7days" || raw === "seven_days") {
     return WANTED_EVENT_THRESHOLDS.SEVEN_DAYS.id;
@@ -261,7 +236,7 @@ function normalizeWantedEventThresholdId(thresholdId) {
 function getWantedEventThreshold(thresholdId) {
   const id = normalizeWantedEventThresholdId(thresholdId);
   if (!id) return null;
-  return WANTED_EVENT_THRESHOLD_LIST.find(t => t.id === id) || null;
+  return WANTED_EVENT_THRESHOLD_LIST.find((t) => t.id === id) || null;
 }
 
 function isStrongWantedPriority(priority) {
@@ -273,10 +248,7 @@ function isStrongWantedPriority(priority) {
  * Default (anti-spam): 3d for everyone; 24h only as an extra for strong
  * priorities; 7d off unless explicitly enabled later via prefs.
  */
-function resolveWantedEventActiveThresholds({
-  enabledThresholdIds = null,
-  hasStrongPriority = false
-} = {}) {
+function resolveWantedEventActiveThresholds({ enabledThresholdIds = null, hasStrongPriority = false } = {}) {
   let ids;
   if (Array.isArray(enabledThresholdIds) && enabledThresholdIds.length) {
     ids = enabledThresholdIds.map(normalizeWantedEventThresholdId).filter(Boolean);
@@ -286,7 +258,7 @@ function resolveWantedEventActiveThresholds({
   }
 
   const allowed = new Set(ids);
-  return WANTED_EVENT_THRESHOLD_LIST.filter(t => {
+  return WANTED_EVENT_THRESHOLD_LIST.filter((t) => {
     if (!allowed.has(t.id)) return false;
     if (t.id === WANTED_EVENT_STRONG_THRESHOLD_ID && !hasStrongPriority) return false;
     return true;
@@ -297,11 +269,7 @@ function resolveWantedEventActiveThresholds({
  * Étape 35 — may this threshold produce a notification for this recipient?
  * Default: 3d yes; 24h only with strong priority; 7d only if explicitly enabled.
  */
-function isWantedEventThresholdAllowed({
-  thresholdId,
-  hasStrongPriority = false,
-  enabledThresholdIds = null
-} = {}) {
+function isWantedEventThresholdAllowed({ thresholdId, hasStrongPriority = false, enabledThresholdIds = null } = {}) {
   const id = normalizeWantedEventThresholdId(thresholdId);
   if (!id) return { ok: false, reason: "unknown_threshold" };
 
@@ -313,7 +281,7 @@ function isWantedEventThresholdAllowed({
     enabledThresholdIds,
     hasStrongPriority
   });
-  if (!active.some(t => t.id === id)) {
+  if (!active.some((t) => t.id === id)) {
     return { ok: false, reason: "threshold_disabled" };
   }
   return { ok: true, thresholdId: id };
@@ -362,10 +330,7 @@ function isTrustedEndDateConfidence(confidence) {
   return TRUSTED_END_DATE_CONFIDENCE.includes(String(confidence || "").toLowerCase());
 }
 
-function evaluateWantedEventEndDateReliability({
-  endDate = null,
-  confidence = null
-} = {}) {
+function evaluateWantedEventEndDateReliability({ endDate = null, confidence = null } = {}) {
   if (endDate == null || endDate === "") {
     return { ok: false, reason: "missing_end_date" };
   }
@@ -395,15 +360,12 @@ function normalizeEndDateKey(value) {
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) return null;
     const isUtcMidnight =
-      value.getUTCHours() === 0
-      && value.getUTCMinutes() === 0
-      && value.getUTCSeconds() === 0
-      && value.getUTCMilliseconds() === 0;
+      value.getUTCHours() === 0 &&
+      value.getUTCMinutes() === 0 &&
+      value.getUTCSeconds() === 0 &&
+      value.getUTCMilliseconds() === 0;
     const isLocalMidnight =
-      value.getHours() === 0
-      && value.getMinutes() === 0
-      && value.getSeconds() === 0
-      && value.getMilliseconds() === 0;
+      value.getHours() === 0 && value.getMinutes() === 0 && value.getSeconds() === 0 && value.getMilliseconds() === 0;
     if (isLocalMidnight && !isUtcMidnight) {
       const y = value.getFullYear();
       const m = String(value.getMonth() + 1).padStart(2, "0");

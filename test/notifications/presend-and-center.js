@@ -1,7 +1,18 @@
 "use strict";
 
 async function register(ctx) {
-  const { assert, catalog, prefs, channels, bus, asyncTest, sampleContext, EXPECTED_CONTEXTUAL_IDS, EXPECTED_NOTIFICATION_TYPES, EXPECTED_DOMAIN_EVENTS } = ctx;
+  const {
+    assert,
+    catalog,
+    prefs,
+    channels,
+    bus,
+    asyncTest,
+    sampleContext,
+    EXPECTED_CONTEXTUAL_IDS,
+    EXPECTED_NOTIFICATION_TYPES,
+    EXPECTED_DOMAIN_EVENTS
+  } = ctx;
 
   await asyncTest("block cleanup targets social pending and private pairwise types (Étape 57)", () => {
     const blocks = require("../../server/notification-blocks");
@@ -29,10 +40,9 @@ async function register(ctx) {
 
   await asyncTest("presend revalidation cancels obsolete scheduled pushes (Étape 56)", () => {
     const presend = require("../../server/notification-presend");
-    assert.deepStrictEqual(
-      presend.evaluateFriendshipStillRelevant({ friendshipAccepted: true, blocked: false }),
-      { ok: true }
-    );
+    assert.deepStrictEqual(presend.evaluateFriendshipStillRelevant({ friendshipAccepted: true, blocked: false }), {
+      ok: true
+    });
     assert.strictEqual(
       presend.evaluateFriendshipStillRelevant({ friendshipAccepted: false }).reason,
       "friendship_gone"
@@ -53,10 +63,7 @@ async function register(ctx) {
       }).reason,
       "already_owned"
     );
-    assert.strictEqual(
-      presend.evaluateSquadMembershipStillRelevant({ isActiveMember: false }).reason,
-      "squad_left"
-    );
+    assert.strictEqual(presend.evaluateSquadMembershipStillRelevant({ isActiveMember: false }).reason, "squad_left");
     assert.strictEqual(
       presend.evaluatePriorityVariantStillRelevant({
         stillAvailable: false,
@@ -83,18 +90,9 @@ async function register(ctx) {
 
   await asyncTest("notification grouping preserves count, principals, first/latest, destination (Étape 55)", () => {
     const grouping = require("../../server/notification-grouping");
-    assert.strictEqual(
-      grouping.buildFriendAcquisitionsGroupKey(1, 2),
-      "friend_acquisitions:1:2"
-    );
-    assert.strictEqual(
-      grouping.buildSquadProgressGroupKey("squad_bravo_six"),
-      "squad_progress:squad_bravo_six"
-    );
-    assert.strictEqual(
-      grouping.buildEventDeadlineGroupKey("event_hot", 42),
-      "event_deadline:event_hot:42"
-    );
+    assert.strictEqual(grouping.buildFriendAcquisitionsGroupKey(1, 2), "friend_acquisitions:1:2");
+    assert.strictEqual(grouping.buildSquadProgressGroupKey("squad_bravo_six"), "squad_progress:squad_bravo_six");
+    assert.strictEqual(grouping.buildEventDeadlineGroupKey("event_hot", 42), "event_deadline:event_hot:42");
 
     const friendGroup = grouping.buildFriendAcquisitionsGroup({
       actorId: 1,
@@ -171,14 +169,17 @@ async function register(ctx) {
 
     const rendered = catalog.renderNotification(
       catalog.NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT,
-      grouping.attachGroup({
-        actorName: "Lucy",
-        friendId: "1",
-        variantId: "v2",
-        variantName: "Beta",
-        count: 2,
-        variantIds: ["v1", "v2"]
-      }, friendGroup),
+      grouping.attachGroup(
+        {
+          actorName: "Lucy",
+          friendId: "1",
+          variantId: "v2",
+          variantName: "Beta",
+          count: 2,
+          variantIds: ["v1", "v2"]
+        },
+        friendGroup
+      ),
       "fr"
     );
     assert.strictEqual(rendered.data.groupKey, "friend_acquisitions:1:2");
@@ -230,11 +231,23 @@ async function register(ctx) {
       typeEnabled: true
     };
     assert.deepStrictEqual(evaluateFriendshipAcceptedConditions(base), { ok: true });
-    assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, friendshipExists: false }).reason, "invitation_missing");
-    assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, previousStatus: "accepted" }).reason, "previous_not_pending");
-    assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, friendshipStatus: "pending" }).reason, "friendship_not_active");
+    assert.strictEqual(
+      evaluateFriendshipAcceptedConditions({ ...base, friendshipExists: false }).reason,
+      "invitation_missing"
+    );
+    assert.strictEqual(
+      evaluateFriendshipAcceptedConditions({ ...base, previousStatus: "accepted" }).reason,
+      "previous_not_pending"
+    );
+    assert.strictEqual(
+      evaluateFriendshipAcceptedConditions({ ...base, friendshipStatus: "pending" }).reason,
+      "friendship_not_active"
+    );
     assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, blocked: true }).reason, "blocked");
-    assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, socialEnabled: false }).reason, "social_disabled");
+    assert.strictEqual(
+      evaluateFriendshipAcceptedConditions({ ...base, socialEnabled: false }).reason,
+      "social_disabled"
+    );
     assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, typeEnabled: false }).reason, "type_disabled");
     assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, accepterId: "1" }).reason, "self_action");
     assert.strictEqual(evaluateFriendshipAcceptedConditions({ ...base, requesterId: null }).reason, "missing_parties");
@@ -246,7 +259,7 @@ async function register(ctx) {
     const base = buildNotificationInboxFilters(7, { filter: "all" });
     assert.ok(base.conditions.includes("status <> 'cancelled'"));
     assert.ok(base.conditions.includes("hidden_at IS NULL"));
-    assert.ok(!base.conditions.some(c => c.includes("read_at IS NULL")));
+    assert.ok(!base.conditions.some((c) => c.includes("read_at IS NULL")));
 
     const unread = buildNotificationInboxFilters(7, { filter: "unread" });
     assert.ok(unread.conditions.includes("read_at IS NULL"));
@@ -258,11 +271,11 @@ async function register(ctx) {
     assert.ok(alerts.conditions.includes("category = 'alerts'"));
 
     const squads = buildNotificationInboxFilters(7, { filter: "squads" });
-    assert.ok(squads.conditions.some(c => c.includes("squad_completion_increased")));
+    assert.ok(squads.conditions.some((c) => c.includes("squad_completion_increased")));
 
     const collections = buildNotificationInboxFilters(7, { filter: "collection" });
     assert.ok(collections.conditions.includes("category = 'collection'"));
-    assert.ok(collections.conditions.some(c => c.includes("NOT LIKE 'squad_%'")));
+    assert.ok(collections.conditions.some((c) => c.includes("NOT LIKE 'squad_%'")));
   });
 
   // Étape 53 — send priority scores
@@ -285,23 +298,14 @@ async function register(ctx) {
     assert.strictEqual(PUSH_DAILY_LIMIT_BYPASS_MIN_SCORE, 90);
 
     assert.strictEqual(resolveSendPriority(NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE), 90);
-    assert.strictEqual(
-      resolveSendPriority(NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, { threshold: "24h" }),
-      90
-    );
-    assert.strictEqual(
-      resolveSendPriority(NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, { threshold: "3d" }),
-      75
-    );
+    assert.strictEqual(resolveSendPriority(NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, { threshold: "24h" }), 90);
+    assert.strictEqual(resolveSendPriority(NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON, { threshold: "3d" }), 75);
     assert.strictEqual(resolveSendPriority(NOTIFICATION_TYPES.FRIEND_REQUEST_ACCEPTED), 70);
     assert.strictEqual(
       resolveSendPriority(NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED, { milestone: 90, kind: "milestone" }),
       65
     );
-    assert.strictEqual(
-      resolveSendPriority(NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED, { kind: "progress" }),
-      35
-    );
+    assert.strictEqual(resolveSendPriority(NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED, { kind: "progress" }), 35);
     assert.strictEqual(resolveSendPriority(NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT), 50);
 
     assert.strictEqual(classifySendPriority(100), "critical");

@@ -10,20 +10,23 @@ const EMAIL_COPY = Object.freeze({
     verifySubject: "Confirme ton email — SPRITE-INDEX",
     verifyEyebrow: "Mission active",
     verifyHeading: "Confirme ton email pour entrer",
-    verifyIntro: "Ton compte SPRITE-INDEX est presque prêt. Valide ton adresse pour débloquer ta collection, tes variantes et tes squads.",
+    verifyIntro:
+      "Ton compte SPRITE-INDEX est presque prêt. Valide ton adresse pour débloquer ta collection, tes variantes et tes squads.",
     verifyCta: "Confirmer mon email",
     verifyIgnore: "Si tu n’as pas créé de compte, ignore cet email — rien ne sera activé.",
     resetSubject: "Réinitialisation de mot de passe — SPRITE-INDEX",
     resetEyebrow: "Sécurité du compte",
     resetHeading: "Réinitialise ton mot de passe",
-    resetIntro: "Une demande de réinitialisation a été faite sur ton compte. Ce lien expire dans 1 heure — après, il faudra en demander un nouveau.",
+    resetIntro:
+      "Une demande de réinitialisation a été faite sur ton compte. Ce lien expire dans 1 heure — après, il faudra en demander un nouveau.",
     resetCta: "Choisir un nouveau mot de passe",
     resetIgnore: "Si tu n’es pas à l’origine de cette demande, ignore cet email — ton mot de passe reste inchangé.",
     notifOpen: "Ouvrir SPRITE-INDEX",
     notifEyebrow: "Notification",
     linkFallback: "Le bouton ne fonctionne pas ? Copie ce lien :",
     footerNote: "Ne partage jamais ce lien. Email envoyé par SPRITE-INDEX.",
-    fanDisclaimer: "SPRITE-INDEX est une application fan de suivi de collection. Elle n’est pas affiliée, sponsorisée ni approuvée par Epic Games. Fortnite est une marque d’Epic Games."
+    fanDisclaimer:
+      "SPRITE-INDEX est une application fan de suivi de collection. Elle n’est pas affiliée, sponsorisée ni approuvée par Epic Games. Fortnite est une marque d’Epic Games."
   }),
   en: Object.freeze({
     brandTagline: "Loot. Collect. Index.",
@@ -31,20 +34,23 @@ const EMAIL_COPY = Object.freeze({
     verifySubject: "Confirm your email — SPRITE-INDEX",
     verifyEyebrow: "Mission active",
     verifyHeading: "Confirm your email to drop in",
-    verifyIntro: "Your SPRITE-INDEX account is almost ready. Confirm your address to unlock your collection, variants, and squads.",
+    verifyIntro:
+      "Your SPRITE-INDEX account is almost ready. Confirm your address to unlock your collection, variants, and squads.",
     verifyCta: "Confirm my email",
     verifyIgnore: "If you did not create an account, ignore this email — nothing will be activated.",
     resetSubject: "Password reset — SPRITE-INDEX",
     resetEyebrow: "Account security",
     resetHeading: "Reset your password",
-    resetIntro: "A password reset was requested for your account. This link expires in 1 hour — after that, request a new one.",
+    resetIntro:
+      "A password reset was requested for your account. This link expires in 1 hour — after that, request a new one.",
     resetCta: "Choose a new password",
     resetIgnore: "If you did not make this request, ignore this email — your password remains unchanged.",
     notifOpen: "Open SPRITE-INDEX",
     notifEyebrow: "Notification",
     linkFallback: "Button not working? Copy this link:",
     footerNote: "Never share this link. Sent by SPRITE-INDEX.",
-    fanDisclaimer: "SPRITE-INDEX is a fan-made collection tracker. Not affiliated with, sponsored by, or endorsed by Epic Games. Fortnite is a trademark of Epic Games."
+    fanDisclaimer:
+      "SPRITE-INDEX is a fan-made collection tracker. Not affiliated with, sponsored by, or endorsed by Epic Games. Fortnite is a trademark of Epic Games."
   }),
   nl: Object.freeze({
     brandTagline: "Loot. Verzamel. Index.",
@@ -52,20 +58,23 @@ const EMAIL_COPY = Object.freeze({
     verifySubject: "Bevestig je e-mailadres — SPRITE-INDEX",
     verifyEyebrow: "Missie actief",
     verifyHeading: "Bevestig je e-mail om binnen te komen",
-    verifyIntro: "Je SPRITE-INDEX-account is bijna klaar. Bevestig je adres om je collectie, varianten en squads te ontgrendelen.",
+    verifyIntro:
+      "Je SPRITE-INDEX-account is bijna klaar. Bevestig je adres om je collectie, varianten en squads te ontgrendelen.",
     verifyCta: "Mijn e-mail bevestigen",
     verifyIgnore: "Heb je geen account aangemaakt? Negeer deze e-mail — er wordt niets geactiveerd.",
     resetSubject: "Wachtwoord opnieuw instellen — SPRITE-INDEX",
     resetEyebrow: "Accountbeveiliging",
     resetHeading: "Stel je wachtwoord opnieuw in",
-    resetIntro: "Er is een verzoek gedaan om je wachtwoord opnieuw in te stellen. Deze link verloopt over 1 uur — daarna vraag je een nieuwe aan.",
+    resetIntro:
+      "Er is een verzoek gedaan om je wachtwoord opnieuw in te stellen. Deze link verloopt over 1 uur — daarna vraag je een nieuwe aan.",
     resetCta: "Nieuw wachtwoord kiezen",
     resetIgnore: "Heb je dit verzoek niet gedaan? Negeer deze e-mail — je wachtwoord blijft ongewijzigd.",
     notifOpen: "SPRITE-INDEX openen",
     notifEyebrow: "Melding",
     linkFallback: "Werkt de knop niet? Kopieer deze link:",
     footerNote: "Deel deze link nooit. Verzonden door SPRITE-INDEX.",
-    fanDisclaimer: "SPRITE-INDEX is een fan-made collectietracker. Niet gelieerd aan, gesponsord of goedgekeurd door Epic Games. Fortnite is een handelsmerk van Epic Games."
+    fanDisclaimer:
+      "SPRITE-INDEX is een fan-made collectietracker. Niet gelieerd aan, gesponsord of goedgekeurd door Epic Games. Fortnite is een handelsmerk van Epic Games."
   })
 });
 
@@ -196,7 +205,9 @@ function emailShell({
                     </table>
                   </td>
                 </tr>
-                ${linkFallback ? `
+                ${
+                  linkFallback
+                    ? `
                 <tr>
                   <td style="padding:0 22px 18px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(0,232,255,0.06);border:1px solid rgba(0,232,255,0.18);border-radius:4px;">
@@ -210,13 +221,19 @@ function emailShell({
                       </tr>
                     </table>
                   </td>
-                </tr>` : ""}
-                ${footer ? `
+                </tr>`
+                    : ""
+                }
+                ${
+                  footer
+                    ? `
                 <tr>
                   <td style="padding:0 22px 8px;font-family:${bodyStack};">
                     <p style="margin:0;font-size:13px;line-height:1.5;color:#8093b0;">${escapeHtml(footer)}</p>
                   </td>
-                </tr>` : ""}
+                </tr>`
+                    : ""
+                }
                 <tr>
                   <td style="padding:14px 22px 20px;border-top:1px solid rgba(255,255,255,0.07);font-family:${bodyStack};">
                     <p style="margin:0;font-size:11px;line-height:1.5;color:#667892;">${escapeHtml(footerNote || "SPRITE-INDEX")}</p>

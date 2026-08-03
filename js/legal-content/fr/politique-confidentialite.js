@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "politique-confidentialite": legalDocument({
-    id: "politique-confidentialite",
-    title: "Politique de confidentialité",
-    short: "Données collectées, bases légales, destinataires, conservation et droits RGPD.",
-    content: `
+    "politique-confidentialite": legalDocument({
+      id: "politique-confidentialite",
+      title: "Politique de confidentialité",
+      short: "Données collectées, bases légales, destinataires, conservation et droits RGPD.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Responsable du traitement</h2>
@@ -133,8 +133,7 @@
       <h2>15. Modification de la politique</h2>
       <p>Cette politique peut évoluer afin de refléter une modification du service, des prestataires ou des exigences légales. La date et la version du document sont affichées en tête de page. En cas de changement important, une information appropriée est présentée dans le service.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

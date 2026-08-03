@@ -25,9 +25,7 @@ const FUTURE_GRAPH_RECOMMENDATION_SURFACES = Object.freeze({
   PERSONALIZED_NOTIFICATIONS: "personalized_notifications"
 });
 
-const FUTURE_GRAPH_RECOMMENDATION_SURFACE_SET = new Set(
-  Object.values(FUTURE_GRAPH_RECOMMENDATION_SURFACES)
-);
+const FUTURE_GRAPH_RECOMMENDATION_SURFACE_SET = new Set(Object.values(FUTURE_GRAPH_RECOMMENDATION_SURFACES));
 
 /**
  * Étape 85 / 86 / 87 — readiness: simple rules OK, complex auto-gen off.
@@ -57,10 +55,7 @@ function getGraphRecommendationReadiness() {
  * - without facts → empty items (hooks only)
  * - with facts → Étape 86 simple rule matches (optional surface filter)
  */
-async function resolveGraphRecommendations(_db, _userId, {
-  surface = null,
-  facts = null
-} = {}) {
+async function resolveGraphRecommendations(_db, _userId, { surface = null, facts = null } = {}) {
   if (surface && !FUTURE_GRAPH_RECOMMENDATION_SURFACE_SET.has(surface)) {
     return {
       surface,

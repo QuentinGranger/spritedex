@@ -1,7 +1,18 @@
 "use strict";
 
 async function register(ctx) {
-  const { assert, catalog, prefs, channels, bus, asyncTest, sampleContext, EXPECTED_CONTEXTUAL_IDS, EXPECTED_NOTIFICATION_TYPES, EXPECTED_DOMAIN_EVENTS } = ctx;
+  const {
+    assert,
+    catalog,
+    prefs,
+    channels,
+    bus,
+    asyncTest,
+    sampleContext,
+    EXPECTED_CONTEXTUAL_IDS,
+    EXPECTED_NOTIFICATION_TYPES,
+    EXPECTED_DOMAIN_EVENTS
+  } = ctx;
 
   await asyncTest("wanted_event_ending_soon thresholds, TZ, cancel rules (Étape 67)", () => {
     const gates = require("../../server/notification-gates");
@@ -47,12 +58,15 @@ async function register(ctx) {
     );
     assert.strictEqual(frParis.title, "Hot Bat Summer se termine demain");
     assert.strictEqual(frParis.data.timeZone, "Europe/Paris");
-    const frUtc = catalog.formatEventEndingWhen({
-      endingAt,
-      timeZone: "UTC",
-      now: nowParis.toISOString(),
-      threshold: "24h"
-    }, "fr");
+    const frUtc = catalog.formatEventEndingWhen(
+      {
+        endingAt,
+        timeZone: "UTC",
+        now: nowParis.toISOString(),
+        threshold: "24h"
+      },
+      "fr"
+    );
     assert.strictEqual(frUtc, "aujourd'hui");
 
     // Modified / extended end dates → cancel before send.
@@ -72,10 +86,7 @@ async function register(ctx) {
     // pg DATE → local midnight must keep the civil calendar day.
     const pgDate = new Date(2026, 7, 20, 0, 0, 0, 0); // 20 Aug local
     assert.strictEqual(gates.normalizeEndDateKey(pgDate), "2026-08-20");
-    assert.strictEqual(
-      gates.normalizeEndDateKey(pgDate),
-      gates.normalizeEndDateKey("2026-08-20T12:00:00.000Z")
-    );
+    assert.strictEqual(gates.normalizeEndDateKey(pgDate), gates.normalizeEndDateKey("2026-08-20T12:00:00.000Z"));
 
     // Priorities already obtained / nothing left → cancel.
     assert.strictEqual(
@@ -155,15 +166,19 @@ async function register(ctx) {
     );
 
     const type = catalog.NOTIFICATION_TYPES.PRIORITY_VARIANT_AVAILABLE;
-    const rendered = catalog.renderNotification(type, {
-      variantName: "Batman Holofoil",
-      variantId: "sprite_batman_holofoil",
-      spriteId: "sprite_batman",
-      variantType: "Holofoil",
-      confidence: "official",
-      availabilityPeriodId: "period_a",
-      availableUntil: "2026-08-20T23:59:59Z"
-    }, "fr");
+    const rendered = catalog.renderNotification(
+      type,
+      {
+        variantName: "Batman Holofoil",
+        variantId: "sprite_batman_holofoil",
+        spriteId: "sprite_batman",
+        variantType: "Holofoil",
+        confidence: "official",
+        availabilityPeriodId: "period_a",
+        availableUntil: "2026-08-20T23:59:59Z"
+      },
+      "fr"
+    );
     assert.ok(/disponible/i.test(rendered.title));
     assert.strictEqual(rendered.data.confidence, "official");
     assert.strictEqual(rendered.data.availabilityPeriodId, "period_a");
@@ -182,32 +197,40 @@ async function register(ctx) {
     assert.strictEqual(gates.isSquadImmediatePush({ milestone: null }), false);
 
     const type = catalog.NOTIFICATION_TYPES.SQUAD_COMPLETION_INCREASED;
-    const progress = catalog.renderNotification(type, {
-      squadName: "Alpha",
-      squadCode: "ALPHA1",
-      previousRate: 14.29,
-      newRate: 28.57,
-      previousCoveredCount: 1,
-      newCoveredCount: 2,
-      totalVariants: 7,
-      kind: "progress",
-      count: 1
-    }, "fr");
+    const progress = catalog.renderNotification(
+      type,
+      {
+        squadName: "Alpha",
+        squadCode: "ALPHA1",
+        previousRate: 14.29,
+        newRate: 28.57,
+        previousCoveredCount: 1,
+        newCoveredCount: 2,
+        totalVariants: 7,
+        kind: "progress",
+        count: 1
+      },
+      "fr"
+    );
     assert.ok(progress.body.includes("28.6") || progress.body.includes("28.57"));
     assert.strictEqual(progress.data.previousRate, 14.29);
     assert.strictEqual(progress.data.newRate, 28.57);
 
-    const milestone = catalog.renderNotification(type, {
-      squadName: "Alpha",
-      squadCode: "ALPHA1",
-      milestone: 25,
-      kind: "milestone",
-      previousRate: 14.29,
-      newRate: 28.57,
-      coveredCount: 2,
-      newCoveredCount: 2,
-      totalVariants: 7
-    }, "fr");
+    const milestone = catalog.renderNotification(
+      type,
+      {
+        squadName: "Alpha",
+        squadCode: "ALPHA1",
+        milestone: 25,
+        kind: "milestone",
+        previousRate: 14.29,
+        newRate: 28.57,
+        coveredCount: 2,
+        newCoveredCount: 2,
+        totalVariants: 7
+      },
+      "fr"
+    );
     assert.ok(milestone.title.includes("25"));
 
     const group = grouping.buildSquadProgressGroup({
@@ -261,24 +284,32 @@ async function register(ctx) {
     assert.strictEqual(gates.resolveAcquisitionPriority("owned"), null);
 
     const type = catalog.NOTIFICATION_TYPES.FRIEND_ACQUIRED_MISSING_VARIANT;
-    const strong = catalog.renderNotification(type, {
-      actorName: "Lucy",
-      friendId: "7",
-      variantId: "v1",
-      variantName: "Alpha",
-      recipientCollectionStatus: "priority",
-      priorityLevel: "strong",
-      count: 1
-    }, "fr");
-    const normal = catalog.renderNotification(type, {
-      actorName: "Lucy",
-      friendId: "7",
-      variantId: "v1",
-      variantName: "Alpha",
-      recipientCollectionStatus: "missing",
-      priorityLevel: "normal",
-      count: 1
-    }, "fr");
+    const strong = catalog.renderNotification(
+      type,
+      {
+        actorName: "Lucy",
+        friendId: "7",
+        variantId: "v1",
+        variantName: "Alpha",
+        recipientCollectionStatus: "priority",
+        priorityLevel: "strong",
+        count: 1
+      },
+      "fr"
+    );
+    const normal = catalog.renderNotification(
+      type,
+      {
+        actorName: "Lucy",
+        friendId: "7",
+        variantId: "v1",
+        variantName: "Alpha",
+        recipientCollectionStatus: "missing",
+        priorityLevel: "normal",
+        count: 1
+      },
+      "fr"
+    );
     assert.notStrictEqual(strong.title, normal.title);
     assert.ok(/priorit/i.test(strong.title));
 
@@ -295,14 +326,17 @@ async function register(ctx) {
     assert.strictEqual(group.groupKey, "friend_acquisitions:7:3");
     const batched = catalog.renderNotification(
       type,
-      grouping.attachGroup({
-        actorName: "Lucy",
-        friendId: "7",
-        variantId: "v2",
-        variantName: "B",
-        count: 2,
-        variantIds: ["v1", "v2"]
-      }, group),
+      grouping.attachGroup(
+        {
+          actorName: "Lucy",
+          friendId: "7",
+          variantId: "v2",
+          variantName: "B",
+          count: 2,
+          variantIds: ["v1", "v2"]
+        },
+        group
+      ),
       "fr"
     );
     assert.ok(batched.body.includes("2"));
@@ -324,24 +358,27 @@ async function register(ctx) {
     assert.strictEqual(rendered.url, "/compare/42");
     assert.strictEqual(rendered.actions.primary.url, "/compare/42");
 
-    const normalized = serialize.normalizeNotification({
-      id: 7,
-      type: "friend_request_accepted",
-      category: "social",
-      title: rendered.title,
-      body: rendered.body,
-      entity_type: "user",
-      entity_id: "42",
-      actor_id: 42,
-      created_at: new Date("2026-07-26T08:00:00.000Z"),
-      read_at: null,
-      data: rendered.data
-    }, {
-      id: 42,
-      username: "lucy",
-      display_name: "Lucy",
-      avatar_url: null
-    });
+    const normalized = serialize.normalizeNotification(
+      {
+        id: 7,
+        type: "friend_request_accepted",
+        category: "social",
+        title: rendered.title,
+        body: rendered.body,
+        entity_type: "user",
+        entity_id: "42",
+        actor_id: 42,
+        created_at: new Date("2026-07-26T08:00:00.000Z"),
+        read_at: null,
+        data: rendered.data
+      },
+      {
+        id: 42,
+        username: "lucy",
+        display_name: "Lucy",
+        avatar_url: null
+      }
+    );
     assert.strictEqual(normalized.action.url, "/compare/42");
     assert.ok(normalized.action.label);
 
@@ -387,10 +424,7 @@ async function register(ctx) {
       }
     };
     const key = `friend_accept:99:1`;
-    assert.strictEqual(
-      await claimDedupeKey(pool, key, "friend_request_accepted", 1),
-      true
-    );
+    assert.strictEqual(await claimDedupeKey(pool, key, "friend_request_accepted", 1), true);
     assert.strictEqual(
       await claimDedupeKey(pool, key, "friend_request_accepted", 1),
       false,

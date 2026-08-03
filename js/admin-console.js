@@ -3,12 +3,15 @@
 // argument, so it does not end up in the DevTools command history.
 (() => {
   async function openSpriteIndexBackoffice() {
-    const username = window.prompt(typeof t === "function" ? t("admin.consoleUsernamePrompt") : "Admin username (leave empty for legacy access)");
+    const username = window.prompt(
+      typeof t === "function" ? t("admin.consoleUsernamePrompt") : "Admin username (leave empty for legacy access)"
+    );
     if (username == null) return false;
     const password = window.prompt(typeof t === "function" ? t("admin.consolePrompt") : "Admin password");
     if (password == null) return false;
     if (!password) {
-      if (typeof toast === "function") toast(typeof t === "function" ? t("admin.consoleUnavailable") : "Password required");
+      if (typeof toast === "function")
+        toast(typeof t === "function" ? t("admin.consoleUnavailable") : "Password required");
       return false;
     }
 

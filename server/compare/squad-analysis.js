@@ -9,7 +9,7 @@ function getSquadHelpScores(matrix, targetUserId, options = {}) {
   const helpers = {};
 
   for (const row of matrix) {
-    const target = row.members.find(m => String(m.userId) === String(targetUserId));
+    const target = row.members.find((m) => String(m.userId) === String(targetUserId));
     if (!target || target.visible === false) continue;
 
     const wantsHelp = compareServerIsMissing(target.status) || compareServerIsRecommend(target.status);
@@ -44,12 +44,18 @@ function getSquadHelpScores(matrix, targetUserId, options = {}) {
   }
 
   const result = Object.values(helpers);
-  result.sort((a, b) => b.helpScore - a.helpScore || b.priorityHelpCount - a.priorityHelpCount || String(a.username).localeCompare(String(b.username)));
+  result.sort(
+    (a, b) =>
+      b.helpScore - a.helpScore ||
+      b.priorityHelpCount - a.priorityHelpCount ||
+      String(a.username).localeCompare(String(b.username))
+  );
 
   for (const h of result) {
     const total = h.normalHelpCount + h.priorityHelpCount;
-    const priorityPart = h.priorityHelpCount > 0 ? `, dont ${h.priorityHelpCount} prioritaire${h.priorityHelpCount > 1 ? 's' : ''}` : "";
-    h.display = `${h.username} peut aider avec ${total} variante${total > 1 ? 's' : ''} manquante${total > 1 ? 's' : ''}${priorityPart}.`;
+    const priorityPart =
+      h.priorityHelpCount > 0 ? `, dont ${h.priorityHelpCount} prioritaire${h.priorityHelpCount > 1 ? "s" : ""}` : "";
+    h.display = `${h.username} peut aider avec ${total} variante${total > 1 ? "s" : ""} manquante${total > 1 ? "s" : ""}${priorityPart}.`;
   }
 
   return result;
@@ -80,7 +86,7 @@ function getSquadMissingVariants(matrix, squadName) {
     if (classification === "confirmed_missing") {
       display = `Aucun membre de ${squadName} ne possède ${row.spriteName} ${row.variantName}.`;
     } else {
-      display = `Cette variante semble manquer à la squad, mais ${row.unknownCount} collection${row.unknownCount > 1 ? 's' : ''} ne ${row.unknownCount > 1 ? 'sont' : 'est'} pas à jour.`;
+      display = `Cette variante semble manquer à la squad, mais ${row.unknownCount} collection${row.unknownCount > 1 ? "s" : ""} ne ${row.unknownCount > 1 ? "sont" : "est"} pas à jour.`;
     }
 
     missing.push({
@@ -104,7 +110,7 @@ function getSquadMissingVariants(matrix, squadName) {
   const groupBy = (key, labelFn) => {
     const groups = {};
     for (const v of missing) {
-      const k = (v[key] === null || v[key] === undefined || v[key] === "") ? "_none" : v[key];
+      const k = v[key] === null || v[key] === undefined || v[key] === "" ? "_none" : v[key];
       if (!groups[k]) groups[k] = { key: k, label: labelFn(v, k), count: 0, variants: [] };
       groups[k].variants.push(v);
       groups[k].count++;
@@ -113,12 +119,14 @@ function getSquadMissingVariants(matrix, squadName) {
   };
 
   const bySprite = groupBy("spriteId", (v) => v.spriteName || v.spriteId);
-  const byRarity = groupBy("rarity", (v, k) => k === "_none" ? "Rareté inconnue" : `Rareté ${k}`);
-  const byEvent = groupBy("eventId", (v, k) => k === "_none" ? "Hors événement" : `Événement ${k}`);
-  const byAvailability = groupBy("availabilityStatus", (v, k) => k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`);
+  const byRarity = groupBy("rarity", (v, k) => (k === "_none" ? "Rareté inconnue" : `Rareté ${k}`));
+  const byEvent = groupBy("eventId", (v, k) => (k === "_none" ? "Hors événement" : `Événement ${k}`));
+  const byAvailability = groupBy("availabilityStatus", (v, k) =>
+    k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`
+  );
   const byVariantType = groupBy("variantType", (v, k) => k);
 
-  const confirmedMissingCount = missing.filter(v => v.classification === "confirmed_missing").length;
+  const confirmedMissingCount = missing.filter((v) => v.classification === "confirmed_missing").length;
   const possiblyMissingCount = missing.length - confirmedMissingCount;
 
   return {
@@ -148,7 +156,7 @@ function getSquadSharedVariants(matrix) {
     const classification = classifySquadShared(row);
     if (!classification) continue;
 
-    const display = `${row.spriteName} ${row.variantName} est possédé par ${row.ownerCount} membre${row.ownerCount > 1 ? 's' : ''} sur ${row.memberCount}.`;
+    const display = `${row.spriteName} ${row.variantName} est possédé par ${row.ownerCount} membre${row.ownerCount > 1 ? "s" : ""} sur ${row.memberCount}.`;
     shared.push({
       variantId: row.variantId,
       spriteId: row.spriteId,
@@ -170,7 +178,7 @@ function getSquadSharedVariants(matrix) {
   const groupBy = (key, labelFn) => {
     const groups = {};
     for (const v of shared) {
-      const k = (v[key] === null || v[key] === undefined || v[key] === "") ? "_none" : v[key];
+      const k = v[key] === null || v[key] === undefined || v[key] === "" ? "_none" : v[key];
       if (!groups[k]) groups[k] = { key: k, label: labelFn(v, k), count: 0, variants: [] };
       groups[k].variants.push(v);
       groups[k].count++;
@@ -179,15 +187,17 @@ function getSquadSharedVariants(matrix) {
   };
 
   const bySprite = groupBy("spriteId", (v) => v.spriteName || v.spriteId);
-  const byRarity = groupBy("rarity", (v, k) => k === "_none" ? "Rareté inconnue" : `Rareté ${k}`);
-  const byEvent = groupBy("eventId", (v, k) => k === "_none" ? "Hors événement" : `Événement ${k}`);
-  const byAvailability = groupBy("availabilityStatus", (v, k) => k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`);
+  const byRarity = groupBy("rarity", (v, k) => (k === "_none" ? "Rareté inconnue" : `Rareté ${k}`));
+  const byEvent = groupBy("eventId", (v, k) => (k === "_none" ? "Hors événement" : `Événement ${k}`));
+  const byAvailability = groupBy("availabilityStatus", (v, k) =>
+    k === "_none" ? "Disponibilité inconnue" : `Disponibilité ${k}`
+  );
   const byVariantType = groupBy("variantType", (v, k) => k);
   const byClassification = groupBy("classification", (v, k) => k);
 
-  const sharedCount = shared.filter(v => v.classification === "shared").length;
-  const highlySharedCount = shared.filter(v => v.classification === "highly_shared").length;
-  const ownedByEveryoneCount = shared.filter(v => v.classification === "owned_by_everyone").length;
+  const sharedCount = shared.filter((v) => v.classification === "shared").length;
+  const highlySharedCount = shared.filter((v) => v.classification === "highly_shared").length;
+  const ownedByEveryoneCount = shared.filter((v) => v.classification === "owned_by_everyone").length;
 
   return {
     totalShared: shared.length,
@@ -217,7 +227,7 @@ function getSquadMostComplementaryMember(matrix, squadName = "La squad") {
     username: top.username,
     uniqueVariantCount: top.count,
     display: `${top.username} est actuellement le membre le plus complémentaire de ${squadName}.`,
-    contributionDisplay: `${top.username} apporte ${top.count} variante${top.count > 1 ? 's' : ''} absentes des autres collections.`
+    contributionDisplay: `${top.username} apporte ${top.count} variante${top.count > 1 ? "s" : ""} absentes des autres collections.`
   };
 }
 
@@ -228,7 +238,7 @@ function getSquadLevel1Analysis(matrix, squadName, pairComplementarity = []) {
   const sharedVariants = getSquadSharedVariants(matrix);
 
   const memberList = (matrix && matrix[0] && matrix[0].members) || [];
-  const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
+  const uniqueCountByUser = new Map(uniqueOwners.byMember.map((m) => [String(m.userId), m.count]));
   const members = [];
 
   for (const member of memberList) {
@@ -236,7 +246,7 @@ function getSquadLevel1Analysis(matrix, squadName, pairComplementarity = []) {
     let ownedCount = 0;
     let knownCount = 0;
     for (const row of matrix) {
-      const m = row.members.find(x => String(x.userId) === userKey);
+      const m = row.members.find((x) => String(x.userId) === userKey);
       if (!m) continue;
       if (m.classification === "owned") ownedCount++;
       if (m.classification !== "unknown") knownCount++;
@@ -246,7 +256,9 @@ function getSquadLevel1Analysis(matrix, squadName, pairComplementarity = []) {
       username: member.username,
       ownedCount,
       uniqueContributionCount: uniqueCountByUser.get(userKey) || 0,
-      collectionReliabilityRate: completion.totalVariantCount ? Math.round((knownCount / completion.totalVariantCount) * 10000) / 100 : 0
+      collectionReliabilityRate: completion.totalVariantCount
+        ? Math.round((knownCount / completion.totalVariantCount) * 10000) / 100
+        : 0
     });
   }
 
@@ -274,7 +286,7 @@ function getSquadUniqueOwners(matrix) {
 
   for (const row of matrix) {
     if (row.ownerCount !== 1) continue;
-    const owner = row.members.find(m => m.classification === "owned");
+    const owner = row.members.find((m) => m.classification === "owned");
     if (!owner) continue;
 
     const display = `${owner.username} est le seul membre à posséder ${row.spriteName} ${row.variantName}.`;
@@ -306,9 +318,19 @@ function getSquadUniqueOwners(matrix) {
   return {
     totalUnique: unique.length,
     uniqueVariants: unique,
-    byMember: Object.values(byMember).sort((a, b) => b.count - a.count || String(a.username).localeCompare(String(b.username)))
+    byMember: Object.values(byMember).sort(
+      (a, b) => b.count - a.count || String(a.username).localeCompare(String(b.username))
+    )
   };
 }
 
-
-module.exports = { getSquadHelpScores, classifySquadMissing, getSquadMissingVariants, classifySquadShared, getSquadSharedVariants, getSquadMostComplementaryMember, getSquadLevel1Analysis, getSquadUniqueOwners };
+module.exports = {
+  getSquadHelpScores,
+  classifySquadMissing,
+  getSquadMissingVariants,
+  classifySquadShared,
+  getSquadSharedVariants,
+  getSquadMostComplementaryMember,
+  getSquadLevel1Analysis,
+  getSquadUniqueOwners
+};

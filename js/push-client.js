@@ -15,10 +15,7 @@
   let nativeRegistrationInFlight = null;
 
   function getHeaders() {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    return headers;
+    return authHeaders();
   }
 
   async function registerServerToken(token, platform) {
@@ -146,12 +143,14 @@
       if (result.receive !== "granted") return;
       await PushNotifications.register();
       nativePushRegistered = true;
-    })().catch((err) => {
-      nativePushRegistered = false;
-      console.error("[PUSH] Native registration failed:", err);
-    }).finally(() => {
-      nativeRegistrationInFlight = null;
-    });
+    })()
+      .catch((err) => {
+        nativePushRegistered = false;
+        console.error("[PUSH] Native registration failed:", err);
+      })
+      .finally(() => {
+        nativeRegistrationInFlight = null;
+      });
     return nativeRegistrationInFlight;
   }
 

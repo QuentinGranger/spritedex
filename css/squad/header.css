@@ -46,7 +46,9 @@
   transition: transform 200ms ease;
 }
 
-.squad-copy-code:hover { transform: scale(1.2); }
+.squad-copy-code:hover {
+  transform: scale(1.2);
+}
 
 .squad-toolbar {
   margin-bottom: 14px;
@@ -119,4 +121,3 @@
   color: var(--accent);
   flex-shrink: 0;
 }
-

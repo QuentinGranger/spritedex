@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "licences": legalDocument({
-    id: "licences",
-    title: "Licences, crédits et propriété intellectuelle",
-    short: "Avertissement Epic Games, créations SPRITE-INDEX et composants tiers.",
-    content: `
+    licences: legalDocument({
+      id: "licences",
+      title: "Licences, crédits et propriété intellectuelle",
+      short: "Avertissement Epic Games, créations SPRITE-INDEX et composants tiers.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Application de fan non officielle</h2>
@@ -49,7 +49,7 @@
       <h2>8. Demande d'un titulaire de droits</h2>
       <p>Un titulaire de droits peut signaler un contenu potentiellement contrefaisant à <a href="mailto:[REPORT_EMAIL]">[REPORT_EMAIL]</a> en précisant le contenu concerné, son emplacement et les éléments permettant d'établir ses droits.</p>
     `
-  })
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

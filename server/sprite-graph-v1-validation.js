@@ -2,11 +2,7 @@
 
 // ── Sprite Graph v1 readiness criteria (Étape 101) ───────────────────────────
 
-const {
-  GRAPH_EVENT_TYPES,
-  GRAPH_EVENT_TYPE_SET,
-  GRAPH_EVENT_VERSIONS
-} = require("./sprite-graph");
+const { GRAPH_EVENT_TYPES, GRAPH_EVENT_TYPE_SET, GRAPH_EVENT_VERSIONS } = require("./sprite-graph");
 const { PUBLIC_ANONYMIZATION_MIN_USERS } = require("./sprite-graph-privacy");
 const { OWNERSHIP_SAMPLE_STATUSES } = require("./sprite-graph-community");
 const { getGraphFormulaRegistry } = require("./sprite-graph-formula");
@@ -21,8 +17,7 @@ const GRAPH_V1_VALIDATION_CRITERIA = Object.freeze([
     id: "eight_stable_events",
     label: "Les huit événements sont enregistrés",
     check: "static",
-    detail: () => Object.values(GRAPH_EVENT_TYPES).length === 8
-      && GRAPH_EVENT_TYPE_SET.size === 8
+    detail: () => Object.values(GRAPH_EVENT_TYPES).length === 8 && GRAPH_EVENT_TYPE_SET.size === 8
   }),
   Object.freeze({
     id: "deduplicated",
@@ -110,9 +105,7 @@ const GRAPH_V1_VALIDATION_CRITERIA = Object.freeze([
 /**
  * Evaluate v1 readiness (static criteria + optional live probes).
  */
-async function evaluateGraphV1Readiness(db = null, {
-  includeLiveProbes = false
-} = {}) {
+async function evaluateGraphV1Readiness(db = null, { includeLiveProbes = false } = {}) {
   const criteria = GRAPH_V1_VALIDATION_CRITERIA.map((c) => {
     let ok = false;
     try {

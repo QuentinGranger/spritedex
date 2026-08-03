@@ -108,24 +108,26 @@ app.patch("/api/admin/sprite-graph/flags", graphFlagMutationLimiter, async (req,
     if (!metricKey) return res.status(400).json({ error: "metricKey requis" });
     if (!reason) return res.status(400).json({ error: "Une justification est requise" });
 
-    const row = await withAdminAudit(async (client) => (
-      setPublicMetricDisabled(client, metricKey, {
-        disabled,
-        reason,
-        updatedBy: admin.userId
-      })
-    ), {
-      actor: admin.actor,
-      action: disabled ? "graph.metric_suspended" : "graph.metric_restored",
-      targetType: "graph_metric",
-      targetId: String(metricKey).slice(0, 160),
-      justification: reason,
-      details: {
-        disabled,
-        source: admin.source,
-        accountUserId: admin.userId
+    const row = await withAdminAudit(
+      async (client) =>
+        setPublicMetricDisabled(client, metricKey, {
+          disabled,
+          reason,
+          updatedBy: admin.userId
+        }),
+      {
+        actor: admin.actor,
+        action: disabled ? "graph.metric_suspended" : "graph.metric_restored",
+        targetType: "graph_metric",
+        targetId: String(metricKey).slice(0, 160),
+        justification: reason,
+        details: {
+          disabled,
+          source: admin.source,
+          accountUserId: admin.userId
+        }
       }
-    });
+    );
 
     res.json({
       ok: true,

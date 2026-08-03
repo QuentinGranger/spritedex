@@ -11,9 +11,7 @@ const comparisonSessions = require("./comparison-sessions");
 const passportActivity = require("./passport-activity");
 
 // Étape 4/5 — statuses that mean the collector intentionally classified a variant.
-const PASSPORT_EXPLICIT_STATUSES = new Set([
-  "owned", "missing", "priority", "spotted", "unavailable", "unknown"
-]);
+const PASSPORT_EXPLICIT_STATUSES = new Set(["owned", "missing", "priority", "spotted", "unavailable", "unknown"]);
 
 /**
  * Étapes 24–25 — only the user-chosen primary_squad_id (no auto-pick).
@@ -52,11 +50,12 @@ async function buildPrimarySquadSummary(viewerId, ownerId, settings, squadRows, 
   const summary = await compare.getSquadCollectiveCompletionSummary(memberIds, catalogue);
   const ownerMembership = membersResult.rows.find((row) => String(row.user_id) === String(ownerId));
   const isFounder =
-    String(squad.created_by) === String(ownerId) ||
-    String(ownerMembership?.role || "").toLowerCase() === "owner";
+    String(squad.created_by) === String(ownerId) || String(ownerMembership?.role || "").toLowerCase() === "owner";
   const roleLabel = isFounder
     ? "Fondateur"
-    : (String(ownerMembership?.role || "").toLowerCase() === "admin" ? "Admin" : "Membre");
+    : String(ownerMembership?.role || "").toLowerCase() === "admin"
+      ? "Admin"
+      : "Membre";
   const rate = Number(summary.collectiveCompletionRate) || 0;
 
   return {
@@ -74,15 +73,16 @@ async function buildPrimarySquadSummary(viewerId, ownerId, settings, squadRows, 
 }
 
 async function ensureCollectorPassport(userId) {
-  await pool.query(
-    "INSERT INTO collector_passports (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
-    [userId]
-  );
+  await pool.query("INSERT INTO collector_passports (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING", [userId]);
   // Étape 59 — ensure featured_badge_id exists on older installs.
-  await pool.query(`
+  await pool
+    .query(
+      `
     ALTER TABLE collector_passports
       ADD COLUMN IF NOT EXISTS featured_badge_id UUID
-  `).catch(() => {});
+  `
+    )
+    .catch(() => {});
   const result = await pool.query("SELECT * FROM collector_passports WHERE user_id = $1", [userId]);
   return result.rows[0];
 }
@@ -130,9 +130,7 @@ async function resolveFeaturedBadge(userId, featuredBadgeId) {
   const evidence = row.evidence || {};
   const baseLabel = badges.resolveBadgeCopy(row.name_key);
   const eventName = evidence.eventName || null;
-  const label = row.code === "event_completed" && eventName
-    ? `${baseLabel} · ${eventName}`
-    : baseLabel;
+  const label = row.code === "event_completed" && eventName ? `${baseLabel} · ${eventName}` : baseLabel;
   return {
     badgeId: row.badge_id,
     code: row.code,
@@ -149,8 +147,8 @@ async function resolveFeaturedBadge(userId, featuredBadgeId) {
 
 /** Legacy helper kept for unit tests that still import buildBadges. */
 function buildBadges(ctx) {
-  return achievements.ACHIEVEMENT_DEFS
-    .filter((def) => def.check({
+  return achievements.ACHIEVEMENT_DEFS.filter((def) =>
+    def.check({
       ownedVariantCount: ctx.ownedCount || 0,
       discoveredSpriteCount: ctx.discoveredCount || 0,
       completionRatePrecise: ctx.completionRate || 0,
@@ -159,8 +157,8 @@ function buildBadges(ctx) {
       friendCount: ctx.friendCount || 0,
       eventsCompletedCount: ctx.eventsCompleted || 0,
       catalogueVersion: "test"
-    }))
-    .map((def) => ({ id: def.id, label: def.label, description: def.description }));
+    })
+  ).map((def) => ({ id: def.id, label: def.label, description: def.description }));
 }
 
 /**
@@ -184,13 +182,13 @@ async function getCollectorPassport(viewerId, ownerId) {
   const permissions = isSelf
     ? { passport: true, statistics: true, badges: true, activity: true, comparisons: true }
     : Object.fromEntries(
-      await Promise.all(
-        ["passport", "statistics", "badges", "activity", "comparisons"].map(async (key) => [
-          key,
-          await canViewPassportSection(viewerId || null, id, key)
-        ])
-      )
-    );
+        await Promise.all(
+          ["passport", "statistics", "badges", "activity", "comparisons"].map(async (key) => [
+            key,
+            await canViewPassportSection(viewerId || null, id, key)
+          ])
+        )
+      );
   if (!permissions.passport) {
     return { status: 404, error: "Passeport non accessible" };
   }
@@ -211,9 +209,7 @@ async function getCollectorPassport(viewerId, ownerId) {
     "SELECT MAX(updated_at) AS last_updated FROM sprite_entries WHERE user_id = $1",
     [id]
   );
-  const lastEntryAt = lastEntryRes.rows[0]?.last_updated
-    ? new Date(lastEntryRes.rows[0].last_updated)
-    : null;
+  const lastEntryAt = lastEntryRes.rows[0]?.last_updated ? new Date(lastEntryRes.rows[0].last_updated) : null;
   const summaryAt = summary && summary.recalculatedAt ? new Date(summary.recalculatedAt) : null;
   const summaryStaleVsCollection = !!(lastEntryAt && (!summaryAt || summaryAt < lastEntryAt));
   const summaryStaleVsCatalogue = !!(summary && summary.catalogueVersion !== currentCatalogueVersion);
@@ -226,44 +222,39 @@ async function getCollectorPassport(viewerId, ownerId) {
       console.error("[passport] summary refresh failed", err);
     }
   } else if (summaryStaleVsCatalogue) {
-    summaryMod.enqueuePassportRecalc(id, {
-      reason: "catalogue_version_drift",
-      triggerEvent: "catalogue.published",
-      collectionChanged: false,
-      notify: false
-    }).catch(() => {});
+    summaryMod
+      .enqueuePassportRecalc(id, {
+        reason: "catalogue_version_drift",
+        triggerEvent: "catalogue.published",
+        collectionChanged: false,
+        notify: false
+      })
+      .catch(() => {});
   }
 
-  const [
-    userResult,
-    catalogueAll,
-    entriesResult,
-    squadResult,
-    friendsResult,
-    passportRow,
-    peakResult
-  ] = await Promise.all([
-    pool.query(
-      "SELECT id, username, display_name, avatar_url, created_at FROM users WHERE id = $1 AND deleted_at IS NULL",
-      [id]
-    ),
-    Promise.resolve(catalogueAllPreview),
-    pool.query("SELECT variant_id, status, updated_at FROM sprite_entries WHERE user_id = $1", [id]),
-    pool.query(
-      `SELECT s.id, s.code, s.name, s.created_by, s.visibility, sm.joined_at, sm.role
+  const [userResult, catalogueAll, entriesResult, squadResult, friendsResult, passportRow, peakResult] =
+    await Promise.all([
+      pool.query(
+        "SELECT id, username, display_name, avatar_url, created_at FROM users WHERE id = $1 AND deleted_at IS NULL",
+        [id]
+      ),
+      Promise.resolve(catalogueAllPreview),
+      pool.query("SELECT variant_id, status, updated_at FROM sprite_entries WHERE user_id = $1", [id]),
+      pool.query(
+        `SELECT s.id, s.code, s.name, s.created_by, s.visibility, sm.joined_at, sm.role
        FROM squads s JOIN squad_members sm ON sm.squad_id = s.id
        WHERE sm.user_id = $1 AND sm.status = 'active'
        ORDER BY sm.joined_at ASC`,
-      [id]
-    ),
-    pool.query(
-      `SELECT COUNT(*)::int AS count FROM friendships
+        [id]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS count FROM friendships
        WHERE status = 'accepted' AND (requester_id = $1 OR addressee_id = $1)`,
-      [id]
-    ),
-    ensureCollectorPassport(id),
-    pool.query("SELECT * FROM user_collection_peaks WHERE user_id = $1", [id])
-  ]);
+        [id]
+      ),
+      ensureCollectorPassport(id),
+      pool.query("SELECT * FROM user_collection_peaks WHERE user_id = $1", [id])
+    ]);
 
   if (!userResult.rows.length) {
     return { status: 404, error: "Utilisateur non trouvé" };
@@ -305,9 +296,7 @@ async function getCollectorPassport(viewerId, ownerId) {
   const badgeEngine = require("./badge-engine");
   const [persistedBadges, badgeProgress, eventSections, comparisonStats, recentActivityRaw] = await Promise.all([
     permissions.badges ? achievements.listPersistedAchievements(id) : Promise.resolve([]),
-    permissions.badges
-      ? badgeEngine.listBadgeProgress(id)
-      : Promise.resolve([]),
+    permissions.badges ? badgeEngine.listBadgeProgress(id) : Promise.resolve([]),
     permissions.statistics ? achievements.getEventProgressSections(id, ownedIds) : Promise.resolve(null),
     permissions.comparisons
       ? comparisonSessions.getComparisonStatsForUser(id)
@@ -359,7 +348,8 @@ async function getCollectorPassport(viewerId, ownerId) {
         occurredAt: userResult.rows[0].created_at,
         data: {}
       }
-    ].sort((a, b) => new Date(b.createdAt || b.occurredAt) - new Date(a.createdAt || a.occurredAt))
+    ]
+      .sort((a, b) => new Date(b.createdAt || b.occurredAt) - new Date(a.createdAt || a.occurredAt))
       .slice(0, 25);
   }
 
@@ -387,11 +377,12 @@ async function getCollectorPassport(viewerId, ownerId) {
     featuredBadge = await resolveFeaturedBadge(id, settings.featured_badge_id);
   }
 
-  const reliabilityQuality = reliability.level === "complete"
-    ? "Collection complète"
-    : reliability.level === "usable"
-      ? "Collection exploitable"
-      : "Collection à compléter";
+  const reliabilityQuality =
+    reliability.level === "complete"
+      ? "Collection complète"
+      : reliability.level === "usable"
+        ? "Collection exploitable"
+        : "Collection à compléter";
 
   return {
     status: 200,
@@ -410,9 +401,12 @@ async function getCollectorPassport(viewerId, ownerId) {
         displayName: userResult.rows[0].display_name,
         avatarUrl: userResult.rows[0].avatar_url || "",
         createdAt,
-        primarySquad: primarySquad && !primarySquad.private
-          ? { id: primarySquad.id, name: primarySquad.name, role: primarySquad.role }
-          : (primarySquad && primarySquad.private ? { private: true } : null),
+        primarySquad:
+          primarySquad && !primarySquad.private
+            ? { id: primarySquad.id, name: primarySquad.name, role: primarySquad.role }
+            : primarySquad && primarySquad.private
+              ? { private: true }
+              : null,
         featuredBadge: permissions.badges ? featuredBadge : null
       },
       featuredBadge: permissions.badges ? featuredBadge : null,
@@ -481,9 +475,11 @@ async function getCollectorPassport(viewerId, ownerId) {
           })()
         : null,
       eventsCompleted: permissions.statistics
-        ? (summary && summary.completedEventCount != null
+        ? summary && summary.completedEventCount != null
           ? summary.completedEventCount
-          : (eventSections ? eventSections.completedCount : null))
+          : eventSections
+            ? eventSections.completedCount
+            : null
         : null,
       events: permissions.statistics ? eventSections : null,
       primarySquad,
@@ -492,17 +488,17 @@ async function getCollectorPassport(viewerId, ownerId) {
         squadCount: permissions.statistics ? squadCount : null,
         // Étapes 27–30 — always read live session stats (cheap); summary lags the queue.
         comparisonCount: permissions.comparisons ? comparisonStats.comparisonCount : null,
-        distinctCollectorsCompared: permissions.comparisons
-          ? comparisonStats.distinctCollectorsCompared
-          : null
+        distinctCollectorsCompared: permissions.comparisons ? comparisonStats.distinctCollectorsCompared : null
       },
-      summary: permissions.statistics && summary
-        ? {
-            catalogueVersion: summary.catalogueVersion,
-            recalculatedAt: summary.recalculatedAt,
-            fromSummary: true
-          }
-        : null,      badges: permissions.badges ? persistedBadges : [],
+      summary:
+        permissions.statistics && summary
+          ? {
+              catalogueVersion: summary.catalogueVersion,
+              recalculatedAt: summary.recalculatedAt,
+              fromSummary: true
+            }
+          : null,
+      badges: permissions.badges ? persistedBadges : [],
       // Étape 51 — locked + unlocked with live progress.
       badgeProgress: permissions.badges ? badgeProgress : [],
       recentActivity: permissions.activity && settings.show_last_activity ? recentActivity : [],
@@ -520,9 +516,7 @@ async function getCollectorPassport(viewerId, ownerId) {
         canViewCollection: !!permissions.statistics,
         passportPublic: !!permissions.passport
       }),
-      publicUrl: userResult.rows[0].username
-        ? `/u/${encodeURIComponent(userResult.rows[0].username)}`
-        : null,
+      publicUrl: userResult.rows[0].username ? `/u/${encodeURIComponent(userResult.rows[0].username)}` : null,
       // Étape 78 — declarative collection (cannot verify with Epic yet).
       declarative: {
         collection: "Collection déclarée par l’utilisateur",

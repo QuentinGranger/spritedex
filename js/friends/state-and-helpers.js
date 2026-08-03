@@ -49,8 +49,7 @@ function getDisplayName(f) {
 }
 
 function nameMatches(f, term) {
-  return getDisplayName(f).toLowerCase().includes(term) ||
-    (f.username || "").toLowerCase().includes(term);
+  return getDisplayName(f).toLowerCase().includes(term) || (f.username || "").toLowerCase().includes(term);
 }
 
 function getTime(ts) {
@@ -60,11 +59,11 @@ function getTime(ts) {
 }
 
 function isOnline(f) {
-  return f.lastActive && (Date.now() - getTime(f.lastActive) < 15 * 60 * 1000);
+  return f.lastActive && Date.now() - getTime(f.lastActive) < 15 * 60 * 1000;
 }
 
 function isRecentlyUpdated(f) {
-  return f.lastCollectionUpdate && (Date.now() - getTime(f.lastCollectionUpdate) < 7 * 24 * 60 * 60 * 1000);
+  return f.lastCollectionUpdate && Date.now() - getTime(f.lastCollectionUpdate) < 7 * 24 * 60 * 60 * 1000;
 }
 
 function getComplementarity(f) {

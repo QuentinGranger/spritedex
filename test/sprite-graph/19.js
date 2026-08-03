@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "réponse communautaire + tendances + historique (Étapes 76–80)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const {
       getStandardCommunityVariantResponse,

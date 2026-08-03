@@ -12,40 +12,39 @@ async function loadSpritesFromAPI() {
     const sprites = Array.isArray(data.sprites) ? data.sprites : [];
     SPRITES = sprites
       .filter((s) => s && typeof s === "object" && isSafeRecordKey(String(s.id || "")))
-      .map(s => ({
-      id: s.id,
-      slug: s.slug,
-      name: s.name,
-      officialName: s.officialName,
-      image: s.image,
-      variantIds: s.variantIds,
-      seasonId: s.seasonId,
-      season: s.season,
-      eventId: s.eventId,
-      event: s.event,
-      acquisitionMethod: s.acquisitionMethod,
-      availability: s.availability,
-      availabilityStatus: s.availabilityStatus,
-      availabilityPeriods: s.availabilityPeriods || [],
-      recurrence: s.recurrence,
-      dates: s.dates,
-      missingFields: s.missingFields || [],
-      sourceIds: s.sourceIds,
-      sources: s.sources || [],
-      dataStatus: s.dataStatus,
-      confidence: s.confidence,
-      rarity: s.rarity,
-      color: s.color,
-      effect: s.effect,
-      variants: s.variants,
-      variantDetails: s.variantDetails || {},
-      available: s.available,
-      releaseStatus: s.releaseStatus,
-      dataStatus: s.dataStatus,
-      enabled: s.enabled,
-      isReleased: s.isReleased,
-      addedDate: s.addedDate
-    }));
+      .map((s) => ({
+        id: s.id,
+        slug: s.slug,
+        name: s.name,
+        officialName: s.officialName,
+        image: s.image,
+        variantIds: s.variantIds,
+        seasonId: s.seasonId,
+        season: s.season,
+        eventId: s.eventId,
+        event: s.event,
+        acquisitionMethod: s.acquisitionMethod,
+        availability: s.availability,
+        availabilityStatus: s.availabilityStatus,
+        availabilityPeriods: s.availabilityPeriods || [],
+        recurrence: s.recurrence,
+        dates: s.dates,
+        missingFields: s.missingFields || [],
+        sourceIds: s.sourceIds,
+        sources: s.sources || [],
+        dataStatus: s.dataStatus,
+        confidence: s.confidence,
+        rarity: s.rarity,
+        color: s.color,
+        effect: s.effect,
+        variants: s.variants,
+        variantDetails: s.variantDetails || {},
+        available: s.available,
+        releaseStatus: s.releaseStatus,
+        enabled: s.enabled,
+        isReleased: s.isReleased,
+        addedDate: s.addedDate
+      }));
 
     SPRITE_IMAGES = createSafeRecord();
     for (const s of sprites) {
@@ -68,12 +67,12 @@ async function loadSpritesFromAPI() {
     }
 
     SEASONS = createSafeRecord();
-    for (const season of (Array.isArray(data.seasons) ? data.seasons : [])) {
+    for (const season of Array.isArray(data.seasons) ? data.seasons : []) {
       if (season && isSafeRecordKey(String(season.id || ""))) setSafeRecordValue(SEASONS, season.id, season);
     }
 
     EVENTS = createSafeRecord();
-    for (const event of (Array.isArray(data.events) ? data.events : [])) {
+    for (const event of Array.isArray(data.events) ? data.events : []) {
       if (event && isSafeRecordKey(String(event.id || ""))) setSafeRecordValue(EVENTS, event.id, event);
     }
 

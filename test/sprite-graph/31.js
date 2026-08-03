@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "métriques techniques + contrôle + formules (Étapes 97–99)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     const {
       getSpriteGraphTechnicalMetrics,
       getSpriteGraphControlBoard,
@@ -96,9 +96,7 @@ module.exports = {
     assert.ok(board2.publicMetricsSuspended.includes("ownership_rate"));
 
     // Public surface respects suspension.
-    const pub = await fetch(
-      `${API}/sprite-graph/variants/${encodeURIComponent(variantId)}/community`
-    );
+    const pub = await fetch(`${API}/sprite-graph/variants/${encodeURIComponent(variantId)}/community`);
     if (pub.ok) {
       const body = await pub.json();
       assert.ok(body.insufficient === true || body.suspended === true);

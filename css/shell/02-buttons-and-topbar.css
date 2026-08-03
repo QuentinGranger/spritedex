@@ -1,6 +1,7 @@
-
-.icon-button:hover, .ghost-button:hover,
-.tab:hover, .action:hover {
+.icon-button:hover,
+.ghost-button:hover,
+.tab:hover,
+.action:hover {
   transform: translateY(-2px);
   background: var(--surface-strong);
   border-color: var(--line-glow);
@@ -42,7 +43,11 @@
   border-radius: 12px;
   background: var(--surface);
   cursor: pointer;
-  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 160ms ease;
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 160ms ease;
 }
 
 .notif-bell:hover {
@@ -95,8 +100,13 @@
 }
 
 @keyframes notif-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.12); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
 }
 
 @keyframes notif-panel-in {
@@ -119,8 +129,7 @@
   max-height: min(680px, calc(100vh - 100px));
   border: 1px solid rgba(117, 213, 255, 0.24);
   border-radius: 20px;
-  background:
-    linear-gradient(145deg, rgba(25, 39, 86, 0.98), rgba(11, 17, 42, 0.99) 48%, rgba(8, 13, 32, 0.99));
+  background: linear-gradient(145deg, rgba(25, 39, 86, 0.98), rgba(11, 17, 42, 0.99) 48%, rgba(8, 13, 32, 0.99));
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow:

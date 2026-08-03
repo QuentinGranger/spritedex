@@ -36,7 +36,8 @@ function clientAssetPaths(rootDir) {
 }
 
 function cacheVersion(rootDir, assets = clientAssetPaths(rootDir)) {
-  const workerTemplate = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8")
+  const workerTemplate = fs
+    .readFileSync(path.join(rootDir, "sw.js"), "utf8")
     .replace(CACHE_TOKEN, "<cache>")
     .replace(ASSETS_TOKEN, "<assets>");
   const digest = crypto.createHash("sha256");
@@ -44,9 +45,7 @@ function cacheVersion(rootDir, assets = clientAssetPaths(rootDir)) {
   for (const asset of assets) {
     digest.update(`\0${asset}\0`);
     if (asset === "/") continue;
-    digest.update(asset === "/index.html"
-      ? renderIndexPage(rootDir)
-      : fs.readFileSync(path.join(rootDir, asset)));
+    digest.update(asset === "/index.html" ? renderIndexPage(rootDir) : fs.readFileSync(path.join(rootDir, asset)));
   }
   return `sprite-index-${digest.digest("hex").slice(0, 16)}`;
 }

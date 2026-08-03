@@ -1,13 +1,13 @@
 "use strict";
 
 async function ensureNotificationTableSchema(pool) {
-    // ── Notifications (contextual notifications feature) ──
-    // Every notification is persisted here before any push/email dispatch, so it
-    // also acts as the in-app inbox and an outbox for delivery workers.
-    // NOTE: the reference spec uses UUID ids, but SPRITE-INDEX users.id is an INTEGER
-    // SERIAL and variant ids are strings, so we keep SERIAL/INTEGER keys and a
-    // VARCHAR entity_id (a variant/squad/event/invitation id) rather than UUID.
-    await pool.query(`
+  // ── Notifications (contextual notifications feature) ──
+  // Every notification is persisted here before any push/email dispatch, so it
+  // also acts as the in-app inbox and an outbox for delivery workers.
+  // NOTE: the reference spec uses UUID ids, but SPRITE-INDEX users.id is an INTEGER
+  // SERIAL and variant ids are strings, so we keep SERIAL/INTEGER keys and a
+  // VARCHAR entity_id (a variant/squad/event/invitation id) rather than UUID.
+  await pool.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

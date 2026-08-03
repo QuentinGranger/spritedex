@@ -1,7 +1,7 @@
 .collector-passport__footnote {
   margin: 0 0 8px;
-  color: rgba(255,255,255,.48);
-  font-size: .72rem;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.72rem;
   line-height: 1.4;
 }
 
@@ -24,9 +24,9 @@
 .collector-passport__progress {
   margin-bottom: 14px;
   padding: 12px;
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  background: rgba(8, 14, 32, .38);
+  background: rgba(8, 14, 32, 0.38);
 }
 
 .collector-passport__progress-top {
@@ -39,20 +39,24 @@
 
 .collector-passport__progress-top strong {
   color: #eef0ff;
-  font: 800 .92rem 'Rajdhani', sans-serif;
+  font:
+    800 0.92rem "Rajdhani",
+    sans-serif;
 }
 
 .collector-passport__progress-top span {
   color: #00e1ff;
-  font: 700 .78rem 'Rajdhani', sans-serif;
-  letter-spacing: .04em;
+  font:
+    700 0.78rem "Rajdhani",
+    sans-serif;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
 .collector-passport__progress-track {
   height: 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
@@ -66,21 +70,21 @@
 .collector-passport__progress-text {
   margin: 8px 0 0;
   color: #e8f0ff;
-  font-size: .78rem;
+  font-size: 0.78rem;
   line-height: 1.4;
 }
 
 .collector-passport__progress-next {
   margin: 8px 0 0;
-  color: rgba(255,255,255,.78);
-  font-size: .74rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.74rem;
   line-height: 1.35;
 }
 
 .collector-passport__progress-peak {
   margin: 6px 0 0;
   color: #ffd58a;
-  font-size: .72rem;
+  font-size: 0.72rem;
   line-height: 1.35;
 }
 
@@ -104,21 +108,21 @@
 
 .collector-passport__events li {
   padding: 8px 0;
-  border-top: 1px solid rgba(255,255,255,.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .collector-passport__events strong {
   display: block;
-  color: rgba(255,255,255,.9);
-  font-size: .8rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
 }
 
 .collector-passport__events span,
 .collector-passport__events small {
   display: block;
   margin-top: 2px;
-  color: rgba(255,255,255,.5);
-  font-size: .72rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.72rem;
 }
 
 .collector-passport__actions {
@@ -133,4 +137,3 @@
   max-height: min(86vh, 760px);
   overflow: auto;
 }
-

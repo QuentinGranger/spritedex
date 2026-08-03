@@ -5,9 +5,7 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: 12px;
-  background:
-    linear-gradient(135deg, rgba(255, 190, 50, 0.1), rgba(255, 190, 50, 0.03)),
-    rgba(255, 190, 50, 0.04);
+  background: linear-gradient(135deg, rgba(255, 190, 50, 0.1), rgba(255, 190, 50, 0.03)), rgba(255, 190, 50, 0.04);
   border: 1px solid rgba(255, 190, 50, 0.22);
   margin-bottom: 14px;
 }
@@ -19,7 +17,7 @@
 
 .email-banner__text {
   flex: 1;
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.35;
@@ -32,14 +30,17 @@
   border: 1px solid rgba(255, 190, 50, 0.32);
   background: rgba(255, 190, 50, 0.12);
   color: rgba(255, 230, 170, 0.98);
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 180ms ease, border-color 180ms ease, opacity 180ms ease;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    opacity 180ms ease;
 }
 
 .email-banner__btn:hover:not(:disabled) {

@@ -1,6 +1,4 @@
-const {
-  pool, EXPLICIT_COLLECTION_STATUSES, SQUAD_COMMUNITY_ELIGIBILITY
-} = require("./shared");
+const { pool, EXPLICIT_COLLECTION_STATUSES, SQUAD_COMMUNITY_ELIGIBILITY } = require("./shared");
 
 function hasAnalyticsConsent(cookieConsent) {
   if (!cookieConsent || typeof cookieConsent !== "object") return false;
@@ -12,13 +10,16 @@ module.exports = { listEligibleSquadIds };
 /**
  * Étape 57 — squads eligible for community averages.
  */
-async function listEligibleSquadIds(db = pool, {
-  minActiveMembers = SQUAD_COMMUNITY_ELIGIBILITY.minActiveMembers,
-  minCollectionFillRate = SQUAD_COMMUNITY_ELIGIBILITY.minCollectionFillRate,
-  recentActivityDays = SQUAD_COMMUNITY_ELIGIBILITY.recentActivityDays,
-  requireAnalyticsConsent = SQUAD_COMMUNITY_ELIGIBILITY.requireAnalyticsConsent,
-  asOf = new Date()
-} = {}) {
+async function listEligibleSquadIds(
+  db = pool,
+  {
+    minActiveMembers = SQUAD_COMMUNITY_ELIGIBILITY.minActiveMembers,
+    minCollectionFillRate = SQUAD_COMMUNITY_ELIGIBILITY.minCollectionFillRate,
+    recentActivityDays = SQUAD_COMMUNITY_ELIGIBILITY.recentActivityDays,
+    requireAnalyticsConsent = SQUAD_COMMUNITY_ELIGIBILITY.requireAnalyticsConsent,
+    asOf = new Date()
+  } = {}
+) {
   const catalogue = await db.query(`SELECT COUNT(*)::int AS n FROM sprite_variants`);
   const catalogueCount = catalogue.rows[0]?.n || 0;
   if (catalogueCount <= 0) return [];

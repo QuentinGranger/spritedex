@@ -1,7 +1,7 @@
 "use strict";
 
 const { pool } = require("../db");
-const { GRAPH_EVENT_TYPES } = require("./constants");
+const { GRAPH_EVENT_TYPES, GRAPH_EVENT_VERSIONS } = require("./constants");
 const { normalizeIntId } = require("./normalization");
 const { recordGraphEvent } = require("./events");
 
@@ -27,50 +27,51 @@ function resolvePriorityLevel(change, newPriority) {
  * Étape 16 — emit when collection status becomes `priority`.
  * May be recorded in addition to collection.status_changed.
  */
-async function recordPriorityAddedEvent(actor, {
-  spriteId,
-  variantId,
-  previousStatus,
-  newPriority,
-  priorityLevel,
-  eventId = null,
-  catalogueVersion = null,
-  changeId = null,
-  source,
-  origin,
-  occurredAt,
-  updateMethod = null,
-  db = pool,
-  throwOnError = false,
-  governanceAcceptance = null
-}) {
-  const level = priorityLevel || resolvePriorityLevel({ priorityLevel }, newPriority);
-  const dedupePart = changeId
-    || `${previousStatus == null ? "absent" : previousStatus}->priority`;
-  return recordGraphEvent(db, {
-    eventType: GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED,
-    eventVersion: GRAPH_EVENT_VERSIONS[GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED],
-    actorUserId: actor,
+async function recordPriorityAddedEvent(
+  actor,
+  {
     spriteId,
     variantId,
+    previousStatus,
+    newPriority,
+    priorityLevel,
+    eventId = null,
+    catalogueVersion = null,
+    changeId = null,
     source,
     origin,
     occurredAt,
-    updateMethod,
-    context: {
-      previousStatus: previousStatus == null ? "absent" : previousStatus,
-      priorityLevel: level,
-      eventId: eventId || null,
-      catalogueVersion: catalogueVersion || null,
-      ...(updateMethod ? { updateMethod } : {})
-    },
-    deduplicationKey: buildDeduplicationKey(
-      GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED,
-      actor,
+    updateMethod = null,
+    db = pool,
+    throwOnError = false,
+    governanceAcceptance = null
+  }
+) {
+  const level = priorityLevel || resolvePriorityLevel({ priorityLevel }, newPriority);
+  const dedupePart = changeId || `${previousStatus == null ? "absent" : previousStatus}->priority`;
+  return recordGraphEvent(
+    db,
+    {
+      eventType: GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED,
+      eventVersion: GRAPH_EVENT_VERSIONS[GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED],
+      actorUserId: actor,
+      spriteId,
       variantId,
-      dedupePart
-    )
-  }, { throwOnError, governanceAcceptance });
+      source,
+      origin,
+      occurredAt,
+      updateMethod,
+      context: {
+        previousStatus: previousStatus == null ? "absent" : previousStatus,
+        priorityLevel: level,
+        eventId: eventId || null,
+        catalogueVersion: catalogueVersion || null,
+        ...(updateMethod ? { updateMethod } : {})
+      },
+      deduplicationKey: buildDeduplicationKey(GRAPH_EVENT_TYPES.COLLECTION_PRIORITY_ADDED, actor, variantId, dedupePart)
+    },
+    { throwOnError, governanceAcceptance }
+  );
 }
 
 /**

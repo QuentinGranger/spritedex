@@ -94,9 +94,7 @@ async function findEligibleFriends(actorId, variantId) {
     // Étape 18 — privacy: actor collection must be visible to the recipient.
     if (!(await canViewCollection(friendId, actorId))) continue;
 
-    const resolved = await notifPrefs.resolveChannelPreferences(
-      pool, friendId, TYPE, { category: CATEGORY }
-    );
+    const resolved = await notifPrefs.resolveChannelPreferences(pool, friendId, TYPE, { category: CATEGORY });
     if (resolved.categoryEnabled === false || !notifPrefs.evaluateTypeActive(resolved)) continue;
 
     const level = resolveAcquisitionPriority(row.recipient_status);
@@ -131,7 +129,7 @@ function scheduleFlush(actorId, recipientId, flushAt) {
   const delay = Math.max(0, new Date(flushAt).getTime() - Date.now());
   const timer = setTimeout(() => {
     flushTimers.delete(key);
-    flushAcquisitionBatch(actorId, recipientId).catch(err =>
+    flushAcquisitionBatch(actorId, recipientId).catch((err) =>
       console.error("[notification-acquisition] flush failed:", err.message)
     );
   }, delay);
@@ -142,10 +140,7 @@ function scheduleFlush(actorId, recipientId, flushAt) {
 async function resolveAcquisitionFlushAt(recipientId, frequency) {
   const { nextDailyDigestAt, normalizeTimeZone } = require("./timezone");
   if (frequency === catalog.NOTIFICATION_FREQUENCIES.DAILY_DIGEST) {
-    const tzRes = await pool.query(
-      "SELECT timezone FROM users WHERE id = $1 AND deleted_at IS NULL",
-      [recipientId]
-    );
+    const tzRes = await pool.query("SELECT timezone FROM users WHERE id = $1 AND deleted_at IS NULL", [recipientId]);
     const timeZone = normalizeTimeZone(tzRes.rows[0]?.timezone);
     return nextDailyDigestAt(new Date(), timeZone);
   }
@@ -154,7 +149,7 @@ async function resolveAcquisitionFlushAt(recipientId, frequency) {
 
 async function enqueueAcquisition(actorId, recipientId, item, { frequency = null } = {}) {
   await ensureAcquisitionBatchTable();
-  const freq = frequency || await notifPrefs.getTypeFrequency(pool, recipientId, TYPE);
+  const freq = frequency || (await notifPrefs.getTypeFrequency(pool, recipientId, TYPE));
   if (freq === catalog.NOTIFICATION_FREQUENCIES.DISABLED) return;
 
   const flushAt = await resolveAcquisitionFlushAt(recipientId, freq);
@@ -173,7 +168,7 @@ async function enqueueAcquisition(actorId, recipientId, item, { frequency = null
     variants = Array.isArray(existing.rows[0].variants) ? [...existing.rows[0].variants] : [];
     finalFlushAt = existing.rows[0].flush_at;
   }
-  if (!variants.some(v => String(v.variantId) === String(item.variantId))) {
+  if (!variants.some((v) => String(v.variantId) === String(item.variantId))) {
     variants.push(item);
   }
 
@@ -229,13 +224,11 @@ async function flushAcquisitionBatch(actorId, recipientId) {
   if (await isBlocked(recipientId, actorId)) return;
   if (!(await canViewCollection(recipientId, actorId))) return;
 
-  const resolved = await notifPrefs.resolveChannelPreferences(
-    pool, recipientId, TYPE, { category: CATEGORY }
-  );
+  const resolved = await notifPrefs.resolveChannelPreferences(pool, recipientId, TYPE, { category: CATEGORY });
   if (resolved.categoryEnabled === false || !notifPrefs.evaluateTypeActive(resolved)) return;
 
   // Prefer a priority-level variant as the highlight (Étape 17).
-  const highlight = variants.find(v => v.priorityLevel === "strong") || variants[0];
+  const highlight = variants.find((v) => v.priorityLevel === "strong") || variants[0];
   const actorName = await username(actorId);
   const count = variants.length;
   const pushCount = await countPushToday(actorId, recipientId);
@@ -251,7 +244,7 @@ async function flushAcquisitionBatch(actorId, recipientId) {
     recipientCollectionStatus: highlight.recipientStatus,
     priorityLevel: highlight.priorityLevel,
     count,
-    variantIds: variants.map(v => v.variantId),
+    variantIds: variants.map((v) => v.variantId),
     highlightName: highlight.variantName
   };
   const destination = catalog.buildFriendCompareActionUrl(contextBase, { withVariant: true });
@@ -285,7 +278,7 @@ async function flushDueBatches() {
      LIMIT 100`
   );
   for (const row of due.rows) {
-    await flushAcquisitionBatch(row.actor_id, row.recipient_id).catch(err =>
+    await flushAcquisitionBatch(row.actor_id, row.recipient_id).catch((err) =>
       console.error("[notification-acquisition] due flush failed:", err.message)
     );
   }
@@ -325,21 +318,24 @@ async function handleVariantAcquired(event) {
 
   const eligible = await findEligibleFriends(actorId, variantId);
   for (const friend of eligible) {
-    const dedupeKey = buildFriendAcquiredDedupeKey(
-      actorId, friend.friendId, variantId, collectionVersion
-    );
+    const dedupeKey = buildFriendAcquiredDedupeKey(actorId, friend.friendId, variantId, collectionVersion);
     if (!dedupeKey) continue;
     if (!(await claimDedupeKey(pool, dedupeKey, TYPE, friend.friendId))) continue;
 
-    await enqueueAcquisition(actorId, friend.friendId, {
-      variantId: String(variantId),
-      variantName,
-      spriteName,
-      recipientStatus: friend.recipientStatus,
-      priorityLevel: friend.priorityLevel,
-      eventId: event.eventId || null,
-      acquiredAt: event.occurredAt || new Date().toISOString()
-    }, { frequency: friend.frequency });
+    await enqueueAcquisition(
+      actorId,
+      friend.friendId,
+      {
+        variantId: String(variantId),
+        variantName,
+        spriteName,
+        recipientStatus: friend.recipientStatus,
+        priorityLevel: friend.priorityLevel,
+        eventId: event.eventId || null,
+        acquiredAt: event.occurredAt || new Date().toISOString()
+      },
+      { frequency: friend.frequency }
+    );
   }
 }
 

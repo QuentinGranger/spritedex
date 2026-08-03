@@ -70,13 +70,9 @@ async function filterStillAvailableVariantIds(variantIds, eventId, now = new Dat
 
     const variantAvail = row.variant_availability || {};
     const spriteAvail = row.sprite_availability || {};
-    const status = classifyAvailabilityStatus(
-      row.period_status || variantAvail.status || spriteAvail.status
-    );
-    const availableFrom =
-      row.period_start || variantAvail.startDate || spriteAvail.startDate || null;
-    const availableUntil =
-      row.period_end || variantAvail.endDate || spriteAvail.endDate || null;
+    const status = classifyAvailabilityStatus(row.period_status || variantAvail.status || spriteAvail.status);
+    const availableFrom = row.period_start || variantAvail.startDate || spriteAvail.startDate || null;
+    const availableUntil = row.period_end || variantAvail.endDate || spriteAvail.endDate || null;
 
     const gate = evaluateVariantStillAvailable({
       status,
@@ -96,11 +92,10 @@ async function filterStillAvailableVariantIds(variantIds, eventId, now = new Dat
  *
  * @returns {Promise<Array<{ userId, wantedCount, variantIds, hasStrongPriority }>>}
  */
-async function findWantedEventRecipients(variantIds, {
-  eventId = null,
-  includeMissing = false,
-  now = new Date()
-} = {}) {
+async function findWantedEventRecipients(
+  variantIds,
+  { eventId = null, includeMissing = false, now = new Date() } = {}
+) {
   const availableIds = await filterStillAvailableVariantIds(variantIds, eventId, now);
   if (!availableIds.length) return [];
 
@@ -121,7 +116,7 @@ async function findWantedEventRecipients(variantIds, {
     [availableIds, statuses]
   );
 
-  return res.rows.map(row => {
+  return res.rows.map((row) => {
     const priorities = row.priorities || [];
     return {
       userId: row.user_id,
@@ -141,8 +136,7 @@ function resolveEventThreshold(ctx = {}, now = new Date()) {
   const explicit = normalizeWantedEventThresholdId(ctx.threshold || ctx.thresholdId);
   if (explicit) return explicit;
   if (ctx.endDate || ctx.endsAt) {
-    return classifyWantedEventThreshold(ctx.endDate || ctx.endsAt, now)
-      || WANTED_EVENT_DEFAULT_THRESHOLD_ID;
+    return classifyWantedEventThreshold(ctx.endDate || ctx.endsAt, now) || WANTED_EVENT_DEFAULT_THRESHOLD_ID;
   }
   return WANTED_EVENT_DEFAULT_THRESHOLD_ID;
 }
@@ -197,10 +191,7 @@ async function revalidateWantedEventBeforeSend({
   candidateVariantIds = [],
   includeMissing = false
 } = {}) {
-  const eventRes = await pool.query(
-    `SELECT id, end_date, data_status FROM events WHERE id = $1`,
-    [eventId]
-  );
+  const eventRes = await pool.query(`SELECT id, end_date, data_status FROM events WHERE id = $1`, [eventId]);
   const eventRow = eventRes.rows[0];
   if (!eventRow) {
     return { ok: false, reason: "event_missing", cancel: true, remainingCount: 0, remainingPriorityVariantIds: [] };
@@ -210,19 +201,13 @@ async function revalidateWantedEventBeforeSend({
   const now = new Date();
   const endMs = currentEnd ? new Date(currentEnd).getTime() : NaN;
   const eventActive =
-    String(eventRow.data_status || "").toLowerCase() !== "invalid" &&
-    !Number.isNaN(endMs) &&
-    endMs > now.getTime();
+    String(eventRow.data_status || "").toLowerCase() !== "invalid" && !Number.isNaN(endMs) && endMs > now.getTime();
 
-  const endDateUnchanged = scheduledEndingAt == null
-    ? true
-    : normalizeEndDateKey(scheduledEndingAt) === normalizeEndDateKey(currentEnd);
+  const endDateUnchanged =
+    scheduledEndingAt == null ? true : normalizeEndDateKey(scheduledEndingAt) === normalizeEndDateKey(currentEnd);
 
-  const resolvedPrefs = await notifPrefs.resolveChannelPreferences(
-    pool, recipientId, TYPE, { category: CATEGORY }
-  );
-  const prefsAccepted =
-    resolvedPrefs.categoryEnabled !== false && notifPrefs.evaluateTypeActive(resolvedPrefs);
+  const resolvedPrefs = await notifPrefs.resolveChannelPreferences(pool, recipientId, TYPE, { category: CATEGORY });
+  const prefsAccepted = resolvedPrefs.categoryEnabled !== false && notifPrefs.evaluateTypeActive(resolvedPrefs);
 
   const statuses = resolveWantedEventInterestStatuses({ includeMissing });
   const availableIds = await filterStillAvailableVariantIds(candidateVariantIds, eventId, now);
@@ -237,7 +222,7 @@ async function revalidateWantedEventBeforeSend({
          AND se.status <> 'owned'`,
       [recipientId, availableIds, statuses]
     );
-    remainingPriorityVariantIds = rem.rows.map(r => String(r.variant_id)).sort();
+    remainingPriorityVariantIds = rem.rows.map((r) => String(r.variant_id)).sort();
   }
 
   const gate = evaluateWantedEventPreSend({
@@ -258,16 +243,19 @@ async function revalidateWantedEventBeforeSend({
   };
 }
 
-async function finalizeQueuedWantedEventNotification(created, {
-  recipientId,
-  eventId,
-  eventName,
-  thresholdId,
-  hasStrongPriority,
-  scheduledEndingAt,
-  candidateVariantIds,
-  endDateConfidence
-}) {
+async function finalizeQueuedWantedEventNotification(
+  created,
+  {
+    recipientId,
+    eventId,
+    eventName,
+    thresholdId,
+    hasStrongPriority,
+    scheduledEndingAt,
+    candidateVariantIds,
+    endDateConfidence
+  }
+) {
   if (!created?.id) return { status: "missing" };
 
   const check = await revalidateWantedEventBeforeSend({
@@ -285,9 +273,7 @@ async function finalizeQueuedWantedEventNotification(created, {
   }
 
   const { normalizeTimeZone, toUtcIso } = require("./timezone");
-  const timeZone = normalizeTimeZone(
-    created.data?.timeZone || created.data?.timezone || created.user?.timezone
-  );
+  const timeZone = normalizeTimeZone(created.data?.timeZone || created.data?.timezone || created.user?.timezone);
   const endingAtUtc = toUtcIso(check.endDate);
   const context = {
     eventName,
@@ -304,11 +290,7 @@ async function finalizeQueuedWantedEventNotification(created, {
     timeZone,
     timezone: timeZone
   };
-  const rendered = catalog.renderNotification(
-    TYPE,
-    context,
-    created.data?.lang || catalog.DEFAULT_LANGUAGE
-  );
+  const rendered = catalog.renderNotification(TYPE, context, created.data?.lang || catalog.DEFAULT_LANGUAGE);
   const nextData = {
     ...(created.data || {}),
     ...(rendered?.data || {}),
@@ -324,12 +306,7 @@ async function finalizeQueuedWantedEventNotification(created, {
     `UPDATE notifications
      SET title = $1, body = $2, data = $3::jsonb, status = 'queued'
      WHERE id = $4 AND status IN ('created', 'queued')`,
-    [
-      rendered?.title || created.title,
-      rendered?.body || created.body,
-      JSON.stringify(nextData),
-      created.id
-    ]
+    [rendered?.title || created.title, rendered?.body || created.body, JSON.stringify(nextData), created.id]
   );
 
   // Étape 42 — enqueue external delivery (never send in this request path).
@@ -341,33 +318,37 @@ async function finalizeQueuedWantedEventNotification(created, {
   const data = nextData;
   const dataHasDeferredPush = !!data.pushDeferred;
 
-  const immediateChannels = (created.targetChannels || []).filter(c => {
+  const immediateChannels = (created.targetChannels || []).filter((c) => {
     if (c !== "push" && c !== "email") return false;
     if (c === "push" && dataHasDeferredPush) return false;
     return true;
   });
   if (immediateChannels.length) {
-    await deliveryQueue.enqueueDelivery(pool, {
-      notificationId: created.id,
-      recipientId,
-      channels: immediateChannels,
-      notBefore: new Date(),
-      title,
-      body,
-      url
-    }).catch(err => console.error("[wanted_event_ending_soon] enqueue failed:", err.message));
+    await deliveryQueue
+      .enqueueDelivery(pool, {
+        notificationId: created.id,
+        recipientId,
+        channels: immediateChannels,
+        notBefore: new Date(),
+        title,
+        body,
+        url
+      })
+      .catch((err) => console.error("[wanted_event_ending_soon] enqueue failed:", err.message));
   }
   if (dataHasDeferredPush) {
-    await deliveryQueue.enqueueDelivery(pool, {
-      notificationId: created.id,
-      recipientId,
-      channels: ["push"],
-      notBefore: data.pushDeliverAt || new Date(),
-      deadline: data.pushDeadline || endingAtUtc,
-      title,
-      body,
-      url
-    }).catch(err => console.error("[wanted_event_ending_soon] quiet-hours enqueue failed:", err.message));
+    await deliveryQueue
+      .enqueueDelivery(pool, {
+        notificationId: created.id,
+        recipientId,
+        channels: ["push"],
+        notBefore: data.pushDeliverAt || new Date(),
+        deadline: data.pushDeadline || endingAtUtc,
+        title,
+        body,
+        url
+      })
+      .catch((err) => console.error("[wanted_event_ending_soon] quiet-hours enqueue failed:", err.message));
   }
 
   return { status: "queued", remainingCount: check.remainingCount };
@@ -404,17 +385,11 @@ async function handleCatalogueEventEndingSoon(event) {
     });
     if (!thresholdGate.ok) continue;
 
-    const resolved = await notifPrefs.resolveChannelPreferences(
-      pool, recipientId, TYPE, { category: CATEGORY }
-    );
+    const resolved = await notifPrefs.resolveChannelPreferences(pool, recipientId, TYPE, { category: CATEGORY });
     if (resolved.categoryEnabled === false || !notifPrefs.evaluateTypeActive(resolved)) continue;
 
     // Étape 39 — stable dedupe across hourly scheduler ticks.
-    const dedupeKey = buildWantedEventEndingDedupeKey(
-      recipientId,
-      eventId,
-      thresholdGate.thresholdId
-    );
+    const dedupeKey = buildWantedEventEndingDedupeKey(recipientId, eventId, thresholdGate.thresholdId);
     if (!dedupeKey) continue;
     if (!(await claimDedupeKey(pool, dedupeKey, TYPE, recipientId))) continue;
     if (!(await claimNotification(pool, event.eventId, TYPE, recipientId))) continue;

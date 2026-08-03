@@ -1,9 +1,9 @@
 "use strict";
 
 async function migrateLegacyNotificationColumns(pool) {
-    // Migrate legacy notifications tables (pre "contextual notifications"), which
-    // used user_id / context / message. Rename in place to avoid data loss.
-    await pool.query(`
+  // Migrate legacy notifications tables (pre "contextual notifications"), which
+  // used user_id / context / message. Rename in place to avoid data loss.
+  await pool.query(`
       DO $$
       BEGIN
         IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='notifications' AND column_name='user_id')

@@ -5,13 +5,7 @@
 // (those create a circular dependency that breaks catalogue helpers at load time).
 const { pool } = require("./db");
 
-const COMPARISON_SESSION_SOURCES = Object.freeze([
-  "friends_list",
-  "squad",
-  "shared_link",
-  "passport",
-  "direct"
-]);
+const COMPARISON_SESSION_SOURCES = Object.freeze(["friends_list", "squad", "shared_link", "passport", "direct"]);
 
 const SOURCE_ALIASES = Object.freeze({
   friends_list: "friends_list",
@@ -61,7 +55,9 @@ async function ensureComparisonSessionsTable(db = pool) {
 }
 
 function normalizeSource(raw) {
-  const key = String(raw || "").trim().toLowerCase();
+  const key = String(raw || "")
+    .trim()
+    .toLowerCase();
   return SOURCE_ALIASES[key] || null;
 }
 
@@ -178,7 +174,9 @@ async function recordParticipantComparisonSession({
           entityId: String(compared),
           context: { source, catalogueVersion }
         }).catch(() => {});
-      } catch (_) { /* optional */ }
+      } catch (_) {
+        /* optional */
+      }
       try {
         // Étapes 18–20 — product event only when the session was counted
         // (30‑minute pair window already applied above; reloads are skipped).
@@ -210,22 +208,26 @@ async function recordParticipantComparisonSession({
           // Prefer session id; fall back to normalized pair + session time bucket.
           deduplicationKey: sessionId
             ? buildDeduplicationKey(GRAPH_EVENT_TYPES.COMPARISON_COMPLETED, sessionId)
-            : (pair
+            : pair
               ? buildDeduplicationKey(
-                GRAPH_EVENT_TYPES.COMPARISON_COMPLETED,
-                pair.pairKey,
-                new Date().toISOString().slice(0, 16)
-              )
-              : null)
+                  GRAPH_EVENT_TYPES.COMPARISON_COMPLETED,
+                  pair.pairKey,
+                  new Date().toISOString().slice(0, 16)
+                )
+              : null
         });
-      } catch (_) { /* optional */ }
-      require("./passport-summary").schedulePassportRecalc(initiator, {
-        mode: "queue",
-        reason: "comparison.generated",
-        triggerEvent: "comparison.generated",
-        collectionChanged: false,
-        notify: false
-      }).catch(() => {});
+      } catch (_) {
+        /* optional */
+      }
+      require("./passport-summary")
+        .schedulePassportRecalc(initiator, {
+          mode: "queue",
+          reason: "comparison.generated",
+          triggerEvent: "comparison.generated",
+          collectionChanged: false,
+          notify: false
+        })
+        .catch(() => {});
     }
     return out;
   });

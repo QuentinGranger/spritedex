@@ -23,7 +23,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
   const isAddressee = active && Number(active.addressee_id) === Number(reqUser);
 
   // Block is the only action allowed when a block exists; unblock is handled directly.
-  if (!["block", "unblock"].includes(action) && await isBlocked(reqUser, friendId)) {
+  if (!["block", "unblock"].includes(action) && (await isBlocked(reqUser, friendId))) {
     return { error: 403, message: "Blocage actif" };
   }
 
@@ -37,10 +37,16 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
       }
       if (active) {
         if (active.status === "pending") {
-          return { error: 409, message: isRequester ? "Vous avez déjà envoyé une invitation" : "Cet utilisateur vous a déjà envoyé une invitation" };
+          return {
+            error: 409,
+            message: isRequester
+              ? "Vous avez déjà envoyé une invitation"
+              : "Cet utilisateur vous a déjà envoyé une invitation"
+          };
         }
         if (active.status === "accepted") return { error: 409, message: "Vous êtes déjà amis" };
-        if (active.status === "blocked") return { error: 403, message: "Vous ne pouvez pas interagir avec cet utilisateur" };
+        if (active.status === "blocked")
+          return { error: 403, message: "Vous ne pouvez pas interagir avec cet utilisateur" };
       }
       if (!(await canReceiveFriendRequestFrom(reqUser, friendId))) {
         return { error: 403, message: "Cet utilisateur n'accepte pas les invitations" };
@@ -62,10 +68,9 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
           buildFriendInvitationSentContext,
           normalizeInvitationMethod
         } = require("../sprite-graph");
-        const invitationMethod = normalizeInvitationMethod(
-          options.invitationMethod,
-          { fallback: options.fallbackInvitationMethod || "username" }
-        );
+        const invitationMethod = normalizeInvitationMethod(options.invitationMethod, {
+          fallback: options.fallbackInvitationMethod || "username"
+        });
         recordGraphEventSafe({
           eventType: GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT,
           actorUserId: reqUser,
@@ -78,11 +83,11 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
             invitationSource: options.invitationSource || null,
             status: "pending"
           }),
-          deduplicationKey: friendshipId
-            ? `${GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT}:${friendshipId}`
-            : null
+          deduplicationKey: friendshipId ? `${GRAPH_EVENT_TYPES.FRIEND_INVITATION_SENT}:${friendshipId}` : null
         });
-      } catch (_) { /* optional */ }
+      } catch (_) {
+        /* optional */
+      }
       broadcastRelationshipUpdate(reqUser, friendId);
       return { ok: true, friendshipId };
     }
@@ -182,10 +187,10 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
     }
 
     case "unblock": {
-      const blockRecord = await pool.query(
-        "SELECT 1 FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2",
-        [reqUser, friendId]
-      );
+      const blockRecord = await pool.query("SELECT 1 FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2", [
+        reqUser,
+        friendId
+      ]);
       if (blockRecord.rows.length === 0) {
         return { error: 400, message: "Cet utilisateur n'est pas bloqué" };
       }
@@ -200,10 +205,7 @@ async function applyFriendAction(reqUser, friendId, action, options = {}) {
             [active.id]
           );
         }
-        await client.query(
-          "DELETE FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2",
-          [reqUser, friendId]
-        );
+        await client.query("DELETE FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2", [reqUser, friendId]);
         await client.query("COMMIT");
       } catch (err) {
         await client.query("ROLLBACK").catch(() => {});
@@ -238,10 +240,7 @@ async function blockUser(reqUser, userId) {
   // A personal profile share link is also a bearer capability. Once either
   // side blocks the other, revoke both parties' links so a previously copied
   // anonymous URL cannot bypass the new privacy boundary.
-  await pool.query(
-    "UPDATE users SET share_token = NULL WHERE id IN ($1, $2)",
-    [reqUser, userId]
-  );
+  await pool.query("UPDATE users SET share_token = NULL WHERE id IN ($1, $2)", [reqUser, userId]);
   // Étape 57 — purge pending social notifs, hide private reveals, stop batches.
   try {
     const blocks = require("../notification-blocks");

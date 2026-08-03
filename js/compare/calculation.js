@@ -1,12 +1,14 @@
 "use strict";
 
 function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) {
-  const userAInfo = userA && typeof userA === "object" && "collection" in userA
-    ? userA
-    : { id: "userA", displayName: t("compare.playerA"), collection: userA || {} };
-  const userBInfo = userB && typeof userB === "object" && "collection" in userB
-    ? userB
-    : { id: "userB", displayName: t("compare.playerB"), collection: userB || {} };
+  const userAInfo =
+    userA && typeof userA === "object" && "collection" in userA
+      ? userA
+      : { id: "userA", displayName: t("compare.playerA"), collection: userA || {} };
+  const userBInfo =
+    userB && typeof userB === "object" && "collection" in userB
+      ? userB
+      : { id: "userB", displayName: t("compare.playerB"), collection: userB || {} };
   const collectionA = userAInfo.collection;
   const collectionB = userBInfo.collection;
 
@@ -59,7 +61,7 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
   const bOwnedCount = bothOwnedCount + onlyUserBCount;
   const collectiveOwnedCount = aOwnedCount + onlyUserBCount;
 
-  const toRate = (n, d) => d ? Math.round((n / d) * 10000) / 100 : 0;
+  const toRate = (n, d) => (d ? Math.round((n / d) * 10000) / 100 : 0);
   const aPossessionRate = toRate(aOwnedCount, total);
   const bPossessionRate = toRate(bOwnedCount, total);
   const collectiveCompletionRate = toRate(collectiveOwnedCount, total);
@@ -70,9 +72,10 @@ function compareCollections(userA, userB, catalogue = getCompareCatalogItems()) 
   const bEnteredCount = countExplicitCollectionEntries(collectionB);
   const insufficientData = aEnteredCount === 0 || bEnteredCount === 0;
 
-  const comparisonId = (typeof crypto !== "undefined" && crypto.randomUUID)
-    ? crypto.randomUUID()
-    : `comparison_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const comparisonId =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `comparison_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
   return {
     comparisonId,

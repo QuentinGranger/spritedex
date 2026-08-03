@@ -36,18 +36,17 @@ async function listUserBadges(userId, db = pool) {
   );
   return result.rows.map((row) => {
     const evidence = row.evidence || {};
-    const threshold = evidence.threshold != null
-      ? Number(evidence.threshold)
-      : (row.target_value != null ? Number(row.target_value) : null);
-    const releasedAtUnlock = evidence.releasedVariantCount != null
-      ? Number(evidence.releasedVariantCount)
-      : null;
+    const threshold =
+      evidence.threshold != null
+        ? Number(evidence.threshold)
+        : row.target_value != null
+          ? Number(row.target_value)
+          : null;
+    const releasedAtUnlock = evidence.releasedVariantCount != null ? Number(evidence.releasedVariantCount) : null;
     const isProgression = row.rule_type === "completion_threshold" || /^collection_\d+$/.test(row.code);
     const baseLabel = resolveBadgeCopy(row.name_key);
     const eventName = evidence.eventName || null;
-    const label = row.code === "event_completed" && eventName
-      ? `${baseLabel} · ${eventName}`
-      : baseLabel;
+    const label = row.code === "event_completed" && eventName ? `${baseLabel} · ${eventName}` : baseLabel;
     return {
       id: row.context_id ? `${row.code}:${row.context_id}` : row.code,
       code: row.code,
@@ -73,9 +72,8 @@ async function listUserBadges(userId, db = pool) {
       isHistoricalProgression: isProgression,
       threshold,
       releasedVariantCountAtUnlock: releasedAtUnlock,
-      completionRatePreciseAtUnlock: evidence.completionRatePrecise != null
-        ? Number(evidence.completionRatePrecise)
-        : null
+      completionRatePreciseAtUnlock:
+        evidence.completionRatePrecise != null ? Number(evidence.completionRatePrecise) : null
     };
   });
 }

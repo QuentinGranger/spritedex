@@ -82,7 +82,9 @@ function renderReceivedList() {
     list.innerHTML = emptyFriendsHTML(t("friends.emptyReceived"));
     return;
   }
-  list.innerHTML = friendsState.received.map((r) => `
+  list.innerHTML = friendsState.received
+    .map(
+      (r) => `
     <div class="friend-item" data-request-id="${escapeHtml(String(r.requestId))}">
       ${friendAvatarHTML(r.user)}
       <div class="friend-info">
@@ -95,7 +97,9 @@ function renderReceivedList() {
         <button class="ghost-button" data-action="block" data-id="${escapeHtml(String(r.user.id))}">${t("friends.block")}</button>
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 function renderSentList() {
@@ -105,7 +109,9 @@ function renderSentList() {
     list.innerHTML = emptyFriendsHTML(t("friends.emptySent"));
     return;
   }
-  list.innerHTML = friendsState.sent.map((r) => `
+  list.innerHTML = friendsState.sent
+    .map(
+      (r) => `
     <div class="friend-item" data-request-id="${escapeHtml(String(r.requestId))}">
       ${friendAvatarHTML(r.user)}
       <div class="friend-info">
@@ -116,7 +122,9 @@ function renderSentList() {
         <button class="ghost-button danger-text" data-action="cancel" data-request-id="${escapeHtml(String(r.requestId))}">${t("friends.cancel")}</button>
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 function renderBlockedList() {
@@ -126,7 +134,9 @@ function renderBlockedList() {
     list.innerHTML = emptyFriendsHTML(t("friends.emptyBlocked"));
     return;
   }
-  list.innerHTML = friendsState.blocked.map((u) => `
+  list.innerHTML = friendsState.blocked
+    .map(
+      (u) => `
     <div class="friend-item" data-user-id="${escapeHtml(String(u.id))}">
       ${friendAvatarHTML(u)}
       <div class="friend-info">
@@ -137,7 +147,9 @@ function renderBlockedList() {
         <button class="ghost-button" data-action="unblock" data-id="${escapeHtml(String(u.id))}">${t("friends.unblock")}</button>
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 function renderAddFriendResults() {
@@ -147,7 +159,9 @@ function renderAddFriendResults() {
     list.innerHTML = emptyFriendsHTML(t("friends.emptySearch"));
     return;
   }
-  list.innerHTML = friendsState.searchResults.map((u) => `
+  list.innerHTML = friendsState.searchResults
+    .map(
+      (u) => `
     <div class="friend-item" data-user-id="${escapeHtml(String(u.id))}">
       ${friendAvatarHTML(u)}
       <div class="friend-info">
@@ -155,12 +169,16 @@ function renderAddFriendResults() {
         <div class="friend-meta">${escapeHtml(u.username ? `@${u.username}` : "")}</div>
       </div>
       <div class="friend-actions">
-        ${u.canReceiveFriendRequest
-          ? `<button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">${t("friends.addUser")}</button>`
-          : `<span class="friend-meta">${t("friends.unavailableUser")}</span>`}
+        ${
+          u.canReceiveFriendRequest
+            ? `<button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">${t("friends.addUser")}</button>`
+            : `<span class="friend-meta">${t("friends.unavailableUser")}</span>`
+        }
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 function renderSuggestions() {
@@ -170,7 +188,9 @@ function renderSuggestions() {
     list.innerHTML = emptyFriendsHTML(t("friends.emptySuggestions"));
     return;
   }
-  list.innerHTML = friendsState.suggestions.map((u) => `
+  list.innerHTML = friendsState.suggestions
+    .map(
+      (u) => `
     <div class="friend-item" data-user-id="${escapeHtml(String(u.id))}">
       ${friendAvatarHTML(u)}
       <div class="friend-info">
@@ -181,16 +201,30 @@ function renderSuggestions() {
         <button class="ghost-button success-text" data-action="send-request" data-id="${escapeHtml(String(u.id))}">${t("friends.addUser")}</button>
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 }
 
 function renderActivePanel() {
   switch (friendsState.activeTab) {
-    case "friends": renderFriendsList(); break;
-    case "received": renderReceivedList(); break;
-    case "sent": renderSentList(); break;
-    case "blocked": renderBlockedList(); break;
-    case "add": renderAddFriendResults(); renderSuggestions(); break;
-    case "qr": /* QR shown on demand */ break;
+    case "friends":
+      renderFriendsList();
+      break;
+    case "received":
+      renderReceivedList();
+      break;
+    case "sent":
+      renderSentList();
+      break;
+    case "blocked":
+      renderBlockedList();
+      break;
+    case "add":
+      renderAddFriendResults();
+      renderSuggestions();
+      break;
+    case "qr":
+      /* QR shown on demand */ break;
   }
 }

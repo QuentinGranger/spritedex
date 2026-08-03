@@ -1,6 +1,17 @@
 "use strict";
 
-const { CONTEXTUAL_NOTIFICATION_TYPES, NOTIFICATION_CATEGORIES, NOTIFICATION_CATEGORY_LIST, CATEGORY_DEFINITIONS, NOTIFICATION_CHANNELS, NOTIFICATION_CHANNEL_LIST, NOTIFICATION_STATUSES, STATUS_DEFINITIONS, STATUS_TRANSITIONS, DEFAULT_LANGUAGE } = require("./constants");
+const {
+  CONTEXTUAL_NOTIFICATION_TYPES,
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CATEGORY_LIST,
+  CATEGORY_DEFINITIONS,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_CHANNEL_LIST,
+  NOTIFICATION_STATUSES,
+  STATUS_DEFINITIONS,
+  STATUS_TRANSITIONS,
+  DEFAULT_LANGUAGE
+} = require("./constants");
 const DEFINITIONS = require("./definitions");
 const { CHANNEL_DEFINITIONS } = require("./settings");
 const { pickLocaleCopy } = require("./renderer");
@@ -18,7 +29,7 @@ function getCategory(type) {
 
 // Returns the ordered list of type ids belonging to a category.
 function getTypesByCategory(category) {
-  return CONTEXTUAL_NOTIFICATION_TYPES.filter(type => getCategory(type) === category);
+  return CONTEXTUAL_NOTIFICATION_TYPES.filter((type) => getCategory(type) === category);
 }
 
 // Returns the localized { label, description } for a category.
@@ -67,5 +78,15 @@ function canTransitionStatus(from, to) {
   return STATUS_TRANSITIONS[from].includes(to);
 }
 
-
-module.exports = { isKnownCategory, getCategory, getTypesByCategory, getCategoryLabel, isKnownChannel, getTypeChannels, getChannelLabel, isKnownStatus, getStatusLabel, canTransitionStatus };
+module.exports = {
+  isKnownCategory,
+  getCategory,
+  getTypesByCategory,
+  getCategoryLabel,
+  isKnownChannel,
+  getTypeChannels,
+  getChannelLabel,
+  isKnownStatus,
+  getStatusLabel,
+  canTransitionStatus
+};

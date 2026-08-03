@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "cookies": legalDocument({
-    id: "cookies",
-    title: "Cookies et autres traceurs",
-    short: "Traceurs nécessaires, consentement, durées et gestion des choix.",
-    content: `
+    cookies: legalDocument({
+      id: "cookies",
+      title: "Cookies et autres traceurs",
+      short: "Traceurs nécessaires, consentement, durées et gestion des choix.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Définition</h2>
@@ -56,8 +56,7 @@
       <h2>7. Mise à jour de la liste</h2>
       <p>La liste exacte des outils tiers doit correspondre aux technologies réellement chargées par la version déployée de [APP_NAME]. En cas d'ajout d'un outil d'analyse, de crash reporting ou de publicité, son nom, sa finalité, son fournisseur et sa durée sont indiqués ici avant son activation.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

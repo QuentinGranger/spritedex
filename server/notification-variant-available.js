@@ -43,9 +43,7 @@ async function loadAvailabilityPeriod(periodId) {
 
 // Étape 31 — still available, dates valid, source not invalidated, user not owner.
 async function verifyAvailabilityForRecipient(variantId, recipientId, ctx = {}) {
-  const period = ctx.availabilityPeriodId
-    ? await loadAvailabilityPeriod(ctx.availabilityPeriodId)
-    : null;
+  const period = ctx.availabilityPeriodId ? await loadAvailabilityPeriod(ctx.availabilityPeriodId) : null;
 
   if (period) {
     if (String(period.data_status || "").toLowerCase() === "invalid") {
@@ -65,7 +63,8 @@ async function verifyAvailabilityForRecipient(variantId, recipientId, ctx = {}) 
   const liveStatus = classifyAvailabilityStatus(
     variantAvail.status || spriteAvail.status || ctx.newStatus || ctx.status
   );
-  const availableFrom = ctx.availableFrom || period?.start_date || variantAvail.startDate || spriteAvail.startDate || null;
+  const availableFrom =
+    ctx.availableFrom || period?.start_date || variantAvail.startDate || spriteAvail.startDate || null;
   const availableUntil = ctx.availableUntil || period?.end_date || variantAvail.endDate || spriteAvail.endDate || null;
 
   const gate = evaluateVariantStillAvailable({
@@ -106,7 +105,7 @@ async function findPriorityRecipients(variantId) {
        AND u.deleted_at IS NULL`,
     [variantId]
   );
-  return res.rows.map(r => r.user_id);
+  return res.rows.map((r) => r.user_id);
 }
 
 async function handleCatalogueVariantAvailable(event) {
@@ -131,9 +130,7 @@ async function handleCatalogueVariantAvailable(event) {
   const digest = require("./notification-digest");
   const recipients = await findPriorityRecipients(variantId);
   for (const recipientId of recipients) {
-    const resolved = await notifPrefs.resolveChannelPreferences(
-      pool, recipientId, TYPE, { category: CATEGORY }
-    );
+    const resolved = await notifPrefs.resolveChannelPreferences(pool, recipientId, TYPE, { category: CATEGORY });
     if (resolved.categoryEnabled === false || !notifPrefs.evaluateTypeActive(resolved)) continue;
 
     const check = await verifyAvailabilityForRecipient(variantId, recipientId, {
@@ -143,11 +140,7 @@ async function handleCatalogueVariantAvailable(event) {
     });
     if (!check.ok) continue;
 
-    const dedupeKey = buildPriorityVariantAvailableDedupeKey(
-      recipientId,
-      variantId,
-      availabilityPeriodId
-    );
+    const dedupeKey = buildPriorityVariantAvailableDedupeKey(recipientId, variantId, availabilityPeriodId);
     if (!(await claimDedupeKey(pool, dedupeKey, TYPE, recipientId))) continue;
 
     const variant = check.variant;
@@ -189,24 +182,26 @@ async function handleCatalogueVariantAvailable(event) {
  * from a non-available status, with a reliable confidence level.
  * Emits one catalogue.variant_available event per variant of the sprite.
  */
-async function emitVariantAvailableForSprite(spriteId, {
-  previousStatus,
-  newStatus = "available",
-  confidence,
-  availableFrom = null,
-  availableUntil = null,
-  availabilityPeriodId,
-  eventId = null,
-  spriteName = null
-} = {}) {
+async function emitVariantAvailableForSprite(
+  spriteId,
+  {
+    previousStatus,
+    newStatus = "available",
+    confidence,
+    availableFrom = null,
+    availableUntil = null,
+    availabilityPeriodId,
+    eventId = null,
+    spriteName = null
+  } = {}
+) {
   if (!spriteId || !availabilityPeriodId) return 0;
   if (!isVariantAvailableTransition(previousStatus, newStatus)) return 0;
   if (!isTrustedAvailabilityConfidence(confidence)) return 0;
 
-  const variants = await pool.query(
-    `SELECT id, name, variant_type, slug FROM sprite_variants WHERE sprite_id = $1`,
-    [spriteId]
-  );
+  const variants = await pool.query(`SELECT id, name, variant_type, slug FROM sprite_variants WHERE sprite_id = $1`, [
+    spriteId
+  ]);
   let emitted = 0;
   for (const v of variants.rows) {
     await emitDomainEvent(DOMAIN_EVENTS.CATALOGUE_VARIANT_AVAILABLE, {

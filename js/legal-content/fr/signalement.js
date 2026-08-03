@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "signalement": legalDocument({
-    id: "signalement",
-    title: "Signaler un contenu ou un utilisateur",
-    short: "Informations à fournir, traitement et contestation.",
-    content: `
+    signalement: legalDocument({
+      id: "signalement",
+      title: "Signaler un contenu ou un utilisateur",
+      short: "Informations à fournir, traitement et contestation.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Ce qui peut être signalé</h2>
@@ -55,8 +55,7 @@
       <h2>7. Signalements abusifs</h2>
       <p>L'envoi répété de signalements manifestement infondés, trompeurs ou destinés à harceler une personne peut entraîner une limitation de la fonction de signalement ou une mesure sur le compte concerné.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

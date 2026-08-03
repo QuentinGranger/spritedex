@@ -3,7 +3,11 @@
 
   function openVariantEditor(button) {
     let variant = {};
-    try { variant = JSON.parse(button.dataset.variantJson || "{}"); } catch (_) { /* legacy buttons remain editable */ }
+    try {
+      variant = JSON.parse(button.dataset.variantJson || "{}");
+    } catch (_) {
+      /* legacy buttons remain editable */
+    }
     state.variantEditor = { id: button.dataset.editVariant, variant };
     $("#variantEditorTitle").textContent = english ? "Edit variant" : "Modifier la variante";
     $("#variantEditorSummary").textContent = button.dataset.variantName || button.dataset.editVariant;
@@ -19,7 +23,17 @@
     $("#variantEditorSummonCost").value = variant.summon_cost ?? "";
     $("#variantEditorDropChance").value = variant.sprite_chest_drop_chance_pct ?? "";
     $("#variantEditorExtraEffectRef").value = variant.extra_effect_ref || "";
-    [["#variantEditorEffect", variant.effect], ["#variantEditorAcquisition", variant.acquisition], ["#variantEditorAvailability", variant.availability], ["#variantEditorRecurrence", variant.recurrence], ["#variantEditorDates", variant.dates], ["#variantEditorMissingFields", variant.missing_fields], ["#variantEditorSources", variant.sources]].forEach(([id, value]) => { $(id).value = value == null ? "" : JSON.stringify(value, null, 2); });
+    [
+      ["#variantEditorEffect", variant.effect],
+      ["#variantEditorAcquisition", variant.acquisition],
+      ["#variantEditorAvailability", variant.availability],
+      ["#variantEditorRecurrence", variant.recurrence],
+      ["#variantEditorDates", variant.dates],
+      ["#variantEditorMissingFields", variant.missing_fields],
+      ["#variantEditorSources", variant.sources]
+    ].forEach(([id, value]) => {
+      $(id).value = value == null ? "" : JSON.stringify(value, null, 2);
+    });
     $("#variantEditorReason").value = "";
     $("#variantEditorError").hidden = true;
     $("#variantEditorDialog").showModal();
@@ -44,7 +58,10 @@
       await adminFetch(`/api/admin/catalog/variants/${encodeURIComponent(operation.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ updates: Object.fromEntries(new FormData($("#variantEditorForm"))), reason: reasonValue })
+        body: JSON.stringify({
+          updates: Object.fromEntries(new FormData($("#variantEditorForm"))),
+          reason: reasonValue
+        })
       });
       closeEditorialDialog("#variantEditorDialog");
       setNotice(english ? "Variant updated." : "Variante mise à jour.");

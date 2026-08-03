@@ -1,6 +1,79 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 
+async function getMemberFriendshipStatus(reqUser, memberId) {
+  if (!reqUser || String(reqUser) === String(memberId)) {
+    return { friendshipStatus: "me", canReceiveFriendRequest: false, friendRequestDirection: null };
+  }
+  if (await isBlocked(reqUser, memberId)) {
+    return { friendshipStatus: "blocked", canReceiveFriendRequest: false, friendRequestDirection: null };
+  }
+  const relationship = await getRelationship(reqUser, memberId);
+  const activeStatuses = ["pending", "accepted", "blocked"];
+  let friendshipStatus = "none";
+  let friendRequestDirection = null;
+  if (relationship && activeStatuses.includes(relationship.status)) {
+    friendshipStatus = relationship.status;
+    if (relationship.status === "pending") {
+      friendRequestDirection = String(relationship.requester_id) === String(reqUser) ? "sent" : "received";
+    }
+  }
+  const canReceiveFriendRequest = friendshipStatus === "none" && (await memberAcceptsFriendRequests(reqUser, memberId));
+  return { friendshipStatus, canReceiveFriendRequest, friendRequestDirection };
+}
+
+async function memberAcceptsFriendRequests(reqUser, memberId) {
+  const result = await pool.query("SELECT friend_invites_from FROM users WHERE id = $1 AND deleted_at IS NULL", [
+    memberId
+  ]);
+  if (!result.rows.length) return false;
+  const setting = result.rows[0].friend_invites_from || "everyone";
+  if (setting === "nobody") return false;
+  if (setting === "mutual_squad_members") return true; // both members are in this squad
+  return setting === "everyone";
+}
 
 app.get("/api/squads/:code", async (req, res) => {
   try {
@@ -29,7 +102,7 @@ app.get("/api/squads/:code", async (req, res) => {
     );
 
     const viewerMembers = await getViewerSafeSquadMembers(membersResult.rows, reqUser);
-    const matrixMembers = viewerMembers.map(m => ({
+    const matrixMembers = viewerMembers.map((m) => ({
       userId: m.userId,
       username: m.username || String(m.userId),
       visible: m.visible,
@@ -38,7 +111,7 @@ app.get("/api/squads/:code", async (req, res) => {
     const members = [];
     for (const member of viewerMembers) {
       // Hide members who mutually blocked the requester in this squad context.
-      if (reqUser && await isBlocked(reqUser, member.userId)) continue;
+      if (reqUser && (await isBlocked(reqUser, member.userId))) continue;
       const canSeeCollection = member.visible;
 
       // A member's old imported variant_id can be "__proto__"; keep it inert
@@ -54,7 +127,7 @@ app.get("/api/squads/:code", async (req, res) => {
         for (const row of entriesResult.rows) {
           collection[row.variant_id] = {
             status: row.status,
-            priority: member.prioritiesVisible ? (row.priority || "none") : "none"
+            priority: member.prioritiesVisible ? row.priority || "none" : "none"
           };
           if (row.updated_at && (!lastUpdated || row.updated_at > lastUpdated)) {
             lastUpdated = row.updated_at;
@@ -63,7 +136,10 @@ app.get("/api/squads/:code", async (req, res) => {
         entryCount = entriesResult.rows.length;
       }
 
-      const { friendshipStatus, canReceiveFriendRequest, friendRequestDirection } = await getMemberFriendshipStatus(reqUser, member.userId);
+      const { friendshipStatus, canReceiveFriendRequest, friendRequestDirection } = await getMemberFriendshipStatus(
+        reqUser,
+        member.userId
+      );
       members.push({
         userId: member.userId,
         username: member.username,
@@ -90,7 +166,7 @@ app.get("/api/squads/:code", async (req, res) => {
     const averageOwnership = compare.getSquadAverageOwnership(matrix, squad.name);
     const mostComplementaryMember = compare.getSquadMostComplementaryMember(matrix, squad.name);
     const uniqueOwners = compare.getSquadUniqueOwners(matrix);
-    const uniqueCountByUser = new Map(uniqueOwners.byMember.map(m => [String(m.userId), m.count]));
+    const uniqueCountByUser = new Map(uniqueOwners.byMember.map((m) => [String(m.userId), m.count]));
     for (const m of members) {
       m.uniqueVariantCount = uniqueCountByUser.get(String(m.userId)) || 0;
     }
@@ -144,10 +220,9 @@ app.post("/api/squads/:code/leave", requireNotSuspended, async (req, res) => {
   const userId = await getRequestingUser(req);
   if (!userId) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
 
     await pool.query(
@@ -161,9 +236,7 @@ app.post("/api/squads/:code/leave", requireNotSuspended, async (req, res) => {
     // Étape 58 — stop future squad progress notifs; cancel scheduled; revoke destinations.
     try {
       const squadCompletion = require("./notification-squad-completion");
-      await squadCompletion.applySquadLeaveNotificationCleanup(
-        pool, squadResult.rows[0].id, userId
-      );
+      await squadCompletion.applySquadLeaveNotificationCleanup(pool, squadResult.rows[0].id, userId);
     } catch (err) {
       console.error("[leave] notification cleanup failed", err);
     }
@@ -174,17 +247,18 @@ app.post("/api/squads/:code/leave", requireNotSuspended, async (req, res) => {
       console.error("[leave] refresh stats failed", err);
     }
 
-    require("./passport-summary").schedulePassportRecalc(userId, {
-      mode: "queue",
-      reason: "squad.left",
-      triggerEvent: "squad.member_joined",
-      notify: false
-    }).catch(() => {});
+    require("./passport-summary")
+      .schedulePassportRecalc(userId, {
+        mode: "queue",
+        reason: "squad.left",
+        triggerEvent: "squad.member_joined",
+        notify: false
+      })
+      .catch(() => {});
 
-    const remaining = await pool.query(
-      "SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'",
-      [squadResult.rows[0].id]
-    );
+    const remaining = await pool.query("SELECT COUNT(*) FROM squad_members WHERE squad_id = $1 AND status = 'active'", [
+      squadResult.rows[0].id
+    ]);
     if (parseInt(remaining.rows[0].count) === 0) {
       await pool.query("DELETE FROM squads WHERE id = $1", [squadResult.rows[0].id]);
     }
@@ -208,10 +282,9 @@ app.post("/api/squads/:code/kick", requireNotSuspended, async (req, res) => {
   const targetUserId = parsePositiveUserId(req.body?.targetUserId);
   if (targetUserId === null) return res.status(400).json({ error: "targetUserId invalide" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, created_by FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, created_by FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (String(squad.created_by) !== String(reqUser)) {
@@ -234,9 +307,7 @@ app.post("/api/squads/:code/kick", requireNotSuspended, async (req, res) => {
     // Étape 58 — same cleanup as leave for the removed member.
     try {
       const squadCompletion = require("./notification-squad-completion");
-      await squadCompletion.applySquadLeaveNotificationCleanup(
-        pool, squad.id, targetUserId
-      );
+      await squadCompletion.applySquadLeaveNotificationCleanup(pool, squad.id, targetUserId);
     } catch (err) {
       console.error("[kick] notification cleanup failed", err);
     }
@@ -258,10 +329,9 @@ app.post("/api/squads/:code/regenerate", security.squadCodeLimiter, requireNotSu
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, created_by FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, created_by FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (String(squad.created_by) !== String(reqUser)) {
@@ -284,10 +354,9 @@ app.post("/api/squads/:code/toggle-join", requireNotSuspended, async (req, res) 
   const reqUser = await getRequestingUser(req);
   if (!reqUser) return res.status(401).json({ error: "Authentification requise" });
   try {
-    const squadResult = await pool.query(
-      "SELECT id, created_by, join_open FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, created_by, join_open FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     const squad = squadResult.rows[0];
     if (String(squad.created_by) !== String(reqUser)) {
@@ -351,10 +420,9 @@ app.post("/api/squads/:code/invite/:friendId", requireNotSuspended, async (req, 
   }
 
   try {
-    const squadResult = await pool.query(
-      "SELECT id, created_by, join_open FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id, created_by, join_open FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) {
       return res.status(404).json({ error: "Escouade introuvable" });
     }
@@ -382,14 +450,16 @@ app.post("/api/squads/:code/invite/:friendId", requireNotSuspended, async (req, 
       return res.status(403).json({ error: "Cet utilisateur n'accepte pas les invitations d'escouade" });
     }
     if (squadInvitesFrom === "mutual_squad_members" && !(await shareSquad(reqUser, friendId))) {
-      return res.status(403).json({ error: "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune" });
+      return res
+        .status(403)
+        .json({ error: "Cet utilisateur n'accepte les invitations que des membres d'une escouade commune" });
     }
 
-    const alreadyMember = await pool.query(
-      "SELECT status FROM squad_members WHERE squad_id = $1 AND user_id = $2",
-      [squad.id, friendId]
-    );
-    if (alreadyMember.rows.length && alreadyMember.rows[0].status === 'active') {
+    const alreadyMember = await pool.query("SELECT status FROM squad_members WHERE squad_id = $1 AND user_id = $2", [
+      squad.id,
+      friendId
+    ]);
+    if (alreadyMember.rows.length && alreadyMember.rows[0].status === "active") {
       return res.status(409).json({ error: "Cet utilisateur est déjà membre de l'escouade" });
     }
 
@@ -430,7 +500,12 @@ app.post("/api/squads/:code/invite/:friendId", requireNotSuspended, async (req, 
        RETURNING id`,
       [squad.id, reqUser, friendId]
     );
-    analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "friend_invited_to_squad", details: { friendId, source: "member_profile" } });
+    analytics.logProductAnalyticsEvent(pool, {
+      userId: reqUser,
+      squadId: squad.id,
+      event: "friend_invited_to_squad",
+      details: { friendId, source: "member_profile" }
+    });
     res.json({ ok: true, invitationId: invitationResult.rows[0].id });
   } catch (err) {
     console.error(err);

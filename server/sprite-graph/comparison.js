@@ -9,9 +9,7 @@ const { normalizeComparisonPair } = require("./social");
  */
 function extractTopDifferenceSpriteIds(result, { limit = 15 } = {}) {
   const groups = (result && result.groups) || {};
-  const diffs = []
-    .concat(groups.onlyUserA || [])
-    .concat(groups.onlyUserB || []);
+  const diffs = [].concat(groups.onlyUserA || []).concat(groups.onlyUserB || []);
   const counts = new Map();
   for (const rec of diffs) {
     if (!rec) continue;
@@ -46,20 +44,16 @@ function buildComparisonCompletedContext({
   const actorIsA = actor != null && a != null && actor === a;
   const onlyA = Number(summary.onlyUserACount) || 0;
   const onlyB = Number(summary.onlyUserBCount) || 0;
-  const pair = normalizeComparisonPair(actor, targetUserId)
-    || normalizeComparisonPair(a, b);
+  const pair = normalizeComparisonPair(actor, targetUserId) || normalizeComparisonPair(a, b);
   const topDifferenceSpriteIds = extractTopDifferenceSpriteIds(result);
   const aRate = summary.aPossessionRate != null ? Number(summary.aPossessionRate) : null;
   const bRate = summary.bPossessionRate != null ? Number(summary.bPossessionRate) : null;
 
   return {
     catalogueVersion: catalogueVersion || summary.catalogueVersion || null,
-    collectiveCompletionRate: summary.collectiveCompletionRate != null
-      ? Number(summary.collectiveCompletionRate)
-      : null,
-    complementarityRate: summary.complementarityRate != null
-      ? Number(summary.complementarityRate)
-      : null,
+    collectiveCompletionRate:
+      summary.collectiveCompletionRate != null ? Number(summary.collectiveCompletionRate) : null,
+    complementarityRate: summary.complementarityRate != null ? Number(summary.complementarityRate) : null,
     onlyActorCount: actorIsA ? onlyA : onlyB,
     onlyTargetCount: actorIsA ? onlyB : onlyA,
     bothOwnedCount: Number(summary.bothOwnedCount) || 0,
@@ -72,9 +66,7 @@ function buildComparisonCompletedContext({
     differenceSpriteCount: topDifferenceSpriteIds.length,
     actorCollectionRate: actorIsA ? aRate : bRate,
     targetCollectionRate: actorIsA ? bRate : aRate,
-    pairCollectionRate: (aRate != null && bRate != null)
-      ? Math.round(((aRate + bRate) / 2) * 100) / 100
-      : null
+    pairCollectionRate: aRate != null && bRate != null ? Math.round(((aRate + bRate) / 2) * 100) / 100 : null
   };
 }
 

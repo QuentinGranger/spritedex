@@ -56,8 +56,7 @@
     padding: 10px 12px 10px 18px;
     border-color: rgba(83, 213, 255, 0.3);
     background:
-      linear-gradient(90deg, rgba(0, 201, 255, 0.13), rgba(87, 82, 230, 0.06) 54%, transparent),
-      rgba(8, 19, 53, 0.72);
+      linear-gradient(90deg, rgba(0, 201, 255, 0.13), rgba(87, 82, 230, 0.06) 54%, transparent), rgba(8, 19, 53, 0.72);
     box-shadow: inset 3px 0 0 var(--accent-2);
   }
 
@@ -80,7 +79,9 @@
     background:
       radial-gradient(circle at 83% 50%, rgba(111, 81, 255, 0.19), transparent 26%),
       linear-gradient(110deg, rgba(7, 41, 95, 0.92), rgba(14, 20, 64, 0.86) 62%, rgba(27, 17, 76, 0.82));
-    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18), inset 0 1px rgba(186, 223, 255, 0.08);
+    box-shadow:
+      0 14px 40px rgba(0, 0, 0, 0.18),
+      inset 0 1px rgba(186, 223, 255, 0.08);
   }
 
   #view-missing .farm-summary::before {
@@ -143,7 +144,10 @@
     border-radius: 18px;
     background: linear-gradient(145deg, rgba(19, 38, 91, 0.68), rgba(9, 17, 47, 0.72));
     box-shadow: inset 0 1px rgba(182, 207, 255, 0.045);
-    transition: border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    transition:
+      border-color 180ms ease,
+      transform 180ms ease,
+      box-shadow 180ms ease;
   }
 
   #view-missing .farm-section::before {
@@ -159,20 +163,42 @@
 
   #view-missing .farm-section:hover {
     border-color: color-mix(in srgb, var(--farm-accent) 44%, rgba(103, 128, 215, 0.34));
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14), 0 0 20px color-mix(in srgb, var(--farm-accent) 9%, transparent);
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.14),
+      0 0 20px color-mix(in srgb, var(--farm-accent) 9%, transparent);
     transform: translateY(-2px);
   }
 
-  #view-missing .farm-section--urgent { --farm-accent: #ff627c; }
-  #view-missing .farm-section--important { --farm-accent: #ffd15c; }
-  #view-missing .farm-section--medium { --farm-accent: #f6a44a; }
-  #view-missing .farm-section--low { --farm-accent: #8797c8; }
-  #view-missing .farm-section--spotted { --farm-accent: #eb82ff; }
-  #view-missing .farm-section--gold { --farm-accent: #ffd85a; }
-  #view-missing .farm-section--galaxy { --farm-accent: #86eaff; }
-  #view-missing .farm-section--gem { --farm-accent: #e37aff; }
-  #view-missing .farm-section--holofoil { --farm-accent: #b1baff; }
-  #view-missing .farm-section--rift { --farm-accent: #ff81b2; }
+  #view-missing .farm-section--urgent {
+    --farm-accent: #ff627c;
+  }
+  #view-missing .farm-section--important {
+    --farm-accent: #ffd15c;
+  }
+  #view-missing .farm-section--medium {
+    --farm-accent: #f6a44a;
+  }
+  #view-missing .farm-section--low {
+    --farm-accent: #8797c8;
+  }
+  #view-missing .farm-section--spotted {
+    --farm-accent: #eb82ff;
+  }
+  #view-missing .farm-section--gold {
+    --farm-accent: #ffd85a;
+  }
+  #view-missing .farm-section--galaxy {
+    --farm-accent: #86eaff;
+  }
+  #view-missing .farm-section--gem {
+    --farm-accent: #e37aff;
+  }
+  #view-missing .farm-section--holofoil {
+    --farm-accent: #b1baff;
+  }
+  #view-missing .farm-section--rift {
+    --farm-accent: #ff81b2;
+  }
 
   #view-missing .farm-section__title {
     min-height: 34px;
@@ -194,7 +220,9 @@
     text-align: center;
   }
 
-  #view-missing .farm-section__list { gap: 7px; }
+  #view-missing .farm-section__list {
+    gap: 7px;
+  }
 
   #view-missing .farm-item {
     display: grid;
@@ -210,7 +238,11 @@
   #view-missing .farm-item:hover,
   #view-missing .farm-item:focus-within {
     border-color: color-mix(in srgb, var(--farm-accent) 34%, rgba(108, 139, 228, 0.26));
-    background: linear-gradient(90deg, color-mix(in srgb, var(--farm-accent) 8%, rgba(16, 30, 78, 0.72)), rgba(9, 18, 50, 0.62));
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--farm-accent) 8%, rgba(16, 30, 78, 0.72)),
+      rgba(9, 18, 50, 0.62)
+    );
   }
 
   #view-missing .farm-item__avatar {
@@ -218,12 +250,24 @@
     height: 42px;
     border-radius: 12px;
     border-color: color-mix(in srgb, var(--farm-accent) 24%, rgba(255, 255, 255, 0.08));
-    background: radial-gradient(circle at 42% 30%, color-mix(in srgb, var(--farm-accent) 15%, transparent), rgba(5, 11, 38, 0.52));
+    background: radial-gradient(
+      circle at 42% 30%,
+      color-mix(in srgb, var(--farm-accent) 15%, transparent),
+      rgba(5, 11, 38, 0.52)
+    );
   }
 
-  #view-missing .farm-item__info { gap: 3px; }
-  #view-missing .farm-item__name { color: #e7edff; font-size: 0.82rem; }
-  #view-missing .farm-item__variant { color: #9fcfff; font-size: 0.66rem; }
+  #view-missing .farm-item__info {
+    gap: 3px;
+  }
+  #view-missing .farm-item__name {
+    color: #e7edff;
+    font-size: 0.82rem;
+  }
+  #view-missing .farm-item__variant {
+    color: #9fcfff;
+    font-size: 0.66rem;
+  }
 
   #view-missing .farm-item__rarity {
     align-self: center;
@@ -275,7 +319,9 @@
 /* Compact desktop remains a deliberate single-column task list.  This avoids
    turning names, rarity pills and the quick-own control into a cramped row. */
 @media (min-width: 1024px) and (max-width: 1239px) {
-  #view-missing .missing-list { grid-template-columns: minmax(0, 1fr); }
+  #view-missing .missing-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
   #view-missing .farm-summary {
     grid-template-columns: minmax(190px, 0.7fr) minmax(200px, 1.3fr) auto;
@@ -283,13 +329,18 @@
     padding-inline: 21px;
   }
 
-  #view-missing .farm-summary::before { left: 21px; }
-  #view-missing .farm-item { grid-template-columns: 42px minmax(0, 1fr) auto 20px 36px; }
+  #view-missing .farm-summary::before {
+    left: 21px;
+  }
+  #view-missing .farm-item {
+    grid-template-columns: 42px minmax(0, 1fr) auto 20px 36px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   #view-missing .farm-section,
   #view-missing .farm-item,
-  #view-missing .farm-item__mark { transition: none; }
+  #view-missing .farm-item__mark {
+    transition: none;
+  }
 }
-

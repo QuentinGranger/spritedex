@@ -3,7 +3,9 @@
 const { BADGE_COPY, BADGE_COPY_EN, BADGE_COPY_NL } = require("./content");
 
 function resolveBadgeCopy(key, fallback = "", lang = "fr") {
-  const locale = String(lang || "fr").toLowerCase().slice(0, 2);
+  const locale = String(lang || "fr")
+    .toLowerCase()
+    .slice(0, 2);
   if (locale === "en" && BADGE_COPY_EN[key]) return BADGE_COPY_EN[key];
   if (locale === "nl" && BADGE_COPY_NL[key]) return BADGE_COPY_NL[key];
   return BADGE_COPY[key] || BADGE_COPY_EN[key] || fallback || key;
@@ -74,4 +76,10 @@ function evaluateBadgeCondition(conditions, ctx) {
   return evaluateRule(conditions.type, conditions, ctx);
 }
 
-module.exports = { resolveBadgeCopy, labelForBadgeCode, meetsCompletionThreshold, evaluateRule, evaluateBadgeCondition };
+module.exports = {
+  resolveBadgeCopy,
+  labelForBadgeCode,
+  meetsCompletionThreshold,
+  evaluateRule,
+  evaluateBadgeCondition
+};

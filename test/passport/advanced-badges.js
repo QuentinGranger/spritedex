@@ -1,6 +1,44 @@
 "use strict";
 
-const { assert, passportReliability, buildBadges, computePassportProgress, computeOwnedRarityStats, sameVariantSet, OFFICIAL_RARITY_SCORE, specialVariantScore, resolveCompareSource, isCountableCompareResult, recordComparisonSession, getComparisonStatsForUser, ensureComparisonSessionsTable, ensurePassportActivityTable, recordOwnedVariants, listRecentActivity, writeActivity, ALLOWED_ACTIVITY_TYPES, ACTIVITY_FEED_LIMIT, ensurePassportBadgeTables, evaluateBadgeCondition, listBadgeDefinitions, listUserBadges, VERIFICATION_STATUSES, meetsCompletionThreshold, evaluateAndAwardComplementaryBadge, pool, BASE, API, test, rnd, register, auth, cleanup, getPassport, setEntry, getActiveVariants } = require("./shared");
+const {
+  assert,
+  passportReliability,
+  buildBadges,
+  computePassportProgress,
+  computeOwnedRarityStats,
+  sameVariantSet,
+  OFFICIAL_RARITY_SCORE,
+  specialVariantScore,
+  resolveCompareSource,
+  isCountableCompareResult,
+  recordComparisonSession,
+  getComparisonStatsForUser,
+  ensureComparisonSessionsTable,
+  ensurePassportActivityTable,
+  recordOwnedVariants,
+  listRecentActivity,
+  writeActivity,
+  ALLOWED_ACTIVITY_TYPES,
+  ACTIVITY_FEED_LIMIT,
+  ensurePassportBadgeTables,
+  evaluateBadgeCondition,
+  listBadgeDefinitions,
+  listUserBadges,
+  VERIFICATION_STATUSES,
+  meetsCompletionThreshold,
+  evaluateAndAwardComplementaryBadge,
+  pool,
+  BASE,
+  API,
+  test,
+  rnd,
+  register,
+  auth,
+  cleanup,
+  getPassport,
+  setEntry,
+  getActiveVariants
+} = require("./shared");
 
 async function run() {
   await test("badges : archiviste / early / raretés / événements (Étapes 46–50)", async () => {
@@ -68,13 +106,9 @@ async function run() {
 
     assert.ok(BADGE_TRIGGERS["collection.variant_acquired"].includes("collection_100"));
     assert.ok(BADGE_TRIGGERS["comparison.generated"].includes("complementary_collection"));
-    assert.strictEqual(
-      buildBadgeUnlockDedupeKey(42, "first_collection"),
-      "badge_unlock:first_collection:42"
-    );
+    assert.strictEqual(buildBadgeUnlockDedupeKey(42, "first_collection"), "badge_unlock:first_collection:42");
     assert.ok(
-      buildBadgeUnlockDedupeKey(42, "event_completed", "event_version", "uuid-1")
-        .includes("event_version:uuid-1")
+      buildBadgeUnlockDedupeKey(42, "event_completed", "event_version", "uuid-1").includes("event_version:uuid-1")
     );
 
     const live = liveProgressForBadge(
@@ -115,37 +149,43 @@ async function run() {
     await ensurePassportBadgeTables(pool);
     const u = await register(`PpSnap${rnd()}`);
     try {
-      const snap = await maybeCreatePassportStatSnapshot(u.id, {
-        catalogueVersion: "test-v1",
-        ownedSpriteCount: 1,
-        ownedVariantCount: 2,
-        releasedVariantCount: 10,
-        completionRate: 20,
-        collectionCoverageRate: 50,
-        completedEventCount: 0,
-        comparisonCount: 0
-      }, { unlockedCodes: ["collection_25"], collectionChanged: true });
+      const snap = await maybeCreatePassportStatSnapshot(
+        u.id,
+        {
+          catalogueVersion: "test-v1",
+          ownedSpriteCount: 1,
+          ownedVariantCount: 2,
+          releasedVariantCount: 10,
+          completionRate: 20,
+          collectionCoverageRate: 50,
+          completedEventCount: 0,
+          comparisonCount: 0
+        },
+        { unlockedCodes: ["collection_25"], collectionChanged: true }
+      );
       assert.ok(snap);
-      assert.ok([
-        SNAPSHOT_REASONS.CATALOGUE_VERSION,
-        SNAPSHOT_REASONS.MILESTONE,
-        SNAPSHOT_REASONS.DAILY
-      ].includes(snap.reason));
+      assert.ok(
+        [SNAPSHOT_REASONS.CATALOGUE_VERSION, SNAPSHOT_REASONS.MILESTONE, SNAPSHOT_REASONS.DAILY].includes(snap.reason)
+      );
       const latest = await getLatestSnapshot(u.id);
       assert.ok(latest);
       assert.strictEqual(String(latest.catalogue_version), "test-v1");
 
       // Same catalogue + no change → no new snapshot
-      const again = await maybeCreatePassportStatSnapshot(u.id, {
-        catalogueVersion: "test-v1",
-        ownedSpriteCount: 1,
-        ownedVariantCount: 2,
-        releasedVariantCount: 10,
-        completionRate: 20,
-        collectionCoverageRate: 50,
-        completedEventCount: 0,
-        comparisonCount: 0
-      }, { unlockedCodes: [], collectionChanged: false });
+      const again = await maybeCreatePassportStatSnapshot(
+        u.id,
+        {
+          catalogueVersion: "test-v1",
+          ownedSpriteCount: 1,
+          ownedVariantCount: 2,
+          releasedVariantCount: 10,
+          completionRate: 20,
+          collectionCoverageRate: 50,
+          completedEventCount: 0,
+          comparisonCount: 0
+        },
+        { unlockedCodes: [], collectionChanged: false }
+      );
       assert.strictEqual(again, null);
 
       await ensureCollectorPassport(u.id);
@@ -154,22 +194,15 @@ async function run() {
       assert.ok(first);
 
       // Pin without unlock → reject via resolve (clear)
-      await pool.query(
-        "UPDATE collector_passports SET featured_badge_id = $1 WHERE user_id = $2",
-        [first.id, u.id]
-      );
+      await pool.query("UPDATE collector_passports SET featured_badge_id = $1 WHERE user_id = $2", [first.id, u.id]);
       const cleared = await resolveFeaturedBadge(u.id, first.id);
       assert.strictEqual(cleared, null);
-      const row = await pool.query(
-        "SELECT featured_badge_id FROM collector_passports WHERE user_id = $1",
-        [u.id]
-      );
+      const row = await pool.query("SELECT featured_badge_id FROM collector_passports WHERE user_id = $1", [u.id]);
       assert.strictEqual(row.rows[0].featured_badge_id, null);
     } finally {
       await cleanup(u);
     }
   });
-
 }
 
 module.exports = { run };

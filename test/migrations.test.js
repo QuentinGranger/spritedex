@@ -19,10 +19,15 @@ for (const migration of migrations) {
   assert.match(migration.checksum, /^[a-f0-9]{64}$/);
 }
 
-assert.doesNotThrow(() => validateHistory(migrations, migrations.map((migration) => ({
-  id: migration.id,
-  checksum: migration.checksum
-}))));
+assert.doesNotThrow(() =>
+  validateHistory(
+    migrations,
+    migrations.map((migration) => ({
+      id: migration.id,
+      checksum: migration.checksum
+    }))
+  )
+);
 
 assert.throws(
   () => validateHistory(migrations, [{ id: migrations[0].id, checksum: "0".repeat(64) }]),

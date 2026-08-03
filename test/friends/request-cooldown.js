@@ -23,7 +23,7 @@ module.exports = async function runRequestCooldown(ctx) {
       assert.strictEqual(decline.status, 200);
 
       const pending = await (await fetch(`${API}/friends/pending`, { headers: auth(nina.token) })).json();
-      assert.ok(!pending.pending.some(p => p.id === mike.id), "declined request still in pending");
+      assert.ok(!pending.pending.some((p) => p.id === mike.id), "declined request still in pending");
     });
 
     await test("new request is blocked for 7 days after decline", async () => {
@@ -53,14 +53,20 @@ module.exports = async function runRequestCooldown(ctx) {
         assert.strictEqual(send.status, 200);
         const { requestId } = await send.json();
 
-        const del = await fetch(`${API}/friends/requests/${requestId}`, { method: "DELETE", headers: auth(mike.token) });
+        const del = await fetch(`${API}/friends/requests/${requestId}`, {
+          method: "DELETE",
+          headers: auth(mike.token)
+        });
         assert.strictEqual(del.status, 200);
 
         const sent = await (await fetch(`${API}/friends/requests/sent`, { headers: auth(mike.token) })).json();
-        assert.ok(!sent.requests.some(r => r.user && r.user.id === oscar.id), "cancelled request still in sent list");
+        assert.ok(!sent.requests.some((r) => r.user && r.user.id === oscar.id), "cancelled request still in sent list");
 
         const received = await (await fetch(`${API}/friends/requests/received`, { headers: auth(oscar.token) })).json();
-        assert.ok(!received.requests.some(r => r.user && r.user.id === mike.id), "cancelled request still in received list");
+        assert.ok(
+          !received.requests.some((r) => r.user && r.user.id === mike.id),
+          "cancelled request still in received list"
+        );
       } finally {
         await cleanup(oscar);
       }

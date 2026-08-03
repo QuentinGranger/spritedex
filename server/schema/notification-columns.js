@@ -1,8 +1,8 @@
 "use strict";
 
 async function ensureNotificationColumns(pool) {
-    // Add any columns missing on older databases.
-    await pool.query(`
+  // Add any columns missing on older databases.
+  await pool.query(`
       ALTER TABLE notifications
         ADD COLUMN IF NOT EXISTS category VARCHAR(30) NOT NULL DEFAULT 'general',
         ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'SPRITE-INDEX',

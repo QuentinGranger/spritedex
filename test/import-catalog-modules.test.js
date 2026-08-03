@@ -46,16 +46,25 @@ assert.strictEqual(typeof cli.main, "function");
       calls.push(String(sql).trim().split(/\s+/)[0]);
       return { rows: [] };
     },
-    release() { calls.push("release"); }
+    release() {
+      calls.push("release");
+    }
   };
-  const result = await importCatalog({ async connect() { return client; } }, {
-    catalogueVersion: "test-empty",
-    generatedAt: "2026-08-02T00:00:00.000Z",
-    variantDefinitions: [],
-    sources: [],
-    sprites: [],
-    unreleasedContent: { baseSprites: [] }
-  });
+  const result = await importCatalog(
+    {
+      async connect() {
+        return client;
+      }
+    },
+    {
+      catalogueVersion: "test-empty",
+      generatedAt: "2026-08-02T00:00:00.000Z",
+      variantDefinitions: [],
+      sources: [],
+      sprites: [],
+      unreleasedContent: { baseSprites: [] }
+    }
+  );
   assert.deepStrictEqual(result, { version: "test-empty", totalChanges: 0 });
   assert.deepStrictEqual(calls.slice(0, 1), ["BEGIN"]);
   assert.ok(calls.includes("COMMIT"));

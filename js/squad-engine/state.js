@@ -45,10 +45,10 @@ function hideSquadEngine() {
 
 function switchSquadEngineTab(tab) {
   squadEngineTab = tab;
-  document.querySelectorAll(".squad-engine__tab").forEach(b => {
+  document.querySelectorAll(".squad-engine__tab").forEach((b) => {
     b.classList.toggle("active", b.dataset.engineTab === tab);
   });
-  document.querySelectorAll(".squad-engine__panel").forEach(p => {
+  document.querySelectorAll(".squad-engine__panel").forEach((p) => {
     p.classList.toggle("active", p.id === `squadEnginePanel-${tab}`);
   });
   if (squadEngineReport) renderSquadEngineTab(tab);
@@ -56,7 +56,9 @@ function switchSquadEngineTab(tab) {
 
 async function loadSquadEngine(code) {
   try {
-    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/completion/report`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/squads/${encodeURIComponent(code)}/completion/report`, {
+      headers: authHeaders()
+    });
     if (!res.ok) {
       toast(t("engine.loadFailed"));
       return;
@@ -78,10 +80,17 @@ function renderSquadEngineTab(tab) {
   const panel = document.getElementById(`squadEnginePanel-${tab}`);
   if (!panel) return;
   switch (tab) {
-    case "overview": panel.innerHTML = renderEngineOverview(squadEngineReport); break;
-    case "missing": panel.innerHTML = renderEngineMissing(squadEngineReport); break;
-    case "recommendations": panel.innerHTML = renderEngineRecommendations(squadEngineReport); break;
-    case "optimization": panel.innerHTML = renderEngineOptimization(squadEngineReport); break;
+    case "overview":
+      panel.innerHTML = renderEngineOverview(squadEngineReport);
+      break;
+    case "missing":
+      panel.innerHTML = renderEngineMissing(squadEngineReport);
+      break;
+    case "recommendations":
+      panel.innerHTML = renderEngineRecommendations(squadEngineReport);
+      break;
+    case "optimization":
+      panel.innerHTML = renderEngineOptimization(squadEngineReport);
+      break;
   }
 }
-

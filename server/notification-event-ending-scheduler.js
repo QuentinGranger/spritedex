@@ -14,9 +14,7 @@ const {
   buildWantedEventEndingDomainEventId,
   WANTED_EVENT_THRESHOLDS
 } = require("./notification-gates");
-const {
-  revalidateWantedEventBeforeSend
-} = require("./notification-event-ending");
+const { revalidateWantedEventBeforeSend } = require("./notification-event-ending");
 
 const TYPE = catalog.NOTIFICATION_TYPES.WANTED_EVENT_ENDING_SOON;
 
@@ -47,7 +45,7 @@ async function loadActiveEvents(now = new Date()) {
      ORDER BY e.end_date ASC`,
     [now.toISOString(), horizon.toISOString()]
   );
-  return res.rows.map(row => ({
+  return res.rows.map((row) => ({
     id: row.id,
     name: row.name,
     endDate: row.end_date,
@@ -70,7 +68,7 @@ async function loadEventVariantIds(eventId) {
      WHERE ap.event_id = $1`,
     [eventId]
   );
-  return res.rows.map(r => r.id);
+  return res.rows.map((r) => r.id);
 }
 
 /**
@@ -140,7 +138,9 @@ async function cancelStaleWantedEventNotifications() {
     }
     const candidateVariantIds = Array.isArray(data.remainingPriorityVariantIds)
       ? data.remainingPriorityVariantIds
-      : (Array.isArray(data.variantIds) ? data.variantIds : []);
+      : Array.isArray(data.variantIds)
+        ? data.variantIds
+        : [];
 
     const check = await revalidateWantedEventBeforeSend({
       recipientId: row.recipient_id,
@@ -185,10 +185,7 @@ async function runWantedEventEndingScheduler({ now = new Date() } = {}) {
       }
     } catch (err) {
       summary.skipped++;
-      console.error(
-        `[wanted-event-scheduler] event ${eventRow.id} failed:`,
-        err.message
-      );
+      console.error(`[wanted-event-scheduler] event ${eventRow.id} failed:`, err.message);
     }
   }
 
@@ -205,11 +202,13 @@ function startWantedEventEndingScheduler() {
   if (cronStarted) return;
   cronStarted = true;
 
-  runWantedEventEndingScheduler().then(summary => {
-    console.log(
-      `[wanted-event-scheduler] initial run: scanned=${summary.eventsScanned} emitted=${summary.emitted} cancelled=${summary.cancelled}`
-    );
-  }).catch(err => console.error("[wanted-event-scheduler] initial run failed:", err.message));
+  runWantedEventEndingScheduler()
+    .then((summary) => {
+      console.log(
+        `[wanted-event-scheduler] initial run: scanned=${summary.eventsScanned} emitted=${summary.emitted} cancelled=${summary.cancelled}`
+      );
+    })
+    .catch((err) => console.error("[wanted-event-scheduler] initial run failed:", err.message));
 
   if (CRON_MS <= 0) {
     console.log("[wanted-event-scheduler] interval disabled (NOTIFICATION_EVENT_ENDING_CRON_MS=0)");
@@ -218,14 +217,14 @@ function startWantedEventEndingScheduler() {
 
   cronInterval = setInterval(() => {
     runWantedEventEndingScheduler()
-      .then(summary => {
+      .then((summary) => {
         if (summary.emitted || summary.cancelled) {
           console.log(
             `[wanted-event-scheduler] scanned=${summary.eventsScanned} emitted=${summary.emitted} cancelled=${summary.cancelled}`
           );
         }
       })
-      .catch(err => console.error("[wanted-event-scheduler] cron failed:", err.message));
+      .catch((err) => console.error("[wanted-event-scheduler] cron failed:", err.message));
   }, CRON_MS);
   if (typeof cronInterval.unref === "function") cronInterval.unref();
   console.log(`[wanted-event-scheduler] started (every ${Math.round(CRON_MS / 60000)} min)`);

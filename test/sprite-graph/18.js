@@ -3,7 +3,7 @@ const ctx = require("./shared");
 module.exports = {
   name: "rétention + suppression compte + consentement + anti-abus (Étapes 66–70)",
   async run() {
-    const {  } = ctx;
+    const {} = ctx;
     await ensureGraphEventsTable(pool);
     const {
       GRAPH_RETENTION_POLICY,
@@ -100,19 +100,25 @@ module.exports = {
     const variantRes = await pool.query(`SELECT id, sprite_id FROM sprite_variants ORDER BY id LIMIT 1`);
     const variantId = variantRes.rows[0].id;
     const spriteId = variantRes.rows[0].sprite_id;
-    const events = await recordCollectionGraphEvents(user.id, [{
-      variantId,
-      spriteId,
-      isNewEntry: true,
-      newStatus: "owned",
-      newPriority: "none",
-      changeId: `gov-import-${rnd()}`
-    }], {
-      source: "import",
-      origin: "collection.import",
-      updateMethod: "initial_import",
-      previousCollectionCount: 0
-    });
+    const events = await recordCollectionGraphEvents(
+      user.id,
+      [
+        {
+          variantId,
+          spriteId,
+          isNewEntry: true,
+          newStatus: "owned",
+          newPriority: "none",
+          changeId: `gov-import-${rnd()}`
+        }
+      ],
+      {
+        source: "import",
+        origin: "collection.import",
+        updateMethod: "initial_import",
+        previousCollectionCount: 0
+      }
+    );
     assert.ok(events.length >= 1);
     assert.strictEqual(events[0].context.updateMethod, "initial_import");
 

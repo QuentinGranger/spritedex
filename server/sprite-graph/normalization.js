@@ -24,7 +24,9 @@ function normalizeContext(context) {
  * Detailed origin (e.g. collection.setEntry) is preserved in context.origin.
  */
 function normalizeGraphSource(source, { defaultSource = "api" } = {}) {
-  const raw = String(source == null ? "" : source).trim().toLowerCase();
+  const raw = String(source == null ? "" : source)
+    .trim()
+    .toLowerCase();
   if (GRAPH_SOURCE_SET.has(raw)) return raw;
   if (!raw) return GRAPH_SOURCE_SET.has(defaultSource) ? defaultSource : "system";
   if (raw.includes("import")) return "import";
@@ -108,4 +110,12 @@ function rowToGraphEventEnvelope(row) {
   };
 }
 
-module.exports = { isActivePriority, normalizeIntId, normalizeContext, normalizeGraphSource, resolveEventVersion, buildGraphEventEnvelope, rowToGraphEventEnvelope };
+module.exports = {
+  isActivePriority,
+  normalizeIntId,
+  normalizeContext,
+  normalizeGraphSource,
+  resolveEventVersion,
+  buildGraphEventEnvelope,
+  rowToGraphEventEnvelope
+};

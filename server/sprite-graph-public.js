@@ -21,10 +21,7 @@ const {
   TREND_LABELS_FR,
   TREND_INSUFFICIENT_MESSAGE
 } = require("./sprite-graph-trends");
-const {
-  getMostComparedSprites,
-  getTopPopularSprites
-} = require("./sprite-graph-comparison-stats");
+const { getMostComparedSprites, getTopPopularSprites } = require("./sprite-graph-comparison-stats");
 
 const COMMUNITY_SOURCE_DISCLAIMER = "Données issues de la communauté sprite-index";
 
@@ -58,17 +55,18 @@ function toIsoDate(value) {
 function formatRateFr(rate, { digits = 1 } = {}) {
   if (rate == null || !Number.isFinite(Number(rate))) return null;
   const n = Number(rate);
-  const rounded = Math.round(n * (10 ** digits)) / (10 ** digits);
+  const rounded = Math.round(n * 10 ** digits) / 10 ** digits;
   return String(rounded).replace(".", ",");
 }
 
 /**
  * Étape 76 — standardized community variant response.
  */
-async function getStandardCommunityVariantResponse(db = pool, variantId, {
-  metricDate = null,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getStandardCommunityVariantResponse(
+  db = pool,
+  variantId,
+  { metricDate = null, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureCommunityStatsTables(db);
   await ensureTrendTables(db);
 
@@ -106,9 +104,7 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
     level
   });
 
-  const day = toIsoDate(ownership.metricDate)
-    || toIsoDate(metricDate)
-    || new Date().toISOString().slice(0, 10);
+  const day = toIsoDate(ownership.metricDate) || toIsoDate(metricDate) || new Date().toISOString().slice(0, 10);
 
   const calcRes = await db.query(
     `SELECT calculated_at FROM community_variant_stats
@@ -119,13 +115,9 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
     ? new Date(calcRes.rows[0].calculated_at).toISOString()
     : null;
 
-  const interestScore = interest && !interest.insufficient
-    ? interest.latest?.interestScore
-    : null;
+  const interestScore = interest && !interest.insufficient ? interest.latest?.interestScore : null;
   const trend = interest && !interest.insufficient ? interest.latest?.trend : null;
-  const trendLabel = interest && !interest.insufficient
-    ? interest.latest?.trendLabel
-    : null;
+  const trendLabel = interest && !interest.insufficient ? interest.latest?.trendLabel : null;
 
   const ownershipRate = ownership.ownershipRate;
   const priorityRate = ownership.priorityRate;
@@ -133,15 +125,17 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
 
   // Étape 77 / 81 — concise public strings (trend gated).
   const publicDisplay = {
-    ownership: ownershipRate != null
-      ? `Possession communautaire : ${formatRateFr(ownershipRate, { digits: 1 })} %`
-      : null,
-    priority: priorityRate != null
-      ? `Prioritaire chez ${formatRateFr(priorityRate, { digits: 0 })} % des collectionneurs auxquels elle manque`
-      : null,
+    ownership:
+      ownershipRate != null ? `Possession communautaire : ${formatRateFr(ownershipRate, { digits: 1 })} %` : null,
+    priority:
+      priorityRate != null
+        ? `Prioritaire chez ${formatRateFr(priorityRate, { digits: 0 })} % des collectionneurs auxquels elle manque`
+        : null,
     trend: trendLabel
       ? `Tendance : ${trendLabel}`
-      : (interest && !interest.insufficient ? TREND_INSUFFICIENT_MESSAGE : null),
+      : interest && !interest.insufficient
+        ? TREND_INSUFFICIENT_MESSAGE
+        : null,
     sample: formatSampleSizeDisplay(sampleSize),
     disclaimer: COMMUNITY_SOURCE_DISCLAIMER
   };
@@ -181,13 +175,12 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
       interestScore,
       trend,
       trendLabel,
-      trendMessage: interest && !interest.insufficient && !trend
-        ? (interest.latest?.trendMessage || TREND_INSUFFICIENT_MESSAGE)
-        : null
+      trendMessage:
+        interest && !interest.insufficient && !trend
+          ? interest.latest?.trendMessage || TREND_INSUFFICIENT_MESSAGE
+          : null
     },
-    trendEligibility: interest && !interest.insufficient
-      ? interest.trendEligibility
-      : null,
+    trendEligibility: interest && !interest.insufficient ? interest.trendEligibility : null,
     dataQuality: {
       minimumSampleReached: sampleSize >= PUBLIC_ANONYMIZATION_MIN_USERS,
       sampleSize,
@@ -197,9 +190,10 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
     raritySeparation: {
       officialRarity,
       spriteIndexOwnershipRate: ownershipRate,
-      ownershipLabel: ownershipRate != null
-        ? `Taux de possession sprite-index : ${formatRateFr(ownershipRate, { digits: 1 })} %`
-        : null,
+      ownershipLabel:
+        ownershipRate != null
+          ? `Taux de possession sprite-index : ${formatRateFr(ownershipRate, { digits: 1 })} %`
+          : null,
       note: "La rareté officielle et le taux de possession sprite-index sont des indicateurs distincts."
     },
     disclaimer: COMMUNITY_SOURCE_DISCLAIMER
@@ -209,10 +203,11 @@ async function getStandardCommunityVariantResponse(db = pool, variantId, {
 /**
  * Étape 80 — ownership / priority history for a variant fiche.
  */
-async function getVariantCommunityHistory(db = pool, variantId, {
-  days = 30,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getVariantCommunityHistory(
+  db = pool,
+  variantId,
+  { days = 30, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureCommunityStatsTables(db);
   await ensureTrendTables(db);
   const id = String(variantId);
@@ -255,24 +250,24 @@ async function getVariantCommunityHistory(db = pool, variantId, {
     }
   }
 
-  const series = rows.rows.map((r) => ({
-    date: toIsoDate(r.metric_date),
-    ownershipRate: r.ownership_rate != null ? Number(r.ownership_rate) : null,
-    priorityCount: r.priority_user_count || 0,
-    sampleSize: r.sample_size || 0,
-    catalogueVersion: r.catalogue_version || null
-  })).reverse().filter((r) => r.date);
+  const series = rows.rows
+    .map((r) => ({
+      date: toIsoDate(r.metric_date),
+      ownershipRate: r.ownership_rate != null ? Number(r.ownership_rate) : null,
+      priorityCount: r.priority_user_count || 0,
+      sampleSize: r.sample_size || 0,
+      catalogueVersion: r.catalogue_version || null
+    }))
+    .reverse()
+    .filter((r) => r.date);
 
   const showHistory = series.length >= MIN_HISTORY_POINTS;
   const first = series[0];
   const last = series[series.length - 1];
-  const ownershipDelta = (
-    first && last
-    && first.ownershipRate != null
-    && last.ownershipRate != null
-  )
-    ? Math.round((last.ownershipRate - first.ownershipRate) * 100) / 100
-    : null;
+  const ownershipDelta =
+    first && last && first.ownershipRate != null && last.ownershipRate != null
+      ? Math.round((last.ownershipRate - first.ownershipRate) * 100) / 100
+      : null;
 
   // Priority evolution over ~7 days window within series.
   const lastDate = last ? new Date(`${last.date}T00:00:00.000Z`) : null;
@@ -293,28 +288,32 @@ async function getVariantCommunityHistory(db = pool, variantId, {
   }
 
   const priorityNow = last ? last.priorityCount : null;
-  const priorityDelta = (priorityNow != null && priority7dAgo != null)
-    ? priorityNow - priority7dAgo
-    : null;
+  const priorityDelta = priorityNow != null && priority7dAgo != null ? priorityNow - priority7dAgo : null;
 
   return {
     variantId: id,
     showHistory,
     minHistoryPoints: MIN_HISTORY_POINTS,
     series: showHistory ? series : [],
-    ownership: showHistory ? {
-      from: first ? { date: first.date, rate: first.ownershipRate } : null,
-      to: last ? { date: last.date, rate: last.ownershipRate } : null,
-      evolutionPoints: ownershipDelta,
-      evolutionLabel: ownershipDelta != null
-        ? `Évolution : ${ownershipDelta >= 0 ? "+" : ""}${formatRateFr(ownershipDelta, { digits: 1 })} points`
-        : null
-    } : null,
-    priorities: showHistory && priorityNow != null && priority7dAgo != null ? {
-      from: priority7dAgo,
-      to: priorityNow,
-      label: `${priority7dAgo} priorités → ${priorityNow} priorités en 7 jours`
-    } : null,
+    ownership: showHistory
+      ? {
+          from: first ? { date: first.date, rate: first.ownershipRate } : null,
+          to: last ? { date: last.date, rate: last.ownershipRate } : null,
+          evolutionPoints: ownershipDelta,
+          evolutionLabel:
+            ownershipDelta != null
+              ? `Évolution : ${ownershipDelta >= 0 ? "+" : ""}${formatRateFr(ownershipDelta, { digits: 1 })} points`
+              : null
+        }
+      : null,
+    priorities:
+      showHistory && priorityNow != null && priority7dAgo != null
+        ? {
+            from: priority7dAgo,
+            to: priorityNow,
+            label: `${priority7dAgo} priorités → ${priorityNow} priorités en 7 jours`
+          }
+        : null,
     disclaimer: COMMUNITY_SOURCE_DISCLAIMER
   };
 }
@@ -346,16 +345,13 @@ async function enrichVariantRows(db, items, idKey = "variantId") {
 /**
  * Étape 78 — Tendances board (sprite-index community only).
  */
-async function getCommunityTrendsBoard(db = pool, {
-  metricDate = null,
-  limit = 10,
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getCommunityTrendsBoard(
+  db = pool,
+  { metricDate = null, limit = 10, level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   await ensureCommunityStatsTables(db);
   await ensureTrendTables(db);
-  const day = metricDate
-    ? String(metricDate).slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const day = metricDate ? String(metricDate).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const lim = Math.max(1, Math.min(50, Number(limit) || 10));
 
   // Do not render a board full of empty rankings while the community is still
@@ -481,10 +477,7 @@ async function getCommunityTrendsBoard(db = pool, {
   const spriteIds = comparedItems.map((i) => i.spriteId).filter(Boolean);
   let spriteMeta = new Map();
   if (spriteIds.length) {
-    const sm = await db.query(
-      `SELECT id, name, rarity FROM sprites WHERE id = ANY($1::text[])`,
-      [spriteIds]
-    );
+    const sm = await db.query(`SELECT id, name, rarity FROM sprites WHERE id = ANY($1::text[])`, [spriteIds]);
     spriteMeta = new Map(sm.rows.map((r) => [String(r.id), r]));
   }
   const comparedEnriched = comparedItems.map((i) => {
@@ -542,12 +535,10 @@ async function getCommunityTrendsBoard(db = pool, {
  * Étape 82 — secondary community lines for a personal comparison.
  * Never overshadow the personal compare result.
  */
-async function getCompareCommunityInsights(db = pool, {
-  items = [],
-  aName = "Joueur A",
-  bName = "Joueur B",
-  level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC
-} = {}) {
+async function getCompareCommunityInsights(
+  db = pool,
+  { items = [], aName = "Joueur A", bName = "Joueur B", level = GRAPH_DATA_LEVELS.AGGREGATED_PUBLIC } = {}
+) {
   const insights = [];
   const limited = (Array.isArray(items) ? items : []).slice(0, 12);
 
@@ -559,12 +550,13 @@ async function getCompareCommunityInsights(db = pool, {
     const std = await getStandardCommunityVariantResponse(db, variantId, { level });
     if (!std || std.insufficient || !std.community) continue;
 
-    const name = [
-      std.official?.spriteName,
-      std.official?.variantName && std.official.variantName !== "Base"
-        ? std.official.variantName
-        : null
-    ].filter(Boolean).join(" ") || String(variantId);
+    const name =
+      [
+        std.official?.spriteName,
+        std.official?.variantName && std.official.variantName !== "Base" ? std.official.variantName : null
+      ]
+        .filter(Boolean)
+        .join(" ") || String(variantId);
 
     let personalLine = null;
     if (relation === "bothMissing") {
@@ -575,16 +567,16 @@ async function getCompareCommunityInsights(db = pool, {
       personalLine = `${name} est possédée par ${bName} mais manque à ${aName}.`;
     }
 
-    const ownershipLine = std.community.ownershipRate != null
-      ? `Seulement ${formatRateFr(std.community.ownershipRate, { digits: 1 })} % de la communauté sprite-index la possède.`
-      : null;
-    const priorityLine = std.community.priorityRateAmongMissing != null
-      ? `Cette variante est prioritaire chez ${formatRateFr(std.community.priorityRateAmongMissing, { digits: 0 })} % des utilisateurs auxquels elle manque.`
-      : null;
+    const ownershipLine =
+      std.community.ownershipRate != null
+        ? `Seulement ${formatRateFr(std.community.ownershipRate, { digits: 1 })} % de la communauté sprite-index la possède.`
+        : null;
+    const priorityLine =
+      std.community.priorityRateAmongMissing != null
+        ? `Cette variante est prioritaire chez ${formatRateFr(std.community.priorityRateAmongMissing, { digits: 0 })} % des utilisateurs auxquels elle manque.`
+        : null;
 
-    const communityLine = relation === "bothMissing"
-      ? ownershipLine
-      : (priorityLine || ownershipLine);
+    const communityLine = relation === "bothMissing" ? ownershipLine : priorityLine || ownershipLine;
 
     if (!personalLine && !communityLine) continue;
     insights.push({

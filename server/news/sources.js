@@ -121,10 +121,13 @@ async function fetchFortniteGGNews() {
       args: ["--disable-dev-shm-usage"]
     });
     const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    );
     await page.goto("https://fortnite.gg/news", { waitUntil: "networkidle2", timeout: 30000 });
 
     const items = await page.evaluate(() => {
+      const doc = globalThis.document;
       const pickImg = (el) => {
         const img = el.querySelector("img");
         if (!img) {
@@ -132,17 +135,19 @@ async function fetchFortniteGGNews() {
           const bg = styled && /url\(\s*['"]?([^)'"]+)['"]?\s*\)/i.exec(styled.getAttribute("style") || "");
           return bg ? bg[1] : null;
         }
-        return img.currentSrc
-          || img.src
-          || img.getAttribute("data-src")
-          || img.getAttribute("data-lazy-src")
-          || img.getAttribute("data-original")
-          || null;
+        return (
+          img.currentSrc ||
+          img.src ||
+          img.getAttribute("data-src") ||
+          img.getAttribute("data-lazy-src") ||
+          img.getAttribute("data-original") ||
+          null
+        );
       };
       const entries = [];
-      const articles = document.querySelectorAll("article, .news-item, [class*='news']");
+      const articles = doc.querySelectorAll("article, .news-item, [class*='news']");
       if (articles.length > 0) {
-        articles.forEach(el => {
+        articles.forEach((el) => {
           const title = (el.querySelector("h2, h3, .title, [class*='title']") || {}).textContent || "";
           const desc = (el.querySelector("p, .desc, .description, [class*='desc']") || {}).textContent || "";
           const date = (el.querySelector("time, .date, [class*='date']") || {}).textContent || "";
@@ -151,8 +156,11 @@ async function fetchFortniteGGNews() {
         });
       }
       if (entries.length === 0) {
-        const body = document.body.innerText;
-        const lines = body.split("\n").map(l => l.trim()).filter(Boolean);
+        const body = doc.body.innerText;
+        const lines = body
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
         for (let i = 0; i < lines.length; i++) {
           if (/^[A-Z][a-z]{2} \d{1,2}, \d{4}$/.test(lines[i])) {
             const title = lines[i + 1] || "";

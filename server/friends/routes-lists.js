@@ -168,7 +168,7 @@ app.get("/api/friends/requests/sent", async (req, res) => {
        ORDER BY f.created_at DESC`,
       [reqUser]
     );
-    const requests = result.rows.map(row => ({
+    const requests = result.rows.map((row) => ({
       requestId: row.requestId,
       status: row.status,
       createdAt: row.created_at,
@@ -202,7 +202,7 @@ app.get("/api/friends/sent", async (req, res) => {
        ORDER BY f.created_at DESC`,
       [reqUser]
     );
-    const sent = result.rows.map(row => ({
+    const sent = result.rows.map((row) => ({
       id: row.id,
       username: row.username,
       displayName: row.displayName,

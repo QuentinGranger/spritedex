@@ -89,7 +89,9 @@
   }
 
   #view-checklist .cl-sprite:hover::before,
-  #view-checklist .cl-sprite--open::before { opacity: 0.9; }
+  #view-checklist .cl-sprite--open::before {
+    opacity: 0.9;
+  }
 
   #view-checklist .cl-sprite__header {
     position: relative;
@@ -112,7 +114,12 @@
 
   #view-checklist .cl-sprite__detail,
   #view-checklist .cl-sprite__quick {
-    transition: transform 170ms ease, color 170ms ease, border-color 170ms ease, background 170ms ease, box-shadow 170ms ease;
+    transition:
+      transform 170ms ease,
+      color 170ms ease,
+      border-color 170ms ease,
+      background 170ms ease,
+      box-shadow 170ms ease;
   }
 
   #view-checklist .cl-sprite__detail:hover,
@@ -131,7 +138,9 @@
     border-radius: 13px;
   }
 
-  #view-checklist .cl-variant + .cl-variant { margin-top: 4px; }
+  #view-checklist .cl-variant + .cl-variant {
+    margin-top: 4px;
+  }
 
   #view-checklist .cl-variant:hover {
     border-color: rgba(91, 126, 225, 0.2);
@@ -164,13 +173,17 @@
     white-space: nowrap;
   }
 
-  #view-checklist .cl-variant__actions { gap: 7px; }
+  #view-checklist .cl-variant__actions {
+    gap: 7px;
+  }
   #view-checklist .cl-btn {
     width: 36px;
     height: 36px;
     border-radius: 10px;
   }
-  #view-checklist .cl-btn:hover { transform: translateY(-1px); }
+  #view-checklist .cl-btn:hover {
+    transform: translateY(-1px);
+  }
 
   #view-checklist .cl-variant__mastery--master {
     border-color: rgba(255, 204, 82, 0.3);
@@ -185,27 +198,61 @@
 /* Keep the directory usable on smaller desktop windows: cards remain dense
    without their action group forcing horizontal overflow. */
 @media (min-width: 1024px) and (max-width: 1239px) {
-  #view-checklist .checklist-controls { padding: 18px; }
-  #view-checklist .bulk-actions .ghost-button { padding: 0 11px; }
-  #view-checklist .filter-chips-bar::before { display: none; }
+  #view-checklist .checklist-controls {
+    padding: 18px;
+  }
+  #view-checklist .bulk-actions .ghost-button {
+    padding: 0 11px;
+  }
+  #view-checklist .filter-chips-bar::before {
+    display: none;
+  }
   #view-checklist .cl-sprite__header {
     grid-template-columns: 66px minmax(120px, 1fr) minmax(95px, 124px) auto;
     gap: 12px;
     min-height: 96px;
     padding: 14px 16px;
   }
-  #view-checklist .cl-sprite__avatar { width: 64px; height: 64px; border-radius: 14px; }
-  #view-checklist .cl-sprite__name { font-size: 1.06rem; }
-  #view-checklist .cl-sprite__effect { display: none; }
-  #view-checklist .cl-sprite__progress { gap: 8px; padding-left: 12px; }
-  #view-checklist .cl-sprite__bar { width: 72px; }
-  #view-checklist .cl-sprite__inline-actions { gap: 8px; padding-left: 0; border-left: 0; }
+  #view-checklist .cl-sprite__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+  }
+  #view-checklist .cl-sprite__name {
+    font-size: 1.06rem;
+  }
+  #view-checklist .cl-sprite__effect {
+    display: none;
+  }
+  #view-checklist .cl-sprite__progress {
+    gap: 8px;
+    padding-left: 12px;
+  }
+  #view-checklist .cl-sprite__bar {
+    width: 72px;
+  }
+  #view-checklist .cl-sprite__inline-actions {
+    gap: 8px;
+    padding-left: 0;
+    border-left: 0;
+  }
   #view-checklist .cl-sprite__detail,
-  #view-checklist .cl-sprite__quick { width: 44px; height: 44px; }
+  #view-checklist .cl-sprite__quick {
+    width: 44px;
+    height: 44px;
+  }
   #view-checklist .cl-sprite__detail svg,
-  #view-checklist .cl-sprite__quick svg { width: 20px; height: 20px; }
-  #view-checklist .cl-sprite__body { padding-left: 94px; padding-right: 16px; }
-  #view-checklist .cl-variant__mastery { min-width: 158px; }
+  #view-checklist .cl-sprite__quick svg {
+    width: 20px;
+    height: 20px;
+  }
+  #view-checklist .cl-sprite__body {
+    padding-left: 94px;
+    padding-right: 16px;
+  }
+  #view-checklist .cl-variant__mastery {
+    min-width: 158px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -213,6 +260,7 @@
   #view-checklist .cl-sprite::before,
   #view-checklist .cl-sprite__detail,
   #view-checklist .cl-sprite__quick,
-  #view-checklist .cl-btn { transition: none; }
+  #view-checklist .cl-btn {
+    transition: none;
+  }
 }
-

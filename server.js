@@ -26,6 +26,8 @@ const deliveryQueue = require("./server/notification-delivery-queue");
 // handlers at require-time — so auth + this middleware come first.
 require("./server/auth");
 const { requireEmailVerified } = require("./server/auth");
+const { requireCsrfForCookieAuth } = require("./server/csrf");
+app.use("/api", requireCsrfForCookieAuth);
 app.use("/api", requireEmailVerified);
 
 // Load helpers and route registrations (order preserved from the original file).
@@ -96,7 +98,7 @@ async function acquireWorkerLeadership() {
 
 async function startBackgroundWorkers() {
   if (backgroundWorkersStarted) return true;
-  if (!await acquireWorkerLeadership()) {
+  if (!(await acquireWorkerLeadership())) {
     if (!workerStandbyRetryScheduled) {
       workerStandbyRetryScheduled = true;
       setInterval(() => {
@@ -129,13 +131,16 @@ async function startBackgroundWorkers() {
   secLog.purgeOldSecurityLogs(pool);
   eventIdempotency.purgeProcessedEvents(pool);
   purgeOperationalIncidents();
-  setInterval(() => {
-    purgeDeletedAccounts();
-    purgeUnverifiedPasswordAccounts();
-    secLog.purgeOldSecurityLogs(pool);
-    eventIdempotency.purgeProcessedEvents(pool);
-    purgeOperationalIncidents();
-  }, 24 * 60 * 60 * 1000);
+  setInterval(
+    () => {
+      purgeDeletedAccounts();
+      purgeUnverifiedPasswordAccounts();
+      secLog.purgeOldSecurityLogs(pool);
+      eventIdempotency.purgeProcessedEvents(pool);
+      purgeOperationalIncidents();
+    },
+    24 * 60 * 60 * 1000
+  );
   return true;
 }
 

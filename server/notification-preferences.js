@@ -149,10 +149,9 @@ async function getPreferences(pool, userId) {
   const frequencies = defaultFrequencies();
   const delivery = defaultTypeDelivery();
 
-  const res = await pool.query(
-    "SELECT scope, key, enabled, value FROM notification_preferences WHERE user_id = $1",
-    [userId]
-  );
+  const res = await pool.query("SELECT scope, key, enabled, value FROM notification_preferences WHERE user_id = $1", [
+    userId
+  ]);
   for (const row of res.rows) {
     if (row.scope === "category" && row.key in categories) categories[row.key] = row.enabled;
     else if (row.scope === "type" && row.key in types) types[row.key] = row.enabled;
@@ -228,21 +227,10 @@ async function setFrequency(pool, userId, type, frequency) {
      VALUES ($1, 'frequency', $2, $3, $4, NOW())
      ON CONFLICT (user_id, scope, key)
      DO UPDATE SET enabled = EXCLUDED.enabled, value = EXCLUDED.value, updated_at = NOW()`,
-    [
-      userId,
-      type,
-      freq !== catalog.NOTIFICATION_FREQUENCIES.DISABLED,
-      freq
-    ]
+    [userId, type, freq !== catalog.NOTIFICATION_FREQUENCIES.DISABLED, freq]
   );
   // Mirror onto the type toggle so older gates keep working.
-  await setPreference(
-    pool,
-    userId,
-    "type",
-    type,
-    freq !== catalog.NOTIFICATION_FREQUENCIES.DISABLED
-  );
+  await setPreference(pool, userId, "type", type, freq !== catalog.NOTIFICATION_FREQUENCIES.DISABLED);
   return true;
 }
 

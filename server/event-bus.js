@@ -74,10 +74,10 @@ async function emitDomainEvent(eventType, data = {}) {
   const list = handlers.get(eventType);
   if (!list || !list.length) return event;
   await Promise.all(
-    list.map(handler =>
+    list.map((handler) =>
       Promise.resolve()
         .then(() => handler(event))
-        .catch(err => console.error(`[event-bus] handler for '${eventType}' failed:`, err))
+        .catch((err) => console.error(`[event-bus] handler for '${eventType}' failed:`, err))
     )
   );
   return event;

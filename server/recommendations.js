@@ -90,29 +90,28 @@ async function fetchUserSquads(reqUser) {
      GROUP BY s.id, s.code, s.name`,
     [reqUser]
   );
-  const squads = result.rows.map(r => ({ id: r.id, code: r.code, name: r.name, members: r.members || [] }));
+  const squads = result.rows.map((r) => ({ id: r.id, code: r.code, name: r.name, members: r.members || [] }));
   for (const squad of squads) {
     const memberAccess = await Promise.all(
       squad.members.map(async (memberId) => ({
         memberId,
         blocked: await isBlocked(reqUser, memberId),
-        collectionVisible: String(memberId) === String(reqUser) || await canViewCollection(reqUser, memberId)
+        collectionVisible: String(memberId) === String(reqUser) || (await canViewCollection(reqUser, memberId))
       }))
     );
     // Squad membership alone is not collection access.  Do not use a hidden
     // member's ownership to calculate a suggested addition for this viewer.
     squad.members = memberAccess
-      .filter(member => !member.blocked && member.collectionVisible)
-      .map(member => member.memberId);
+      .filter((member) => !member.blocked && member.collectionVisible)
+      .map((member) => member.memberId);
   }
   return squads;
 }
 
 function redactCollectionPriorities(collection) {
-  return Object.fromEntries(Object.entries(collection).map(([variantId, entry]) => [
-    variantId,
-    { ...entry, priority: "none" }
-  ]));
+  return Object.fromEntries(
+    Object.entries(collection).map(([variantId, entry]) => [variantId, { ...entry, priority: "none" }])
+  );
 }
 
 function makeEntry(owned, priority) {
@@ -146,7 +145,7 @@ function computeCandidateMetrics(userOwned, userPriority, candidateCollection, c
     }
   }
 
-  const availableMissing = missingForUser.filter(id => {
+  const availableMissing = missingForUser.filter((id) => {
     const item = itemMap.get(id);
     return item && item.available !== false && (item.availabilityStatus || "").toLowerCase() !== "unavailable";
   });
@@ -155,7 +154,7 @@ function computeCandidateMetrics(userOwned, userPriority, candidateCollection, c
   for (const variantId of candidateOwned) union.add(variantId);
   const jointCoverage = catalogue.length ? union.size / catalogue.length : 0;
 
-  const inter = new Set([...candidateOwned].filter(v => userOwned.has(v))).size;
+  const inter = new Set([...candidateOwned].filter((v) => userOwned.has(v))).size;
   const collectiveOwned = userOwned.size + candidateOwned.size - inter;
   const onlyOne = collectiveOwned - inter;
   const complementarityRate = collectiveOwned ? Math.round((onlyOne / collectiveOwned) * 10000) / 100 : 0;
@@ -170,7 +169,7 @@ function computeCandidateMetrics(userOwned, userPriority, candidateCollection, c
   for (const [rarity, items] of rarityMap) {
     const total = items.length;
     if (!total) continue;
-    const owned = items.filter(i => userOwned.has(i.id) || candidateOwned.has(i.id)).length;
+    const owned = items.filter((i) => userOwned.has(i.id) || candidateOwned.has(i.id)).length;
     jointCoverageByRarity[rarity] = {
       total,
       owned,
@@ -212,7 +211,7 @@ async function getRecommendations(reqUser) {
     compare.loadServerCompareCollection(reqUser)
   ]);
   const catalogue = catalogueAll.filter(compare.isVariantReleasedAndActiveServer);
-  const itemMap = new Map(catalogue.map(i => [i.id, i]));
+  const itemMap = new Map(catalogue.map((i) => [i.id, i]));
   const total = catalogue.length;
 
   const userOwned = buildOwnedSet(userCollection, catalogue);
@@ -270,7 +269,7 @@ async function getRecommendations(reqUser) {
 
     let best = null;
     for (const cand of candidates) {
-      if (squad.members.some(m => String(m) === String(cand.id))) continue;
+      if (squad.members.some((m) => String(m) === String(cand.id))) continue;
 
       const newOwned = new Set(currentOwned);
       for (const item of catalogue) {

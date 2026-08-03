@@ -10,18 +10,30 @@ function readPendingLink(paramName, storageKey) {
   const params = new URLSearchParams(location.search);
   const value = params.get(paramName);
   if (value) {
-    try { sessionStorage.setItem(storageKey, value); } catch (_) { /* storage unavailable */ }
+    try {
+      sessionStorage.setItem(storageKey, value);
+    } catch (_) {
+      /* storage unavailable */
+    }
     // Preserve other link parameters (for example a squad link alongside an invite).
     params.delete(paramName);
     const query = params.toString();
     history.replaceState(null, "", `${location.pathname}${query ? `?${query}` : ""}${location.hash}`);
     return value;
   }
-  try { return sessionStorage.getItem(storageKey); } catch (_) { return null; }
+  try {
+    return sessionStorage.getItem(storageKey);
+  } catch (_) {
+    return null;
+  }
 }
 
 function clearPendingLink(storageKey) {
-  try { sessionStorage.removeItem(storageKey); } catch (_) { /* storage unavailable */ }
+  try {
+    sessionStorage.removeItem(storageKey);
+  } catch (_) {
+    /* storage unavailable */
+  }
 }
 
 async function setupPendingInvitationOnboarding() {
@@ -36,9 +48,7 @@ async function setupPendingInvitationOnboarding() {
 
   notice.hidden = false;
   detail.textContent = t("login.inviteReadyDetail");
-  title.textContent = squadCode && !friendToken
-    ? t("login.squadInviteTitle")
-    : t("login.friendInviteTitleFallback");
+  title.textContent = squadCode && !friendToken ? t("login.squadInviteTitle") : t("login.friendInviteTitleFallback");
 
   if (!friendToken) return;
   try {
@@ -59,7 +69,10 @@ function handleInviteLink() {
   const token = readPendingLink("invite", PENDING_FRIEND_INVITE_KEY);
   if (!token) return;
   const socialTab = document.querySelector('.tab[data-view="social"]');
-  if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("friends"); }
+  if (socialTab) {
+    socialTab.click();
+    if (typeof setSocialTab === "function") setSocialTab("friends");
+  }
   if (!state.userId) {
     toast(t("init.inviteLoginRequired"));
     return;
@@ -67,18 +80,20 @@ function handleInviteLink() {
   fetch(`${API_BASE}/friends/invite-links/${encodeURIComponent(token)}/use`, {
     method: "POST",
     headers: authHeaders()
-  }).then(async r => {
-    const data = await r.json().catch(() => ({}));
-    if (r.ok) {
-      clearPendingLink(PENDING_FRIEND_INVITE_KEY);
-      toast(t("init.friendRequestSent"));
-      if (typeof loadFriendsData === "function") loadFriendsData();
-    } else {
-      // A revoked, expired or unknown link cannot become valid after a retry.
-      if ([400, 403, 404, 409, 410].includes(r.status)) clearPendingLink(PENDING_FRIEND_INVITE_KEY);
-      toastError(data, "init.inviteLinkInvalid");
-    }
-  }).catch(() => toast(t("init.inviteNetworkError")));
+  })
+    .then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) {
+        clearPendingLink(PENDING_FRIEND_INVITE_KEY);
+        toast(t("init.friendRequestSent"));
+        if (typeof loadFriendsData === "function") loadFriendsData();
+      } else {
+        // A revoked, expired or unknown link cannot become valid after a retry.
+        if ([400, 403, 404, 409, 410].includes(r.status)) clearPendingLink(PENDING_FRIEND_INVITE_KEY);
+        toastError(data, "init.inviteLinkInvalid");
+      }
+    })
+    .catch(() => toast(t("init.inviteNetworkError")));
 }
 
 function handleJoinLink() {
@@ -94,7 +109,10 @@ function handleJoinLink() {
     return;
   }
   const socialTab = document.querySelector('.tab[data-view="social"]');
-  if (socialTab) { socialTab.click(); if (typeof setSocialTab === "function") setSocialTab("squad"); }
+  if (socialTab) {
+    socialTab.click();
+    if (typeof setSocialTab === "function") setSocialTab("squad");
+  }
   if (typeof setCompareMode === "function") setCompareMode("squad");
   els.squadCodeInput.value = code;
   clearPendingLink(PENDING_SQUAD_JOIN_KEY);
@@ -160,8 +178,7 @@ async function applyAuthParams(params) {
         throw new Error(user.error || t("login.oauthExchangeExpired"));
       }
       sessionStorage.removeItem(verifierKey);
-      localStorage.setItem(TOKEN_KEY, user.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
+      storeAuthSession(user);
       if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
       localStorage.setItem("sprite-index_email_verified", "true");
       state.userId = user.id;
@@ -200,7 +217,7 @@ async function handleOAuthReturn() {
       localStorage.setItem("sprite-index_email_verified", "true");
       setTimeout(() => toast(t("login.emailVerified")), 500);
       // Session may already exist from registration/login — unlock if confirmed.
-      if (localStorage.getItem(TOKEN_KEY) && typeof window.continueAfterEmailVerified === "function") {
+      if (hasAuthSession() && typeof window.continueAfterEmailVerified === "function") {
         try {
           const meRes = await fetch(`${API_BASE}/auth/me`, { headers: authHeadersOnly() });
           if (meRes.ok) {
@@ -213,12 +230,14 @@ async function handleOAuthReturn() {
                 avatar_url: me.avatar_url,
                 privacy: me.privacy,
                 emailVerified: true,
-                token: localStorage.getItem(TOKEN_KEY)
+                token: usesCookieAuth() ? undefined : localStorage.getItem(TOKEN_KEY)
               });
               return true;
             }
           }
-        } catch { /* fall through to normal boot */ }
+        } catch {
+          /* fall through to normal boot */
+        }
       }
     } else {
       setTimeout(() => toast(t("login.emailVerifyInvalid")), 500);
@@ -236,9 +255,7 @@ async function handleOAuthReturn() {
 async function handlePassportPublicUrl() {
   const match = location.pathname.match(/^\/u\/([^/]+)\/?$/i);
   const boot = window.__SPRITE_INDEX_PASSPORT_USER__;
-  const username = match
-    ? decodeURIComponent(match[1])
-    : (boot && boot.username ? boot.username : null);
+  const username = match ? decodeURIComponent(match[1]) : boot && boot.username ? boot.username : null;
   if (!username) return false;
 
   if (state.userId && typeof openCollectorPassportByUsername === "function") {
@@ -292,16 +309,24 @@ async function init() {
   // Handle OAuth callback redirect
   if (await handleOAuthReturn()) return;
 
+  if (usesCookieAuth()) {
+    await ensureCsrfToken();
+    await migrateLegacyBearerToCookie();
+  }
+
   const savedUser = localStorage.getItem(USER_KEY);
-  const savedToken = localStorage.getItem(TOKEN_KEY);
-  if (savedUser && savedToken) {
+  const canResume = usesCookieAuth() ? !!savedUser : !!(savedUser && localStorage.getItem(TOKEN_KEY));
+  if (canResume) {
     try {
       const verifyRes = await fetch(`${API_BASE}/auth/me`, { headers: authHeadersOnly() });
       if (verifyRes.ok) {
         const user = await verifyRes.json();
         state.userId = user.id;
         state.username = user.username;
-        localStorage.setItem(USER_KEY, JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at }));
+        localStorage.setItem(
+          USER_KEY,
+          JSON.stringify({ id: user.id, username: user.username, created_at: user.created_at })
+        );
         if (user.avatar_url) localStorage.setItem("sprite-index_avatar", user.avatar_url);
         if (user.privacy) localStorage.setItem("sprite-index_privacy", user.privacy);
         localStorage.setItem("sprite-index_email_verified", user.email_verified ? "true" : "false");
@@ -311,7 +336,7 @@ async function init() {
               id: user.id,
               username: user.username,
               created_at: user.created_at,
-              token: savedToken,
+              token: usesCookieAuth() ? undefined : localStorage.getItem(TOKEN_KEY),
               email: user.email || "",
               emailVerified: false
             });
@@ -345,8 +370,10 @@ async function init() {
     } catch {
       // Offline /me failure: never unlock a pending-verify session into the app.
       if (
-        localStorage.getItem("sprite-index_email_verified") === "false"
-        || localStorage.getItem(typeof PENDING_VERIFY_KEY !== "undefined" ? PENDING_VERIFY_KEY : "sprite-index_pending_email_verify") === "1"
+        localStorage.getItem("sprite-index_email_verified") === "false" ||
+        localStorage.getItem(
+          typeof PENDING_VERIFY_KEY !== "undefined" ? PENDING_VERIFY_KEY : "sprite-index_pending_email_verify"
+        ) === "1"
       ) {
         if (typeof enterEmailVerificationGate === "function") {
           const user = JSON.parse(savedUser);
@@ -354,7 +381,7 @@ async function init() {
             id: user.id,
             username: user.username,
             created_at: user.created_at,
-            token: savedToken,
+            token: usesCookieAuth() ? undefined : localStorage.getItem(TOKEN_KEY),
             emailVerified: false
           });
         }

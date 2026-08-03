@@ -33,9 +33,15 @@
   flex-shrink: 0;
 }
 
-.hunt-section__header--nobody .hunt-section__icon { color: #ff3a6e; }
-.hunt-section__header--partial .hunt-section__icon { color: #ffcc00; }
-.hunt-section__header--done .hunt-section__icon { color: #00ff87; }
+.hunt-section__header--nobody .hunt-section__icon {
+  color: #ff3a6e;
+}
+.hunt-section__header--partial .hunt-section__icon {
+  color: #ffcc00;
+}
+.hunt-section__header--done .hunt-section__icon {
+  color: #00ff87;
+}
 
 .hunt-section__title {
   font-family: var(--font-heading);
@@ -148,4 +154,3 @@
   background: var(--line);
   margin: 20px 0;
 }
-

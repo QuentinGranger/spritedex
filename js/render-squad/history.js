@@ -52,7 +52,9 @@ async function renderSquadHistory() {
     const dayMap = new Map();
     for (const e of entries) {
       const day = new Date(e.created_at).toLocaleDateString(document.documentElement.lang || "fr-FR", {
-        weekday: "long", day: "numeric", month: "long"
+        weekday: "long",
+        day: "numeric",
+        month: "long"
       });
       if (!dayMap.has(day)) dayMap.set(day, []);
       dayMap.get(day).push(e);
@@ -88,4 +90,3 @@ async function renderSquadHistory() {
     els.squadTableWrap.innerHTML = `<p class="squad-empty">${t("common.networkError")}</p>`;
   }
 }
-

@@ -6,11 +6,11 @@
   }
   const { legalDocument } = global.__SPRITE_INDEX_LEGAL_CORE__;
   const chunk = Object.freeze({
-  "donnees-personnelles": legalDocument({
-    id: "donnees-personnelles",
-    title: "Gérer mes données",
-    short: "Accès, export, correction, confidentialité et suppression.",
-    content: `
+    "donnees-personnelles": legalDocument({
+      id: "donnees-personnelles",
+      title: "Gérer mes données",
+      short: "Accès, export, correction, confidentialité et suppression.",
+      content: `
       <p class="legal-meta"><strong>Dernière mise à jour :</strong> [LEGAL_LAST_UPDATED_FR] — version [LEGAL_VERSION]</p>
 
       <h2>1. Consulter et corriger mes informations</h2>
@@ -39,8 +39,7 @@
       <p>Pour exercer un droit d'accès, de rectification, d'effacement, de limitation, d'opposition ou de portabilité, contactez <a href="mailto:[PRIVACY_EMAIL]">[PRIVACY_EMAIL]</a>.</p>
       <p>Indiquez l'adresse e-mail du compte et la demande concernée. Ne joignez pas spontanément une copie de pièce d'identité ; elle ne sera demandée qu'en cas de doute raisonnable.</p>
     `
-  }),
-
+    })
   });
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ = global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__ || [];
   global.__SPRITE_INDEX_LEGAL_FR_CHUNKS__.push(chunk);

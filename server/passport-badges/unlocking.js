@@ -23,15 +23,8 @@ async function unlockBadgesForUser(userId, ctx, db = pool, options = {}) {
     if (onlyCodes && !onlyCodes.has(def.code)) continue;
     if (!evaluateRule(def.rule_type, def.rule_config, ctx)) continue;
 
-    const { progressValue, targetValue } = progressFieldsForRule(
-      def.rule_type,
-      def.rule_config || {},
-      ctx
-    );
-    const verification = defaultVerificationForCode(
-      def.code,
-      seedByCode[def.code]?.verificationStatus
-    );
+    const { progressValue, targetValue } = progressFieldsForRule(def.rule_type, def.rule_config || {}, ctx);
+    const verification = defaultVerificationForCode(def.code, seedByCode[def.code]?.verificationStatus);
     const evidence = {
       // Étape 42 — freeze catalogue size + precise rate at unlock time (historical).
       completionRatePrecise: ctx.completionRatePrecise,
@@ -39,9 +32,7 @@ async function unlockBadgesForUser(userId, ctx, db = pool, options = {}) {
       ownedVariantCount: ctx.ownedVariantCount,
       releasedVariantCount: ctx.releasedVariantCount,
       discoveredSpriteCount: ctx.discoveredSpriteCount,
-      threshold: def.rule_type === "completion_threshold"
-        ? Number((def.rule_config || {}).threshold)
-        : null,
+      threshold: def.rule_type === "completion_threshold" ? Number((def.rule_config || {}).threshold) : null,
       ruleType: def.rule_type,
       ruleConfig: def.rule_config,
       historical: def.rule_type === "completion_threshold",
@@ -94,27 +85,27 @@ async function unlockBadgesForUser(userId, ctx, db = pool, options = {}) {
  * Award a badge by code (idempotent). Supports Étape 50 context for family badges.
  * Étape 53 — unique index + transaction + dedupe key `badge_unlock:{code}:{userId}`.
  */
-async function awardBadgeByCode(userId, code, {
-  catalogueVersion = null,
-  evidence = {},
-  progressValue = null,
-  targetValue = null,
-  contextType = null,
-  contextId = null,
-  verificationStatus = null,
-  skipActivity = false,
-  notify = false,
-  db = pool
-} = {}) {
-  const defRes = await db.query(
-    `SELECT * FROM badge_definitions WHERE code = $1 AND is_active = TRUE LIMIT 1`,
-    [code]
-  );
+async function awardBadgeByCode(
+  userId,
+  code,
+  {
+    catalogueVersion = null,
+    evidence = {},
+    progressValue = null,
+    targetValue = null,
+    contextType = null,
+    contextId = null,
+    verificationStatus = null,
+    skipActivity = false,
+    notify = false,
+    db = pool
+  } = {}
+) {
+  const defRes = await db.query(`SELECT * FROM badge_definitions WHERE code = $1 AND is_active = TRUE LIMIT 1`, [code]);
   if (!defRes.rows.length) return null;
   const def = defRes.rows[0];
   const seed = BADGE_SEED.find((s) => s.code === code);
-  const verification = verificationStatus
-    || defaultVerificationForCode(code, seed?.verificationStatus);
+  const verification = verificationStatus || defaultVerificationForCode(code, seed?.verificationStatus);
 
   const { buildBadgeUnlockDedupeKey } = require("../badge-engine");
   const eventIdempotency = require("../event-idempotency");
@@ -128,12 +119,7 @@ async function awardBadgeByCode(userId, code, {
     if (manageTx) await client.query("BEGIN");
 
     if (dedupeKey) {
-      const claimed = await eventIdempotency.claimDedupeKey(
-        client,
-        dedupeKey,
-        "badge_award",
-        userId
-      );
+      const claimed = await eventIdempotency.claimDedupeKey(client, dedupeKey, "badge_award", userId);
       if (!claimed) {
         if (manageTx) await client.query("ROLLBACK");
         return null;
@@ -212,13 +198,19 @@ async function awardBadgeByCode(userId, code, {
     if (notify) {
       try {
         const { notifyBadgeUnlocks } = require("../badge-engine");
-        await notifyBadgeUnlocks(userId, [{
-          badgeCode: code,
-          code,
-          label: evidence.eventName ? `${label} · ${evidence.eventName}` : label,
-          contextType,
-          contextId
-        }], { batch: false });
+        await notifyBadgeUnlocks(
+          userId,
+          [
+            {
+              badgeCode: code,
+              code,
+              label: evidence.eventName ? `${label} · ${evidence.eventName}` : label,
+              contextType,
+              contextId
+            }
+          ],
+          { batch: false }
+        );
       } catch (err) {
         console.error("[passport-badges] award notify failed", err.message);
       }

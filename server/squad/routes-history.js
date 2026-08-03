@@ -1,5 +1,47 @@
 const ctx = require("./context");
-const { APP_URL, MAX_SQUAD_SIMULATION_CHANGES, MAX_SQUAD_SIMULATION_TEXT_LENGTH, MAX_SQUAD_SIMULATION_VARIANTS, MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH, MAX_USER_ID, QRCode, SQUAD_SIMULATION_TYPES, analytics, app, areFriends, canViewCollection, compare, computeCatalogueVersion, crypto, generateSquadCode, getCachedOrComputeSquadAnalysis, getRelationship, getRequestingUser, getSquadByIdOrCode, getViewerSafeSquadMembers, getVisibleSquadMemberIds, invalidateSquadAnalysisCache, isBlocked, isPlainObject, loadViewerSafeCollection, normalizeSimulationChange, normalizeSimulationChanges, normalizeSimulationMemberId, normalizeSimulationText, normalizeSimulationVariantIds, parsePositiveUserId, pool, redactCollectionPriorities, refreshSquadStats, requireNotSuspended, requireSquadMember, resolveAddressee, security, shareSquad, squadSimulationLimiter } = ctx;
+const {
+  APP_URL,
+  MAX_SQUAD_SIMULATION_CHANGES,
+  MAX_SQUAD_SIMULATION_TEXT_LENGTH,
+  MAX_SQUAD_SIMULATION_VARIANTS,
+  MAX_SQUAD_SIMULATION_VARIANT_ID_LENGTH,
+  MAX_USER_ID,
+  QRCode,
+  SQUAD_SIMULATION_TYPES,
+  analytics,
+  app,
+  areFriends,
+  canViewCollection,
+  compare,
+  computeCatalogueVersion,
+  crypto,
+  generateSquadCode,
+  getCachedOrComputeSquadAnalysis,
+  getRelationship,
+  getRequestingUser,
+  getSquadByIdOrCode,
+  getViewerSafeSquadMembers,
+  getVisibleSquadMemberIds,
+  invalidateSquadAnalysisCache,
+  isBlocked,
+  isPlainObject,
+  loadViewerSafeCollection,
+  normalizeSimulationChange,
+  normalizeSimulationChanges,
+  normalizeSimulationMemberId,
+  normalizeSimulationText,
+  normalizeSimulationVariantIds,
+  parsePositiveUserId,
+  pool,
+  redactCollectionPriorities,
+  refreshSquadStats,
+  requireNotSuspended,
+  requireSquadMember,
+  resolveAddressee,
+  security,
+  shareSquad,
+  squadSimulationLimiter
+} = ctx;
 const friends = require("./logic-friends");
 const { getSquadRecommendedFriends } = friends;
 const { getSquadComplementaryPairs } = friends;
@@ -16,40 +58,51 @@ app.get("/api/squads/:squadId/recommendations", async (req, res) => {
     const squad = squadResult.rows[0];
     if (!(await requireSquadMember(req, res, squad.id))) return;
 
-    const response = await getCachedOrComputeSquadAnalysis(req, squad, reqUser, "standardized-recommendations", async () => {
-      const [friendsToInvite, memberComparisons] = await Promise.all([
-        getSquadRecommendedFriends(squad, reqUser),
-        getSquadComplementaryPairs(squad, reqUser)
-      ]);
+    const response = await getCachedOrComputeSquadAnalysis(
+      req,
+      squad,
+      reqUser,
+      "standardized-recommendations",
+      async () => {
+        const [friendsToInvite, memberComparisons] = await Promise.all([
+          getSquadRecommendedFriends(squad, reqUser),
+          getSquadComplementaryPairs(squad, reqUser)
+        ]);
 
-      analytics.logProductAnalyticsEvent(pool, { userId: reqUser, squadId: squad.id, event: "squad_recommendation_viewed", details: { friendsToInviteCount: friendsToInvite.length, memberComparisonsCount: memberComparisons.length } });
+        analytics.logProductAnalyticsEvent(pool, {
+          userId: reqUser,
+          squadId: squad.id,
+          event: "squad_recommendation_viewed",
+          details: { friendsToInviteCount: friendsToInvite.length, memberComparisonsCount: memberComparisons.length }
+        });
 
-      return {
-        squadId: squad.code,
-        recommendations: {
-          friendsToInvite: friendsToInvite.map(c => ({
-            userId: c.userId,
-            username: c.username,
-            displayName: c.displayName,
-            avatarUrl: c.avatarUrl,
-            newVariantsForSquad: c.newVariantsForSquad,
-            potentialContribution: c.potentialContribution,
-            projectedCompletionRate: c.projectedCompletionRate,
-            currentCompletionRate: c.currentCompletionRate,
-            complementarityScore: c.complementarityScore
-          })),
-          memberComparisons: memberComparisons.map(p => ({
-            userAId: p.userAId,
-            userAName: p.userAName,
-            userAAvatar: p.userAAvatar,
-            userBId: p.userBId,
-            userBName: p.userBName,
-            userBAvatar: p.userBAvatar,
-            complementarityScore: p.complementarityScore
-          }))
-        }
-      };
-    });
+        return {
+          squadId: squad.code,
+          recommendations: {
+            friendsToInvite: friendsToInvite.map((c) => ({
+              userId: c.userId,
+              username: c.username,
+              displayName: c.displayName,
+              avatarUrl: c.avatarUrl,
+              newVariantsForSquad: c.newVariantsForSquad,
+              potentialContribution: c.potentialContribution,
+              projectedCompletionRate: c.projectedCompletionRate,
+              currentCompletionRate: c.currentCompletionRate,
+              complementarityScore: c.complementarityScore
+            })),
+            memberComparisons: memberComparisons.map((p) => ({
+              userAId: p.userAId,
+              userAName: p.userAName,
+              userAAvatar: p.userAAvatar,
+              userBId: p.userBId,
+              userBName: p.userBName,
+              userBAvatar: p.userBAvatar,
+              complementarityScore: p.complementarityScore
+            }))
+          }
+        };
+      }
+    );
     res.json(response);
   } catch (err) {
     console.error("[/api/squads/:squadId/recommendations]", err);
@@ -60,10 +113,9 @@ app.get("/api/squads/:squadId/recommendations", async (req, res) => {
 // ── Squad : unified activity history ──
 app.get("/api/squads/:code/history", async (req, res) => {
   try {
-    const squadResult = await pool.query(
-      "SELECT id FROM squads WHERE code = $1",
-      [req.params.code.trim().toUpperCase()]
-    );
+    const squadResult = await pool.query("SELECT id FROM squads WHERE code = $1", [
+      req.params.code.trim().toUpperCase()
+    ]);
     if (!squadResult.rows.length) return res.status(404).json({ error: "Escouade introuvable" });
     if (!(await requireSquadMember(req, res, squadResult.rows[0].id))) return;
     const reqUser = await getRequestingUser(req);
@@ -90,14 +142,13 @@ app.get("/api/squads/:code/history", async (req, res) => {
       // authorized members, but never expose it to a squad member who cannot
       // view the actor's collection (including blocks and a later privacy
       // change). Fail closed for anonymised old rows.
-      if (["collection_update", "goal_completed"].includes(row.type) && (
-        !row.user_id || !(await canViewCollection(reqUser, row.user_id))
-      )) {
+      if (
+        ["collection_update", "goal_completed"].includes(row.type) &&
+        (!row.user_id || !(await canViewCollection(reqUser, row.user_id)))
+      ) {
         continue;
       }
-      const metadata = row.metadata && typeof row.metadata === "object"
-        ? { ...row.metadata }
-        : {};
+      const metadata = row.metadata && typeof row.metadata === "object" ? { ...row.metadata } : {};
       // Older rows may still carry this aggregate. It must not be used to
       // infer ownership in another member's hidden collection.
       if (row.type === "collection_update") delete metadata.firstInSquad;
