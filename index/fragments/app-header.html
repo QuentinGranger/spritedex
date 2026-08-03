@@ -28,6 +28,53 @@
           <kbd id="desktopSearchShortcut">⌘ K</kbd>
         </label>
         <div class="topbar-actions">
+          <div class="lang-menu" id="topbarLangMenu">
+            <button type="button" class="lang-menu__trigger" id="topbarLangTrigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="topbarLangPanel" data-i18n-aria-label="lang.switcher" aria-label="Langue">
+              <span class="lang-menu__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/>
+                  <path d="M3 12h18"/>
+                  <path d="M12 3a14 14 0 0 1 0 18"/>
+                  <path d="M12 3a14 14 0 0 0 0 18"/>
+                </svg>
+              </span>
+              <span class="lang-menu__current">
+                <span class="lang-menu__code" data-lang-code>FR</span>
+                <span class="lang-menu__label" data-lang-name>Français</span>
+              </span>
+              <svg class="lang-menu__chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="lang-menu__panel" id="topbarLangPanel" role="listbox" hidden data-i18n-aria-label="lang.switcher" aria-label="Langue">
+              <div class="lang-menu__header">
+                <p class="lang-menu__eyebrow" data-i18n="lang.switcher">Choisir la langue</p>
+                <p class="lang-menu__hint" data-i18n="lang.hint">L’interface se recharge dans la langue choisie.</p>
+              </div>
+              <button type="button" class="lang-menu__option" role="option" data-lang="fr" data-tone="fr" aria-selected="false">
+                <span class="lang-menu__flag" aria-hidden="true">FR</span>
+                <span class="lang-menu__copy">
+                  <span class="lang-menu__name" data-i18n="lang.fr">Français</span>
+                  <span class="lang-menu__meta" data-lang-meta>France / Belgique</span>
+                </span>
+                <svg class="lang-menu__check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="lang-menu__option" role="option" data-lang="en" data-tone="en" aria-selected="false">
+                <span class="lang-menu__flag" aria-hidden="true">EN</span>
+                <span class="lang-menu__copy">
+                  <span class="lang-menu__name" data-i18n="lang.en">English</span>
+                  <span class="lang-menu__meta" data-lang-meta>International</span>
+                </span>
+                <svg class="lang-menu__check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button type="button" class="lang-menu__option" role="option" data-lang="nl" data-tone="nl" aria-selected="false">
+                <span class="lang-menu__flag" aria-hidden="true">NL</span>
+                <span class="lang-menu__copy">
+                  <span class="lang-menu__name" data-i18n="lang.nl">Nederlands</span>
+                  <span class="lang-menu__meta" data-lang-meta>Nederland / België</span>
+                </span>
+                <svg class="lang-menu__check" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+            </div>
+          </div>
           <button class="command-palette-trigger" id="commandPaletteOpen" type="button" aria-label="Recherche globale" title="Recherche globale" data-i18n-aria-label="search.global" data-i18n-title="search.global">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4.3-4.3"/></svg>
           </button>

@@ -1,6 +1,7 @@
 /* Shell styles are split by UI concern; import order preserves the cascade. */
 @import url("./shell/01-foundation.css");
 @import url("./shell/02-buttons-and-topbar.css");
+@import url("./shell/02b-lang-menu.css");
 @import url("./shell/03-notifications-shell.css");
 @import url("./shell/04-notifications-content.css");
 @import url("./shell/05-notifications-items.css");

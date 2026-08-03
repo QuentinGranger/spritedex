@@ -11,6 +11,7 @@ const imports = [...entry.matchAll(/@import url\("\.\/shell\/([^\"]+)"\);/g)].ma
 assert.deepStrictEqual(imports, [
   "01-foundation.css",
   "02-buttons-and-topbar.css",
+  "02b-lang-menu.css",
   "03-notifications-shell.css",
   "04-notifications-content.css",
   "05-notifications-items.css",
